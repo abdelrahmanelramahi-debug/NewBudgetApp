@@ -36,12 +36,16 @@ function initAuth() {
             // Wait for auth token to be ready before Firestore (fixes "Load failed")
             user.getIdToken(true).then(function() {
                 loadStateFromCloud().then(function() {
-                    if (typeof updateGlobalUI === 'function') updateGlobalUI();
+                    if (typeof requestAnimationFrame !== 'undefined' && typeof updateGlobalUI === 'function') {
+                        requestAnimationFrame(updateGlobalUI);
+                    } else if (typeof updateGlobalUI === 'function') updateGlobalUI();
                     startAutoSync();
                 });
             }).catch(function() {
                 loadStateFromCloud().then(function() {
-                    if (typeof updateGlobalUI === 'function') updateGlobalUI();
+                    if (typeof requestAnimationFrame !== 'undefined' && typeof updateGlobalUI === 'function') {
+                        requestAnimationFrame(updateGlobalUI);
+                    } else if (typeof updateGlobalUI === 'function') updateGlobalUI();
                     startAutoSync();
                 });
             });

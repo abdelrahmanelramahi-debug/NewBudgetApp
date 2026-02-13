@@ -479,6 +479,10 @@ function updateGlobalUI() {
     }
 
     calculateReality();
+    // Force reflow so header values paint (avoids "stuck at 0 until click/tab" on load)
+    var headerReality = document.getElementById('header-reality');
+    if (headerReality) void headerReality.offsetHeight;
+    if (surpEl) void surpEl.offsetHeight;
 }
 
 function renderCategoryHistory() {

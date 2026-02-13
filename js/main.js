@@ -44,10 +44,17 @@ window.onload = function() {
     updateUndoButtonUI();
     applySettings();
     renderSettings();
-    updateGlobalUI();
-    // Defer header refresh so it runs after auth/cloud (onAuthStateChanged + loadStateFromCloud are async)
-    setTimeout(updateGlobalUI, 0);
-    setTimeout(updateGlobalUI, 450);
+    // Run header update in next paint frame so values aren't stuck at 0 until interaction
+    requestAnimationFrame(function() {
+        updateGlobalUI();
+        requestAnimationFrame(updateGlobalUI);
+    });
+    setTimeout(function() {
+        requestAnimationFrame(updateGlobalUI);
+    }, 0);
+    setTimeout(function() {
+        requestAnimationFrame(updateGlobalUI);
+    }, 450);
 
     const amortTotal = document.getElementById('amort-total');
     const amortMonths = document.getElementById('amort-months');
