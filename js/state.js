@@ -83,7 +83,9 @@ let requiredDangerPhrase = "";
 // PERSISTENCE
 function saveState() {
     localStorage.setItem('financeCmd_state', JSON.stringify(state));
+    // Cloud sync will be handled by auth.js if user is logged in
 }
+window.saveState = saveState; // Make it globally accessible
 
 function loadState() {
     const saved = localStorage.getItem('financeCmd_state');
