@@ -434,6 +434,16 @@ function updateFoodUI() {
     var todayMonth = today.getMonth();
     var todayYear = today.getFullYear();
     var isCurrentMonth = (todayMonth === cal.month && todayYear === cal.year);
+    // Map cycle days to calendar dates: cycle day 1 = Feb 1, cycle day 2 = Feb 2, etc.
+    // If today is Feb 13 and daysUsed = 17, that means they've consumed through Feb 13 (17 cycle days = Feb 1-13)
+    // So consumed dates are: calendar dates <= todayDate (if we assume cycle aligns with calendar)
+    // Actually, if daysUsed = 17 and today is Feb 13, then consumed = Feb 1-13 (13 dates), so daysUsed should represent calendar dates consumed
+    // But the user says daysUsed = 17 means 17 days consumed, which would be Feb 1-17 if aligned
+    // Wait, the user said "I used today's food so the days I would have left would start with 14"
+    // So if today is Feb 13 and they consumed today, then consumed = Feb 1-13 (13 days), remaining starts Feb 14
+    // But daysUsed = 17 suggests they've consumed 17 cycle days, not 17 calendar dates
+    // I think the issue is: daysUsed should represent calendar dates consumed, not cycle days
+    // For now, let's assume: consumed = calendar dates <= todayDate (since they said they consumed today)
     var rowsContainer = document.getElementById('food-overview-rows');
     if (rowsContainer) {
         rowsContainer.innerHTML = '';
@@ -447,15 +457,19 @@ function updateFoodUI() {
             var rowHtml = '<div class="food-week-row flex gap-2 items-stretch rounded-lg"><div class="w-12 flex-shrink-0 flex items-center text-[10px] font-black uppercase tracking-wider text-slate-400">' + weekLabel + '</div><div class="grid grid-cols-7 gap-1 flex-1">';
             for (var col = 0; col < 7; col++) {
                 var slot = r * 7 + col;
-                var date = slot - pad + 1;
-                if (slot < pad || date > lastDay) {
+                var calendarDate = slot - pad + 1; // Actual calendar date (1-31)
+                if (slot < pad || calendarDate > lastDay) {
                     rowHtml += '<div class="food-overview-cell rounded-md min-h-[2rem] bg-transparent"></div>';
                 } else {
-                    var consumed = date <= daysUsed;
-                    var isToday = isCurrentMonth && date === todayDate;
-                    var futureInCycle = date > daysUsed && date <= 28;
-                    var restOfMonth = date > 28;
-                    var isBuffer = date > 28 && date <= 28 + bufferCount;
+                    // Consumed = calendar dates up to and including today (since they consumed today)
+                    var consumed = isCurrentMonth && calendarDate <= todayDate;
+                    var isToday = isCurrentMonth && calendarDate === todayDate;
+                    // Future in cycle = dates after today but within the 28-day cycle
+                    // Cycle day = calendar date (aligned), so future = calendarDate > todayDate && calendarDate <= 28
+                    var futureInCycle = calendarDate > todayDate && calendarDate <= 28;
+                    var restOfMonth = calendarDate > 28;
+                    // Buffer days: after day 28, up to bufferCount days
+                    var isBuffer = calendarDate > 28 && calendarDate <= 28 + bufferCount;
                     var clickAttr = isToday ? ' onclick="spendFoodDay()" role="button"' : '';
                     var cls = 'food-overview-cell rounded-md flex items-center justify-center text-[10px] font-black min-h-[2rem] transition ';
                     if (consumed) cls += 'bg-slate-200 text-slate-500';
@@ -463,8 +477,8 @@ function updateFoodUI() {
                     else if (isBuffer) cls += 'bg-emerald-500 text-white border border-emerald-600';
                     else if (restOfMonth || futureInCycle) cls += 'bg-slate-100 text-slate-400 border border-slate-200';
                     else cls += 'bg-white text-slate-400 border border-slate-200';
-                    var label = consumed ? '✓' : date;
-                    rowHtml += '<div' + clickAttr + ' class="' + cls + '" data-date="' + date + '" title="' + cal.monthName + ' ' + date + '">' + label + '</div>';
+                    var label = consumed ? '✓' : calendarDate;
+                    rowHtml += '<div' + clickAttr + ' class="' + cls + '" data-date="' + calendarDate + '" title="' + cal.monthName + ' ' + calendarDate + '">' + label + '</div>';
                 }
             }
             rowHtml += '</div></div>';
