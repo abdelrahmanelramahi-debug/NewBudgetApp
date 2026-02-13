@@ -174,6 +174,13 @@ textarea,
     transform: scale(0.98);
 }
 
+.food-overview-cell {
+    user-select: none;
+}
+.food-overview-cell:active {
+    transform: scale(0.96);
+}
+
 /* Modals */
 .modal-overlay {
     position: fixed;

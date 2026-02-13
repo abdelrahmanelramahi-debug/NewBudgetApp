@@ -387,6 +387,27 @@ function updateFoodUI() {
     document.getElementById('locked-funds-display').innerText = formatMoney(state.food.lockedAmount || 0);
     document.getElementById('food-days-count').innerText = (daysTotal - daysUsed) + ' Days Left';
 
+    var dayNames = getFoodDayNames();
+    var headerEl = document.getElementById('food-overview-header');
+    if (headerEl) {
+        headerEl.innerHTML = dayNames.map(function(d) { return '<span>' + d.charAt(0) + '</span>'; }).join('');
+    }
+    var overviewEl = document.getElementById('food-overview-grid');
+    if (overviewEl) {
+        overviewEl.innerHTML = '';
+        for (var d = 0; d < 28; d++) {
+            var status = d < daysUsed ? 'consumed' : d === daysUsed ? 'today' : 'future';
+            var isToday = d === daysUsed;
+            var clickAttr = isToday ? ' onclick="spendFoodDay()" role="button"' : '';
+            var cls = 'food-overview-cell rounded-md flex items-center justify-center text-[10px] font-black min-h-[2rem] transition ';
+            if (status === 'consumed') cls += 'bg-slate-200 text-slate-500';
+            else if (status === 'today') cls += 'bg-indigo-500 text-white shadow-md cursor-pointer hover:bg-indigo-600';
+            else cls += 'bg-white text-slate-400 border border-slate-200';
+            var label = status === 'consumed' ? '✓' : (d + 1);
+            overviewEl.innerHTML += '<div' + clickAttr + ' class="' + cls + '" data-day="' + d + '" title="Day ' + (d + 1) + '">' + label + '</div>';
+        }
+    }
+
     var weekLabel = document.getElementById('food-week-label');
     if (weekLabel) weekLabel.textContent = 'Week ' + (viewWeek + 1) + ' of 4';
     var prevBtn = document.getElementById('food-prev-week');
@@ -396,7 +417,6 @@ function updateFoodUI() {
 
     var grid = document.getElementById('food-week-grid');
     if (grid) {
-        var dayNames = getFoodDayNames();
         grid.innerHTML = '';
         for (var col = 0; col < 7; col++) {
             var dayIndex = viewWeek * 7 + col;
