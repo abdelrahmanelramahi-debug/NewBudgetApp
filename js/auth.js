@@ -26,10 +26,39 @@ function initAuth() {
     });
 }
 
+// Convert Firebase auth errors to user-friendly messages
+function getAuthErrorMessage(error) {
+    const code = error.code || '';
+    if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/invalid-email') {
+        return 'Wrong email or password. Check for typos, or use "Forgot password?" to reset.';
+    }
+    if (code === 'auth/user-not-found') {
+        return 'No account with this email. Sign up first, or check the email address.';
+    }
+    if (code === 'auth/too-many-requests') {
+        return 'Too many failed attempts. Try again later or use "Forgot password?".';
+    }
+    if (code === 'auth/email-already-in-use') {
+        return 'This email is already registered. Use Sign In instead.';
+    }
+    if (code === 'auth/weak-password') {
+        return 'Password must be at least 6 characters.';
+    }
+    return error.message || 'Something went wrong. Try again.';
+}
+
 // Sign Up
 async function signUp(email, password) {
+    const trimmedEmail = (email || '').trim().toLowerCase();
+    const trimmedPassword = (password || '').trim();
+    if (!trimmedEmail || !trimmedPassword) {
+        return { success: false, error: 'Please enter email and password.' };
+    }
+    if (trimmedPassword.length < 6) {
+        return { success: false, error: 'Password must be at least 6 characters.' };
+    }
     try {
-        const userCredential = await window.firebaseAuth.createUserWithEmailAndPassword(email, password);
+        const userCredential = await window.firebaseAuth.createUserWithEmailAndPassword(trimmedEmail, trimmedPassword);
         currentUser = userCredential.user;
         
         // Save initial state to cloud
@@ -38,21 +67,26 @@ async function signUp(email, password) {
         closeAuthModal();
         return { success: true };
     } catch (error) {
-        return { success: false, error: error.message };
+        return { success: false, error: getAuthErrorMessage(error) };
     }
 }
 
 // Sign In
 async function signIn(email, password) {
+    const trimmedEmail = (email || '').trim().toLowerCase();
+    const trimmedPassword = (password || '').trim();
+    if (!trimmedEmail || !trimmedPassword) {
+        return { success: false, error: 'Please enter email and password.' };
+    }
     try {
-        const userCredential = await window.firebaseAuth.signInWithEmailAndPassword(email, password);
+        const userCredential = await window.firebaseAuth.signInWithEmailAndPassword(trimmedEmail, trimmedPassword);
         currentUser = userCredential.user;
         
         await loadStateFromCloud();
         closeAuthModal();
         return { success: true };
     } catch (error) {
-        return { success: false, error: error.message };
+        return { success: false, error: getAuthErrorMessage(error) };
     }
 }
 
@@ -193,7 +227,10 @@ function closeAuthModal() {
     const errorEl = document.getElementById('auth-error');
     if (emailEl) emailEl.value = '';
     if (passwordEl) passwordEl.value = '';
-    if (errorEl) errorEl.textContent = '';
+    if (errorEl) {
+        errorEl.textContent = '';
+        errorEl.className = 'text-xs text-red-500 min-h-[20px]';
+    }
 }
 
 async function handleSignUp() {
@@ -206,7 +243,7 @@ async function handleSignUp() {
         return;
     }
     
-    if (password.length < 6) {
+    if (password.trim().length < 6) {
         errorEl.textContent = 'Password must be at least 6 characters';
         return;
     }
@@ -234,6 +271,27 @@ async function handleSignIn() {
     
     if (!result.success) {
         errorEl.textContent = result.error || 'Sign in failed';
+    }
+}
+
+// Forgot password – send reset email
+async function handleForgotPassword() {
+    const email = document.getElementById('auth-email').value.trim().toLowerCase();
+    const errorEl = document.getElementById('auth-error');
+    
+    if (!email) {
+        errorEl.textContent = 'Enter your email above, then click Forgot password?';
+        return;
+    }
+    
+    try {
+        errorEl.textContent = 'Sending reset email...';
+        await window.firebaseAuth.sendPasswordResetEmail(email);
+        errorEl.textContent = 'Check your inbox for the password reset link.';
+        errorEl.className = 'text-xs text-emerald-600 min-h-[20px]';
+    } catch (error) {
+        errorEl.textContent = getAuthErrorMessage(error);
+        errorEl.className = 'text-xs text-red-500 min-h-[20px]';
     }
 }
 
