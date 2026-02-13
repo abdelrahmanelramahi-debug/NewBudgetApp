@@ -273,7 +273,7 @@ function renderLedger() {
                     <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Car Fund</span>
                     <div class="text-3xl font-black mt-1">${formatMoney(carBal)} <span class="text-xs text-slate-500">${getCurrencyLabel()}</span></div>
                 </div>
-                <button onclick="openTool('Car Fund')" class="w-full py-2 bg-white/10 hover:bg-white/20 rounded-lg text-[10px] font-black uppercase tracking-widest transition text-center backdrop-blur-sm">
+                <button onclick="openTool('Car Fund')" class="w-full py-2 bg-white/25 hover:bg-white/40 rounded-lg text-[10px] font-black uppercase tracking-widest transition text-center backdrop-blur-sm text-white border border-white/30">
                     Manage
                 </button>
             </div>
@@ -287,7 +287,7 @@ function renderLedger() {
                     <span class="text-[10px] font-bold uppercase tracking-widest text-amber-100">Payables</span>
                     <div class="text-3xl font-black mt-1">${formatMoney(payBal)} <span class="text-xs text-amber-100">${getCurrencyLabel()}</span></div>
                 </div>
-                <button onclick="openTool('Payables')" class="w-full py-2 bg-white/20 hover:bg-white/30 rounded-lg text-[10px] font-black uppercase tracking-widest transition text-center backdrop-blur-sm">
+                <button onclick="openTool('Payables')" class="w-full py-2 bg-white/30 hover:bg-white/50 rounded-lg text-[10px] font-black uppercase tracking-widest transition text-center backdrop-blur-sm text-white border border-white/40">
                     Manage
                 </button>
             </div>
