@@ -36,10 +36,12 @@ function initAuth() {
             // Wait for auth token to be ready before Firestore (fixes "Load failed")
             user.getIdToken(true).then(function() {
                 loadStateFromCloud().then(function() {
+                    if (typeof updateGlobalUI === 'function') updateGlobalUI();
                     startAutoSync();
                 });
             }).catch(function() {
                 loadStateFromCloud().then(function() {
+                    if (typeof updateGlobalUI === 'function') updateGlobalUI();
                     startAutoSync();
                 });
             });
@@ -211,11 +213,13 @@ async function loadStateFromCloud(retryCount) {
                     // Cloud data exists but is empty/invalid - keep local state
                     console.warn('Cloud data is empty/invalid, keeping local state');
                     updateSyncStatus('Cloud empty, using local', true);
+                    updateGlobalUI();
                 }
             } else {
                 // No valid cloud data - keep local state
                 console.warn('No valid cloud data found, keeping local state');
                 updateSyncStatus('No cloud data, using local', true);
+                updateGlobalUI();
             }
             
             if (cloudData.lastUpdated) {
@@ -227,6 +231,7 @@ async function loadStateFromCloud(retryCount) {
             // No cloud data yet, save current state
             await saveStateToCloud();
             updateSyncStatus('Synced', true);
+            updateGlobalUI();
         }
     } catch (error) {
         console.error('Load from cloud error:', error);

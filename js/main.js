@@ -45,6 +45,9 @@ window.onload = function() {
     applySettings();
     renderSettings();
     updateGlobalUI();
+    // Defer header refresh so it runs after auth/cloud (onAuthStateChanged + loadStateFromCloud are async)
+    setTimeout(updateGlobalUI, 0);
+    setTimeout(updateGlobalUI, 450);
 
     const amortTotal = document.getElementById('amort-total');
     const amortMonths = document.getElementById('amort-months');
