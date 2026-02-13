@@ -814,27 +814,15 @@ function buyFoodDay() {
     const dailyRate = foodBase / 28;
     const totalCost = dailyRate * daysInput;
 
-    pushToUndo();
-
-    // 2. Waterfall Deduction
-    let coveredByWeekly = 0;
-    let coveredBySurplus = 0;
-
-    if (state.accounts.weekly.balance >= totalCost) {
-        // Weekly covers it all
-        coveredByWeekly = totalCost;
-    } else {
-        // Weekly covers some, Surplus covers rest
-        coveredByWeekly = Math.max(0, state.accounts.weekly.balance);
-        coveredBySurplus = totalCost - coveredByWeekly;
+    // Buffer is funded only from surplus/deficit
+    var surplus = (state.accounts && typeof state.accounts.surplus === 'number') ? state.accounts.surplus : 0;
+    if (surplus < totalCost) {
+        alert('Not enough surplus/deficit. Need ' + formatMoney(totalCost) + ' ' + getCurrencyLabel() + '.');
+        return;
     }
 
-    // Apply Deductions
-    state.accounts.weekly.balance -= coveredByWeekly; // Visual limit
-    applyTransaction({ type: 'adjust_item_balance', label: 'Weekly Misc', delta: -coveredByWeekly });
-    applyTransaction({ type: 'adjust_surplus', delta: -coveredBySurplus });
-
-    // 3. Add to Visual (Buffer)
+    pushToUndo();
+    applyTransaction({ type: 'adjust_surplus', delta: -totalCost });
     applyTransaction({ type: 'food_lock', amount: totalCost, label: `+${daysInput} Days` });
     document.getElementById('food-lock-val').value = '';
 
@@ -849,6 +837,7 @@ function releaseAllBuffer() {
         applyTransaction({ type: 'food_release_all' });
         saveState();
         renderLedger();
+        updateGlobalUI();
     }
 }
 function undoFood(idx) {

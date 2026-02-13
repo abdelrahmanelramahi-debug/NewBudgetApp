@@ -377,6 +377,18 @@ function getFoodDayNames() {
     return out;
 }
 
+function getMonthCalendarInfo() {
+    var now = new Date();
+    var year = now.getFullYear();
+    var month = now.getMonth();
+    var lastDay = new Date(year, month + 1, 0).getDate();
+    var firstDow = new Date(year, month, 1).getDay();
+    var start = typeof state.settings?.firstDayOfWeek === 'number' ? state.settings.firstDayOfWeek % 7 : 3;
+    var pad = (firstDow - start + 7) % 7;
+    var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return { year: year, month: month, lastDay: lastDay, pad: pad, monthName: monthNames[month] };
+}
+
 function updateFoodUI() {
     var fSec = state.categories.find(s=>s.id==='core_essentials') || state.categories.find(s=>s.id==='foundations');
     var fItem = fSec ? fSec.items.find(i=>i.label==='Food Base') : null;
@@ -384,17 +396,17 @@ function updateFoodUI() {
     var daily = foodBase / (state.food.daysTotal || 28);
     var daysUsed = state.food.daysUsed || 0;
     var daysTotal = state.food.daysTotal || 28;
-    var viewWeek = Math.max(0, Math.min(3, state.food.viewWeek != null ? state.food.viewWeek : 0));
-    var currentWeek = daysUsed < 28 ? Math.floor(daysUsed / 7) : 3;
+    var lockedAmount = state.food.lockedAmount || 0;
+    var bufferCount = daily > 0 ? Math.floor(lockedAmount / daily) : 0;
     var currentDayInCycle = daysUsed + 1;
 
     document.getElementById('daily-food-rate').innerText = formatMoney(daily);
-    document.getElementById('locked-funds-display').innerText = formatMoney(state.food.lockedAmount || 0);
+    document.getElementById('locked-funds-display').innerText = formatMoney(lockedAmount);
     document.getElementById('food-days-count').innerText = (daysTotal - daysUsed) + ' Days Left';
     var macroUsed = document.getElementById('food-macro-used');
     if (macroUsed) macroUsed.textContent = daysUsed + ' of 28 used';
     var weekDayLabel = document.getElementById('food-week-day-label');
-    if (weekDayLabel) weekDayLabel.textContent = 'Week ' + (currentWeek + 1) + ' · Day ' + currentDayInCycle;
+    if (weekDayLabel) weekDayLabel.textContent = (getMonthCalendarInfo().monthName + ' ' + currentDayInCycle);
     var progressBar = document.getElementById('food-progress-bar');
     if (progressBar) progressBar.style.width = (daysUsed / 28 * 100) + '%';
 
@@ -405,37 +417,60 @@ function updateFoodUI() {
         if (headerGrid) headerGrid.innerHTML = dayNames.map(function(d) { return '<span>' + d.charAt(0) + '</span>'; }).join('');
     }
 
+    var cal = getMonthCalendarInfo();
     var rowsContainer = document.getElementById('food-overview-rows');
     if (rowsContainer) {
         rowsContainer.innerHTML = '';
-        for (var w = 0; w < 4; w++) {
-            var isCurrentWeek = w === currentWeek;
-            var isSelectedWeek = w === viewWeek;
-            var rowCls = 'food-week-row flex gap-2 items-stretch rounded-lg transition ' + (isSelectedWeek ? 'bg-indigo-50/80 ring-1 ring-indigo-200' : '') + (isCurrentWeek ? ' food-row-current' : '');
-            var labelCls = 'w-12 flex-shrink-0 flex items-center text-[10px] font-black uppercase tracking-wider ' + (isCurrentWeek ? 'text-indigo-600' : 'text-slate-400');
-            var rowHtml = '<div class="' + rowCls + '" data-week="' + w + '"><div class="' + labelCls + '">Week ' + (w + 1) + '</div><div class="grid grid-cols-7 gap-1 flex-1">';
+        var pad = cal.pad;
+        var lastDay = cal.lastDay;
+        var totalSlots = pad + lastDay;
+        var numRows = Math.ceil(totalSlots / 7);
+        for (var r = 0; r < numRows; r++) {
+            var rowHtml = '<div class="food-week-row flex gap-2 items-stretch rounded-lg"><div class="w-12 flex-shrink-0"></div><div class="grid grid-cols-7 gap-1 flex-1">';
             for (var col = 0; col < 7; col++) {
-                var d = w * 7 + col;
-                var status = d < daysUsed ? 'consumed' : d === daysUsed ? 'today' : 'future';
-                var isToday = d === daysUsed;
-                var clickAttr = isToday ? ' onclick="spendFoodDay()" role="button"' : '';
-                var cls = 'food-overview-cell rounded-md flex items-center justify-center text-[10px] font-black min-h-[2rem] transition ';
-                if (status === 'consumed') cls += 'bg-slate-200 text-slate-500';
-                else if (status === 'today') cls += 'bg-indigo-500 text-white shadow-md cursor-pointer hover:bg-indigo-600';
-                else cls += 'bg-white text-slate-400 border border-slate-200';
-                var label = status === 'consumed' ? '✓' : (d + 1);
-                rowHtml += '<div' + clickAttr + ' class="' + cls + '" data-day="' + d + '" title="Day ' + (d + 1) + '">' + label + '</div>';
+                var slot = r * 7 + col;
+                var date = slot - pad + 1;
+                if (slot < pad || date > lastDay) {
+                    rowHtml += '<div class="food-overview-cell rounded-md min-h-[2rem] bg-transparent"></div>';
+                } else {
+                    var consumed = date <= daysUsed;
+                    var isToday = date === currentDayInCycle;
+                    var futureInCycle = date > daysUsed && date <= 28;
+                    var restOfMonth = date > 28;
+                    var isBuffer = date > 28 && date <= 28 + bufferCount;
+                    var clickAttr = isToday ? ' onclick="spendFoodDay()" role="button"' : '';
+                    var cls = 'food-overview-cell rounded-md flex items-center justify-center text-[10px] font-black min-h-[2rem] transition ';
+                    if (consumed) cls += 'bg-slate-200 text-slate-500';
+                    else if (isToday) cls += 'bg-indigo-500 text-white shadow-md cursor-pointer hover:bg-indigo-600';
+                    else if (isBuffer) cls += 'bg-emerald-500 text-white border border-emerald-600';
+                    else if (restOfMonth || futureInCycle) cls += 'bg-slate-100 text-slate-400 border border-slate-200';
+                    else cls += 'bg-white text-slate-400 border border-slate-200';
+                    var label = consumed ? '✓' : date;
+                    rowHtml += '<div' + clickAttr + ' class="' + cls + '" data-date="' + date + '" title="' + cal.monthName + ' ' + date + '">' + label + '</div>';
+                }
             }
             rowHtml += '</div></div>';
             rowsContainer.innerHTML += rowHtml;
         }
-    }
-
-    for (var t = 0; t < 4; t++) {
-        var tab = document.getElementById('food-tab-w' + t);
-        if (tab) {
-            tab.classList.toggle('bg-indigo-500 text-white', t === viewWeek);
-            tab.classList.toggle('bg-slate-100 text-slate-600 hover:bg-slate-200', t !== viewWeek);
+        var bufferInCurrentMonth = lastDay > 28 ? Math.min(bufferCount, lastDay - 28) : 0;
+        var bufferInNext = Math.max(0, bufferCount - bufferInCurrentMonth);
+        if (bufferInNext > 0) {
+            var nextMonth = new Date(cal.year, cal.month + 1, 1);
+            var nextName = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][nextMonth.getMonth()];
+            var bufDay = 1;
+            for (var br = 0; br < Math.ceil(bufferInNext / 7); br++) {
+                var bufRow = '<div class="food-week-row flex gap-2 items-stretch rounded-lg mt-1"><div class="w-12 flex-shrink-0 flex items-center text-[9px] font-bold text-emerald-600 uppercase">' + (br === 0 ? nextName + ' (buffer)' : '') + '</div><div class="grid grid-cols-7 gap-1 flex-1">';
+                for (var c = 0; c < 7; c++) {
+                    if (bufDay <= bufferInNext) {
+                        bufRow += '<div class="food-overview-cell rounded-md flex items-center justify-center text-[10px] font-black min-h-[2rem] bg-emerald-500 text-white border border-emerald-600">' + bufDay + '</div>';
+                        bufDay++;
+                    } else {
+                        bufRow += '<div class="food-overview-cell rounded-md min-h-[2rem] bg-transparent"></div>';
+                    }
+                }
+                bufRow += '</div></div>';
+                rowsContainer.innerHTML += bufRow;
+            }
         }
     }
 

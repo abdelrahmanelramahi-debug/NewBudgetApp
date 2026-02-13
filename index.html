@@ -124,15 +124,7 @@
                     </div>
                 </div>
 
-                <!-- Week tabs: focus a week in the grid -->
-                <div class="flex gap-1.5">
-                    <button type="button" id="food-tab-w0" onclick="setFoodViewWeek(0)" class="flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition food-week-tab">Week 1</button>
-                    <button type="button" id="food-tab-w1" onclick="setFoodViewWeek(1)" class="flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition food-week-tab">Week 2</button>
-                    <button type="button" id="food-tab-w2" onclick="setFoodViewWeek(2)" class="flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition food-week-tab">Week 3</button>
-                    <button type="button" id="food-tab-w3" onclick="setFoodViewWeek(3)" class="flex-1 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition food-week-tab">Week 4</button>
-                </div>
-
-                <!-- 28-day grid: day letters + 4 rows (Week 1–4), each row = 7 days -->
+                <!-- Month calendar: day letters + rows by week (actual month days; rest greyed; buffer green) -->
                 <div class="rounded-xl bg-slate-50 border border-slate-100 p-3 space-y-1.5">
                     <div id="food-overview-header" class="flex gap-2">
                         <div class="w-12 flex-shrink-0"></div>
@@ -148,7 +140,7 @@
                     <div class="flex justify-between items-center">
                         <div>
                             <span class="text-[10px] font-bold uppercase tracking-widest text-emerald-600">Buffer</span>
-                            <p class="text-[9px] text-emerald-600/80 mt-0.5">Extra days funded; release returns to Surplus.</p>
+                            <p class="text-[9px] text-emerald-600/80 mt-0.5">Extra days funded from Surplus/Deficit; release returns to Surplus.</p>
                         </div>
                         <div class="flex items-center gap-2">
                             <span id="locked-funds-display" class="text-xl font-black text-emerald-700">0.00</span>
