@@ -785,9 +785,10 @@ function completeTask(label) {
 }
 
 // Food
-function setFoodViewWeek(delta) {
+function setFoodViewWeek(weekIndexOrDelta) {
     if (!state.food) state.food = { daysTotal: 28, daysUsed: 0, lockedAmount: 0, history: [], viewWeek: 0 };
-    const next = (state.food.viewWeek || 0) + delta;
+    var current = state.food.viewWeek || 0;
+    var next = (weekIndexOrDelta === -1 || weekIndexOrDelta === 1) ? current + weekIndexOrDelta : weekIndexOrDelta;
     state.food.viewWeek = Math.max(0, Math.min(3, next));
     saveState();
     renderLedger();

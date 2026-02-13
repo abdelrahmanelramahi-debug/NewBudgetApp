@@ -181,6 +181,14 @@ textarea,
     transform: scale(0.96);
 }
 
+.food-row-current {
+    border-left: 3px solid #4f46e5;
+}
+
+.food-week-tab:focus {
+    outline: none;
+}
+
 /* Modals */
 .modal-overlay {
     position: fixed;
