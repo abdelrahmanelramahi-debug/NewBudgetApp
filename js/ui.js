@@ -382,11 +382,16 @@ function getMonthCalendarInfo() {
     var year = now.getFullYear();
     var month = now.getMonth();
     var lastDay = new Date(year, month + 1, 0).getDate();
-    var firstDow = new Date(year, month, 1).getDay();
-    var start = typeof state.settings?.firstDayOfWeek === 'number' ? state.settings.firstDayOfWeek % 7 : 3;
+    var firstDow = new Date(year, month, 1).getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+    var start = typeof state.settings?.firstDayOfWeek === 'number' ? state.settings.firstDayOfWeek % 7 : 3; // 0=Sun, 1=Mon, ..., 3=Wed
+    // Calculate padding: how many blank cells before day 1
+    // firstDow is in JS format (0=Sun), start is user setting (3=Wed)
+    // We need to map firstDow to the column it should be in when week starts at 'start'
+    // Column for firstDow = (firstDow - start + 7) % 7
+    // So pad = that column number
     var pad = (firstDow - start + 7) % 7;
     var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    return { year: year, month: month, lastDay: lastDay, pad: pad, monthName: monthNames[month] };
+    return { year: year, month: month, lastDay: lastDay, pad: pad, monthName: monthNames[month], firstDow: firstDow, start: start };
 }
 
 function updateFoodUI() {
@@ -406,7 +411,13 @@ function updateFoodUI() {
     var macroUsed = document.getElementById('food-macro-used');
     if (macroUsed) macroUsed.textContent = daysUsed + ' of 28 used';
     var weekDayLabel = document.getElementById('food-week-day-label');
-    if (weekDayLabel) weekDayLabel.textContent = (getMonthCalendarInfo().monthName + ' ' + currentDayInCycle);
+    if (weekDayLabel) {
+        var today = new Date();
+        var calInfo = getMonthCalendarInfo();
+        var monthName = calInfo.monthName.toUpperCase();
+        var todayDate = today.getDate();
+        weekDayLabel.textContent = monthName + ' ' + todayDate;
+    }
     var progressBar = document.getElementById('food-progress-bar');
     if (progressBar) progressBar.style.width = (daysUsed / 28 * 100) + '%';
 
@@ -418,6 +429,11 @@ function updateFoodUI() {
     }
 
     var cal = getMonthCalendarInfo();
+    var today = new Date();
+    var todayDate = today.getDate();
+    var todayMonth = today.getMonth();
+    var todayYear = today.getFullYear();
+    var isCurrentMonth = (todayMonth === cal.month && todayYear === cal.year);
     var rowsContainer = document.getElementById('food-overview-rows');
     if (rowsContainer) {
         rowsContainer.innerHTML = '';
@@ -426,7 +442,9 @@ function updateFoodUI() {
         var totalSlots = pad + lastDay;
         var numRows = Math.ceil(totalSlots / 7);
         for (var r = 0; r < numRows; r++) {
-            var rowHtml = '<div class="food-week-row flex gap-2 items-stretch rounded-lg"><div class="w-12 flex-shrink-0"></div><div class="grid grid-cols-7 gap-1 flex-1">';
+            var weekNum = r + 1;
+            var weekLabel = 'Week ' + weekNum;
+            var rowHtml = '<div class="food-week-row flex gap-2 items-stretch rounded-lg"><div class="w-12 flex-shrink-0 flex items-center text-[10px] font-black uppercase tracking-wider text-slate-400">' + weekLabel + '</div><div class="grid grid-cols-7 gap-1 flex-1">';
             for (var col = 0; col < 7; col++) {
                 var slot = r * 7 + col;
                 var date = slot - pad + 1;
@@ -434,7 +452,7 @@ function updateFoodUI() {
                     rowHtml += '<div class="food-overview-cell rounded-md min-h-[2rem] bg-transparent"></div>';
                 } else {
                     var consumed = date <= daysUsed;
-                    var isToday = date === currentDayInCycle;
+                    var isToday = isCurrentMonth && date === todayDate;
                     var futureInCycle = date > daysUsed && date <= 28;
                     var restOfMonth = date > 28;
                     var isBuffer = date > 28 && date <= 28 + bufferCount;
