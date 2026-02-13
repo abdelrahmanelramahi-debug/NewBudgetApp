@@ -44,6 +44,7 @@ window.onload = function() {
     updateUndoButtonUI();
     applySettings();
     renderSettings();
+    updateGlobalUI();
 
     const amortTotal = document.getElementById('amort-total');
     const amortMonths = document.getElementById('amort-months');

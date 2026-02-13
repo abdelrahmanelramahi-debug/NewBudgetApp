@@ -74,7 +74,10 @@ function switchPage(page) {
 
     if(page === 'ledger') renderLedger();
     if(page === 'strategy') renderStrategy();
-    if(page === 'settings') renderSettings();
+    if(page === 'settings') {
+        renderSettings();
+        if (typeof updateAuthUI === 'function') updateAuthUI();
+    }
 }
 
 // --- STRATEGY RENDER ---

@@ -76,3 +76,13 @@ function getLiquidityBreakdown() {
 function getCurrentBalance() {
     return getLiquidityBreakdown().totalLiquid;
 }
+
+/** Derive surplus from "reality" (sum of ledger balances) so total liquid matches. Call when surplus is 0 but we have balances/buckets. */
+function recalculateSurplusFromReality() {
+    if (!state.accounts) return;
+    var balances = state.balances || {};
+    var reality = Object.values(balances).reduce(function (sum, v) { return sum + (Number(v) || 0); }, 0);
+    var lb = getLiquidityBreakdown();
+    var allocated = lb.totalLiquid - (state.accounts.surplus || 0);
+    state.accounts.surplus = reality - allocated;
+}

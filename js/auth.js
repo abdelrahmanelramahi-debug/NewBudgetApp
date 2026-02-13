@@ -188,6 +188,13 @@ async function loadStateFromCloud(retryCount) {
                         var realityAfterMerge = getCurrentBalance();
                         state.accounts.surplus = realityBeforeMerge - (realityAfterMerge - (state.accounts.surplus || 0));
                     }
+                    // When surplus is still 0 after merge, derive from reality (sum of balances) if we have data
+                    var hasData = (cloudData.data.balances && Object.keys(cloudData.data.balances).length > 0) ||
+                        (cloudData.data.accounts && typeof cloudData.data.accounts === 'object') ||
+                        (cloudData.data.categories && Array.isArray(cloudData.data.categories) && cloudData.data.categories.length > 0);
+                    if (state.accounts && state.accounts.surplus === 0 && hasData && typeof recalculateSurplusFromReality === 'function') {
+                        recalculateSurplusFromReality();
+                    }
                     
                     // Save merged state locally as backup
                     localStorage.setItem('financeCmd_state', JSON.stringify(state));
@@ -242,6 +249,12 @@ async function loadStateFromCloud(retryCount) {
                 ensureSystemSavings();
                 ensureCoreItems();
                 ensureSettings();
+                if (state.accounts && state.accounts.surplus === 0 && typeof recalculateSurplusFromReality === 'function') {
+                    var hasBal = Object.keys(state.balances || {}).length > 0;
+                    var hasBuck = state.accounts.buckets && Object.values(state.accounts.buckets).some(function (v) { return v !== 0; });
+                    var hasCat = state.categories && state.categories.length > 0;
+                    if (hasBal || hasBuck || hasCat) recalculateSurplusFromReality();
+                }
                 saveState();
                 renderLedger();
                 renderStrategy();
