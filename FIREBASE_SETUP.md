@@ -88,9 +88,42 @@ Replace it with your actual Firebase config values.
 4. Sign in again - your data should be there!
 5. Open the app on another device/browser and sign in - data should sync!
 
+## Reduce password reset emails going to spam
+
+Firebase sends reset emails from `noreply@[your-project].firebaseapp.com`. Some inboxes filter these. To improve deliverability for your users:
+
+### 1. Customize the email template (free, quick)
+
+1. In Firebase Console go to **Authentication** → **Templates**
+2. Click **Password reset**
+3. Set **Sender name** to your app name (e.g. "Finance Command")
+4. Set **Subject** to something clear, e.g. "Reset your Finance Command password"
+5. Edit the **Email body** to mention your app name and that the user requested a password reset
+6. Click **Save**
+
+A clearer, branded message often gets filtered less than the default.
+
+### 2. Tell users what to do
+
+- In your app (e.g. on the sign-in / forgot-password screen), add a short note: “If you don’t see the email, check **spam/junk** and add the sender to contacts.”
+- You can mention the sender: `noreply@budgetapp-8a20d.firebaseapp.com`
+
+### 3. Custom domain + SMTP (best deliverability, paid)
+
+For the best chance of landing in the inbox:
+
+- Upgrade to the **Blaze (pay-as-you-go)** plan
+- Use **Custom SMTP** in **Authentication** → **Templates** → **Password reset** so emails are sent from your own domain (e.g. `noreply@yourdomain.com`) via a provider like SendGrid, Mailgun, or Amazon SES
+- Configure SPF/DKIM for that domain as your provider instructs
+
+Until you do that, customizing the template and guiding users to check spam is the main way to avoid “I didn’t get the email” for future customers.
+
+---
+
 ## Troubleshooting
 
 - **404 errors**: Make sure Firestore is enabled and rules are published
 - **Auth errors**: Make sure Email/Password auth is enabled
 - **Sync not working**: Check browser console for errors
 - **Data not syncing**: Verify Firebase config is correct
+- **Password reset email not received**: Check spam; customize the template (see above); use the exact email used to sign up

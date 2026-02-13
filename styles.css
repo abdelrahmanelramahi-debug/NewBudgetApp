@@ -160,6 +160,20 @@ textarea,
 .dot-locked { background: #10b981; border-color: #10b981; }
 .dot-future { background: white; border-color: #e2e8f0; }
 
+/* Food cycle week grid */
+.food-day-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+.food-day-box {
+    transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+.food-day-box:active {
+    transform: scale(0.98);
+}
+
 /* Modals */
 .modal-overlay {
     position: fixed;

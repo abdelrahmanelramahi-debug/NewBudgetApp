@@ -286,8 +286,9 @@ async function handleForgotPassword() {
     
     try {
         errorEl.textContent = 'Sending reset email...';
+        errorEl.className = 'text-xs text-slate-600 min-h-[20px]';
         await window.firebaseAuth.sendPasswordResetEmail(email);
-        errorEl.textContent = 'Check your inbox for the password reset link.';
+        errorEl.innerHTML = 'Email sent to <strong>' + email + '</strong>. Check <strong>inbox and spam/junk</strong> (wait 2–5 min). Still nothing? See steps below.';
         errorEl.className = 'text-xs text-emerald-600 min-h-[20px]';
     } catch (error) {
         errorEl.textContent = getAuthErrorMessage(error);

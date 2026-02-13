@@ -10,7 +10,8 @@ let state = {
         confirmSurplusEdits: true,
         allowNegativeSurplus: true,
         theme: 'light',
-        compact: false
+        compact: false,
+        firstDayOfWeek: 3
     },
     categories: [
         { id: 'sys_savings', label: 'System Savings', isSystem: true, items: [
@@ -62,7 +63,7 @@ let state = {
         'Mixed Nuts': 91, 'Misc': 50, 'Hair cut': 35, 'Toilet Paper': 16,
         'Etisalat': 100, 'Tarteel': 35, 'YouTube': 24, 'iCloud': 4, 'Adib': 26
     },
-    food: { daysTotal: 28, daysUsed: 0, lockedAmount: 0, history: [] },
+    food: { daysTotal: 28, daysUsed: 0, lockedAmount: 0, history: [], viewWeek: 0 },
     histories: {}
 };
 
@@ -168,7 +169,7 @@ function migrateState() {
             if (!ACCOUNT_LABELS.includes(key)) acc[key] = legacyBalances[key];
             return acc;
         }, {}),
-        food: state.food || { daysTotal: 28, daysUsed: 0, lockedAmount: 0, history: [] },
+        food: state.food || { daysTotal: 28, daysUsed: 0, lockedAmount: 0, history: [], viewWeek: 0 },
         histories: state.histories || {}
     };
 }
@@ -184,12 +185,16 @@ function ensureSettings() {
         confirmSurplusEdits: true,
         allowNegativeSurplus: true,
         theme: 'light',
-        compact: false
+        compact: false,
+        firstDayOfWeek: 3
     };
     if(!state.settings) state.settings = { ...defaults };
     state.settings = { ...defaults, ...state.settings };
     if (typeof state.settings.decimals !== 'number' || Number.isNaN(state.settings.decimals)) {
         state.settings.decimals = 2;
+    }
+    if (typeof state.settings.firstDayOfWeek !== 'number' || state.settings.firstDayOfWeek < 0 || state.settings.firstDayOfWeek > 6) {
+        state.settings.firstDayOfWeek = 3;
     }
 }
 

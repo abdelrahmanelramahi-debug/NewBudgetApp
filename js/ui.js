@@ -48,6 +48,8 @@ function renderSettings() {
     if(themeSelect) themeSelect.value = state.settings?.theme || 'light';
     const compactToggle = document.getElementById('settings-compact');
     if(compactToggle) compactToggle.checked = !!state.settings?.compact;
+    const firstDaySelect = document.getElementById('settings-first-day-of-week');
+    if(firstDaySelect) firstDaySelect.value = String(state.settings?.firstDayOfWeek ?? 3);
 }
 
 function switchPage(page) {
@@ -251,43 +253,43 @@ function renderLedger() {
     const majorHtml = `
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
             <!-- General Savings -->
-            <div class="premium-card p-5 bg-indigo-600 text-white border-indigo-500 shadow-lg shadow-indigo-100 flex flex-col justify-between h-32 relative overflow-hidden group">
-                <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <div class="premium-card p-5 bg-indigo-600 text-white border-indigo-500 shadow-lg shadow-indigo-100 flex flex-col justify-between min-h-[11rem] relative overflow-hidden group">
+                <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none">
                     <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                 </div>
-                <div>
+                <div class="flex-shrink-0">
                     <span class="text-[10px] font-bold uppercase tracking-widest text-indigo-200">General Savings</span>
                     <div class="text-3xl font-black mt-1">${formatMoney(savBal)} <span class="text-xs text-indigo-300">${getCurrencyLabel()}</span></div>
                 </div>
-                <button onclick="openSavingsBuckets()" class="w-full py-2 bg-white/20 hover:bg-white/30 rounded-lg text-[10px] font-black uppercase tracking-widest transition text-center backdrop-blur-sm">
+                <button onclick="openSavingsBuckets()" class="w-full py-2 flex-shrink-0 mt-2 bg-white/20 hover:bg-white/30 rounded-lg text-[10px] font-black uppercase tracking-widest transition text-center backdrop-blur-sm">
                     Manage
                 </button>
             </div>
 
             <!-- Car Fund -->
-            <div class="premium-card p-5 bg-slate-800 text-white border-slate-700 shadow-lg shadow-slate-200 flex flex-col justify-between h-32 relative overflow-hidden group">
-                <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <div class="premium-card p-5 bg-slate-800 text-white border-slate-700 shadow-lg shadow-slate-200 flex flex-col justify-between min-h-[11rem] relative overflow-hidden group">
+                <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none">
                     <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
                 </div>
-                <div>
+                <div class="flex-shrink-0">
                     <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Car Fund</span>
                     <div class="text-3xl font-black mt-1">${formatMoney(carBal)} <span class="text-xs text-slate-500">${getCurrencyLabel()}</span></div>
                 </div>
-                <button onclick="openTool('Car Fund')" class="w-full py-2 bg-white/25 hover:bg-white/40 rounded-lg text-[10px] font-black uppercase tracking-widest transition text-center backdrop-blur-sm text-white border border-white/30">
+                <button onclick="openTool('Car Fund')" class="w-full py-2.5 flex-shrink-0 mt-2 bg-white text-slate-800 hover:bg-slate-100 rounded-lg text-[10px] font-black uppercase tracking-widest transition text-center shadow-md">
                     Manage
                 </button>
             </div>
 
             <!-- Payables -->
-            <div class="premium-card p-5 bg-amber-500 text-white border-amber-400 shadow-lg shadow-amber-100 flex flex-col justify-between h-32 relative overflow-hidden group">
-                <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+            <div class="premium-card p-5 bg-amber-500 text-white border-amber-400 shadow-lg shadow-amber-100 flex flex-col justify-between min-h-[11rem] relative overflow-hidden group">
+                <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none">
                     <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><path d="M4 8h16"/><path d="M6 12h12"/><path d="M8 16h8"/><path d="M10 20h4"/></svg>
                 </div>
-                <div>
+                <div class="flex-shrink-0">
                     <span class="text-[10px] font-bold uppercase tracking-widest text-amber-100">Payables</span>
                     <div class="text-3xl font-black mt-1">${formatMoney(payBal)} <span class="text-xs text-amber-100">${getCurrencyLabel()}</span></div>
                 </div>
-                <button onclick="openTool('Payables')" class="w-full py-2 bg-white/30 hover:bg-white/50 rounded-lg text-[10px] font-black uppercase tracking-widest transition text-center backdrop-blur-sm text-white border border-white/40">
+                <button onclick="openTool('Payables')" class="w-full py-2.5 flex-shrink-0 mt-2 bg-white text-amber-900 hover:bg-amber-50 rounded-lg text-[10px] font-black uppercase tracking-widest transition text-center shadow-md">
                     Manage
                 </button>
             </div>
@@ -364,41 +366,63 @@ function toggleLedgerSection(id) {
     }
 }
 
+function getFoodDayNames() {
+    const names = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const start = typeof state.settings?.firstDayOfWeek === 'number' ? state.settings.firstDayOfWeek % 7 : 3;
+    const out = [];
+    for (let i = 0; i < 7; i++) out.push(names[(start + i) % 7]);
+    return out;
+}
+
 function updateFoodUI() {
     const fSec = state.categories.find(s=>s.id==='core_essentials') || state.categories.find(s=>s.id==='foundations');
     const fItem = fSec ? fSec.items.find(i=>i.label==='Food Base') : null;
     const foodBase = fItem ? fItem.amount : 840;
+    const daily = foodBase / (state.food.daysTotal || 28);
+    const daysUsed = state.food.daysUsed || 0;
+    const daysTotal = state.food.daysTotal || 28;
+    const viewWeek = Math.max(0, Math.min(3, state.food.viewWeek || 0));
 
-    const daily = foodBase / state.food.daysTotal;
     document.getElementById('daily-food-rate').innerText = formatMoney(daily);
-    document.getElementById('locked-funds-display').innerText = formatMoney(state.food.lockedAmount);
+    document.getElementById('locked-funds-display').innerText = formatMoney(state.food.lockedAmount || 0);
+    document.getElementById('food-days-count').innerText = (daysTotal - daysUsed) + ' Days Left';
 
-    const dots = document.getElementById('food-day-dots');
-    dots.innerHTML = '';
-    for(let i=0; i<state.food.daysTotal; i++) {
-        let cls = 'dot-future';
-        if(i < state.food.daysUsed) cls = 'dot-done';
-        else if(i === state.food.daysUsed) cls = 'dot-today';
-        dots.innerHTML += `<div class="dot ${cls}"></div>`;
+    var weekLabel = document.getElementById('food-week-label');
+    if (weekLabel) weekLabel.textContent = 'Week ' + (viewWeek + 1) + ' of 4';
+    var prevBtn = document.getElementById('food-prev-week');
+    var nextBtn = document.getElementById('food-next-week');
+    if (prevBtn) { prevBtn.disabled = viewWeek === 0; prevBtn.classList.toggle('opacity-50 pointer-events-none', viewWeek === 0); }
+    if (nextBtn) { nextBtn.disabled = viewWeek === 3; nextBtn.classList.toggle('opacity-50 pointer-events-none', viewWeek === 3); }
+
+    var grid = document.getElementById('food-week-grid');
+    if (grid) {
+        var dayNames = getFoodDayNames();
+        grid.innerHTML = '';
+        for (var col = 0; col < 7; col++) {
+            var dayIndex = viewWeek * 7 + col;
+            var dayNum = dayIndex + 1;
+            var status = dayIndex < daysUsed ? 'consumed' : dayIndex === daysUsed ? 'today' : 'future';
+            var isToday = dayIndex === daysUsed;
+            var clickAttr = isToday ? ' onclick="spendFoodDay()" role="button"' : '';
+            var boxCls = 'food-day-box rounded-lg p-2 text-center min-h-[3.5rem] flex flex-col justify-center ';
+            if (status === 'consumed') boxCls += 'bg-slate-100 text-slate-400 border border-slate-200';
+            else if (status === 'today') boxCls += 'bg-indigo-500 text-white border-2 border-indigo-400 shadow-md cursor-pointer hover:bg-indigo-600 transition';
+            else boxCls += 'bg-slate-50 text-slate-400 border border-slate-100';
+            grid.innerHTML += '<div class="food-day-cell"><div class="text-[9px] font-black uppercase tracking-wider text-slate-400 mb-0.5">' + dayNames[col] + '</div><div' + clickAttr + ' class="' + boxCls + '" data-day="' + dayIndex + '"><span class="text-[10px] font-black">' + dayNum + '</span>' + (status === 'consumed' ? '<span class="block text-[8px] text-slate-400 mt-0.5">✓</span>' : status === 'today' ? '<span class="block text-[8px] opacity-90 mt-0.5">Tap</span>' : '') + '</div></div>';
+        }
     }
-    const bufCount = Math.floor(state.food.lockedAmount / 30);
-    for(let j=0; j<bufCount; j++) {
-        dots.innerHTML += `<div class="dot dot-locked"></div>`;
+
+    var markBtn = document.getElementById('food-mark-day-btn');
+    if (markBtn) markBtn.disabled = daysUsed >= daysTotal;
+
+    var list = document.getElementById('food-activity-list');
+    if (list) {
+        list.innerHTML = state.food.history.length ? state.food.history.map(function(h, i) {
+            var label = h.type === 'spend' ? 'Used' : (h.type === 'deficit' ? 'Deficit' : 'Locked');
+            var cls = h.type === 'spend' ? 'text-slate-400' : (h.type === 'deficit' ? 'text-red-500' : 'text-emerald-500');
+            return '<div class="flex justify-between items-center text-[10px] font-bold uppercase py-2 border-b border-slate-50 last:border-0"><span class="' + cls + '">' + label + ' ' + formatMoney(h.amt) + '</span><button onclick="undoFood(' + i + ')" class="text-red-400 hover:text-red-600">Undo</button></div>';
+        }).join('') : '<div class="text-center text-[10px] text-slate-300 py-2">No activity</div>';
     }
-
-    document.getElementById('food-days-count').innerText = (state.food.daysTotal - state.food.daysUsed) + " Days Left";
-
-    const list = document.getElementById('food-activity-list');
-    list.innerHTML = state.food.history.length ? state.food.history.map((h, i) => {
-        const label = h.type === 'spend' ? 'Used' : (h.type === 'deficit' ? 'Deficit' : 'Locked');
-        const cls = h.type === 'spend' ? 'text-slate-400' : (h.type === 'deficit' ? 'text-red-500' : 'text-emerald-500');
-        return `
-        <div class="flex justify-between items-center text-[10px] font-bold uppercase py-2 border-b border-slate-50 last:border-0">
-            <span class="${cls}">${label} ${formatMoney(h.amt)}</span>
-            <button onclick="undoFood(${i})" class="text-red-400 hover:text-red-600">Undo</button>
-        </div>
-    `;
-    }).join('') : '<div class="text-center text-[10px] text-slate-300 py-2">No activity</div>';
 }
 
 function calculateReality() {

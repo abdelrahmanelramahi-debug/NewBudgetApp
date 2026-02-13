@@ -489,7 +489,7 @@ function openDangerModal(type, targetId) {
             ensureAccountsState();
             state.accounts.buckets = {};
             initSurplusFromOpening();
-            state.food = { daysTotal: 28, daysUsed: 0, lockedAmount: 0, history: [] };
+            state.food = { daysTotal: 28, daysUsed: 0, lockedAmount: 0, history: [], viewWeek: 0 };
             state.accounts.weekly = { balance: getWeeklyConfigAmount(), week: 1 };
             state.histories = {};
         };
@@ -785,6 +785,14 @@ function completeTask(label) {
 }
 
 // Food
+function setFoodViewWeek(delta) {
+    if (!state.food) state.food = { daysTotal: 28, daysUsed: 0, lockedAmount: 0, history: [], viewWeek: 0 };
+    const next = (state.food.viewWeek || 0) + delta;
+    state.food.viewWeek = Math.max(0, Math.min(3, next));
+    saveState();
+    renderLedger();
+}
+
 function spendFoodDay() {
     if(state.food.daysUsed < state.food.daysTotal) {
         pushToUndo();
@@ -1256,9 +1264,11 @@ function saveSettingsFromUI() {
     const allowNegative = document.getElementById('settings-allow-negative');
     const themeSelect = document.getElementById('settings-theme');
     const compactToggle = document.getElementById('settings-compact');
+    const firstDaySelect = document.getElementById('settings-first-day-of-week');
 
     const currency = currencyInput?.value?.trim() || 'AED';
     const decimals = parseInt(decimalsSelect?.value, 10);
+    const firstDayOfWeek = firstDaySelect ? Math.max(0, Math.min(6, parseInt(firstDaySelect.value, 10))) : 3;
 
     state.settings = {
         ...state.settings,
@@ -1267,7 +1277,8 @@ function saveSettingsFromUI() {
         confirmSurplusEdits: !!confirmSurplus?.checked,
         allowNegativeSurplus: !!allowNegative?.checked,
         theme: themeSelect?.value || 'light',
-        compact: !!compactToggle?.checked
+        compact: !!compactToggle?.checked,
+        firstDayOfWeek: Number.isNaN(firstDayOfWeek) ? 3 : firstDayOfWeek
     };
 
     saveState();
