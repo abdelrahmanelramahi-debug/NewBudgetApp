@@ -450,25 +450,29 @@ function updateFoodUI() {
 }
 
 function calculateReality() {
-    const total = getCurrentBalance();
-    document.getElementById('reality-total').innerText = formatMoney(total);
-    document.getElementById('header-reality').innerText = formatMoney(total);
+    var total = getCurrentBalance();
+    var realityTotal = document.getElementById('reality-total');
+    var headerReality = document.getElementById('header-reality');
+    if (realityTotal) realityTotal.innerText = formatMoney(total);
+    if (headerReality) headerReality.innerText = formatMoney(total);
 }
 
 function updateGlobalUI() {
-    document.getElementById('global-surplus').innerText = formatSignedMoney(state.accounts.surplus);
+    var surplus = (state.accounts && state.accounts.surplus !== undefined) ? state.accounts.surplus : 0;
+    var surpEl = document.getElementById('global-surplus');
+    var dTrigger = document.getElementById('deficit-trigger');
+    if (surpEl) surpEl.innerText = formatSignedMoney(surplus);
 
-    const dTrigger = document.getElementById('deficit-trigger');
-    const surpEl = document.getElementById('global-surplus');
-
-    if(state.accounts.surplus < 0) {
-        dTrigger.classList.remove('hidden');
-        surpEl.classList.remove('text-emerald-600');
-        surpEl.classList.add('text-red-600');
-    } else {
-        dTrigger.classList.add('hidden');
-        surpEl.classList.add('text-emerald-600');
-        surpEl.classList.remove('text-red-600');
+    if (dTrigger && surpEl) {
+        if (surplus < 0) {
+            dTrigger.classList.remove('hidden');
+            surpEl.classList.remove('text-emerald-600');
+            surpEl.classList.add('text-red-600');
+        } else {
+            dTrigger.classList.add('hidden');
+            surpEl.classList.add('text-emerald-600');
+            surpEl.classList.remove('text-red-600');
+        }
     }
 
     calculateReality();

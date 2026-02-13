@@ -33,8 +33,15 @@ function initAuth() {
                     console.error('Failed to load local state:', e);
                 }
             }
-            loadStateFromCloud().then(() => {
-                startAutoSync();
+            // Wait for auth token to be ready before Firestore (fixes "Load failed")
+            user.getIdToken(true).then(function() {
+                loadStateFromCloud().then(function() {
+                    startAutoSync();
+                });
+            }).catch(function() {
+                loadStateFromCloud().then(function() {
+                    startAutoSync();
+                });
             });
         } else {
             currentUser = null;
@@ -145,17 +152,14 @@ async function saveStateToCloud() {
     }
 }
 
-// Load state from Firebase Firestore
-async function loadStateFromCloud() {
+// Load state from Firebase Firestore (with retry for timing/auth)
+async function loadStateFromCloud(retryCount) {
     if (!currentUser) return;
+    retryCount = retryCount || 0;
     
     try {
-        // BACKUP local state BEFORE loading cloud (safety net)
-        const localBackup = JSON.parse(JSON.stringify(state));
-        const localBackupStr = localStorage.getItem('financeCmd_state');
-        
-        const userDocRef = window.firebaseDb.collection('users').doc(currentUser.uid);
-        const docSnap = await userDocRef.get();
+        var userDocRef = window.firebaseDb.collection('users').doc(currentUser.uid);
+        var docSnap = await userDocRef.get();
         
         if (docSnap.exists) {
             const cloudData = docSnap.data();
@@ -169,11 +173,21 @@ async function loadStateFromCloud() {
                 
                 // Only merge if cloud data has actual content
                 if (hasCategories || hasAccounts || hasBalances) {
+                    // CRITICAL: Save reality (total liquidity) BEFORE merge so we can restore surplus
+                    var realityBeforeMerge = getCurrentBalance();
+                    var surplusBeforeMerge = state.accounts && (state.accounts.surplus !== undefined) ? state.accounts.surplus : null;
+                    
                     state = { ...state, ...cloudData.data };
                     migrateState();
                     ensureSystemSavings();
                     ensureCoreItems();
                     ensureSettings();
+                    
+                    // Restore surplus if cloud overwrote it with 0 but we had real data
+                    if (state.accounts && (state.accounts.surplus === 0 || state.accounts.surplus === undefined) && typeof surplusBeforeMerge === 'number' && surplusBeforeMerge !== 0) {
+                        var realityAfterMerge = getCurrentBalance();
+                        state.accounts.surplus = realityBeforeMerge - (realityAfterMerge - (state.accounts.surplus || 0));
+                    }
                     
                     // Save merged state locally as backup
                     localStorage.setItem('financeCmd_state', JSON.stringify(state));
@@ -209,24 +223,36 @@ async function loadStateFromCloud() {
         }
     } catch (error) {
         console.error('Load from cloud error:', error);
-        // On error, RESTORE local backup to prevent data loss
+        
+        // Retry once after a short delay (fixes auth-token-not-ready)
+        if (retryCount < 1) {
+            setTimeout(function() {
+                loadStateFromCloud(1);
+            }, 1500);
+            return;
+        }
+        
+        // On error after retry: use local data and show clear status
         try {
-            const localBackupStr = localStorage.getItem('financeCmd_state');
+            var localBackupStr = localStorage.getItem('financeCmd_state');
             if (localBackupStr) {
-                const localBackup = JSON.parse(localBackupStr);
+                var localBackup = JSON.parse(localBackupStr);
                 state = { ...state, ...localBackup };
                 migrateState();
                 ensureSystemSavings();
                 ensureCoreItems();
                 ensureSettings();
+                saveState();
                 renderLedger();
                 renderStrategy();
                 updateGlobalUI();
+                applySettings();
+                renderSettings();
             }
         } catch (e) {
             console.error('Failed to restore local backup:', e);
         }
-        updateSyncStatus('Load failed - using local', false);
+        updateSyncStatus('Load failed – using local data', false);
     }
 }
 

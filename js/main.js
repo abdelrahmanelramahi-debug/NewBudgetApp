@@ -31,7 +31,10 @@ window.onload = function() {
 
     const hasBalances = Object.keys(state.balances || {}).length > 0;
     const hasBuckets = Object.values(state.accounts?.buckets || {}).some(v => v !== 0);
-    if(state.accounts.surplus === 0 && !hasBalances && !hasBuckets) {
+    const hasCategories = state.categories && state.categories.length > 0;
+    if (state.accounts.surplus === 0 && (hasBalances || hasBuckets || hasCategories) && typeof recalculateSurplusFromReality === 'function') {
+        recalculateSurplusFromReality();
+    } else if (state.accounts.surplus === 0 && !hasBalances && !hasBuckets) {
         state.accounts.surplus = state.monthlyIncome;
         initSurplusFromOpening();
     }
