@@ -15,6 +15,24 @@ function initAuth() {
         if (user) {
             currentUser = user;
             updateAuthUI();
+            // Load local state FIRST, then sync from cloud (cloud will merge/overwrite if valid)
+            // This ensures we always have local data as fallback
+            const localState = localStorage.getItem('financeCmd_state');
+            if (localState) {
+                try {
+                    const local = JSON.parse(localState);
+                    // Only restore if local has actual data (not empty defaults)
+                    if (local.categories && local.categories.length > 0) {
+                        state = { ...state, ...local };
+                        migrateState();
+                        ensureSystemSavings();
+                        ensureCoreItems();
+                        ensureSettings();
+                    }
+                } catch (e) {
+                    console.error('Failed to load local state:', e);
+                }
+            }
             loadStateFromCloud().then(() => {
                 startAutoSync();
             });
@@ -132,29 +150,51 @@ async function loadStateFromCloud() {
     if (!currentUser) return;
     
     try {
+        // BACKUP local state BEFORE loading cloud (safety net)
+        const localBackup = JSON.parse(JSON.stringify(state));
+        const localBackupStr = localStorage.getItem('financeCmd_state');
+        
         const userDocRef = window.firebaseDb.collection('users').doc(currentUser.uid);
         const docSnap = await userDocRef.get();
         
         if (docSnap.exists) {
             const cloudData = docSnap.data();
             
-            // Merge with local state (cloud takes precedence)
-            if (cloudData.data) {
-                state = { ...state, ...cloudData.data };
-                migrateState();
-                ensureSystemSavings();
-                ensureCoreItems();
-                ensureSettings();
+            // Validate cloud data before merging
+            if (cloudData.data && typeof cloudData.data === 'object') {
+                // Check if cloud data has meaningful content (not just defaults)
+                const hasCategories = cloudData.data.categories && Array.isArray(cloudData.data.categories) && cloudData.data.categories.length > 0;
+                const hasAccounts = cloudData.data.accounts && typeof cloudData.data.accounts === 'object';
+                const hasBalances = cloudData.data.balances && Object.keys(cloudData.data.balances).length > 0;
                 
-                // Save merged state locally as backup
-                localStorage.setItem('financeCmd_state', JSON.stringify(state));
-                
-                // Update UI
-                renderLedger();
-                renderStrategy();
-                updateGlobalUI();
-                applySettings();
-                renderSettings();
+                // Only merge if cloud data has actual content
+                if (hasCategories || hasAccounts || hasBalances) {
+                    state = { ...state, ...cloudData.data };
+                    migrateState();
+                    ensureSystemSavings();
+                    ensureCoreItems();
+                    ensureSettings();
+                    
+                    // Save merged state locally as backup
+                    localStorage.setItem('financeCmd_state', JSON.stringify(state));
+                    
+                    // Update UI
+                    renderLedger();
+                    renderStrategy();
+                    updateGlobalUI();
+                    applySettings();
+                    renderSettings();
+                    
+                    updateSyncStatus('Synced', true);
+                } else {
+                    // Cloud data exists but is empty/invalid - keep local state
+                    console.warn('Cloud data is empty/invalid, keeping local state');
+                    updateSyncStatus('Cloud empty, using local', true);
+                }
+            } else {
+                // No valid cloud data - keep local state
+                console.warn('No valid cloud data found, keeping local state');
+                updateSyncStatus('No cloud data, using local', true);
             }
             
             if (cloudData.lastUpdated) {
@@ -162,14 +202,31 @@ async function loadStateFromCloud() {
             } else {
                 lastSyncTime = new Date();
             }
-            updateSyncStatus('Synced', true);
         } else {
             // No cloud data yet, save current state
             await saveStateToCloud();
+            updateSyncStatus('Synced', true);
         }
     } catch (error) {
         console.error('Load from cloud error:', error);
-        updateSyncStatus('Load failed', false);
+        // On error, RESTORE local backup to prevent data loss
+        try {
+            const localBackupStr = localStorage.getItem('financeCmd_state');
+            if (localBackupStr) {
+                const localBackup = JSON.parse(localBackupStr);
+                state = { ...state, ...localBackup };
+                migrateState();
+                ensureSystemSavings();
+                ensureCoreItems();
+                ensureSettings();
+                renderLedger();
+                renderStrategy();
+                updateGlobalUI();
+            }
+        } catch (e) {
+            console.error('Failed to restore local backup:', e);
+        }
+        updateSyncStatus('Load failed - using local', false);
     }
 }
 

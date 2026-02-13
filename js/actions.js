@@ -1353,6 +1353,57 @@ function importStateFile(file) {
     reader.readAsText(file);
 }
 
+function recoverLocalData() {
+    const localBackup = localStorage.getItem('financeCmd_state');
+    if (!localBackup) {
+        alert('No local backup found in browser storage. Your data may have been cleared.');
+        return;
+    }
+    
+    try {
+        const recovered = JSON.parse(localBackup);
+        // Check if recovered data has actual content
+        const hasData = (recovered.categories && recovered.categories.length > 0) || 
+                       (recovered.accounts && Object.keys(recovered.accounts).length > 0) ||
+                       (recovered.balances && Object.keys(recovered.balances).length > 0);
+        
+        if (!hasData) {
+            alert('Local backup exists but appears empty. Your data may have been overwritten by empty cloud data.');
+            return;
+        }
+        
+        const proceed = confirm('Found local backup data. Restore it? This will overwrite current state.');
+        if (!proceed) return;
+        
+        pushToUndo();
+        state = { ...state, ...recovered };
+        migrateState();
+        ensureSystemSavings();
+        ensureCoreItems();
+        ensureSettings();
+        saveState();
+        
+        // If signed in, optionally save recovered data to cloud
+        if (currentUser && window.saveStateToCloud) {
+            const saveToCloud = confirm('Save recovered data to cloud?');
+            if (saveToCloud) {
+                window.saveStateToCloud();
+            }
+        }
+        
+        renderLedger();
+        renderStrategy();
+        updateGlobalUI();
+        applySettings();
+        renderSettings();
+        
+        alert('Data recovered successfully!');
+    } catch (e) {
+        alert('Failed to recover data: ' + e.message);
+        console.error('Recovery error:', e);
+    }
+}
+
 function resetAppData() {
     const proceed = confirm('This will delete all local data and reload the app. Continue?');
     if(!proceed) return;
