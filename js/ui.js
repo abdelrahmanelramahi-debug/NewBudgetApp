@@ -627,39 +627,41 @@ function updateFoodUI() {
         coreWrapper.innerHTML = coreHtml;
         rowsContainer.appendChild(coreWrapper);
 
-        // Buffer / Extra Days: days after cycle day 28 (cycle start + 28, +29, ...)
-        var totalBufferDays = bufferCount;
-        if (totalBufferDays > 0) {
-            var cycleStart = payCycle.cycleStart;
-            var bMonthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-            var bufferDates = [];
-            for (var b = 0; b < totalBufferDays; b++) {
-                var bd = new Date(cycleStart.getFullYear(), cycleStart.getMonth(), cycleStart.getDate() + 28 + b);
-                bufferDates.push({
-                    date: bd.getDate(),
-                    monthName: bMonthNames[bd.getMonth()]
-                });
-            }
-            var bufferWrapper = document.createElement('div');
-            bufferWrapper.className = 'food-calendar-buffer';
-            var bufHtml = '';
-            for (var br = 0; br < Math.ceil(bufferDates.length / 7); br++) {
-                var bufRow = '<div class="food-buffer-row flex gap-2 items-stretch rounded-lg"><div class="w-12 flex-shrink-0 flex items-center text-[9px] font-bold text-emerald-600 uppercase">' + (br === 0 ? 'Buffer / Extra Days' : '') + '</div><div class="grid grid-cols-7 gap-1 flex-1">';
-                for (var c = 0; c < 7; c++) {
-                    var idx = br * 7 + c;
-                    if (idx < bufferDates.length) {
-                        var b = bufferDates[idx];
-                        bufRow += '<div class="food-overview-cell rounded-md flex items-center justify-center text-[10px] font-black min-h-[2rem] bg-emerald-500 text-white border border-emerald-600" title="' + b.monthName + ' ' + b.date + '">' + b.date + '</div>';
-                    } else {
-                        bufRow += '<div class="food-overview-cell rounded-md min-h-[2rem] bg-transparent"></div>';
-                    }
-                }
-                bufRow += '</div></div>';
-                bufHtml += bufRow;
-            }
-            bufferWrapper.innerHTML = bufHtml;
-            rowsContainer.appendChild(bufferWrapper);
+        // Buffer row: always show continuation dates (25, 26, 27, 28, ...); funded cells in green
+        var cycleStart = payCycle.cycleStart;
+        var bMonthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        var bufferDates = [];
+        var numBufferSlots = Math.max(7, bufferCount);
+        for (var b = 0; b < numBufferSlots; b++) {
+            var bd = new Date(cycleStart.getFullYear(), cycleStart.getMonth(), cycleStart.getDate() + 28 + b);
+            bufferDates.push({
+                date: bd.getDate(),
+                monthName: bMonthNames[bd.getMonth()]
+            });
         }
+        var bufferWrapper = document.createElement('div');
+        bufferWrapper.className = 'food-calendar-buffer';
+        var bufHtml = '';
+        for (var br = 0; br < Math.ceil(bufferDates.length / 7); br++) {
+            var bufRow = '<div class="food-buffer-row flex gap-2 items-stretch rounded-lg"><div class="w-12 flex-shrink-0 flex items-center text-[9px] font-bold text-emerald-600 uppercase">' + (br === 0 ? 'Buffer' : '') + '</div><div class="grid grid-cols-7 gap-1 flex-1">';
+            for (var c = 0; c < 7; c++) {
+                var idx = br * 7 + c;
+                if (idx < bufferDates.length) {
+                    var b = bufferDates[idx];
+                    var isFunded = idx < bufferCount;
+                    var cellCls = isFunded
+                        ? 'food-overview-cell rounded-md flex items-center justify-center text-[10px] font-black min-h-[2rem] bg-emerald-500 text-white border border-emerald-600'
+                        : 'food-overview-cell rounded-md flex items-center justify-center text-[10px] font-black min-h-[2rem] bg-slate-100 text-slate-400 border border-slate-200';
+                    bufRow += '<div class="' + cellCls + '" title="' + b.monthName + ' ' + b.date + '">' + b.date + '</div>';
+                } else {
+                    bufRow += '<div class="food-overview-cell rounded-md min-h-[2rem] bg-transparent"></div>';
+                }
+            }
+            bufRow += '</div></div>';
+            bufHtml += bufRow;
+        }
+        bufferWrapper.innerHTML = bufHtml;
+        rowsContainer.appendChild(bufferWrapper);
     }
 
     var markBtn = document.getElementById('food-mark-day-btn');
