@@ -297,16 +297,14 @@ function ensureWeeklyState() {
     if (!state.accounts.weekly) {
         state.accounts.weekly = { balance: weeklyAmt, week: 1, balances: [weeklyAmt, weeklyAmt, weeklyAmt, weeklyAmt] };
     }
-    // Each week has its own allocation (80); migrate old single-balance to per-week
+    // Each week has its own allocation; migrate old single-balance to per-week (once only)
     if (!Array.isArray(state.accounts.weekly.balances) || state.accounts.weekly.balances.length !== WEEKLY_MAX_WEEKS) {
         const cur = Math.max(1, Math.min(state.accounts.weekly.week || 1, WEEKLY_MAX_WEEKS));
         const oldBal = typeof state.accounts.weekly.balance === 'number' ? state.accounts.weekly.balance : weeklyAmt;
         state.accounts.weekly.balances = [weeklyAmt, weeklyAmt, weeklyAmt, weeklyAmt];
         state.accounts.weekly.balances[cur - 1] = Math.max(0, oldBal);
     }
-    if (typeof state.accounts.weekly.balance === 'number' && !Number.isNaN(state.accounts.weekly.balance)) {
-        state.accounts.weekly.balances[state.accounts.weekly.week - 1] = state.accounts.weekly.balance;
-    }
+    // Source of truth is balances[]; only read from it for display (never write .balance back into balances)
     state.accounts.weekly.balance = state.accounts.weekly.balances[state.accounts.weekly.week - 1];
     if (typeof state.accounts.weekly.week !== 'number' || Number.isNaN(state.accounts.weekly.week)) {
         state.accounts.weekly.week = 1;
