@@ -59,6 +59,20 @@ window.onload = function() {
         const amortMonths = document.getElementById('amort-months');
         if (amortTotal) amortTotal.oninput = updateAmortCalc;
         if (amortMonths) amortMonths.oninput = updateAmortCalc;
+        // First-action prompt: only shown once after new-user onboarding (existing users never have _showFirstActionPrompt)
+        if (state._showFirstActionPrompt) {
+            var banner = document.getElementById('first-action-prompt');
+            var dismissBtn = document.getElementById('first-action-dismiss');
+            if (banner) banner.classList.remove('hidden');
+            if (dismissBtn) {
+                dismissBtn.onclick = function() {
+                    state._showFirstActionPrompt = false;
+                    state.sawFirstActionPrompt = true;
+                    if (banner) banner.classList.add('hidden');
+                    if (typeof saveState === 'function') saveState();
+                };
+            }
+        }
     }
 
     if (!state.onboardingComplete && typeof showOnboarding === 'function') {
