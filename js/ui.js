@@ -146,13 +146,16 @@ function renderSettings() {
 }
 
 function switchPage(page) {
+    if(page === 'strategy') page = 'budget';
     const pages = {
         ledger: document.getElementById('page-ledger'),
+        budget: document.getElementById('page-budget-plan'),
         profile: document.getElementById('page-profile'),
         settings: document.getElementById('page-settings')
     };
     const tabs = {
         ledger: document.getElementById('nav-ledger'),
+        budget: document.getElementById('nav-budget'),
         profile: document.getElementById('nav-profile'),
         settings: document.getElementById('nav-settings')
     };
@@ -161,36 +164,35 @@ function switchPage(page) {
         if(pages[key]) pages[key].classList.add('hidden');
         if(key === 'ledger') {
             document.querySelectorAll('.nav-ledger-pill').forEach(el => { el.classList.remove('tab-active'); el.classList.add('tab-inactive'); });
-        } else if(tabs[key]) tabs[key].className = 'tab-btn tab-inactive';
+        } else if(tabs[key]) {
+            tabs[key].classList.remove('tab-active');
+            tabs[key].classList.add('tab-inactive');
+        }
     });
 
-    if(page === 'strategy') {
-        openBudgetPlan();
-        return;
-    }
     if(pages[page]) pages[page].classList.remove('hidden');
     if(page === 'ledger') {
         document.querySelectorAll('.nav-ledger-pill').forEach(el => { el.classList.remove('tab-inactive'); el.classList.add('tab-active'); });
-    } else if(tabs[page]) tabs[page].className = 'tab-btn tab-active';
+    } else if(tabs[page]) {
+        tabs[page].classList.remove('tab-inactive');
+        tabs[page].classList.add('tab-active');
+    }
 
     if(page === 'ledger') renderLedger();
-    if(page === 'strategy') openBudgetPlan();
-    if(page === 'profile' && typeof updateAuthUI === 'function') updateAuthUI();
-    if(page === 'settings') {
-        renderSettings();
+    if(page === 'budget') {
+        renderStrategy();
+        updateBudgetPlanAllocated();
     }
+    if(page === 'profile' && typeof updateAuthUI === 'function') updateAuthUI();
+    if(page === 'settings') renderSettings();
 }
 
-// --- BUDGET PLAN POPOUT ---
+// --- BUDGET PLAN (page) ---
 function openBudgetPlan() {
-    const modal = document.getElementById('budget-plan-modal');
-    if (modal) modal.classList.remove('hidden');
-    renderStrategy();
-    updateBudgetPlanAllocated();
+    switchPage('budget');
 }
 function closeBudgetPlan() {
-    const modal = document.getElementById('budget-plan-modal');
-    if (modal) modal.classList.add('hidden');
+    switchPage('ledger');
 }
 function updateBudgetPlanAllocated() {
     const total = typeof state.monthlyIncome === 'number' ? state.monthlyIncome : 0;

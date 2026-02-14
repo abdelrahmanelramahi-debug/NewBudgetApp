@@ -117,7 +117,7 @@
             </div>
             <nav class="p-3 flex-1 space-y-0.5">
                 <button type="button" class="desktop-nav-item nav-ledger-pill tab-btn tab-active w-full text-left py-2.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition" onclick="switchPage('ledger'); closeSideMenu();">Daily Entry</button>
-                <button type="button" class="desktop-nav-item w-full text-left py-2.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition" onclick="openBudgetPlan(); closeSideMenu();">Budget Plan</button>
+                <button type="button" id="nav-budget" class="desktop-nav-item w-full text-left py-2.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition" onclick="switchPage('budget'); closeSideMenu();">Budget Plan</button>
                 <button type="button" id="nav-profile" class="desktop-nav-item w-full text-left py-2.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition" onclick="switchPage('profile'); closeSideMenu();">Profile</button>
                 <button type="button" id="nav-settings" class="desktop-nav-item nav-settings-pill tab-btn tab-inactive w-full text-left py-2.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition" onclick="switchPage('settings'); closeSideMenu();">Settings</button>
                 <a href="mailto:omniveradigital@gmail.com?subject=Finance%20Command%20Bug%20Report" onclick="closeSideMenu()" class="block py-2.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition">Report a Bug</a>
@@ -192,7 +192,7 @@
             </div>
             <nav class="p-3 space-y-1">
                 <button type="button" onclick="switchPage('ledger'); closeSideMenu();" class="w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Daily Entry</button>
-                <button type="button" onclick="openBudgetPlan(); closeSideMenu();" class="w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Budget Plan</button>
+                <button type="button" onclick="switchPage('budget'); closeSideMenu();" class="w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Budget Plan</button>
                 <button type="button" onclick="switchPage('profile'); closeSideMenu();" class="w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Profile</button>
                 <button type="button" onclick="switchPage('settings'); closeSideMenu();" class="w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Settings</button>
                 <a href="mailto:omniveradigital@gmail.com?subject=Finance%20Command%20Bug%20Report" onclick="closeSideMenu()" class="block w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Report a Bug</a>
@@ -300,72 +300,66 @@
             <div id="ledger-categories" class="space-y-6 ledger-categories-grid"></div>
         </div>
 
-        <!-- Budget Plan popout: full-screen on mobile, centered panel on desktop -->
-        <div id="budget-plan-modal" class="budget-plan-modal fixed inset-0 z-[60] bg-slate-50 lg:bg-black/40 lg:backdrop-blur-sm hidden flex flex-col items-center justify-center lg:p-6">
-            <div class="budget-plan-modal-inner w-full max-w-xl lg:max-w-2xl flex flex-col flex-1 lg:flex-none lg:h-[90vh] lg:max-h-[90vh] min-h-0 px-4 pt-4 pb-6 lg:rounded-2xl lg:shadow-2xl lg:bg-white lg:overflow-hidden">
-                <header class="budget-plan-header flex-shrink-0 bg-white rounded-t-xl border border-b-0 border-slate-200 shadow-sm px-4 py-3 flex flex-col gap-3">
-                    <div class="flex items-center justify-between gap-3">
-                        <div class="flex items-center gap-2">
-                            <button type="button" onclick="closeBudgetPlan()" class="p-2 -ml-1 rounded-lg text-slate-500 hover:bg-slate-100 transition flex-shrink-0" aria-label="Close">&#10005;</button>
-                            <h2 class="text-base font-black text-slate-900 uppercase tracking-wider">Budget Plan</h2>
-                        </div>
+        <!-- PAGE: BUDGET PLAN -->
+        <div id="page-budget-plan" class="space-y-6 hidden">
+            <header class="premium-card px-4 py-3 flex flex-col gap-3 border border-slate-200 shadow-sm">
+                <div class="flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="switchPage('ledger')" class="p-2 -ml-1 rounded-lg text-slate-500 hover:bg-slate-100 transition flex-shrink-0" aria-label="Back">&#8592;</button>
+                        <h2 class="text-base font-black text-slate-900 uppercase tracking-wider">Budget Plan</h2>
                     </div>
-                    <div class="flex flex-col gap-1.5">
-                        <div class="flex items-center gap-2">
-                            <span class="text-[10px] font-bold uppercase text-slate-500">Total</span>
-                            <span class="text-slate-400 text-sm" data-currency>AED</span>
-                            <input type="number" id="monthly-income-input" class="w-24 bg-slate-100 border-0 rounded-lg px-3 py-1.5 text-sm font-black text-slate-900 outline-none focus:ring-2 focus:ring-indigo-300" onfocus="pushToUndo()" oninput="updateIncome(this.value); updateBudgetPlanAllocated();" placeholder="0">
-                        </div>
-                        <p id="budget-plan-allocated" class="text-[11px] font-bold text-slate-600">
-                            <span id="budget-plan-allocated-val">0</span> / <span id="budget-plan-total-val">0</span> allocated
-                        </p>
-                    </div>
-                    <span id="reality-total-sr" class="hidden" aria-hidden="true">0</span>
-                </header>
-                <div class="budget-plan-body flex-1 overflow-y-auto overflow-x-hidden bg-white rounded-b-xl border border-t-0 border-slate-200 shadow-sm">
-                <div class="px-4 py-6 space-y-6">
-            <div class="grid grid-cols-2 gap-4 hidden" aria-hidden="true">
-                <div class="premium-card p-5 bg-slate-50 border-slate-100">
-                    <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Planned Income (legacy)</span>
-                    <div class="flex items-center gap-1">
-                        <span class="text-lg font-bold text-slate-300" data-currency>AED</span>
-                        <input type="number" id="monthly-income-input-legacy" class="w-full bg-transparent text-2xl font-black text-slate-900 outline-none" placeholder="0">
-                    </div>
-                    <p class="text-[10px] text-slate-400 mt-2">Used for plan percentages and first-time setup only. Changing it won’t add money.</p>
                 </div>
-                <div class="premium-card p-5 border-emerald-100 bg-emerald-50/20 relative">
-                    <span class="text-[10px] font-bold uppercase tracking-widest text-emerald-600">Current Balance</span>
+                <div class="flex flex-col gap-1.5">
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-bold uppercase text-slate-500">Total</span>
+                        <span class="text-slate-400 text-sm" data-currency>AED</span>
+                        <input type="number" id="monthly-income-input" class="w-24 bg-slate-100 border-0 rounded-lg px-3 py-1.5 text-sm font-black text-slate-900 outline-none focus:ring-2 focus:ring-indigo-300" onfocus="pushToUndo()" oninput="updateIncome(this.value); updateBudgetPlanAllocated();" placeholder="0">
+                    </div>
+                    <p id="budget-plan-allocated" class="text-[11px] font-bold text-slate-600">
+                        <span id="budget-plan-allocated-val">0</span> / <span id="budget-plan-total-val">0</span> allocated
+                    </p>
+                </div>
+                <span id="reality-total-sr" class="hidden" aria-hidden="true">0</span>
+            </header>
+            <div class="space-y-6">
+                <div class="grid grid-cols-2 gap-4 hidden" aria-hidden="true">
+                    <div class="premium-card p-5 bg-slate-50 border-slate-100">
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Planned Income (legacy)</span>
+                        <div class="flex items-center gap-1">
+                            <span class="text-lg font-bold text-slate-300" data-currency>AED</span>
+                            <input type="number" id="monthly-income-input-legacy" class="w-full bg-transparent text-2xl font-black text-slate-900 outline-none" placeholder="0">
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-2">Used for plan percentages and first-time setup only. Changing it won’t add money.</p>
+                    </div>
+                    <div class="premium-card p-5 border-emerald-100 bg-emerald-50/20 relative">
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-emerald-600">Current Balance</span>
+                        <div class="flex items-center justify-between">
+                            <p id="reality-total-legacy" class="text-3xl font-black text-slate-900 mt-1">0.00</p>
+                            <div class="flex items-center gap-2">
+                                <button onclick="openLiquidityBreakdown()" class="bg-white p-2 rounded-xl text-emerald-600 shadow-sm hover:scale-105 transition" title="View Breakdown">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></svg>
+                                </button>
+                                <button onclick="openRealityCheck()" class="bg-white p-2 rounded-xl text-emerald-600 shadow-sm hover:scale-105 transition" title="Reality Check">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="premium-card p-5 space-y-3">
                     <div class="flex items-center justify-between">
-                        <p id="reality-total-legacy" class="text-3xl font-black text-slate-900 mt-1">0.00</p>
-                        <div class="flex items-center gap-2">
-                            <button onclick="openLiquidityBreakdown()" class="bg-white p-2 rounded-xl text-emerald-600 shadow-sm hover:scale-105 transition" title="View Breakdown">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></svg>
-                            </button>
-                            <button onclick="openRealityCheck()" class="bg-white p-2 rounded-xl text-emerald-600 shadow-sm hover:scale-105 transition" title="Reality Check">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
-                            </button>
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Paycheck</span>
+                            <p class="text-[10px] text-slate-400 mt-1">Add money to Surplus or distribute across planned budgets.</p>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            <div class="premium-card p-5 space-y-3">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Paycheck</span>
-                        <p class="text-[10px] text-slate-400 mt-1">Add money to Surplus or distribute across planned budgets.</p>
+                    <div class="flex flex-wrap gap-2">
+                        <input type="number" id="paycheck-amount" placeholder="Amount..." class="flex-1 min-w-[140px] bg-slate-50 border-none rounded-xl px-4 text-sm font-bold outline-none">
+                        <button onclick="applyPaycheckAdd()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase">Add</button>
+                        <button onclick="applyPaycheckDistribute()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase">Distribute</button>
                     </div>
                 </div>
-                <div class="flex flex-wrap gap-2">
-                    <input type="number" id="paycheck-amount" placeholder="Amount..." class="flex-1 min-w-[140px] bg-slate-50 border-none rounded-xl px-4 text-sm font-bold outline-none">
-                    <button onclick="applyPaycheckAdd()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase">Add</button>
-                    <button onclick="applyPaycheckDistribute()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase">Distribute</button>
-                </div>
-            </div>
-            
-            <div id="strategy-sections" class="space-y-6"></div>
-        </div>
-                </div>
+                <div id="strategy-sections" class="space-y-6"></div>
             </div>
         </div>
 

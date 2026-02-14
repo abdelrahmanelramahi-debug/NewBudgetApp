@@ -124,7 +124,8 @@ textarea,
         max-height: 100vh;
     }
 
-    .desktop-nav-item.tab-active {
+    .desktop-nav-item.tab-active,
+    .desktop-sidebar .tab-btn.tab-active {
         background: #f1f5f9;
         color: #0f172a;
     }
@@ -174,15 +175,6 @@ textarea,
         gap: 1rem;
     }
 
-    /* Budget plan: centered floating panel */
-    .budget-plan-modal-inner {
-        background: white;
-    }
-
-    .budget-plan-modal-inner .budget-plan-body {
-        border-radius: 0 0 1rem 1rem;
-        min-height: 0;
-    }
 }
 
 body.theme-dark .desktop-sidebar {
@@ -199,9 +191,15 @@ body.theme-dark .desktop-nav-item:hover {
     background: #1e293b;
 }
 
-/* Sidebar nav: Title Case, not uppercase */
+/* Sidebar nav: consistent Title Case, single-column list */
+.desktop-sidebar nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
 .desktop-sidebar .desktop-nav-item,
-.desktop-sidebar nav a {
+.desktop-sidebar nav a,
+.desktop-sidebar nav .tab-btn {
     text-transform: none;
 }
 
