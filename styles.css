@@ -104,6 +104,75 @@ textarea,
     }
 }
 
+/* --- DESKTOP LAYOUT (lg: 1024px+) --- */
+@media (min-width: 1024px) {
+    body {
+        padding-bottom: 1.5rem;
+        min-height: 100vh;
+    }
+
+    #app-shell {
+        align-items: stretch;
+    }
+
+    .desktop-sidebar {
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        max-height: 100vh;
+    }
+
+    .desktop-nav-item.tab-active {
+        background: #f1f5f9;
+        color: #0f172a;
+    }
+
+    .nav-header {
+        border-radius: 0;
+        margin-bottom: 0;
+    }
+
+    .nav-header .mb-5 {
+        margin-bottom: 0;
+    }
+
+    #main-content {
+        margin-top: 1.5rem;
+        max-width: 1200px;
+    }
+
+    /* Ledger: 2-column grid for category cards on desktop */
+    .ledger-categories-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 1.5rem;
+    }
+
+    /* Budget plan: centered floating panel */
+    .budget-plan-modal-inner {
+        background: white;
+    }
+
+    .budget-plan-modal-inner .budget-plan-body {
+        border-radius: 0 0 1rem 1rem;
+        min-height: 0;
+    }
+}
+
+body.theme-dark .desktop-sidebar {
+    background-color: rgba(17, 24, 39, 0.98);
+    border-right-color: #1f2937;
+}
+
+body.theme-dark .desktop-nav-item.tab-active {
+    background: #1f2937;
+    color: #f8fafc;
+}
+
+body.theme-dark .desktop-nav-item:hover {
+    background: #1e293b;
+}
+
 /* --- STABLE STYLING --- */
 .premium-card {
     background-color: white;

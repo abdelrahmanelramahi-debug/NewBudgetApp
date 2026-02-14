@@ -109,13 +109,26 @@
     </div>
 
     <!-- Main app (hidden when onboarding is visible) -->
-    <div id="app-shell" class="flex flex-col items-center">
-        <div class="w-full max-w-xl px-4 flex flex-col">
+    <div id="app-shell" class="flex flex-col lg:flex-row lg:min-h-screen">
+        <!-- Desktop sidebar (visible from lg up) -->
+        <aside id="desktop-sidebar" class="desktop-sidebar hidden lg:flex flex-col w-56 flex-shrink-0 border-r border-slate-200 bg-white/95 backdrop-blur">
+            <div class="p-4 border-b border-slate-100">
+                <h1 class="text-sm font-black text-slate-900 tracking-tight">Finance Command</h1>
+            </div>
+            <nav class="p-3 flex-1 space-y-0.5">
+                <button type="button" class="desktop-nav-item nav-ledger-pill tab-btn tab-active w-full text-left py-2.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition" onclick="switchPage('ledger'); closeSideMenu();">Daily Entry</button>
+                <button type="button" class="desktop-nav-item w-full text-left py-2.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition" onclick="openBudgetPlan(); closeSideMenu();">Budget Plan</button>
+                <button type="button" id="nav-settings" class="desktop-nav-item nav-settings-pill tab-btn tab-inactive w-full text-left py-2.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition" onclick="switchPage('settings'); closeSideMenu();">Settings</button>
+                <button type="button" class="desktop-nav-item w-full text-left py-2.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition" onclick="closeSideMenu();">Profile</button>
+                <a href="mailto:omniveradigital@gmail.com?subject=Finance%20Command%20Bug%20Report" onclick="closeSideMenu()" class="block py-2.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition">Report a bug</a>
+            </nav>
+        </aside>
+        <div id="app-main" class="flex-1 flex flex-col min-w-0 w-full max-w-xl lg:max-w-none mx-auto px-4 lg:px-6">
     <!-- Header -->
     <nav class="nav-header w-full">
         <div class="flex flex-wrap items-center gap-x-6 gap-y-4 justify-between mb-5">
-            <!-- Menu + current page -->
-            <div class="flex items-center gap-2 flex-shrink-0 order-first">
+            <!-- Menu + current page (mobile only) -->
+            <div class="flex items-center gap-2 flex-shrink-0 order-first lg:hidden">
                 <button type="button" onclick="toggleSideMenu()" class="p-2.5 bg-slate-100 rounded-xl text-slate-600 hover:bg-slate-200 transition" aria-label="Open menu">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
                 </button>
@@ -180,7 +193,7 @@
             <nav class="p-3 space-y-1">
                 <button type="button" onclick="switchPage('ledger'); closeSideMenu();" class="w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Daily Entry</button>
                 <button type="button" onclick="openBudgetPlan(); closeSideMenu();" class="w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Budget Plan</button>
-                <button type="button" onclick="switchPage('settings'); closeSideMenu();" id="nav-settings" class="w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Settings</button>
+                <button type="button" onclick="switchPage('settings'); closeSideMenu();" class="w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Settings</button>
                 <button type="button" onclick="closeSideMenu();" class="w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Profile</button>
                 <a href="mailto:omniveradigital@gmail.com?subject=Finance%20Command%20Bug%20Report" onclick="closeSideMenu()" class="block w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Report a bug</a>
             </nav>
@@ -191,7 +204,7 @@
 
         <!-- LEDGER PAGE -->
         <div id="page-ledger" class="space-y-6">
-            
+            <div class="ledger-top-grid grid grid-cols-1 lg:grid-cols-2 gap-6">
             <!-- Weekly Hero -->
             <div class="premium-card p-6 bg-indigo-600 text-white border-indigo-600 shadow-xl shadow-indigo-100 weekly-hero">
                 <div class="flex justify-between items-start mb-6">
@@ -279,14 +292,15 @@
                     </div>
                 </div>
             </div>
+            </div><!-- /ledger-top-grid -->
 
             <!-- Ledger Grid / Container -->
-            <div id="ledger-categories" class="space-y-6"></div>
+            <div id="ledger-categories" class="space-y-6 ledger-categories-grid"></div>
         </div>
 
-        <!-- Budget Plan popout: single card width, no full-width header strip -->
-        <div id="budget-plan-modal" class="fixed inset-0 z-[60] bg-slate-50 hidden flex flex-col items-center">
-            <div class="w-full max-w-xl flex flex-col flex-1 min-h-0 px-4 pt-4 pb-6">
+        <!-- Budget Plan popout: full-screen on mobile, centered panel on desktop -->
+        <div id="budget-plan-modal" class="budget-plan-modal fixed inset-0 z-[60] bg-slate-50 lg:bg-black/40 lg:backdrop-blur-sm hidden flex flex-col items-center justify-center lg:p-6">
+            <div class="budget-plan-modal-inner w-full max-w-xl lg:max-w-2xl flex flex-col flex-1 lg:flex-none lg:h-[90vh] lg:max-h-[90vh] min-h-0 px-4 pt-4 pb-6 lg:rounded-2xl lg:shadow-2xl lg:bg-white lg:overflow-hidden">
                 <header class="budget-plan-header flex-shrink-0 bg-white rounded-t-xl border border-b-0 border-slate-200 shadow-sm px-4 py-3 flex flex-col gap-3">
                     <div class="flex items-center justify-between gap-3">
                         <div class="flex items-center gap-2">
@@ -506,7 +520,7 @@
         </div>
 
     </div>
-    </div><!-- /column: vertical layout -->
+    </div><!-- /app-main -->
 
     <!-- MODALS -->
 
