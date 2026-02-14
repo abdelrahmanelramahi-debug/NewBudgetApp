@@ -115,7 +115,9 @@ textarea,
         align-items: stretch;
     }
 
-    .desktop-sidebar {
+    /* Override .hidden so sidebar shows (our .hidden uses !important) */
+    #desktop-sidebar {
+        display: flex !important;
         position: sticky;
         top: 0;
         height: 100vh;
@@ -136,16 +138,25 @@ textarea,
         margin-bottom: 0;
     }
 
-    #main-content {
-        margin-top: 1.5rem;
-        max-width: 1200px;
+    /* Constrain width so layout doesn't stretch with huge gaps */
+    #app-main {
+        max-width: 42rem;
     }
 
-    /* Ledger: 2-column grid for category cards on desktop */
+    #main-content {
+        margin-top: 1rem;
+    }
+
+    /* Ledger top: keep 2 cols but tighter gap */
+    .ledger-top-grid {
+        gap: 1rem;
+    }
+
+    /* Ledger categories: single column on desktop for consistent spacing (like mobile) */
     .ledger-categories-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-        gap: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
     }
 
     /* Budget plan: centered floating panel */
