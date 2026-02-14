@@ -113,8 +113,15 @@
         <div class="w-full max-w-xl px-4 flex flex-col">
     <!-- Header -->
     <nav class="nav-header w-full">
-        <div class="flex justify-between items-center mb-4">
-            <div>
+        <div class="flex flex-wrap items-center gap-3 sm:gap-4 justify-between mb-4">
+            <!-- Desktop: menu + current page at start of row -->
+            <div class="hidden sm:flex items-center gap-2 flex-shrink-0 order-first">
+                <button type="button" onclick="toggleSideMenu()" class="p-2.5 bg-slate-100 rounded-xl text-slate-600 hover:bg-slate-200 transition" aria-label="Menu">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                </button>
+                <div id="nav-ledger" class="nav-ledger-pill tab-btn tab-active py-2.5 px-4 rounded-xl text-[11px] font-black uppercase tracking-widest cursor-pointer select-none" onclick="switchPage('ledger'); closeSideMenu();">Daily Entry</div>
+            </div>
+            <div class="min-w-0 flex-1 order-2 sm:order-2">
                 <h1 class="text-xl font-black text-slate-900">Finance Command</h1>
                  <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
                     <span class="inline-flex items-center gap-1 flex-wrap">
@@ -124,7 +131,7 @@
                     <span id="bank-balance-info" class="hidden block mt-1.5 text-[9px] font-normal normal-case text-slate-500 max-w-[240px] leading-snug">This is the reality check of what should read in your bank account.</span>
                 </p>
             </div>
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-3 flex-shrink-0 order-3">
                 <div class="flex items-center gap-1 flex-shrink-0">
                     <button onclick="globalUndo()" id="global-undo-btn" class="p-2 bg-slate-200 rounded-lg text-slate-600 hover:bg-slate-300 transition opacity-30 pointer-events-none" title="Undo Last Action">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
@@ -158,11 +165,12 @@
             </div>
         </div>
 
-        <div class="flex items-center gap-2 mt-4">
+        <!-- Mobile only: menu + current page on own row -->
+        <div class="flex sm:hidden items-center gap-2 mt-4">
             <button type="button" onclick="toggleSideMenu()" class="p-2.5 bg-slate-100 rounded-xl text-slate-600 hover:bg-slate-200 transition" aria-label="Menu">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
             </button>
-            <div id="nav-ledger" class="tab-btn tab-active py-2.5 px-4 rounded-xl text-[11px] font-black uppercase tracking-widest" onclick="switchPage('ledger'); closeSideMenu();">Daily Entry</div>
+            <div class="nav-ledger-pill tab-btn tab-active py-2.5 px-4 rounded-xl text-[11px] font-black uppercase tracking-widest" onclick="switchPage('ledger'); closeSideMenu();">Daily Entry</div>
         </div>
     </nav>
 
@@ -281,10 +289,10 @@
             <div id="ledger-categories" class="space-y-6"></div>
         </div>
 
-        <!-- Budget Plan popout (almost full page): vertical layout, same max-width as body -->
-        <div id="budget-plan-modal" class="fixed inset-0 z-40 bg-slate-50 hidden flex flex-col">
-            <header class="budget-plan-header flex-shrink-0 bg-white border-b border-slate-200 shadow-sm">
-                <div class="max-w-xl mx-auto w-full px-4 py-3 flex flex-col gap-3">
+        <!-- Budget Plan popout: single card width, no full-width header strip -->
+        <div id="budget-plan-modal" class="fixed inset-0 z-40 bg-slate-50 hidden flex flex-col items-center">
+            <div class="w-full max-w-xl flex flex-col flex-1 min-h-0 px-4 pt-4 pb-6">
+                <header class="budget-plan-header flex-shrink-0 bg-white rounded-t-xl border border-b-0 border-slate-200 shadow-sm px-4 py-3 flex flex-col gap-3">
                     <div class="flex items-center justify-between gap-3">
                         <div class="flex items-center gap-2">
                             <button type="button" onclick="closeBudgetPlan()" class="p-2 -ml-1 rounded-lg text-slate-500 hover:bg-slate-100 transition flex-shrink-0" aria-label="Close">&#10005;</button>
@@ -301,11 +309,10 @@
                             <span id="budget-plan-allocated-val">0</span> / <span id="budget-plan-total-val">0</span> allocated
                         </p>
                     </div>
-                </div>
-                <span id="reality-total-sr" class="hidden" aria-hidden="true">0</span>
-            </header>
-            <div class="budget-plan-body flex-1 overflow-y-auto overflow-x-hidden">
-                <div class="max-w-xl mx-auto px-4 py-6 space-y-6">
+                    <span id="reality-total-sr" class="hidden" aria-hidden="true">0</span>
+                </header>
+                <div class="budget-plan-body flex-1 overflow-y-auto overflow-x-hidden bg-white rounded-b-xl border border-t-0 border-slate-200 shadow-sm">
+                <div class="px-4 py-6 space-y-6">
             <div class="grid grid-cols-2 gap-4 hidden" aria-hidden="true">
                 <div class="premium-card p-5 bg-slate-50 border-slate-100">
                     <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Planned Income (legacy)</span>
@@ -346,6 +353,9 @@
             </div>
             
             <div id="strategy-sections" class="space-y-6"></div>
+        </div>
+                </div>
+            </div>
         </div>
 
         <!-- PAGE: SETTINGS -->
@@ -533,11 +543,11 @@
     <div id="liquidity-breakdown-modal" class="modal-overlay hidden">
         <div class="modal-content">
             <div class="flex justify-between items-center mb-6">
-                <span class="text-[10px] font-bold uppercase tracking-widest text-emerald-500">Liquidity Breakdown</span>
+                <span class="text-[10px] font-bold uppercase tracking-widest text-emerald-500">Bank Balance</span>
                 <button onclick="closeLiquidityBreakdown()" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
             </div>
             <div class="bg-emerald-50 p-4 rounded-xl mb-4">
-                <label class="text-[9px] font-bold uppercase text-emerald-400">Total Liquidity</label>
+                <label class="text-[9px] font-bold uppercase text-emerald-400">Bank Balance</label>
                 <div id="liquidity-breakdown-total" class="text-xl font-black text-slate-900">0.00</div>
             </div>
             <div id="liquidity-breakdown-list" class="space-y-2 max-h-60 overflow-y-auto"></div>

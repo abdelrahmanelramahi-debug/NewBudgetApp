@@ -157,7 +157,9 @@ function switchPage(page) {
 
     Object.keys(pages).forEach(key => {
         if(pages[key]) pages[key].classList.add('hidden');
-        if(tabs[key]) tabs[key].className = 'tab-btn tab-inactive';
+        if(key === 'ledger') {
+            document.querySelectorAll('.nav-ledger-pill').forEach(el => { el.classList.remove('tab-active'); el.classList.add('tab-inactive'); });
+        } else if(tabs[key]) tabs[key].className = 'tab-btn tab-inactive';
     });
 
     if(page === 'strategy') {
@@ -165,7 +167,9 @@ function switchPage(page) {
         return;
     }
     if(pages[page]) pages[page].classList.remove('hidden');
-    if(tabs[page]) tabs[page].className = 'tab-btn tab-active';
+    if(page === 'ledger') {
+        document.querySelectorAll('.nav-ledger-pill').forEach(el => { el.classList.remove('tab-inactive'); el.classList.add('tab-active'); });
+    } else if(tabs[page]) tabs[page].className = 'tab-btn tab-active';
 
     if(page === 'ledger') renderLedger();
     if(page === 'strategy') openBudgetPlan();

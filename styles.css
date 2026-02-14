@@ -113,15 +113,19 @@ textarea,
     transition: all 0.2s;
 }
 
-/* Nav */
+/* Nav — keep above side menu on iOS (stacking context + higher z-index) */
 .nav-header {
     position: sticky;
     top: 0;
-    z-index: 40;
+    z-index: 50;
     background-color: rgba(255, 255, 255, 0.9);
+    -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
     border-bottom: 1px solid #e2e8f0;
     padding: 1rem;
+    padding-top: max(1rem, env(safe-area-inset-top));
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
 }
 .nav-pill {
     display: flex;
