@@ -1250,10 +1250,12 @@ function saveSettingsFromUI() {
     const themeSelect = document.getElementById('settings-theme');
     const compactToggle = document.getElementById('settings-compact');
     const firstDaySelect = document.getElementById('settings-first-day-of-week');
+    const payDateSelect = document.getElementById('settings-pay-date');
 
     const currency = currencyInput?.value?.trim() || 'AED';
     const decimals = parseInt(decimalsSelect?.value, 10);
     const firstDayOfWeek = firstDaySelect ? Math.max(0, Math.min(6, parseInt(firstDaySelect.value, 10))) : 3;
+    const payDate = payDateSelect ? Math.max(1, Math.min(31, parseInt(payDateSelect.value, 10))) : 28;
 
     state.settings = {
         ...state.settings,
@@ -1263,7 +1265,8 @@ function saveSettingsFromUI() {
         allowNegativeSurplus: !!allowNegative?.checked,
         theme: themeSelect?.value || 'light',
         compact: !!compactToggle?.checked,
-        firstDayOfWeek: Number.isNaN(firstDayOfWeek) ? 3 : firstDayOfWeek
+        firstDayOfWeek: Number.isNaN(firstDayOfWeek) ? 3 : firstDayOfWeek,
+        payDate: Number.isNaN(payDate) ? 28 : payDate
     };
 
     saveState();

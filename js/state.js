@@ -13,7 +13,8 @@ let state = {
         allowNegativeSurplus: true,
         theme: 'light',
         compact: false,
-        firstDayOfWeek: 3
+        firstDayOfWeek: 3,
+        payDate: 28
     },
     categories: [
         { id: 'sys_savings', label: 'System Savings', isSystem: true, items: [
@@ -192,7 +193,8 @@ function ensureSettings() {
         allowNegativeSurplus: true,
         theme: 'light',
         compact: false,
-        firstDayOfWeek: 3
+        firstDayOfWeek: 3,
+        payDate: 28
     };
     if(!state.settings) state.settings = { ...defaults };
     state.settings = { ...defaults, ...state.settings };
@@ -201,6 +203,10 @@ function ensureSettings() {
     }
     if (typeof state.settings.firstDayOfWeek !== 'number' || state.settings.firstDayOfWeek < 0 || state.settings.firstDayOfWeek > 6) {
         state.settings.firstDayOfWeek = 3;
+    }
+    var pd = state.settings.payDate;
+    if (typeof pd !== 'number' || pd < 1 || pd > 31) {
+        state.settings.payDate = 28;
     }
 }
 

@@ -142,6 +142,8 @@ function renderSettings() {
     if(compactToggle) compactToggle.checked = !!state.settings?.compact;
     const firstDaySelect = document.getElementById('settings-first-day-of-week');
     if(firstDaySelect) firstDaySelect.value = String(state.settings?.firstDayOfWeek ?? 3);
+    const payDateSelect = document.getElementById('settings-pay-date');
+    if(payDateSelect) payDateSelect.value = String(state.settings?.payDate ?? 28);
 }
 
 function switchPage(page) {
@@ -468,18 +470,58 @@ function getFoodDayNames() {
     return out;
 }
 
+/** Last day of month (1–31) for given year/month. */
+function lastDayOfMonth(y, m) {
+    return new Date(y, m + 1, 0).getDate();
+}
+
+/**
+ * Current 28-day pay cycle: pay day = first slot, no empty leading cells.
+ * Returns { cycleStart (Date), dates: [ { date, monthName, dayOfWeek, cycleDay } ] } for 28 days.
+ */
+function getPayCycleInfo() {
+    var payDate = typeof state.settings?.payDate === 'number' ? Math.max(1, Math.min(31, state.settings.payDate)) : 28;
+    var now = new Date();
+    var todayYear = now.getFullYear();
+    var todayMonth = now.getMonth();
+    var todayDate = now.getDate();
+    var lastDay = lastDayOfMonth(todayYear, todayMonth);
+    var thisMonthPayDay = Math.min(payDate, lastDay);
+    var cycleStartYear = todayYear;
+    var cycleStartMonth = todayMonth;
+    if (todayDate < thisMonthPayDay) {
+        cycleStartMonth = todayMonth - 1;
+        if (cycleStartMonth < 0) {
+            cycleStartMonth += 12;
+            cycleStartYear -= 1;
+        }
+    }
+    var cycleStartLastDay = lastDayOfMonth(cycleStartYear, cycleStartMonth);
+    var cycleStartDay = Math.min(payDate, cycleStartLastDay);
+    var cycleStart = new Date(cycleStartYear, cycleStartMonth, cycleStartDay);
+    var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var dates = [];
+    for (var i = 0; i < 28; i++) {
+        var d = new Date(cycleStartYear, cycleStartMonth, cycleStartDay + i);
+        dates.push({
+            date: d.getDate(),
+            monthName: monthNames[d.getMonth()],
+            dayOfWeek: d.getDay(),
+            cycleDay: i + 1,
+            year: d.getFullYear(),
+            month: d.getMonth()
+        });
+    }
+    return { cycleStart: cycleStart, dates: dates, monthNames: monthNames };
+}
+
 function getMonthCalendarInfo() {
     var now = new Date();
     var year = now.getFullYear();
     var month = now.getMonth();
     var lastDay = new Date(year, month + 1, 0).getDate();
-    var firstDow = new Date(year, month, 1).getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
-    var start = typeof state.settings?.firstDayOfWeek === 'number' ? state.settings.firstDayOfWeek % 7 : 3; // 0=Sun, 1=Mon, ..., 3=Wed
-    // Calculate padding: how many blank cells before day 1
-    // firstDow is in JS format (0=Sun), start is user setting (3=Wed)
-    // We need to map firstDow to the column it should be in when week starts at 'start'
-    // Column for firstDow = (firstDow - start + 7) % 7
-    // So pad = that column number
+    var firstDow = new Date(year, month, 1).getDay();
+    var start = typeof state.settings?.firstDayOfWeek === 'number' ? state.settings.firstDayOfWeek % 7 : 3;
     var pad = (firstDow - start + 7) % 7;
     var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     return { year: year, month: month, lastDay: lastDay, pad: pad, monthName: monthNames[month], firstDow: firstDow, start: start };
@@ -507,43 +549,41 @@ function updateFoodUI() {
     var weekDayLabel = document.getElementById('food-week-day-label');
     if (weekDayLabel) {
         var today = new Date();
-        var calInfo = getMonthCalendarInfo();
-        var monthName = calInfo.monthName.toUpperCase();
+        var payCycle = getPayCycleInfo();
         var todayDate = today.getDate();
-        weekDayLabel.textContent = monthName + ' ' + todayDate;
+        var todayMonth = today.getMonth();
+        var todayYear = today.getFullYear();
+        var dayNamesShort = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        var idx = payCycle.dates.findIndex(function(p) { return p.date === todayDate && p.month === todayMonth && p.year === todayYear; });
+        if (idx >= 0) {
+            weekDayLabel.textContent = payCycle.dates[idx].monthName.toUpperCase() + ' ' + todayDate + ' (Day ' + (idx + 1) + ')';
+        } else {
+            weekDayLabel.textContent = dayNamesShort[todayMonth].toUpperCase() + ' ' + todayDate;
+        }
     }
     var progressBar = document.getElementById('food-progress-bar');
     if (progressBar) progressBar.style.width = (daysUsed / 28 * 100) + '%';
 
-    var dayNames = getFoodDayNames();
+    var payCycle = getPayCycleInfo();
+    var dayNamesLong = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     var headerRow = document.getElementById('food-overview-header');
     if (headerRow) {
         var headerGrid = headerRow.querySelector('.grid');
-        if (headerGrid) headerGrid.innerHTML = dayNames.map(function(d) { return '<span>' + d.charAt(0) + '</span>'; }).join('');
+        if (headerGrid) {
+            var headerLetters = payCycle.dates.slice(0, 7).map(function(p) { return dayNamesLong[p.dayOfWeek].charAt(0); });
+            headerGrid.innerHTML = headerLetters.map(function(l) { return '<span>' + l + '</span>'; }).join('');
+        }
     }
 
-    var cal = getMonthCalendarInfo();
     var today = new Date();
     var todayDate = today.getDate();
     var todayMonth = today.getMonth();
     var todayYear = today.getFullYear();
-    var isCurrentMonth = (todayMonth === cal.month && todayYear === cal.year);
-    // Map cycle days to calendar dates: cycle day 1 = Feb 1, cycle day 2 = Feb 2, etc.
-    // If today is Feb 13 and daysUsed = 17, that means they've consumed through Feb 13 (17 cycle days = Feb 1-13)
-    // So consumed dates are: calendar dates <= todayDate (if we assume cycle aligns with calendar)
-    // Actually, if daysUsed = 17 and today is Feb 13, then consumed = Feb 1-13 (13 dates), so daysUsed should represent calendar dates consumed
-    // But the user says daysUsed = 17 means 17 days consumed, which would be Feb 1-17 if aligned
-    // Wait, the user said "I used today's food so the days I would have left would start with 14"
-    // So if today is Feb 13 and they consumed today, then consumed = Feb 1-13 (13 days), remaining starts Feb 14
-    // But daysUsed = 17 suggests they've consumed 17 cycle days, not 17 calendar dates
-    // I think the issue is: daysUsed should represent calendar dates consumed, not cycle days
-    // For now, let's assume: consumed = calendar dates <= todayDate (since they said they consumed today)
     var rowsContainer = document.getElementById('food-overview-rows');
     if (rowsContainer) {
         rowsContainer.innerHTML = '';
-        var pad = cal.pad;
-        var lastDay = cal.lastDay;
-        // 28-day core: exactly 4 rows (Week 1–4), columns aligned to Salary Receipt Day (firstDayOfWeek)
+        var dates = payCycle.dates;
+        // 28-day core: pay day = first slot, no empty cells; each row = 7 consecutive days (pay day + 0..6, etc.)
         var coreWrapper = document.createElement('div');
         coreWrapper.className = 'food-calendar-core';
         var coreHtml = '';
@@ -553,22 +593,19 @@ function updateFoodUI() {
             var rowHtml = '<div class="food-week-row flex gap-2 items-stretch rounded-lg"><div class="w-12 flex-shrink-0 flex items-center text-[10px] font-black uppercase tracking-wider text-slate-400">' + weekLabel + '</div><div class="grid grid-cols-7 gap-1 flex-1">';
             for (var col = 0; col < 7; col++) {
                 var slot = r * 7 + col;
-                var calendarDate = slot - pad + 1; // Actual calendar date (1–28 in core)
-                if (slot < pad || calendarDate > 28) {
-                    rowHtml += '<div class="food-overview-cell rounded-md min-h-[2rem] bg-transparent"></div>';
-                } else {
-                    var consumed = isCurrentMonth && calendarDate <= todayDate;
-                    var isToday = isCurrentMonth && calendarDate === todayDate;
-                    var futureInCycle = calendarDate > todayDate && calendarDate <= 28;
-                    var clickAttr = isToday ? ' onclick="spendFoodDay()" role="button"' : '';
-                    var cls = 'food-overview-cell rounded-md flex items-center justify-center text-[10px] font-black min-h-[2rem] transition ';
-                    if (consumed) cls += 'bg-slate-200 text-slate-500';
-                    else if (isToday) cls += 'bg-indigo-500 text-white shadow-md cursor-pointer hover:bg-indigo-600';
-                    else if (futureInCycle) cls += 'bg-slate-100 text-slate-400 border border-slate-200';
-                    else cls += 'bg-white text-slate-400 border border-slate-200';
-                    var label = consumed ? '✓' : calendarDate;
-                    rowHtml += '<div' + clickAttr + ' class="' + cls + '" data-date="' + calendarDate + '" title="' + cal.monthName + ' ' + calendarDate + '">' + label + '</div>';
-                }
+                var p = dates[slot];
+                var cycleDay = slot + 1;
+                var consumed = cycleDay <= daysUsed;
+                var isToday = p.date === todayDate && p.month === todayMonth && p.year === todayYear;
+                var futureInCycle = cycleDay > daysUsed && cycleDay <= 28;
+                var clickAttr = isToday ? ' onclick="spendFoodDay()" role="button"' : '';
+                var cls = 'food-overview-cell rounded-md flex items-center justify-center text-[10px] font-black min-h-[2rem] transition ';
+                if (consumed) cls += 'bg-slate-200 text-slate-500';
+                else if (isToday) cls += 'bg-indigo-500 text-white shadow-md cursor-pointer hover:bg-indigo-600';
+                else if (futureInCycle) cls += 'bg-slate-100 text-slate-400 border border-slate-200';
+                else cls += 'bg-white text-slate-400 border border-slate-200';
+                var label = consumed ? '✓' : p.date;
+                rowHtml += '<div' + clickAttr + ' class="' + cls + '" data-cycle-day="' + cycleDay + '" data-date="' + p.date + '" title="' + p.monthName + ' ' + p.date + '">' + label + '</div>';
             }
             rowHtml += '</div></div>';
             coreHtml += rowHtml;
@@ -576,18 +613,21 @@ function updateFoodUI() {
         coreWrapper.innerHTML = coreHtml;
         rowsContainer.appendChild(coreWrapper);
 
-        // Buffer / Extra Days: distinct 5th section (days beyond 28-day cycle)
-        var bufferInCurrentMonth = lastDay > 28 ? Math.min(bufferCount, lastDay - 28) : 0;
-        var bufferInNext = Math.max(0, bufferCount - bufferInCurrentMonth);
-        var totalBufferDays = bufferInCurrentMonth + bufferInNext;
+        // Buffer / Extra Days: days after cycle day 28 (cycle start + 28, +29, ...)
+        var totalBufferDays = bufferCount;
         if (totalBufferDays > 0) {
+            var cycleStart = payCycle.cycleStart;
+            var bMonthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            var bufferDates = [];
+            for (var b = 0; b < totalBufferDays; b++) {
+                var bd = new Date(cycleStart.getFullYear(), cycleStart.getMonth(), cycleStart.getDate() + 28 + b);
+                bufferDates.push({
+                    date: bd.getDate(),
+                    monthName: bMonthNames[bd.getMonth()]
+                });
+            }
             var bufferWrapper = document.createElement('div');
             bufferWrapper.className = 'food-calendar-buffer';
-            var bufferDates = [];
-            var nextMonth = new Date(cal.year, cal.month + 1, 1);
-            var nextName = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][nextMonth.getMonth()];
-            for (var d = 29; d <= 28 + bufferInCurrentMonth; d++) bufferDates.push({ date: d, monthName: cal.monthName });
-            for (var nd = 1; nd <= bufferInNext; nd++) bufferDates.push({ date: nd, monthName: nextName });
             var bufHtml = '';
             for (var br = 0; br < Math.ceil(bufferDates.length / 7); br++) {
                 var bufRow = '<div class="food-buffer-row flex gap-2 items-stretch rounded-lg"><div class="w-12 flex-shrink-0 flex items-center text-[9px] font-bold text-emerald-600 uppercase">' + (br === 0 ? 'Buffer / Extra Days' : '') + '</div><div class="grid grid-cols-7 gap-1 flex-1">';
