@@ -114,9 +114,9 @@
     <!-- Header -->
     <nav class="nav-header w-full">
         <div class="flex flex-wrap items-center gap-3 sm:gap-4 justify-between mb-4">
-            <!-- Desktop: menu + current page at start of row (md+ so menu is visible on desktop) -->
-            <div class="hidden md:flex items-center gap-2 flex-shrink-0 order-first">
-                <button type="button" onclick="toggleSideMenu()" class="p-2.5 bg-slate-100 rounded-xl text-slate-600 hover:bg-slate-200 transition" aria-label="Menu">
+            <!-- Menu + current page: always visible at start of header row -->
+            <div class="flex items-center gap-2 flex-shrink-0 order-first">
+                <button type="button" onclick="toggleSideMenu()" class="p-2.5 bg-slate-100 rounded-xl text-slate-600 hover:bg-slate-200 transition" aria-label="Open menu">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
                 </button>
                 <div id="nav-ledger" class="nav-ledger-pill tab-btn tab-active py-2.5 px-4 rounded-xl text-[11px] font-black uppercase tracking-widest cursor-pointer select-none" onclick="switchPage('ledger'); closeSideMenu();">Daily Entry</div>
@@ -165,13 +165,6 @@
             </div>
         </div>
 
-        <!-- Mobile only: menu + current page on own row -->
-        <div class="flex md:hidden items-center gap-2 mt-4">
-            <button type="button" onclick="toggleSideMenu()" class="p-2.5 bg-slate-100 rounded-xl text-slate-600 hover:bg-slate-200 transition" aria-label="Menu">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-            </button>
-            <div class="nav-ledger-pill tab-btn tab-active py-2.5 px-4 rounded-xl text-[11px] font-black uppercase tracking-widest" onclick="switchPage('ledger'); closeSideMenu();">Daily Entry</div>
-        </div>
     </nav>
 
     <!-- Side menu drawer -->
