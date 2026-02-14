@@ -170,6 +170,29 @@ async function loadStateFromCloud(retryCount) {
         if (docSnap.exists) {
             const cloudData = docSnap.data();
             
+            // Last-write-wins: use whichever is newer (cloud or this device's local)
+            var cloudTime = 0;
+            if (cloudData.lastUpdated && typeof cloudData.lastUpdated.toMillis === 'function') {
+                cloudTime = cloudData.lastUpdated.toMillis();
+            }
+            var localModified = 0;
+            try {
+                var stored = localStorage.getItem('financeCmd_state_modified');
+                if (stored) localModified = parseInt(stored, 10) || 0;
+            } catch (e) {}
+            if (localModified > cloudTime) {
+                // This device has newer data; keep local state and push to cloud
+                await saveStateToCloud();
+                if (typeof renderLedger === 'function') renderLedger();
+                if (typeof renderStrategy === 'function') renderStrategy();
+                if (typeof updateGlobalUI === 'function') updateGlobalUI();
+                if (typeof applySettings === 'function') applySettings();
+                if (typeof renderSettings === 'function') renderSettings();
+                updateSyncStatus('Synced (local was newer)', true);
+                if (cloudData.lastUpdated) lastSyncTime = cloudData.lastUpdated.toDate();
+                return;
+            }
+            
             // Validate cloud data before merging
             if (cloudData.data && typeof cloudData.data === 'object') {
                 // Check if cloud data has meaningful content (not just defaults)
@@ -202,8 +225,11 @@ async function loadStateFromCloud(retryCount) {
                         recalculateSurplusFromReality();
                     }
                     
-                    // Save merged state locally as backup
+                    // Save merged state locally as backup; set local modified = cloud time so we don't overwrite with stale local later
                     localStorage.setItem('financeCmd_state', JSON.stringify(state));
+                    if (cloudData.lastUpdated && typeof cloudData.lastUpdated.toMillis === 'function') {
+                        try { localStorage.setItem('financeCmd_state_modified', String(cloudData.lastUpdated.toMillis())); } catch (e) {}
+                    }
                     
                     // Update UI
                     renderLedger();
@@ -319,6 +345,21 @@ window.saveState = function() {
         }, 1000);
     }
 };
+
+// When user leaves the app (switch tab, minimize, lock phone), push to cloud immediately so iOS/other device gets latest
+function flushCloudSave() {
+    if (currentUser && window.saveStateTimeout) {
+        clearTimeout(window.saveStateTimeout);
+        window.saveStateTimeout = null;
+        saveStateToCloud();
+    }
+}
+if (typeof document !== 'undefined') {
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'hidden') flushCloudSave();
+    });
+    window.addEventListener('pagehide', flushCloudSave);
+}
 
 // Auth UI Functions
 function openAuthModal() {

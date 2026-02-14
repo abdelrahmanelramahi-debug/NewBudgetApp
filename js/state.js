@@ -82,8 +82,10 @@ let pendingDangerAction = null;
 let requiredDangerPhrase = "";
 
 // PERSISTENCE
+var STATE_MODIFIED_KEY = 'financeCmd_state_modified';
 function saveState() {
     localStorage.setItem('financeCmd_state', JSON.stringify(state));
+    try { localStorage.setItem(STATE_MODIFIED_KEY, String(Date.now())); } catch (e) {}
     // Cloud sync will be handled by auth.js if user is logged in
 }
 window.saveState = saveState; // Make it globally accessible
