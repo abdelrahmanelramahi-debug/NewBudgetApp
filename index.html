@@ -118,7 +118,7 @@
             <nav class="p-3 flex-1 space-y-0.5">
                 <button type="button" class="desktop-nav-item nav-ledger-pill tab-btn tab-active w-full text-left py-2.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition" onclick="switchPage('ledger'); closeSideMenu();">Daily Entry</button>
                 <button type="button" class="desktop-nav-item w-full text-left py-2.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition" onclick="openBudgetPlan(); closeSideMenu();">Budget Plan</button>
-                <button type="button" class="desktop-nav-item w-full text-left py-2.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition" onclick="switchPage('settings'); closeSideMenu();">Profile</button>
+                <button type="button" id="nav-profile" class="desktop-nav-item w-full text-left py-2.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition" onclick="switchPage('profile'); closeSideMenu();">Profile</button>
                 <button type="button" id="nav-settings" class="desktop-nav-item nav-settings-pill tab-btn tab-inactive w-full text-left py-2.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition" onclick="switchPage('settings'); closeSideMenu();">Settings</button>
                 <a href="mailto:omniveradigital@gmail.com?subject=Finance%20Command%20Bug%20Report" onclick="closeSideMenu()" class="block py-2.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition">Report a Bug</a>
             </nav>
@@ -193,7 +193,7 @@
             <nav class="p-3 space-y-1">
                 <button type="button" onclick="switchPage('ledger'); closeSideMenu();" class="w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Daily Entry</button>
                 <button type="button" onclick="openBudgetPlan(); closeSideMenu();" class="w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Budget Plan</button>
-                <button type="button" onclick="switchPage('settings'); closeSideMenu();" class="w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Profile</button>
+                <button type="button" onclick="switchPage('profile'); closeSideMenu();" class="w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Profile</button>
                 <button type="button" onclick="switchPage('settings'); closeSideMenu();" class="w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Settings</button>
                 <a href="mailto:omniveradigital@gmail.com?subject=Finance%20Command%20Bug%20Report" onclick="closeSideMenu()" class="block w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Report a Bug</a>
             </nav>
@@ -369,9 +369,8 @@
             </div>
         </div>
 
-        <!-- PAGE: SETTINGS -->
-        <div id="page-settings" class="space-y-6 hidden">
-            <!-- Authentication Section -->
+        <!-- PAGE: PROFILE -->
+        <div id="page-profile" class="space-y-6 hidden">
             <div class="premium-card p-6 space-y-4">
                 <div>
                     <h3 class="text-sm font-black text-slate-800 uppercase tracking-widest">Account</h3>
@@ -389,23 +388,11 @@
                     <button id="sign-out-btn" onclick="signOut()" class="w-full py-3 bg-red-50 text-red-500 rounded-xl text-[10px] font-black uppercase tracking-widest">Sign Out</button>
                 </div>
             </div>
+        </div>
 
-            <div class="premium-card p-6 space-y-4">
-                <div>
-                    <h3 class="text-sm font-black text-slate-800 uppercase tracking-widest">Data</h3>
-                    <p class="text-xs text-slate-500 mt-1">Backup, restore, or reset your local data.</p>
-                </div>
-                <div class="flex flex-col gap-2">
-                    <button onclick="exportState()" class="w-full py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Export Backup</button>
-                    <button onclick="triggerImport()" class="w-full py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Import Backup</button>
-                    <button onclick="recoverLocalData()" class="w-full py-3 bg-amber-50 text-amber-700 rounded-xl text-[10px] font-black uppercase tracking-widest">Recover from Local Storage</button>
-                    <button onclick="rebuildTotals()" class="w-full py-3 bg-emerald-50 text-emerald-600 rounded-xl text-[10px] font-black uppercase tracking-widest">Rebuild Totals</button>
-                    <button onclick="resetAppData()" class="w-full py-3 bg-red-50 text-red-500 rounded-xl text-[10px] font-black uppercase tracking-widest">Reset All Data</button>
-                    <input type="file" id="settings-import-file" accept="application/json" class="hidden" onchange="importStateFile(this.files[0])">
-                </div>
-            </div>
-
-            <!-- Setup: pay date and calendar week alignment (one banner for all setup) -->
+        <!-- PAGE: SETTINGS -->
+        <div id="page-settings" class="space-y-6 hidden">
+            <!-- Setup -->
             <div class="premium-card p-6 space-y-4">
                 <div>
                     <h3 class="text-sm font-black text-slate-800 uppercase tracking-widest">Setup</h3>
@@ -517,6 +504,22 @@
                         <input type="checkbox" id="settings-compact" class="w-5 h-5 accent-indigo-600 rounded" onchange="saveSettingsFromUI()">
                         <span class="text-xs font-bold text-slate-600">Compact spacing</span>
                     </label>
+                </div>
+            </div>
+
+            <!-- Data -->
+            <div class="premium-card p-6 space-y-4">
+                <div>
+                    <h3 class="text-sm font-black text-slate-800 uppercase tracking-widest">Data</h3>
+                    <p class="text-xs text-slate-500 mt-1">Backup, restore, or reset your local data.</p>
+                </div>
+                <div class="flex flex-col gap-2">
+                    <button onclick="exportState()" class="w-full py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Export Backup</button>
+                    <button onclick="triggerImport()" class="w-full py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Import Backup</button>
+                    <button onclick="recoverLocalData()" class="w-full py-3 bg-amber-50 text-amber-700 rounded-xl text-[10px] font-black uppercase tracking-widest">Recover from Local Storage</button>
+                    <button onclick="rebuildTotals()" class="w-full py-3 bg-emerald-50 text-emerald-600 rounded-xl text-[10px] font-black uppercase tracking-widest">Rebuild Totals</button>
+                    <button onclick="resetAppData()" class="w-full py-3 bg-red-50 text-red-500 rounded-xl text-[10px] font-black uppercase tracking-widest">Reset All Data</button>
+                    <input type="file" id="settings-import-file" accept="application/json" class="hidden" onchange="importStateFile(this.files[0])">
                 </div>
             </div>
         </div>

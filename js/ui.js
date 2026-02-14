@@ -148,10 +148,12 @@ function renderSettings() {
 function switchPage(page) {
     const pages = {
         ledger: document.getElementById('page-ledger'),
+        profile: document.getElementById('page-profile'),
         settings: document.getElementById('page-settings')
     };
     const tabs = {
         ledger: document.getElementById('nav-ledger'),
+        profile: document.getElementById('nav-profile'),
         settings: document.getElementById('nav-settings')
     };
 
@@ -173,9 +175,9 @@ function switchPage(page) {
 
     if(page === 'ledger') renderLedger();
     if(page === 'strategy') openBudgetPlan();
+    if(page === 'profile' && typeof updateAuthUI === 'function') updateAuthUI();
     if(page === 'settings') {
         renderSettings();
-        if (typeof updateAuthUI === 'function') updateAuthUI();
     }
 }
 
