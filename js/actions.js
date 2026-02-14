@@ -354,12 +354,12 @@ function openDeficitModal() {
     const weeklyAvailable = Math.max(0, state.accounts.weekly.balance || 0);
     if (weeklyAvailable > 0) {
         list.innerHTML += `
-            <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-                <div>
-                    <span class="block text-xs font-bold text-slate-800">Weekly Allowance</span>
+            <div class="flex justify-between items-center gap-2 p-3 bg-slate-50 rounded-xl min-w-0">
+                <div class="min-w-0 flex-1">
+                    <span class="block text-xs font-bold text-slate-800 truncate">Weekly Allowance</span>
                     <span class="text-[10px] text-slate-400">Available: ${weeklyAvailable.toFixed(0)}</span>
                 </div>
-                <button onclick="raidWeekly(${weeklyAvailable})" class="bg-indigo-100 text-indigo-600 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase">Use</button>
+                <button onclick="raidWeekly(${weeklyAvailable})" class="bg-indigo-100 text-indigo-600 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase whitespace-nowrap flex-shrink-0">Use</button>
             </div>
         `;
     }
@@ -370,12 +370,12 @@ function openDeficitModal() {
         const postRemainder = Math.max(0, foodInfo.remainder - take);
         const postPerDay = foodInfo.daysLeft > 0 ? (postRemainder / foodInfo.daysLeft) : 0;
         list.innerHTML += `
-            <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-                <div>
-                    <span class="block text-xs font-bold text-slate-800">Food Remainder</span>
+            <div class="flex justify-between items-center gap-2 p-3 bg-slate-50 rounded-xl min-w-0">
+                <div class="min-w-0 flex-1">
+                    <span class="block text-xs font-bold text-slate-800 truncate">Food Remainder</span>
                     <span class="text-[10px] text-slate-400">Before: ${foodInfo.dailyRate.toFixed(2)}/day • After: ${postPerDay.toFixed(2)}/day</span>
                 </div>
-                <button onclick="raidFood(${foodInfo.remainder})" class="bg-indigo-100 text-indigo-600 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase">Use</button>
+                <button onclick="raidFood(${foodInfo.remainder})" class="bg-indigo-100 text-indigo-600 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase whitespace-nowrap flex-shrink-0">Use</button>
             </div>
         `;
     }
@@ -386,13 +386,14 @@ function openDeficitModal() {
 
             const bal = getItemBalance(item.label, item.amount);
             if(bal > 0) {
+                const safeLabel = String(item.label).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
                 list.innerHTML += `
-                    <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-                        <div>
-                            <span class="block text-xs font-bold text-slate-800">${item.label}</span>
+                    <div class="flex justify-between items-center gap-2 p-3 bg-slate-50 rounded-xl min-w-0">
+                        <div class="min-w-0 flex-1">
+                            <span class="block text-xs font-bold text-slate-800 truncate">${item.label}</span>
                             <span class="text-[10px] text-slate-400">Available: ${bal}</span>
                         </div>
-                        <button onclick="raidBucket('${item.label}', ${bal})" class="bg-indigo-100 text-indigo-600 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase">Use</button>
+                        <button onclick="raidBucket('${safeLabel}', ${bal})" class="bg-indigo-100 text-indigo-600 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase whitespace-nowrap flex-shrink-0">Use</button>
                     </div>
                 `;
             }
@@ -800,26 +801,53 @@ function spendFoodDay() {
     }
 }
 
+function getBufferSourceBalance(sourceId) {
+    if (sourceId === 'surplus') return (state.accounts && typeof state.accounts.surplus === 'number') ? state.accounts.surplus : 0;
+    if (sourceId === 'savings') return getSavingsTotal();
+    if (sourceId === 'weekly') {
+        ensureWeeklyState();
+        return Math.max(0, state.accounts.weekly.balance || 0);
+    }
+    return getItemBalance(sourceId, 0);
+}
+
+function deductFromBufferSource(sourceId, amount) {
+    if (sourceId === 'surplus') {
+        applyTransaction({ type: 'adjust_surplus', delta: -amount });
+    } else if (sourceId === 'savings') {
+        debitSavings(amount);
+    } else if (sourceId === 'weekly') {
+        ensureWeeklyState();
+        state.accounts.weekly.balance = Math.max(0, (state.accounts.weekly.balance || 0) - amount);
+        applyTransaction({ type: 'adjust_item_balance', label: 'Weekly Misc', delta: -amount });
+    } else {
+        const current = getItemBalance(sourceId, 0);
+        if (getItemBalance(sourceId, undefined) === undefined) setItemBalance(sourceId, current);
+        applyTransaction({ type: 'adjust_item_balance', label: sourceId, delta: -amount });
+    }
+}
+
 function buyFoodDay() {
     const daysInput = parseFloat(document.getElementById('food-lock-val').value);
     if(!daysInput || daysInput <= 0) return;
 
-    // 1. Calculate Cost based on Base/28
+    const sourceEl = document.getElementById('food-buffer-source');
+    const sourceId = (sourceEl && sourceEl.value) ? sourceEl.value : 'surplus';
+
     const fSec = state.categories.find(s=>s.id==='core_essentials') || state.categories.find(s=>s.id==='foundations');
     const fItem = fSec ? fSec.items.find(i=>i.label==='Food Base') : null;
     const foodBase = fItem ? fItem.amount : 840;
     const dailyRate = foodBase / 28;
     const totalCost = dailyRate * daysInput;
 
-    // Buffer is funded only from surplus/deficit
-    var surplus = (state.accounts && typeof state.accounts.surplus === 'number') ? state.accounts.surplus : 0;
-    if (surplus < totalCost) {
-        showAppAlert('Not enough surplus/deficit. Need ' + formatMoney(totalCost) + ' ' + getCurrencyLabel() + '.');
+    const available = getBufferSourceBalance(sourceId);
+    if (available < totalCost) {
+        showAppAlert('Not enough in selected source. Need ' + formatMoney(totalCost) + ' ' + getCurrencyLabel() + '.');
         return;
     }
 
     pushToUndo();
-    applyTransaction({ type: 'adjust_surplus', delta: -totalCost });
+    deductFromBufferSource(sourceId, totalCost);
     applyTransaction({ type: 'food_lock', amount: totalCost, label: `+${daysInput} Days` });
     document.getElementById('food-lock-val').value = '';
 

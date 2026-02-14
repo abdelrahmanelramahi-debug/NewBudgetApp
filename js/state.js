@@ -78,6 +78,7 @@ let itemToDelete = null;
 let currentAmort = { sid: null, idx: null };
 let activeCat = null;
 let undoStack = [];
+let redoStack = [];
 
 const WEEKLY_MAX_WEEKS = 4;
 
@@ -337,16 +338,32 @@ function initSurplusFromOpening() {
 function pushToUndo() {
     if (undoStack.length > 50) undoStack.shift();
     undoStack.push(JSON.stringify(state));
+    redoStack.length = 0;
     updateUndoButtonUI();
+    updateRedoButtonUI();
 }
 
 function globalUndo() {
     if (undoStack.length === 0) return;
+    redoStack.push(JSON.stringify(state));
     const prevState = undoStack.pop();
     state = JSON.parse(prevState);
     saveState();
     if (typeof refreshUI === 'function') refreshUI();
     updateUndoButtonUI();
+    updateRedoButtonUI();
+    document.querySelectorAll('.modal-overlay').forEach(el => toggleModal(el.id, false));
+}
+
+function globalRedo() {
+    if (redoStack.length === 0) return;
+    undoStack.push(JSON.stringify(state));
+    const nextState = redoStack.pop();
+    state = JSON.parse(nextState);
+    saveState();
+    if (typeof refreshUI === 'function') refreshUI();
+    updateUndoButtonUI();
+    updateRedoButtonUI();
     document.querySelectorAll('.modal-overlay').forEach(el => toggleModal(el.id, false));
 }
 
@@ -354,6 +371,17 @@ function updateUndoButtonUI() {
     const btn = document.getElementById('global-undo-btn');
     if(btn) {
         if(undoStack.length > 0) {
+            btn.classList.remove('opacity-30', 'pointer-events-none');
+        } else {
+            btn.classList.add('opacity-30', 'pointer-events-none');
+        }
+    }
+}
+
+function updateRedoButtonUI() {
+    const btn = document.getElementById('global-redo-btn');
+    if(btn) {
+        if(redoStack.length > 0) {
             btn.classList.remove('opacity-30', 'pointer-events-none');
         } else {
             btn.classList.add('opacity-30', 'pointer-events-none');

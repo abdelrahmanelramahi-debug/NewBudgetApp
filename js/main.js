@@ -42,6 +42,7 @@ window.onload = function() {
     renderLedger();
     renderStrategy();
     updateUndoButtonUI();
+    updateRedoButtonUI();
     applySettings();
     renderSettings();
     // Run header update in next paint frame so values aren't stuck at 0 until interaction

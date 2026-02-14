@@ -544,6 +544,20 @@ function updateFoodUI() {
     document.getElementById('daily-food-rate').innerText = formatMoney(daily);
     document.getElementById('locked-funds-display').innerText = formatMoney(lockedAmount);
     document.getElementById('food-days-count').innerText = (daysTotal - daysUsed) + ' Days Left';
+
+    var bufferSourceSel = document.getElementById('food-buffer-source');
+    if (bufferSourceSel) {
+        var currentVal = bufferSourceSel.value;
+        var opts = '<option value="surplus">Surplus / Deficit</option><option value="savings">General Savings</option><option value="weekly">Weekly Allowance</option>';
+        var buckets = state.accounts && state.accounts.buckets ? Object.keys(state.accounts.buckets) : [];
+        buckets.forEach(function(label) {
+            if (label === 'General Savings') return;
+            var bal = typeof getItemBalance === 'function' ? getItemBalance(label, 0) : 0;
+            if (bal > 0) opts += '<option value="' + String(label).replace(/"/g, '&quot;') + '">' + String(label).replace(/</g, '&lt;') + '</option>';
+        });
+        bufferSourceSel.innerHTML = opts;
+        if (currentVal) bufferSourceSel.value = currentVal;
+    }
     var macroUsed = document.getElementById('food-macro-used');
     if (macroUsed) macroUsed.textContent = daysUsed + ' of 28 used';
     var weekDayLabel = document.getElementById('food-week-day-label');

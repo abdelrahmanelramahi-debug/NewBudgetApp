@@ -43,9 +43,14 @@
                 </p>
             </div>
             <div class="flex items-center gap-3">
-                <button onclick="globalUndo()" id="global-undo-btn" class="p-2 bg-slate-200 rounded-lg text-slate-600 hover:bg-slate-300 transition opacity-30 pointer-events-none" title="Undo Last Action">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
-                </button>
+                <div class="flex items-center gap-1 flex-shrink-0">
+                    <button onclick="globalUndo()" id="global-undo-btn" class="p-2 bg-slate-200 rounded-lg text-slate-600 hover:bg-slate-300 transition opacity-30 pointer-events-none" title="Undo Last Action">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+                    </button>
+                    <button onclick="globalRedo()" id="global-redo-btn" class="p-2 bg-slate-200 rounded-lg text-slate-600 hover:bg-slate-300 transition opacity-30 pointer-events-none" title="Redo Last Action">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg>
+                    </button>
+                </div>
                 <div class="text-right">
                     <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Surplus / Deficit</span>
                     <span class="text-lg font-black text-emerald-600" id="global-surplus">0.00</span>
@@ -60,12 +65,14 @@
         </div>
 
         <!-- Surplus Controls -->
-        <div id="surplus-controls" class="hidden mt-4 max-w-xl mx-auto">
-            <div class="premium-card p-4 flex gap-3 bg-emerald-50 border-emerald-100">
-                <input type="number" id="surplus-adjust-val" placeholder="AED..." data-currency-placeholder class="flex-1 rounded-lg border-0 px-3 py-2 font-bold text-sm">
-                <button onclick="adjustGlobalSurplus(1)" class="bg-emerald-500 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase">Add</button>
-                <button onclick="adjustGlobalSurplus(-1)" class="bg-red-500 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase">Deduct</button>
-                <button onclick="openTool('Surplus', 'Surplus Fund', true)" class="bg-indigo-500 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase">Transfer</button>
+        <div id="surplus-controls" class="hidden mt-4 max-w-xl mx-auto overflow-hidden">
+            <div class="premium-card p-4 flex flex-wrap gap-2 sm:gap-3 bg-emerald-50 border-emerald-100 min-w-0">
+                <input type="number" id="surplus-adjust-val" placeholder="AED..." data-currency-placeholder class="flex-1 min-w-0 rounded-lg border-0 px-3 py-2 font-bold text-sm w-full sm:w-auto">
+                <div class="flex flex-wrap gap-2 flex-shrink-0 w-full sm:w-auto justify-end sm:justify-start">
+                    <button onclick="adjustGlobalSurplus(1)" class="bg-emerald-500 text-white px-3 py-2 rounded-lg text-xs font-bold uppercase whitespace-nowrap">Add</button>
+                    <button onclick="adjustGlobalSurplus(-1)" class="bg-red-500 text-white px-3 py-2 rounded-lg text-xs font-bold uppercase whitespace-nowrap">Deduct</button>
+                    <button onclick="openTool('Surplus', 'Surplus Fund', true)" class="bg-indigo-500 text-white px-3 py-2 rounded-lg text-xs font-bold uppercase whitespace-nowrap">Transfer</button>
+                </div>
             </div>
         </div>
 
@@ -146,17 +153,25 @@
                     <div class="flex justify-between items-center">
                         <div>
                             <span class="text-[10px] font-bold uppercase tracking-widest text-emerald-600">Buffer</span>
-                            <p class="text-[9px] text-emerald-600/80 mt-0.5">Extra days funded from Surplus/Deficit; release returns to Surplus.</p>
+                            <p class="text-[9px] text-emerald-600/80 mt-0.5">Extra days; choose source below. Release returns to Surplus.</p>
                         </div>
                         <div class="flex items-center gap-2">
                             <span id="locked-funds-display" class="text-xl font-black text-emerald-700">0.00</span>
                             <span class="text-[10px] font-bold text-emerald-600" data-currency></span>
                         </div>
                     </div>
-                    <div class="flex gap-2">
-                        <input type="number" id="food-lock-val" placeholder="Days to add..." class="flex-1 bg-white border border-emerald-200 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-300" min="1">
-                        <button type="button" onclick="buyFoodDay()" class="bg-emerald-500 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase hover:bg-emerald-600 transition">Extend</button>
-                        <button type="button" onclick="releaseAllBuffer()" class="px-4 py-2 rounded-lg text-[10px] font-black uppercase bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition" title="Release buffer to Surplus">Release</button>
+                    <div class="space-y-2">
+                        <label class="text-[9px] font-bold uppercase text-emerald-700/80">Fund from</label>
+                        <select id="food-buffer-source" class="w-full bg-white border border-emerald-200 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-300">
+                            <option value="surplus">Surplus / Deficit</option>
+                            <option value="savings">General Savings</option>
+                            <option value="weekly">Weekly Allowance</option>
+                        </select>
+                    </div>
+                    <div class="flex flex-wrap gap-2 min-w-0">
+                        <input type="number" id="food-lock-val" placeholder="Days to add..." class="flex-1 min-w-0 bg-white border border-emerald-200 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-300" min="1">
+                        <button type="button" onclick="buyFoodDay()" class="bg-emerald-500 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase hover:bg-emerald-600 transition shrink-0">Extend</button>
+                        <button type="button" onclick="releaseAllBuffer()" class="px-4 py-2 rounded-lg text-[10px] font-black uppercase bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition shrink-0" title="Release buffer to Surplus">Release</button>
                     </div>
                 </div>
 
