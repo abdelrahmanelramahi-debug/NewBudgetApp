@@ -543,60 +543,68 @@ function updateFoodUI() {
         rowsContainer.innerHTML = '';
         var pad = cal.pad;
         var lastDay = cal.lastDay;
-        var totalSlots = pad + lastDay;
-        var numRows = Math.ceil(totalSlots / 7);
-        for (var r = 0; r < numRows; r++) {
+        // 28-day core: exactly 4 rows (Week 1–4), columns aligned to Salary Receipt Day (firstDayOfWeek)
+        var coreWrapper = document.createElement('div');
+        coreWrapper.className = 'food-calendar-core';
+        var coreHtml = '';
+        for (var r = 0; r < 4; r++) {
             var weekNum = r + 1;
             var weekLabel = 'Week ' + weekNum;
             var rowHtml = '<div class="food-week-row flex gap-2 items-stretch rounded-lg"><div class="w-12 flex-shrink-0 flex items-center text-[10px] font-black uppercase tracking-wider text-slate-400">' + weekLabel + '</div><div class="grid grid-cols-7 gap-1 flex-1">';
             for (var col = 0; col < 7; col++) {
                 var slot = r * 7 + col;
-                var calendarDate = slot - pad + 1; // Actual calendar date (1-31)
-                if (slot < pad || calendarDate > lastDay) {
+                var calendarDate = slot - pad + 1; // Actual calendar date (1–28 in core)
+                if (slot < pad || calendarDate > 28) {
                     rowHtml += '<div class="food-overview-cell rounded-md min-h-[2rem] bg-transparent"></div>';
                 } else {
-                    // Consumed = calendar dates up to and including today (since they consumed today)
                     var consumed = isCurrentMonth && calendarDate <= todayDate;
                     var isToday = isCurrentMonth && calendarDate === todayDate;
-                    // Future in cycle = dates after today but within the 28-day cycle
-                    // Cycle day = calendar date (aligned), so future = calendarDate > todayDate && calendarDate <= 28
                     var futureInCycle = calendarDate > todayDate && calendarDate <= 28;
-                    var restOfMonth = calendarDate > 28;
-                    // Buffer days: after day 28, up to bufferCount days
-                    var isBuffer = calendarDate > 28 && calendarDate <= 28 + bufferCount;
                     var clickAttr = isToday ? ' onclick="spendFoodDay()" role="button"' : '';
                     var cls = 'food-overview-cell rounded-md flex items-center justify-center text-[10px] font-black min-h-[2rem] transition ';
                     if (consumed) cls += 'bg-slate-200 text-slate-500';
                     else if (isToday) cls += 'bg-indigo-500 text-white shadow-md cursor-pointer hover:bg-indigo-600';
-                    else if (isBuffer) cls += 'bg-emerald-500 text-white border border-emerald-600';
-                    else if (restOfMonth || futureInCycle) cls += 'bg-slate-100 text-slate-400 border border-slate-200';
+                    else if (futureInCycle) cls += 'bg-slate-100 text-slate-400 border border-slate-200';
                     else cls += 'bg-white text-slate-400 border border-slate-200';
                     var label = consumed ? '✓' : calendarDate;
                     rowHtml += '<div' + clickAttr + ' class="' + cls + '" data-date="' + calendarDate + '" title="' + cal.monthName + ' ' + calendarDate + '">' + label + '</div>';
                 }
             }
             rowHtml += '</div></div>';
-            rowsContainer.innerHTML += rowHtml;
+            coreHtml += rowHtml;
         }
+        coreWrapper.innerHTML = coreHtml;
+        rowsContainer.appendChild(coreWrapper);
+
+        // Buffer / Extra Days: distinct 5th section (days beyond 28-day cycle)
         var bufferInCurrentMonth = lastDay > 28 ? Math.min(bufferCount, lastDay - 28) : 0;
         var bufferInNext = Math.max(0, bufferCount - bufferInCurrentMonth);
-        if (bufferInNext > 0) {
+        var totalBufferDays = bufferInCurrentMonth + bufferInNext;
+        if (totalBufferDays > 0) {
+            var bufferWrapper = document.createElement('div');
+            bufferWrapper.className = 'food-calendar-buffer';
+            var bufferDates = [];
             var nextMonth = new Date(cal.year, cal.month + 1, 1);
             var nextName = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][nextMonth.getMonth()];
-            var bufDay = 1;
-            for (var br = 0; br < Math.ceil(bufferInNext / 7); br++) {
-                var bufRow = '<div class="food-week-row flex gap-2 items-stretch rounded-lg mt-1"><div class="w-12 flex-shrink-0 flex items-center text-[9px] font-bold text-emerald-600 uppercase">' + (br === 0 ? nextName + ' (buffer)' : '') + '</div><div class="grid grid-cols-7 gap-1 flex-1">';
+            for (var d = 29; d <= 28 + bufferInCurrentMonth; d++) bufferDates.push({ date: d, monthName: cal.monthName });
+            for (var nd = 1; nd <= bufferInNext; nd++) bufferDates.push({ date: nd, monthName: nextName });
+            var bufHtml = '';
+            for (var br = 0; br < Math.ceil(bufferDates.length / 7); br++) {
+                var bufRow = '<div class="food-buffer-row flex gap-2 items-stretch rounded-lg"><div class="w-12 flex-shrink-0 flex items-center text-[9px] font-bold text-emerald-600 uppercase">' + (br === 0 ? 'Buffer / Extra Days' : '') + '</div><div class="grid grid-cols-7 gap-1 flex-1">';
                 for (var c = 0; c < 7; c++) {
-                    if (bufDay <= bufferInNext) {
-                        bufRow += '<div class="food-overview-cell rounded-md flex items-center justify-center text-[10px] font-black min-h-[2rem] bg-emerald-500 text-white border border-emerald-600">' + bufDay + '</div>';
-                        bufDay++;
+                    var idx = br * 7 + c;
+                    if (idx < bufferDates.length) {
+                        var b = bufferDates[idx];
+                        bufRow += '<div class="food-overview-cell rounded-md flex items-center justify-center text-[10px] font-black min-h-[2rem] bg-emerald-500 text-white border border-emerald-600" title="' + b.monthName + ' ' + b.date + '">' + b.date + '</div>';
                     } else {
                         bufRow += '<div class="food-overview-cell rounded-md min-h-[2rem] bg-transparent"></div>';
                     }
                 }
                 bufRow += '</div></div>';
-                rowsContainer.innerHTML += bufRow;
+                bufHtml += bufRow;
             }
+            bufferWrapper.innerHTML = bufHtml;
+            rowsContainer.appendChild(bufferWrapper);
         }
     }
 

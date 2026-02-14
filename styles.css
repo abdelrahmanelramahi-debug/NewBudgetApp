@@ -37,6 +37,11 @@ body.theme-dark #app-alert-modal .modal-content #app-alert-cancel:hover { backgr
 body.theme-dark #bank-balance-info { color: #94a3b8; }
 body.theme-dark #bank-balance-info-btn { border-color: #64748b; color: #94a3b8; }
 body.theme-dark #bank-balance-info-btn:hover { background: #334155; }
+body.theme-dark .food-calendar-buffer {
+    border-top-color: #059669;
+    background: linear-gradient(to bottom, rgba(16, 185, 129, 0.12), transparent);
+}
+body.theme-dark .food-buffer-row .w-12 { color: #34d399; }
 
 /* Compact mode */
 body.compact .nav-header { padding: 0.5rem; }
@@ -187,6 +192,21 @@ textarea,
 }
 .food-overview-cell:active {
     transform: scale(0.96);
+}
+
+/* Budget calendar: 28-day core vs buffer section */
+.food-calendar-core {
+    /* Standard 4-week salary cycle */
+}
+.food-calendar-buffer {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 2px dashed #10b981;
+    background: linear-gradient(to bottom, rgba(16, 185, 129, 0.06), transparent);
+    border-radius: 0 0 0.5rem 0.5rem;
+}
+.food-buffer-row .w-12 {
+    color: #059669;
 }
 
 .food-row-current {
