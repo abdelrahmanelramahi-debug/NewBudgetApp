@@ -130,13 +130,26 @@ function applyTransaction(tx) {
         case 'set_item_balance':
             setItemBalance(tx.label, tx.value);
             break;
-        case 'transfer':
+        case 'transfer': {
+            const toWeekMatch = tx.to && String(tx.to).match(/^weekly_week_([1-4])$/);
+            if (toWeekMatch) {
+                const toWeek = parseInt(toWeekMatch[1], 10);
+                if (tx.from === 'Surplus') {
+                    state.accounts.surplus -= tx.amount;
+                } else if (tx.from === 'Weekly Misc') {
+                    setWeeklyBalance(state.accounts.weekly.week, getWeeklyBalance() - tx.amount);
+                } else {
+                    adjustItemBalance(tx.from, -tx.amount);
+                }
+                setWeeklyBalance(toWeek, getWeeklyBalance(toWeek) + tx.amount);
+                break;
+            }
             if (tx.from === 'Surplus') {
                 state.accounts.surplus -= tx.amount;
             } else {
                 adjustItemBalance(tx.from, -tx.amount);
                 if (tx.from === 'Weekly Misc') {
-                    state.accounts.weekly.balance -= tx.amount;
+                    setWeeklyBalance(state.accounts.weekly.week, getWeeklyBalance() - tx.amount);
                 }
             }
             if (tx.to === 'Surplus') {
@@ -144,10 +157,11 @@ function applyTransaction(tx) {
             } else {
                 adjustItemBalance(tx.to, tx.amount);
                 if (tx.to === 'Weekly Misc') {
-                    state.accounts.weekly.balance += tx.amount;
+                    setWeeklyBalance(state.accounts.weekly.week, getWeeklyBalance() + tx.amount);
                 }
             }
             break;
+        }
         case 'add_item': {
             const sec = state.categories.find(s=>s.id===tx.sid);
             if (!sec) break;
@@ -207,11 +221,16 @@ function applyTransaction(tx) {
         }
         case 'weekly_adjust':
             adjustItemBalance('Weekly Misc', tx.delta);
-            state.accounts.weekly.balance += tx.delta;
+            setWeeklyBalance(state.accounts.weekly.week, getWeeklyBalance() + tx.delta);
             break;
         case 'weekly_next':
-            state.accounts.weekly.balance += tx.amount;
             state.accounts.weekly.week += 1;
+            setWeeklyBalance(state.accounts.weekly.week, getWeeklyBalance() + tx.amount);
+            break;
+        case 'weekly_prev':
+            setWeeklyBalance(state.accounts.weekly.week, Math.max(0, getWeeklyBalance() - tx.amount));
+            state.accounts.weekly.week = Math.max(1, state.accounts.weekly.week - 1);
+            state.accounts.weekly.balance = getWeeklyBalance();
             break;
         case 'food_spend':
             if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
@@ -370,7 +389,7 @@ function openDeficitModal() {
 
     const deficit = Math.abs(state.accounts.surplus);
     ensureWeeklyState();
-    const weeklyAvailable = Math.max(0, state.accounts.weekly.balance || 0);
+    const weeklyAvailable = Math.max(0, getWeeklyBalance() || 0);
     if (weeklyAvailable > 0) {
         list.innerHTML += `
             <div class="flex justify-between items-center gap-2 p-3 bg-slate-50 rounded-xl min-w-0">
@@ -449,7 +468,7 @@ function raidWeekly(available) {
             const fullAmt = getWeeklyConfigAmount() * 4;
             setItemBalance('Weekly Misc', fullAmt);
         }
-        state.accounts.weekly.balance -= take;
+        setWeeklyBalance(state.accounts.weekly.week, getWeeklyBalance() - take);
         applyTransaction({ type: 'adjust_item_balance', label: 'Weekly Misc', delta: -take });
         applyTransaction({ type: 'adjust_surplus', delta: take });
         logHistory('Weekly Misc', -take, 'Deficit Cover');
@@ -688,6 +707,24 @@ function toggleTransferMode() {
 function renderTransferTargets(container) {
     container.innerHTML = '';
 
+    // When transferring from Weekly Allowance, show "Transfer to another week" first
+    if (activeCat === 'Weekly Misc') {
+        const curWeek = state.accounts.weekly?.week || 1;
+        container.innerHTML += `<p class="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Transfer to week</p>`;
+        for (let w = 1; w <= WEEKLY_MAX_WEEKS; w++) {
+            if (w === curWeek) continue;
+            const id = 'weekly_week_' + w;
+            const bal = typeof getWeeklyBalance === 'function' ? getWeeklyBalance(w) : 0;
+            container.innerHTML += `
+                <button onclick="executeTransfer('${id}')" class="w-full text-left p-2.5 rounded-lg border flex justify-between items-center bg-indigo-50 text-indigo-800 border-indigo-200 font-bold text-[11px] mb-1 hover:bg-indigo-100 transition">
+                    <span>Week ${w}</span>
+                    <span class="opacity-70">${typeof formatMoney === 'function' ? formatMoney(bal) : bal} →</span>
+                </button>
+            `;
+        }
+        container.innerHTML += `<div class="h-px bg-slate-200 my-2"></div>`;
+    }
+
     // Define Priority Targets
     const priorities = [
         { id: 'Weekly Misc', label: 'Weekly Allowance', bg: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
@@ -733,18 +770,20 @@ function executeTransfer(targetId) {
 
     pushToUndo();
 
-    if (activeCat !== 'Surplus' && getItemBalance(activeCat, undefined) === undefined) {
+    if (activeCat !== 'Surplus' && !String(activeCat).startsWith('weekly_week_') && getItemBalance(activeCat, undefined) === undefined) {
         setItemBalance(activeCat, getPlanAmount(activeCat));
     }
-    if (targetId !== 'Surplus' && getItemBalance(targetId, undefined) === undefined) {
+    const isTransferToWeek = String(targetId).startsWith('weekly_week_');
+    if (targetId !== 'Surplus' && !isTransferToWeek && getItemBalance(targetId, undefined) === undefined) {
         setItemBalance(targetId, getPlanAmount(targetId));
     }
 
     applyTransaction({ type: 'transfer', from: activeCat, to: targetId, amount: val });
 
-    logHistory(activeCat, -val, `Trf to ${targetId}`);
+    const toLabel = isTransferToWeek ? ('Week ' + (targetId.replace('weekly_week_', ''))) : targetId;
+    logHistory(activeCat, -val, 'Trf to ' + toLabel);
     if (targetId !== 'Surplus') {
-        logHistory(targetId, val, `Trf from ${activeCat}`);
+        logHistory(targetId, val, 'Trf from ' + activeCat);
     }
 
     saveState();
@@ -859,8 +898,7 @@ function getBufferSourceBalance(sourceId) {
     if (sourceId === 'surplus') return (state.accounts && typeof state.accounts.surplus === 'number') ? state.accounts.surplus : 0;
     if (sourceId === 'savings') return getSavingsTotal();
     if (sourceId === 'weekly') {
-        ensureWeeklyState();
-        return Math.max(0, state.accounts.weekly.balance || 0);
+        return Math.max(0, getWeeklyBalance() || 0);
     }
     return getItemBalance(sourceId, 0);
 }
@@ -871,8 +909,7 @@ function deductFromBufferSource(sourceId, amount) {
     } else if (sourceId === 'savings') {
         debitSavings(amount);
     } else if (sourceId === 'weekly') {
-        ensureWeeklyState();
-        state.accounts.weekly.balance = Math.max(0, (state.accounts.weekly.balance || 0) - amount);
+        setWeeklyBalance(state.accounts.weekly.week, Math.max(0, getWeeklyBalance() - amount));
         applyTransaction({ type: 'adjust_item_balance', label: 'Weekly Misc', delta: -amount });
     } else {
         const current = getItemBalance(sourceId, 0);
@@ -978,6 +1015,21 @@ function nextWeek() {
         saveState();
         renderLedger();
     }, null, { confirmLabel: 'Start Week' });
+}
+
+function prevWeek() {
+    ensureWeeklyState();
+    if (state.accounts.weekly.week <= 1) {
+        showAppAlert('Already at week 1.');
+        return;
+    }
+    const weeklyAmt = getWeeklyConfigAmount();
+    showAppConfirm('Go back to the previous week? This will subtract ' + formatMoney(weeklyAmt) + ' ' + getCurrencyLabel() + ' from your allowance (reverse of starting that week).', function () {
+        pushToUndo();
+        applyTransaction({ type: 'weekly_prev', amount: weeklyAmt });
+        saveState();
+        renderLedger();
+    }, null, { confirmLabel: 'Go Back' });
 }
 
 // Surplus

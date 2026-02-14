@@ -292,18 +292,40 @@ function getWeeklyConfigAmount() {
 function ensureWeeklyState() {
     const weeklyAmt = getWeeklyConfigAmount();
     if (!state.accounts) {
-        state.accounts = { surplus: 0, weekly: { balance: weeklyAmt, week: 1 }, buckets: {} };
+        state.accounts = { surplus: 0, weekly: { balance: weeklyAmt, week: 1, balances: [weeklyAmt, 0, 0, 0] }, buckets: {} };
     }
     if (!state.accounts.weekly) {
-        state.accounts.weekly = { balance: weeklyAmt, week: 1 };
+        state.accounts.weekly = { balance: weeklyAmt, week: 1, balances: [weeklyAmt, 0, 0, 0] };
     }
-    if (typeof state.accounts.weekly.balance !== 'number' || Number.isNaN(state.accounts.weekly.balance)) {
-        state.accounts.weekly.balance = weeklyAmt;
+    if (!Array.isArray(state.accounts.weekly.balances) || state.accounts.weekly.balances.length !== WEEKLY_MAX_WEEKS) {
+        const cur = state.accounts.weekly.week;
+        const b = typeof state.accounts.weekly.balance === 'number' ? state.accounts.weekly.balance : weeklyAmt;
+        state.accounts.weekly.balances = [0, 0, 0, 0];
+        state.accounts.weekly.balances[Math.max(0, Math.min(cur - 1, 3))] = Math.max(0, b);
     }
+    if (typeof state.accounts.weekly.balance === 'number' && !Number.isNaN(state.accounts.weekly.balance)) {
+        state.accounts.weekly.balances[state.accounts.weekly.week - 1] = state.accounts.weekly.balance;
+    }
+    state.accounts.weekly.balance = state.accounts.weekly.balances[state.accounts.weekly.week - 1];
     if (typeof state.accounts.weekly.week !== 'number' || Number.isNaN(state.accounts.weekly.week)) {
         state.accounts.weekly.week = 1;
     }
     state.accounts.weekly.week = Math.min(WEEKLY_MAX_WEEKS, Math.max(1, Math.round(state.accounts.weekly.week)));
+}
+
+/** Current or specified week balance (week 1–4). */
+function getWeeklyBalance(weekNum) {
+    ensureWeeklyState();
+    const w = weekNum != null ? Math.min(WEEKLY_MAX_WEEKS, Math.max(1, Math.round(weekNum))) : state.accounts.weekly.week;
+    const bal = state.accounts.weekly.balances[w - 1];
+    return typeof bal === 'number' && !Number.isNaN(bal) ? bal : 0;
+}
+
+function setWeeklyBalance(weekNum, value) {
+    ensureWeeklyState();
+    const w = Math.min(WEEKLY_MAX_WEEKS, Math.max(1, Math.round(weekNum)));
+    state.accounts.weekly.balances[w - 1] = Math.max(0, value);
+    if (w === state.accounts.weekly.week) state.accounts.weekly.balance = state.accounts.weekly.balances[w - 1];
 }
 
 function getFoodRemainderInfo() {

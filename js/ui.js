@@ -419,6 +419,18 @@ function renderLedger() {
             nextBtn.disabled = false;
         }
     }
+    const prevBtn = document.getElementById('prev-week-btn');
+    if (prevBtn) {
+        if ((state.accounts.weekly?.week || 1) <= 1) {
+            prevBtn.classList.add('opacity-50', 'pointer-events-none');
+            prevBtn.title = 'Already at week 1';
+            prevBtn.disabled = true;
+        } else {
+            prevBtn.classList.remove('opacity-50', 'pointer-events-none');
+            prevBtn.title = 'Previous Week';
+            prevBtn.disabled = false;
+        }
+    }
 
     // --- NEW: MAJOR FUNDS SECTION (Savings & Car) ---
     // Extract values safely
