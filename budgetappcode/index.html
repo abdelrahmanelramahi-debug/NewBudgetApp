@@ -21,11 +21,11 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
                 </button>
                 <div class="text-right">
-                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Surplus / Deficit</span>
+                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Extra</span>
                     <span class="text-lg font-black text-emerald-600" id="global-surplus">0.00</span>
                 </div>
                 <div id="deficit-trigger" class="hidden">
-                    <button onclick="openDeficitModal()" class="bg-red-500 text-white px-3 py-2 rounded-lg text-[10px] font-bold uppercase animate-pulse">Resolve Deficit</button>
+                    <button onclick="openDeficitModal()" class="bg-red-500 text-white px-3 py-2 rounded-lg text-[10px] font-bold uppercase animate-pulse">Resolve</button>
                 </div>
                 <button onclick="toggleSurplusControls()" class="p-2 bg-slate-100 rounded-lg text-slate-500 hover:bg-slate-200">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m6 9 6 6 6-6"/></svg>
@@ -33,13 +33,13 @@
             </div>
         </div>
 
-        <!-- Surplus Controls -->
+        <!-- Extra Controls -->
         <div id="surplus-controls" class="hidden mt-4 max-w-xl mx-auto">
             <div class="premium-card p-4 flex gap-3 bg-emerald-50 border-emerald-100">
                 <input type="number" id="surplus-adjust-val" placeholder="AED..." data-currency-placeholder class="flex-1 rounded-lg border-0 px-3 py-2 font-bold text-sm">
                 <button onclick="adjustGlobalSurplus(1)" class="bg-emerald-500 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase">Add</button>
                 <button onclick="adjustGlobalSurplus(-1)" class="bg-red-500 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase">Deduct</button>
-                <button onclick="openTool('Surplus', 'Surplus Fund', true)" class="bg-indigo-500 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase">Transfer</button>
+                <button onclick="openTool('Surplus', 'Extra Fund', true)" class="bg-indigo-500 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase">Transfer</button>
             </div>
         </div>
 
@@ -157,7 +157,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Paycheck</span>
-                        <p class="text-[10px] text-slate-400 mt-1">Add money to Surplus or distribute across planned budgets.</p>
+                        <p class="text-[10px] text-slate-400 mt-1">Add money to Extra or distribute across planned budgets.</p>
                     </div>
                 </div>
                 <div class="flex flex-wrap gap-2">
@@ -209,16 +209,16 @@
             <div class="premium-card p-6 space-y-4">
                 <div>
                     <h3 class="text-sm font-black text-slate-800 uppercase tracking-widest">Behavior</h3>
-                    <p class="text-xs text-slate-500 mt-1">Confirmations and surplus rules.</p>
+                    <p class="text-xs text-slate-500 mt-1">Confirmations and extra rules.</p>
                 </div>
                 <div class="space-y-3">
                     <label class="flex items-center gap-3 bg-slate-50 p-3 rounded-xl">
                         <input type="checkbox" id="settings-confirm-surplus" class="w-5 h-5 accent-indigo-600 rounded" onchange="saveSettingsFromUI()">
-                        <span class="text-xs font-bold text-slate-600">Confirm direct Surplus edits</span>
+                        <span class="text-xs font-bold text-slate-600">Confirm direct Extra edits</span>
                     </label>
                     <label class="flex items-center gap-3 bg-slate-50 p-3 rounded-xl">
                         <input type="checkbox" id="settings-allow-negative" class="w-5 h-5 accent-indigo-600 rounded" onchange="saveSettingsFromUI()">
-                        <span class="text-xs font-bold text-slate-600">Allow negative Surplus on manual edits</span>
+                        <span class="text-xs font-bold text-slate-600">Allow negative Extra on manual edits</span>
                     </label>
                 </div>
             </div>
@@ -256,7 +256,7 @@
                 <button onclick="closeRealityCheck()" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
             </div>
             <h3 class="text-xl font-black text-slate-900 mb-2">Reconcile Funds</h3>
-            <p class="text-xs text-slate-500 mb-6">Adjust the system to match your actual bank balance. The difference will be applied to your Surplus (Unallocated Funds).</p>
+            <p class="text-xs text-slate-500 mb-6">Adjust the system to match your actual bank balance. The difference will be applied to your Extra (Unallocated Funds).</p>
             
             <div class="bg-slate-50 p-4 rounded-xl mb-4">
                 <label class="text-[9px] font-bold uppercase text-slate-400">Current System Reality</label>
@@ -314,11 +314,11 @@
     <div id="deficit-modal" class="modal-overlay hidden">
         <div class="modal-content">
             <div class="flex justify-between items-center mb-6">
-                <span class="text-[10px] font-bold uppercase tracking-widest text-red-500">Deficit Alert</span>
+                <span class="text-[10px] font-bold uppercase tracking-widest text-red-500">Extra Alert</span>
                 <button onclick="closeDeficitModal()" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
             </div>
             <h3 class="text-xl font-black text-slate-900 mb-2">Cover the Shortfall</h3>
-            <p class="text-sm text-slate-500 mb-6">Your surplus is negative. Tap a bucket below to move funds to cover it.</p>
+            <p class="text-sm text-slate-500 mb-6">Extra is negative. Tap a bucket below to move funds to cover it.</p>
             
             <div id="deficit-list" class="space-y-2 max-h-60 overflow-y-auto"></div>
         </div>

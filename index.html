@@ -53,11 +53,11 @@
                     </button>
                 </div>
                 <div class="text-right">
-                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Surplus / Deficit</span>
+                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Extra</span>
                     <span class="text-lg font-black text-emerald-600" id="global-surplus">0.00</span>
                 </div>
                 <div id="deficit-trigger" class="hidden">
-                    <button onclick="openDeficitModal()" class="bg-red-500 text-white px-3 py-2 rounded-lg text-[10px] font-bold uppercase animate-pulse">Resolve Deficit</button>
+                    <button onclick="openDeficitModal()" class="bg-red-500 text-white px-3 py-2 rounded-lg text-[10px] font-bold uppercase animate-pulse">Resolve</button>
                 </div>
                 <button onclick="toggleSurplusControls()" class="p-2 bg-slate-100 rounded-lg text-slate-500 hover:bg-slate-200">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m6 9 6 6 6-6"/></svg>
@@ -65,14 +65,14 @@
             </div>
         </div>
 
-        <!-- Surplus Controls -->
+        <!-- Extra Controls -->
         <div id="surplus-controls" class="hidden mt-4 max-w-xl mx-auto overflow-hidden">
             <div class="premium-card p-4 flex flex-wrap gap-2 sm:gap-3 bg-emerald-50 border-emerald-100 min-w-0">
                 <input type="number" id="surplus-adjust-val" placeholder="AED..." data-currency-placeholder class="flex-1 min-w-0 rounded-lg border-0 px-3 py-2 font-bold text-sm w-full sm:w-auto">
                 <div class="flex flex-wrap gap-2 flex-shrink-0 w-full sm:w-auto justify-end sm:justify-start">
                     <button onclick="adjustGlobalSurplus(1)" class="bg-emerald-500 text-white px-3 py-2 rounded-lg text-xs font-bold uppercase whitespace-nowrap">Add</button>
                     <button onclick="adjustGlobalSurplus(-1)" class="bg-red-500 text-white px-3 py-2 rounded-lg text-xs font-bold uppercase whitespace-nowrap">Deduct</button>
-                    <button onclick="openTool('Surplus', 'Surplus Fund', true)" class="bg-indigo-500 text-white px-3 py-2 rounded-lg text-xs font-bold uppercase whitespace-nowrap">Transfer</button>
+                    <button onclick="openTool('Surplus', 'Extra Fund', true)" class="bg-indigo-500 text-white px-3 py-2 rounded-lg text-xs font-bold uppercase whitespace-nowrap">Transfer</button>
                 </div>
             </div>
         </div>
@@ -164,7 +164,7 @@
                     <div class="space-y-2">
                         <label class="text-[9px] font-bold uppercase text-emerald-700/80">Fund from</label>
                         <select id="food-buffer-source" class="w-full bg-white border border-emerald-200 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-300">
-                            <option value="surplus">Surplus / Deficit</option>
+                            <option value="surplus">Extra</option>
                             <option value="savings">General Savings</option>
                             <option value="weekly">Weekly Allowance</option>
                         </select>
@@ -172,7 +172,7 @@
                     <div class="flex flex-wrap gap-2 min-w-0">
                         <input type="number" id="food-lock-val" placeholder="Days to add..." class="flex-1 min-w-0 bg-white border border-emerald-200 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-300" min="1">
                         <button type="button" onclick="buyFoodDay()" class="bg-emerald-500 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase hover:bg-emerald-600 transition shrink-0">Extend</button>
-                        <button type="button" onclick="releaseAllBuffer()" class="px-4 py-2 rounded-lg text-[10px] font-black uppercase bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition shrink-0" title="Release buffer to Surplus">Release</button>
+                        <button type="button" onclick="releaseAllBuffer()" class="px-4 py-2 rounded-lg text-[10px] font-black uppercase bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition shrink-0" title="Release buffer to Extra">Release</button>
                     </div>
                 </div>
             </div>
@@ -344,16 +344,16 @@
             <div class="premium-card p-6 space-y-4">
                 <div>
                     <h3 class="text-sm font-black text-slate-800 uppercase tracking-widest">Behavior</h3>
-                    <p class="text-xs text-slate-500 mt-1">Confirmations and surplus rules.</p>
+                    <p class="text-xs text-slate-500 mt-1">Confirmations and extra rules.</p>
                 </div>
                 <div class="space-y-3">
                     <label class="flex items-center gap-3 bg-slate-50 p-3 rounded-xl">
                         <input type="checkbox" id="settings-confirm-surplus" class="w-5 h-5 accent-indigo-600 rounded" onchange="saveSettingsFromUI()">
-                        <span class="text-xs font-bold text-slate-600">Confirm direct Surplus edits</span>
+                        <span class="text-xs font-bold text-slate-600">Confirm direct Extra edits</span>
                     </label>
                     <label class="flex items-center gap-3 bg-slate-50 p-3 rounded-xl">
                         <input type="checkbox" id="settings-allow-negative" class="w-5 h-5 accent-indigo-600 rounded" onchange="saveSettingsFromUI()">
-                        <span class="text-xs font-bold text-slate-600">Allow negative Surplus on manual edits</span>
+                        <span class="text-xs font-bold text-slate-600">Allow negative Extra on manual edits</span>
                     </label>
                 </div>
             </div>
@@ -449,11 +449,11 @@
     <div id="deficit-modal" class="modal-overlay hidden">
         <div class="modal-content">
             <div class="flex justify-between items-center mb-6">
-                <span class="text-[10px] font-bold uppercase tracking-widest text-red-500">Deficit Alert</span>
+                <span class="text-[10px] font-bold uppercase tracking-widest text-red-500">Extra Alert</span>
                 <button onclick="closeDeficitModal()" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
             </div>
             <h3 class="text-xl font-black text-slate-900 mb-2">Cover the Shortfall</h3>
-            <p class="text-sm text-slate-500 mb-6">Your surplus is negative. Tap a bucket below to move funds to cover it.</p>
+            <p class="text-sm text-slate-500 mb-6">Extra is negative. Tap a bucket below to move funds to cover it.</p>
             
             <div id="deficit-list" class="space-y-2 max-h-60 overflow-y-auto"></div>
         </div>

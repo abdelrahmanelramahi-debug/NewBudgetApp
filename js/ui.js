@@ -350,8 +350,8 @@ function renderLedger() {
 
     const majorHtml = `
         <div class="major-funds mb-4 sm:mb-6">
-            <!-- Mobile: compact bars (one row per fund) -->
-            <div class="space-y-1.5 sm:hidden">
+            <!-- Mobile: compact bars (one row per fund), hidden from sm up -->
+            <div class="space-y-1.5 max-sm:block sm:hidden">
                 <div class="major-fund-bar flex items-center justify-between gap-2 py-2.5 px-3 rounded-xl bg-indigo-600 text-white border border-indigo-500">
                     <div class="flex items-center gap-2 min-w-0">
                         <span class="flex-shrink-0 w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
@@ -389,8 +389,8 @@ function renderLedger() {
                     </div>
                 </div>
             </div>
-            <!-- Desktop: 3 cards, reduced height -->
-            <div class="hidden sm:grid grid-cols-3 gap-3">
+            <!-- Desktop: 3 cards, show at sm breakpoint and up -->
+            <div class="max-sm:hidden sm:grid grid-cols-3 gap-3">
                 <div class="premium-card p-4 bg-indigo-600 text-white border-indigo-500 shadow-md flex flex-col justify-between min-h-0 relative overflow-hidden group rounded-xl">
                     <div class="absolute top-0 right-0 p-2 opacity-10 pointer-events-none">
                         <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
@@ -614,7 +614,7 @@ function updateFoodUI() {
     var bufferSourceSel = document.getElementById('food-buffer-source');
     if (bufferSourceSel) {
         var currentVal = bufferSourceSel.value;
-        var opts = '<option value="surplus">Surplus / Deficit</option><option value="savings">General Savings</option><option value="weekly">Weekly Allowance</option>';
+        var opts = '<option value="surplus">Extra</option><option value="savings">General Savings</option><option value="weekly">Weekly Allowance</option>';
         var buckets = state.accounts && state.accounts.buckets ? Object.keys(state.accounts.buckets) : [];
         buckets.forEach(function(label) {
             if (label === 'General Savings') return;

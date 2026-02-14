@@ -24,7 +24,7 @@ function getLiquidityBreakdown() {
     const items = [];
 
     items.push({
-        label: 'Surplus (Unallocated)',
+        label: 'Extra (Unallocated)',
         amount: state.accounts?.surplus || 0
     });
     totalLiquid += state.accounts?.surplus || 0;

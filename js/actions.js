@@ -307,7 +307,7 @@ function deleteCategory(sid) {
     if(idx === -1) return;
     const sec = state.categories[idx];
 
-    showAppConfirm('Delete category "' + sec.label + '" and refund ' + sec.items.length + ' items to Surplus?', function () {
+    showAppConfirm('Delete category "' + sec.label + '" and refund ' + sec.items.length + ' items to Extra?', function () {
         pushToUndo();
         applyTransaction({ type: 'delete_category', sid });
         saveState();
@@ -688,7 +688,7 @@ function renderTransferTargets(container) {
     const priorities = [
         { id: 'Weekly Misc', label: 'Weekly Allowance', bg: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
         { id: 'General Savings', label: 'General Savings', bg: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
-        { id: 'Surplus', label: 'Surplus (Unallocated)', bg: 'bg-slate-200 text-slate-700 border-slate-300' }
+        { id: 'Surplus', label: 'Extra (Unallocated)', bg: 'bg-slate-200 text-slate-700 border-slate-300' }
     ];
 
     // Render Priorities
@@ -756,7 +756,7 @@ function executeAction(type) {
             if(!canApplySurplusDelta(delta)) return;
             if(shouldConfirmSurplusEdit()) {
                 const actionLabel = type === 'deduct' ? 'deduct' : 'add';
-                showAppConfirm('You are about to ' + actionLabel + ' funds directly to Surplus. This creates or removes money from thin air. Continue?', function () {
+                showAppConfirm('You are about to ' + actionLabel + ' funds directly to Extra. This creates or removes money from thin air. Continue?', function () {
                     pushToUndo();
                     applySurplusOrItemFromTool(type, val);
                 });
@@ -986,7 +986,7 @@ function shouldConfirmSurplusEdit() {
 }
 function canApplySurplusDelta(delta) {
     if(state.settings?.allowNegativeSurplus === false && (state.accounts.surplus + delta) < 0) {
-        showAppAlert('This would make Surplus negative. Enable "Allow negative Surplus" in Settings to proceed.');
+        showAppAlert('This would make Extra negative. Enable "Allow negative Extra" in Settings to proceed.');
         return false;
     }
     return true;
@@ -998,7 +998,7 @@ function adjustGlobalSurplus(dir) {
         if(!canApplySurplusDelta(delta)) return;
         if(shouldConfirmSurplusEdit()) {
             const actionLabel = dir > 0 ? 'add' : 'deduct';
-            showAppConfirm('You are about to ' + actionLabel + ' funds directly to Surplus. This creates or removes money from thin air. Continue?', function () {
+            showAppConfirm('You are about to ' + actionLabel + ' funds directly to Extra. This creates or removes money from thin air. Continue?', function () {
                 pushToUndo();
                 applyTransaction({ type: 'adjust_surplus', delta: delta });
                 document.getElementById('surplus-adjust-val').value = '';
@@ -1111,7 +1111,7 @@ function applyPaycheckDistribute() {
     applyTransaction({ type: 'adjust_surplus', delta: val });
 
     if (totalDeficit <= 0) {
-        showAppAlert('All planned categories are already funded. The paycheck was added to Surplus.');
+        showAppAlert('All planned categories are already funded. The paycheck was added to Extra.');
         document.getElementById('paycheck-amount').value = '';
         saveState();
         if (typeof refreshUI === 'function') refreshUI();
@@ -1127,10 +1127,10 @@ function applyPaycheckDistribute() {
 
     const leftoverFromPaycheck = Math.max(0, val - totalDeficit);
     if (leftoverFromPaycheck > 0) {
-        showAppAlert('Fully funded all planned categories. ' + formatMoney(leftoverFromPaycheck) + ' ' + getCurrencyLabel() + ' stayed in Surplus.');
+        showAppAlert('Fully funded all planned categories. ' + formatMoney(leftoverFromPaycheck) + ' ' + getCurrencyLabel() + ' stayed in Extra.');
     } else if (totalDeficit > val) {
         const shortfall = totalDeficit - val;
-        showAppAlert('Plan required more than this paycheck. ' + formatMoney(shortfall) + ' ' + getCurrencyLabel() + ' was taken from Surplus.');
+        showAppAlert('Plan required more than this paycheck. ' + formatMoney(shortfall) + ' ' + getCurrencyLabel() + ' was taken from Extra.');
     }
 
     document.getElementById('paycheck-amount').value = '';
@@ -1195,7 +1195,7 @@ function renderSavingsBuckets() {
             <div class="flex gap-2 flex-wrap">
                 <button onclick="applySavingsBucketDelta('${key}', 1)" class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg text-[10px] font-bold uppercase">Add</button>
                 <button onclick="applySavingsBucketDelta('${key}', -1)" class="bg-red-100 text-red-600 px-2 py-1 rounded-lg text-[10px] font-bold uppercase">Deduct</button>
-                <button onclick="transferSavingsBucketToSurplus('${key}')" class="bg-slate-200 text-slate-700 px-2 py-1 rounded-lg text-[10px] font-bold uppercase">To Surplus</button>
+                <button onclick="transferSavingsBucketToSurplus('${key}')" class="bg-slate-200 text-slate-700 px-2 py-1 rounded-lg text-[10px] font-bold uppercase">To Extra</button>
                 <select onchange="moveSavingsBucket('${key}', this.value)" class="bg-white border border-slate-200 px-2 py-1 rounded-lg text-[10px] font-bold uppercase">
                     <option value="">Move To...</option>
                     ${entries.filter(([target]) => target !== key).map(([target]) => `<option value="${target}">${target}</option>`).join('')}
@@ -1310,7 +1310,7 @@ function deleteSavingsBucket(name) {
         showAppAlert('You must keep at least one bucket.');
         return;
     }
-    showAppConfirm('Delete "' + name + '" bucket and move its funds to Surplus?', function () {
+    showAppConfirm('Delete "' + name + '" bucket and move its funds to Extra?', function () {
         const amount = state.accounts.savingsBuckets[name] || 0;
         pushToUndo();
         delete state.accounts.savingsBuckets[name];
