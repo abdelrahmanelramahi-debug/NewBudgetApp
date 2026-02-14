@@ -115,17 +115,17 @@
             <div class="p-4 border-b border-slate-100">
                 <h1 class="text-sm font-black text-slate-900 tracking-tight">Finance Command</h1>
             </div>
-            <nav class="p-3 flex-1 space-y-0.5">
-                <button type="button" class="desktop-nav-item nav-ledger-pill tab-btn tab-active w-full text-left py-2.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition" onclick="switchPage('ledger'); closeSideMenu();">Daily Entry</button>
-                <button type="button" id="nav-budget" class="desktop-nav-item w-full text-left py-2.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition" onclick="switchPage('budget'); closeSideMenu();">Budget Plan</button>
-                <button type="button" id="nav-profile" class="desktop-nav-item w-full text-left py-2.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition" onclick="switchPage('profile'); closeSideMenu();">Profile</button>
-                <button type="button" id="nav-settings" class="desktop-nav-item nav-settings-pill tab-btn tab-inactive w-full text-left py-2.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition" onclick="switchPage('settings'); closeSideMenu();">Settings</button>
-                <a href="mailto:omniveradigital@gmail.com?subject=Finance%20Command%20Bug%20Report" onclick="closeSideMenu()" class="block py-2.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition">Report a Bug</a>
+            <nav class="p-2 flex-1 flex flex-col gap-0.5">
+                <button type="button" class="desktop-nav-item nav-ledger-pill tab-btn tab-active w-full text-left py-2 px-3 rounded-md text-sm font-semibold text-slate-700 hover:bg-slate-100 transition" onclick="switchPage('ledger'); closeSideMenu();">Daily Entry</button>
+                <button type="button" id="nav-budget" class="desktop-nav-item tab-btn tab-inactive w-full text-left py-2 px-3 rounded-md text-sm font-semibold text-slate-700 hover:bg-slate-100 transition" onclick="switchPage('budget'); closeSideMenu();">Budget Plan</button>
+                <button type="button" id="nav-profile" class="desktop-nav-item tab-btn tab-inactive w-full text-left py-2 px-3 rounded-md text-sm font-semibold text-slate-700 hover:bg-slate-100 transition" onclick="switchPage('profile'); closeSideMenu();">Profile</button>
+                <button type="button" id="nav-settings" class="desktop-nav-item tab-btn tab-inactive w-full text-left py-2 px-3 rounded-md text-sm font-semibold text-slate-700 hover:bg-slate-100 transition" onclick="switchPage('settings'); closeSideMenu();">Settings</button>
+                <a href="mailto:omniveradigital@gmail.com?subject=Finance%20Command%20Bug%20Report" onclick="closeSideMenu()" class="block py-2 px-3 rounded-md text-sm font-semibold text-slate-600 hover:bg-slate-100 transition">Report a Bug</a>
             </nav>
         </aside>
         <div id="app-main" class="flex-1 flex flex-col min-w-0 w-full max-w-xl lg:max-w-none mx-auto px-4 lg:px-6">
-    <!-- Header -->
-    <nav class="nav-header w-full">
+    <!-- Header (home/Daily Entry only) -->
+    <nav id="app-header" class="nav-header w-full">
         <div class="flex flex-wrap items-center gap-x-6 gap-y-4 justify-between mb-5">
             <!-- Menu + current page (mobile only; desktop uses sidebar) -->
             <div class="flex items-center gap-2 flex-shrink-0 order-first lg:hidden">
@@ -300,9 +300,9 @@
             <div id="ledger-categories" class="space-y-6 ledger-categories-grid"></div>
         </div>
 
-        <!-- PAGE: BUDGET PLAN -->
-        <div id="page-budget-plan" class="space-y-6 hidden">
-            <header class="premium-card px-4 py-3 flex flex-col gap-3 border border-slate-200 shadow-sm">
+        <!-- PAGE: BUDGET PLAN (total box is this page’s header) -->
+        <div id="page-budget-plan" class="page-budget-plan hidden flex flex-col min-h-0">
+            <header class="budget-plan-page-header premium-card px-4 py-3 flex flex-col gap-3 border border-slate-200 shadow-sm flex-shrink-0">
                 <div class="flex items-center justify-between gap-3">
                     <div class="flex items-center gap-2">
                         <button type="button" onclick="switchPage('ledger')" class="p-2 -ml-1 rounded-lg text-slate-500 hover:bg-slate-100 transition flex-shrink-0" aria-label="Back">&#8592;</button>
@@ -321,7 +321,7 @@
                 </div>
                 <span id="reality-total-sr" class="hidden" aria-hidden="true">0</span>
             </header>
-            <div class="space-y-6">
+            <div class="budget-plan-page-body flex-1 min-h-0 overflow-y-auto space-y-6 py-4">
                 <div class="grid grid-cols-2 gap-4 hidden" aria-hidden="true">
                     <div class="premium-card p-5 bg-slate-50 border-slate-100">
                         <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Planned Income (legacy)</span>

@@ -124,8 +124,8 @@ textarea,
         max-height: 100vh;
     }
 
-    .desktop-nav-item.tab-active,
-    .desktop-sidebar .tab-btn.tab-active {
+    .desktop-sidebar .tab-btn.tab-active,
+    .desktop-sidebar .desktop-nav-item.tab-active {
         background: #f1f5f9;
         color: #0f172a;
     }
@@ -144,13 +144,18 @@ textarea,
         padding-bottom: 0.75rem;
     }
 
-    /* Constrain width so layout doesn't stretch with huge gaps */
+    /* Constrain width; ensure main area scrolls and content is visible */
     #app-main {
         max-width: 42rem;
+        min-height: 0;
+        overflow: hidden;
     }
 
     #main-content {
         margin-top: 0.75rem;
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
     }
 
     /* Ledger top: single column, compact gap */
@@ -182,6 +187,7 @@ body.theme-dark .desktop-sidebar {
     border-right-color: #1f2937;
 }
 
+body.theme-dark .desktop-sidebar .tab-btn.tab-active,
 body.theme-dark .desktop-nav-item.tab-active {
     background: #1f2937;
     color: #f8fafc;
@@ -191,7 +197,7 @@ body.theme-dark .desktop-nav-item:hover {
     background: #1e293b;
 }
 
-/* Sidebar nav: consistent Title Case, single-column list */
+/* Sidebar nav: simple list, no big boxes */
 .desktop-sidebar nav {
     display: flex;
     flex-direction: column;
@@ -202,11 +208,22 @@ body.theme-dark .desktop-nav-item:hover {
 .desktop-sidebar nav .tab-btn {
     text-transform: none;
 }
+.desktop-sidebar .tab-btn.tab-active {
+    background: #f1f5f9;
+}
 
 /* Side menu panel: above header on iOS, respect safe area */
 .side-menu-panel {
     padding-top: env(safe-area-inset-top);
     z-index: 1;
+}
+
+/* Budget Plan page: total box is the page header; body scrolls below it */
+.page-budget-plan .budget-plan-page-header {
+    background: white;
+}
+.page-budget-plan .budget-plan-page-body {
+    -webkit-overflow-scrolling: touch;
 }
 
 /* --- STABLE STYLING --- */

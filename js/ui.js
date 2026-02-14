@@ -178,6 +178,9 @@ function switchPage(page) {
         tabs[page].classList.add('tab-active');
     }
 
+    var appHeader = document.getElementById('app-header');
+    if (appHeader) appHeader.classList.toggle('hidden', page !== 'ledger');
+
     if(page === 'ledger') renderLedger();
     if(page === 'budget') {
         renderStrategy();
