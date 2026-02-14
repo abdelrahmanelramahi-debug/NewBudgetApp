@@ -126,8 +126,10 @@ textarea,
 
     .desktop-sidebar .tab-btn.tab-active,
     .desktop-sidebar .desktop-nav-item.tab-active {
-        background: #f1f5f9;
+        background: transparent;
         color: #0f172a;
+        border-left: 3px solid #6366f1;
+        padding-left: calc(0.75rem - 3px);
     }
 
     .nav-header {
@@ -189,8 +191,9 @@ body.theme-dark .desktop-sidebar {
 
 body.theme-dark .desktop-sidebar .tab-btn.tab-active,
 body.theme-dark .desktop-nav-item.tab-active {
-    background: #1f2937;
+    background: transparent;
     color: #f8fafc;
+    border-left-color: #818cf8;
 }
 
 body.theme-dark .desktop-nav-item:hover {
@@ -209,7 +212,9 @@ body.theme-dark .desktop-nav-item:hover {
     text-transform: none;
 }
 .desktop-sidebar .tab-btn.tab-active {
-    background: #f1f5f9;
+    background: transparent;
+    border-left: 3px solid #6366f1;
+    padding-left: calc(0.75rem - 3px);
 }
 
 /* Side menu panel: above header on iOS, respect safe area */
@@ -218,8 +223,11 @@ body.theme-dark .desktop-nav-item:hover {
     z-index: 1;
 }
 
-/* Budget Plan page: total box is the page header; body scrolls below it */
+/* Budget Plan page: total box fixed as header; body scrolls below */
 .page-budget-plan .budget-plan-page-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
     background: white;
 }
 .page-budget-plan .budget-plan-page-body {

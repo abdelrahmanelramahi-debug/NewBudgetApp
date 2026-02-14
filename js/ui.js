@@ -209,6 +209,20 @@ function updateBudgetPlanAllocated() {
     const totalEl = document.getElementById('budget-plan-total-val');
     if (allocEl) allocEl.textContent = typeof formatMoney === 'function' ? formatMoney(allocated) : allocated.toFixed(0);
     if (totalEl) totalEl.textContent = typeof formatMoney === 'function' ? formatMoney(total) : total.toFixed(0);
+
+    var alertEl = document.getElementById('budget-plan-unallocated-alert');
+    var amountEl = document.getElementById('budget-plan-unallocated-amount');
+    if (alertEl && amountEl && total > 0) {
+        var unallocated = total - allocated;
+        if (unallocated > 0.001) {
+            amountEl.textContent = typeof formatMoney === 'function' ? formatMoney(unallocated) : unallocated.toFixed(2);
+            alertEl.classList.remove('hidden');
+        } else {
+            alertEl.classList.add('hidden');
+        }
+    } else if (alertEl) {
+        alertEl.classList.add('hidden');
+    }
 }
 window.openBudgetPlan = openBudgetPlan;
 window.closeBudgetPlan = closeBudgetPlan;
