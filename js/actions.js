@@ -836,13 +836,16 @@ function setFoodDayFromCalendar(cycleDay, action) {
     var list = state.food.consumedDays || [];
     if (action === 'unmark') {
         if (list.indexOf(day) === -1) return;
-        state.food.consumedDays = list.filter(function(d) { return d !== day; });
     } else {
         if (list.indexOf(day) !== -1) return;
+    }
+    pushToUndo();
+    if (action === 'unmark') {
+        state.food.consumedDays = list.filter(function(d) { return d !== day; });
+    } else {
         state.food.consumedDays = list.concat([day]).sort(function(a, b) { return a - b; });
     }
     state.food.daysUsed = state.food.consumedDays.length;
-    pushToUndo();
     saveState();
     renderLedger();
     updateGlobalUI();
