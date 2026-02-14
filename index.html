@@ -109,10 +109,11 @@
     </div>
 
     <!-- Main app (hidden when onboarding is visible) -->
-    <div id="app-shell">
+    <div id="app-shell" class="flex flex-col items-center">
+        <div class="w-full max-w-xl px-4 flex flex-col">
     <!-- Header -->
-    <nav class="nav-header">
-        <div class="flex justify-between items-center mb-4 max-w-xl mx-auto">
+    <nav class="nav-header w-full">
+        <div class="flex justify-between items-center mb-4">
             <div>
                 <h1 class="text-xl font-black text-slate-900">Finance Command</h1>
                  <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
@@ -146,7 +147,7 @@
         </div>
 
         <!-- Extra Controls -->
-        <div id="surplus-controls" class="hidden mt-4 max-w-xl mx-auto overflow-hidden">
+        <div id="surplus-controls" class="hidden mt-4 overflow-hidden">
             <div class="premium-card p-4 flex flex-wrap gap-2 sm:gap-3 bg-emerald-50 border-emerald-100 min-w-0">
                 <input type="number" id="surplus-adjust-val" placeholder="AED..." data-currency-placeholder class="flex-1 min-w-0 rounded-lg border-0 px-3 py-2 font-bold text-sm w-full sm:w-auto">
                 <div class="flex flex-wrap gap-2 flex-shrink-0 w-full sm:w-auto justify-end sm:justify-start">
@@ -183,7 +184,7 @@
         </div>
     </div>
 
-    <div id="main-content" class="max-w-xl mx-auto px-4 mt-6 space-y-6">
+    <div id="main-content" class="mt-6 space-y-6 pb-6">
 
         <!-- LEDGER PAGE -->
         <div id="page-ledger" class="space-y-6">
@@ -498,6 +499,7 @@
         </div>
 
     </div>
+    </div><!-- /column: vertical layout -->
 
     <!-- MODALS -->
 
