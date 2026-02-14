@@ -304,7 +304,15 @@ function ensureWeeklyState() {
         state.accounts.weekly.balances = [weeklyAmt, weeklyAmt, weeklyAmt, weeklyAmt];
         state.accounts.weekly.balances[cur - 1] = Math.max(0, oldBal);
     }
-    // Source of truth is balances[]; only read from it for display (never write .balance back into balances)
+    // One-time fix: corrupted all-zero balances from earlier bug (so each week shows its allocation)
+    if (!state.accounts.weekly._zeroFixed) {
+        const sum = (state.accounts.weekly.balances[0] || 0) + (state.accounts.weekly.balances[1] || 0) + (state.accounts.weekly.balances[2] || 0) + (state.accounts.weekly.balances[3] || 0);
+        if (sum === 0 && weeklyAmt > 0) {
+            state.accounts.weekly.balances = [weeklyAmt, weeklyAmt, weeklyAmt, weeklyAmt];
+        }
+        state.accounts.weekly._zeroFixed = true;
+    }
+    // Source of truth is balances[]; only read from it for display
     state.accounts.weekly.balance = state.accounts.weekly.balances[state.accounts.weekly.week - 1];
     if (typeof state.accounts.weekly.week !== 'number' || Number.isNaN(state.accounts.weekly.week)) {
         state.accounts.weekly.week = 1;

@@ -403,7 +403,8 @@ function renderLedger() {
     const container = document.getElementById('ledger-categories');
     container.innerHTML = '';
 
-    // WEEKLY LOGIC UPDATE: Use Weekly State
+    // WEEKLY: ensure synced then show current week's balance
+    if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
     document.getElementById('bal-weekly').innerText = formatMoney(state.accounts.weekly.balance || 0);
     const weekCount = document.getElementById('weekly-week-count');
     if (weekCount) weekCount.innerText = state.accounts.weekly?.week || 1;

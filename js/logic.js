@@ -48,18 +48,15 @@ function getLiquidityBreakdown() {
         });
     });
 
-    const weeklyAmt = getWeeklyConfigAmount();
-    const currentWeekBalance = Math.max(0, state.accounts.weekly.balance || 0);
-    const remainingWeeks = Math.max(0, WEEKLY_MAX_WEEKS - (state.accounts.weekly.week || 1));
-    const outstandingWeeks = remainingWeeks * weeklyAmt;
+    // Each week has its own balance; total weekly = sum of all 4 (so bank balance doesn't change when switching weeks)
+    const week1 = Math.max(0, (state.accounts.weekly.balances && state.accounts.weekly.balances[0]) || 0);
+    const week2 = Math.max(0, (state.accounts.weekly.balances && state.accounts.weekly.balances[1]) || 0);
+    const week3 = Math.max(0, (state.accounts.weekly.balances && state.accounts.weekly.balances[2]) || 0);
+    const week4 = Math.max(0, (state.accounts.weekly.balances && state.accounts.weekly.balances[3]) || 0);
+    const totalWeekly = week1 + week2 + week3 + week4;
 
-    items.push({ label: 'Weekly (Current Week)', amount: currentWeekBalance });
-    totalLiquid += currentWeekBalance;
-
-    if (outstandingWeeks > 0) {
-        items.push({ label: 'Weekly (Outstanding)', amount: outstandingWeeks, meta: `${remainingWeeks} week${remainingWeeks === 1 ? '' : 's'}` });
-        totalLiquid += outstandingWeeks;
-    }
+    items.push({ label: 'Weekly Allowance (all weeks)', amount: totalWeekly, meta: 'Week 1–4' });
+    totalLiquid += totalWeekly;
 
     // Food Remainder calculation logic
     const { daysLeft, remainder } = getFoodRemainderInfo();
