@@ -104,7 +104,7 @@ function loadState() {
             const loaded = JSON.parse(saved);
             state = { ...state, ...loaded };
             if(typeof state.monthlyIncome === 'undefined') state.monthlyIncome = 4000;
-            if(typeof state.onboardingComplete === 'undefined') state.onboardingComplete = true;
+            if(!('onboardingComplete' in loaded)) state.onboardingComplete = true;
         } catch(e) { console.error("Save data corrupt, using default"); }
     }
     migrateState();
