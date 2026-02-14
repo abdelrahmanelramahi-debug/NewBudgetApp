@@ -404,28 +404,33 @@ function renderLedger() {
 
         const secId = `ledger-sec-${sec.id}`;
 
-        let gridHtml = '';
+        let barsHtml = '';
         relevantItems.forEach(item => {
             let bal = getItemBalance(item.label, item.amount);
+            const planned = typeof item.amount === 'number' && item.amount > 0 ? item.amount : 1;
+            const pct = Math.min(100, Math.max(0, (bal / planned) * 100));
+            const safeLabel = String(item.label).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            const safeLabelAttr = String(item.label).replace(/"/g, '&quot;');
 
-            const opacity = bal === 0 ? 'opacity-50' : 'opacity-100';
-            // Savings check removed from here since it's handled above
-            const bgClass = 'bg-white';
-
-            let action = '';
+            let actionBtn = '';
             if (sec.isSingleAction && bal !== 0) {
-                action = `<button onclick="completeTask('${item.label}')" class="bg-emerald-100 text-emerald-600 p-1 rounded-md hover:bg-emerald-200">✓</button>`;
+                actionBtn = `<button onclick="event.stopPropagation(); completeTask('${safeLabel}')" class="ledger-bar-complete flex-shrink-0 w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center text-sm font-bold hover:bg-emerald-600 transition shadow-sm" title="Mark used">✓</button>`;
             }
 
-            gridHtml += `
-                <div class="premium-card p-5 text-center ${opacity} ${bgClass}">
-                    <div class="flex justify-between items-start w-full mb-2">
-                        <span class="text-[10px] font-bold uppercase text-slate-400 truncate w-20 text-left" title="${item.label}">${item.label}</span>
-                        ${action}
+            barsHtml += `
+                <div role="button" tabindex="0" onclick="openTool('${safeLabel}')" class="ledger-bar flex items-center gap-3 w-full py-3 px-4 rounded-xl border border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm transition-all cursor-pointer group ${bal === 0 ? 'opacity-70' : ''}">
+                    <div class="flex-1 min-w-0 flex flex-col gap-0.5">
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 truncate" title="${safeLabelAttr}">${item.label}</span>
+                        <div class="h-1.5 w-full max-w-[120px] rounded-full bg-slate-100 overflow-hidden">
+                            <div class="ledger-bar-fill h-full rounded-full transition-all duration-300" style="width:${pct}%"></div>
+                        </div>
                     </div>
-                    <div onclick="openTool('${item.label}')" class="cursor-pointer">
-                        <p class="text-3xl font-black text-slate-800 tracking-tight">${formatMoney(bal)}</p>
-                        <p class="text-[9px] font-bold text-slate-300 uppercase">${getCurrencyLabel()} Left</p>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <div class="text-right">
+                            <p class="text-lg font-black text-slate-800 leading-tight">${formatMoney(bal)}</p>
+                            <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">${getCurrencyLabel()} left</p>
+                        </div>
+                        ${actionBtn}
                     </div>
                 </div>
             `;
@@ -433,13 +438,13 @@ function renderLedger() {
 
         // Section HTML with Toggle
         const sectionHtml = `
-            <div class="mb-2">
-                <button onclick="toggleLedgerSection('${secId}')" class="flex justify-between items-center w-full p-2 hover:bg-slate-100 rounded-lg transition group">
+            <div class="mb-4">
+                <button onclick="toggleLedgerSection('${secId}')" class="flex justify-between items-center w-full py-2.5 px-1 hover:bg-slate-50 rounded-lg transition group">
                     <span class="text-[11px] font-black text-slate-800 uppercase tracking-widest">${sec.label}</span>
                     <svg id="icon-${secId}" class="w-4 h-4 text-slate-400 transform transition-transform group-hover:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                 </button>
-                <div id="${secId}" class="grid grid-cols-2 gap-4 mt-2 transition-all">
-                    ${gridHtml}
+                <div id="${secId}" class="space-y-1.5 mt-1 transition-all">
+                    ${barsHtml}
                 </div>
             </div>
         `;
@@ -612,14 +617,15 @@ function updateFoodUI() {
                 var consumed = cycleDay <= daysUsed;
                 var isToday = p.date === todayDate && p.month === todayMonth && p.year === todayYear;
                 var futureInCycle = cycleDay > daysUsed && cycleDay <= 28;
-                var clickAttr = isToday ? ' onclick="spendFoodDay()" role="button"' : '';
-                var cls = 'food-overview-cell rounded-md flex items-center justify-center text-[10px] font-black min-h-[2rem] transition ';
-                if (consumed) cls += 'bg-slate-200 text-slate-500';
-                else if (isToday) cls += 'bg-indigo-500 text-white shadow-md cursor-pointer hover:bg-indigo-600';
-                else if (futureInCycle) cls += 'bg-slate-100 text-slate-400 border border-slate-200';
+                var targetDays = consumed ? cycleDay - 1 : cycleDay;
+                var clickAttr = ' onclick="setFoodDaysUsedFromCalendar(' + targetDays + ')" role="button"';
+                var cls = 'food-overview-cell rounded-md flex items-center justify-center text-[10px] font-black min-h-[2rem] transition cursor-pointer ';
+                if (consumed) cls += 'bg-slate-200 text-slate-500 hover:bg-slate-300';
+                else if (isToday) cls += 'bg-indigo-500 text-white shadow-md hover:bg-indigo-600';
+                else if (futureInCycle) cls += 'bg-slate-100 text-slate-400 border border-slate-200 hover:bg-slate-200';
                 else cls += 'bg-white text-slate-400 border border-slate-200';
                 var label = consumed ? '✓' : p.date;
-                rowHtml += '<div' + clickAttr + ' class="' + cls + '" data-cycle-day="' + cycleDay + '" data-date="' + p.date + '" title="' + p.monthName + ' ' + p.date + '">' + label + '</div>';
+                rowHtml += '<div' + clickAttr + ' class="' + cls + '" data-cycle-day="' + cycleDay + '" data-date="' + p.date + '" title="' + (consumed ? 'Click to unmark' : 'Click to mark consumed') + ' · ' + p.monthName + ' ' + p.date + '">' + label + '</div>';
             }
             rowHtml += '</div></div>';
             coreHtml += rowHtml;
@@ -627,54 +633,42 @@ function updateFoodUI() {
         coreWrapper.innerHTML = coreHtml;
         rowsContainer.appendChild(coreWrapper);
 
-        // Buffer row: always show continuation dates (25, 26, 27, 28, ...); funded cells in green
-        var cycleStart = payCycle.cycleStart;
-        var bMonthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-        var bufferDates = [];
-        var numBufferSlots = Math.max(7, bufferCount);
-        for (var b = 0; b < numBufferSlots; b++) {
-            var bd = new Date(cycleStart.getFullYear(), cycleStart.getMonth(), cycleStart.getDate() + 28 + b);
-            bufferDates.push({
-                date: bd.getDate(),
-                monthName: bMonthNames[bd.getMonth()]
-            });
-        }
-        var bufferWrapper = document.createElement('div');
-        bufferWrapper.className = 'food-calendar-buffer';
-        var bufHtml = '';
-        for (var br = 0; br < Math.ceil(bufferDates.length / 7); br++) {
-            var bufRow = '<div class="food-buffer-row flex gap-2 items-stretch rounded-lg"><div class="w-12 flex-shrink-0 flex items-center text-[9px] font-bold text-emerald-600 uppercase">' + (br === 0 ? 'Buffer' : '') + '</div><div class="grid grid-cols-7 gap-1 flex-1">';
-            for (var c = 0; c < 7; c++) {
-                var idx = br * 7 + c;
-                if (idx < bufferDates.length) {
-                    var b = bufferDates[idx];
-                    var isFunded = idx < bufferCount;
-                    var cellCls = isFunded
-                        ? 'food-overview-cell rounded-md flex items-center justify-center text-[10px] font-black min-h-[2rem] bg-emerald-500 text-white border border-emerald-600'
-                        : 'food-overview-cell rounded-md flex items-center justify-center text-[10px] font-black min-h-[2rem] bg-slate-100 text-slate-400 border border-slate-200';
-                    bufRow += '<div class="' + cellCls + '" title="' + b.monthName + ' ' + b.date + '">' + b.date + '</div>';
-                } else {
-                    bufRow += '<div class="food-overview-cell rounded-md min-h-[2rem] bg-transparent"></div>';
-                }
+        // Buffer row: only when at least 1 day extended; only show extended days (no unfunded slots)
+        if (bufferCount > 0) {
+            var cycleStart = payCycle.cycleStart;
+            var bMonthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            var bufferDates = [];
+            for (var b = 0; b < bufferCount; b++) {
+                var bd = new Date(cycleStart.getFullYear(), cycleStart.getMonth(), cycleStart.getDate() + 28 + b);
+                bufferDates.push({
+                    date: bd.getDate(),
+                    monthName: bMonthNames[bd.getMonth()]
+                });
             }
-            bufRow += '</div></div>';
-            bufHtml += bufRow;
+            var bufferWrapper = document.createElement('div');
+            bufferWrapper.className = 'food-calendar-buffer';
+            var bufHtml = '';
+            for (var br = 0; br < Math.ceil(bufferDates.length / 7); br++) {
+                var bufRow = '<div class="food-buffer-row flex gap-2 items-stretch rounded-lg"><div class="w-12 flex-shrink-0 flex items-center text-[9px] font-bold text-emerald-600 uppercase">' + (br === 0 ? 'Buffer' : '') + '</div><div class="grid grid-cols-7 gap-1 flex-1">';
+                for (var c = 0; c < 7; c++) {
+                    var idx = br * 7 + c;
+                    if (idx < bufferDates.length) {
+                        var b = bufferDates[idx];
+                        bufRow += '<div class="food-overview-cell rounded-md flex items-center justify-center text-[10px] font-black min-h-[2rem] bg-emerald-500 text-white border border-emerald-600" title="' + b.monthName + ' ' + b.date + '">' + b.date + '</div>';
+                    } else {
+                        bufRow += '<div class="food-overview-cell rounded-md min-h-[2rem] bg-transparent"></div>';
+                    }
+                }
+                bufRow += '</div></div>';
+                bufHtml += bufRow;
+            }
+            bufferWrapper.innerHTML = bufHtml;
+            rowsContainer.appendChild(bufferWrapper);
         }
-        bufferWrapper.innerHTML = bufHtml;
-        rowsContainer.appendChild(bufferWrapper);
     }
 
     var markBtn = document.getElementById('food-mark-day-btn');
     if (markBtn) markBtn.disabled = daysUsed >= daysTotal;
-
-    var list = document.getElementById('food-activity-list');
-    if (list) {
-        list.innerHTML = state.food.history.length ? state.food.history.map(function(h, i) {
-            var label = h.type === 'spend' ? 'Used' : (h.type === 'deficit' ? 'Deficit' : 'Locked');
-            var cls = h.type === 'spend' ? 'text-slate-400' : (h.type === 'deficit' ? 'text-red-500' : 'text-emerald-500');
-            return '<div class="flex justify-between items-center text-[10px] font-bold uppercase py-2 border-b border-slate-50 last:border-0"><span class="' + cls + '">' + label + ' ' + formatMoney(h.amt) + '</span><button onclick="undoFood(' + i + ')" class="text-red-400 hover:text-red-600">Undo</button></div>';
-        }).join('') : '<div class="text-center text-[10px] text-slate-300 py-2">No activity</div>';
-    }
 }
 
 function calculateReality() {

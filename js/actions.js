@@ -801,6 +801,16 @@ function spendFoodDay() {
     }
 }
 
+function setFoodDaysUsedFromCalendar(targetDaysUsed) {
+    var clamped = Math.max(0, Math.min(28, Math.floor(targetDaysUsed)));
+    if (state.food.daysUsed === clamped) return;
+    pushToUndo();
+    state.food.daysUsed = clamped;
+    saveState();
+    renderLedger();
+    updateGlobalUI();
+}
+
 function getBufferSourceBalance(sourceId) {
     if (sourceId === 'surplus') return (state.accounts && typeof state.accounts.surplus === 'number') ? state.accounts.surplus : 0;
     if (sourceId === 'savings') return getSavingsTotal();

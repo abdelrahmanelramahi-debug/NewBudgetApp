@@ -213,6 +213,20 @@ textarea,
     border-left: 3px solid #4f46e5;
 }
 
+/* Ledger horizontal bars */
+.ledger-bar {
+    outline: none;
+}
+.ledger-bar:focus-visible {
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.4);
+}
+.ledger-bar-fill {
+    background: linear-gradient(90deg, #94a3b8 0%, #64748b 100%);
+}
+.ledger-bar:hover .ledger-bar-fill {
+    background: linear-gradient(90deg, #64748b 0%, #475569 100%);
+}
+
 .food-week-tab:focus {
     outline: none;
 }
