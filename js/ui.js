@@ -128,8 +128,7 @@ function applySettings() {
 
 function renderSettings() {
     const currencyInput = document.getElementById('settings-currency');
-    if(!currencyInput) return;
-    currencyInput.value = getCurrencyLabel();
+    if (currencyInput) currencyInput.value = typeof getCurrencyLabel === 'function' ? getCurrencyLabel() : (state.settings?.currency || 'AED');
     const decimalsSelect = document.getElementById('settings-decimals');
     if(decimalsSelect) decimalsSelect.value = String(state.settings?.decimals ?? 2);
     const confirmSurplus = document.getElementById('settings-confirm-surplus');
@@ -149,12 +148,10 @@ function renderSettings() {
 function switchPage(page) {
     const pages = {
         ledger: document.getElementById('page-ledger'),
-        strategy: document.getElementById('page-strategy'),
         settings: document.getElementById('page-settings')
     };
     const tabs = {
         ledger: document.getElementById('nav-ledger'),
-        strategy: document.getElementById('nav-strategy'),
         settings: document.getElementById('nav-settings')
     };
 
@@ -163,6 +160,10 @@ function switchPage(page) {
         if(tabs[key]) tabs[key].className = 'tab-btn tab-inactive';
     });
 
+    if(page === 'strategy') {
+        openBudgetPlan();
+        return;
+    }
     if(pages[page]) pages[page].classList.remove('hidden');
     if(tabs[page]) tabs[page].className = 'tab-btn tab-active';
 
@@ -201,6 +202,17 @@ function updateBudgetPlanAllocated() {
 window.openBudgetPlan = openBudgetPlan;
 window.closeBudgetPlan = closeBudgetPlan;
 window.updateBudgetPlanAllocated = updateBudgetPlanAllocated;
+
+function toggleSideMenu() {
+    const el = document.getElementById('side-menu');
+    if (el) el.classList.toggle('hidden');
+}
+function closeSideMenu() {
+    const el = document.getElementById('side-menu');
+    if (el) el.classList.add('hidden');
+}
+window.toggleSideMenu = toggleSideMenu;
+window.closeSideMenu = closeSideMenu;
 
 // --- STRATEGY RENDER ---
 function renderStrategy() {

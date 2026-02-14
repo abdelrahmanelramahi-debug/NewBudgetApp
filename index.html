@@ -157,14 +157,33 @@
             </div>
         </div>
 
-        <div class="nav-pill mt-4 flex items-center gap-2">
-            <div onclick="switchPage('ledger')" id="nav-ledger" class="tab-btn tab-active">Daily Entry</div>
-            <button type="button" onclick="openBudgetPlan()" class="tab-btn tab-inactive py-2.5 px-4 rounded-xl text-[11px] font-black uppercase tracking-widest bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition">Budget Plan</button>
-            <div onclick="switchPage('settings')" id="nav-settings" class="tab-btn tab-inactive">Settings</div>
+        <div class="flex items-center gap-2 mt-4">
+            <button type="button" onclick="toggleSideMenu()" class="p-2.5 bg-slate-100 rounded-xl text-slate-600 hover:bg-slate-200 transition" aria-label="Menu">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </button>
+            <div id="nav-ledger" class="tab-btn tab-active py-2.5 px-4 rounded-xl text-[11px] font-black uppercase tracking-widest" onclick="switchPage('ledger'); closeSideMenu();">Daily Entry</div>
         </div>
     </nav>
 
-    <div class="max-w-xl mx-auto px-4 mt-6 space-y-6">
+    <!-- Side menu drawer -->
+    <div id="side-menu" class="fixed inset-0 z-30 hidden">
+        <div id="side-menu-backdrop" onclick="closeSideMenu()" class="absolute inset-0 bg-black/30"></div>
+        <div class="absolute top-0 left-0 bottom-0 w-72 max-w-[85vw] bg-white shadow-xl flex flex-col">
+            <div class="p-4 border-b border-slate-100 flex items-center justify-between">
+                <span class="text-xs font-black text-slate-500 uppercase tracking-widest">Menu</span>
+                <button type="button" onclick="closeSideMenu()" class="p-2 rounded-lg text-slate-500 hover:bg-slate-100">&#10005;</button>
+            </div>
+            <nav class="p-3 space-y-1">
+                <button type="button" onclick="switchPage('ledger'); closeSideMenu();" class="w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Daily Entry</button>
+                <button type="button" onclick="openBudgetPlan(); closeSideMenu();" class="w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Budget Plan</button>
+                <button type="button" onclick="switchPage('settings'); closeSideMenu();" id="nav-settings" class="w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Settings</button>
+                <button type="button" onclick="closeSideMenu();" class="w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Profile</button>
+                <a href="mailto:omniveradigital@gmail.com?subject=Finance%20Command%20Bug%20Report" onclick="closeSideMenu()" class="block w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Report a bug</a>
+            </nav>
+        </div>
+    </div>
+
+    <div id="main-content" class="max-w-xl mx-auto px-4 mt-6 space-y-6">
 
         <!-- LEDGER PAGE -->
         <div id="page-ledger" class="space-y-6">
@@ -261,24 +280,26 @@
             <div id="ledger-categories" class="space-y-6"></div>
         </div>
 
-        <!-- Budget Plan popout (almost full page) -->
+        <!-- Budget Plan popout (almost full page): vertical layout, same max-width as body -->
         <div id="budget-plan-modal" class="fixed inset-0 z-40 bg-slate-50 hidden flex flex-col">
-            <header class="budget-plan-header flex-shrink-0 flex items-center justify-between gap-4 px-4 py-4 bg-white border-b border-slate-200 shadow-sm">
-                <div class="flex items-center gap-3 min-w-0">
-                    <button type="button" onclick="closeBudgetPlan()" class="p-2 -ml-2 rounded-lg text-slate-500 hover:bg-slate-100 transition" aria-label="Close">&#10005;</button>
-                    <h2 class="text-lg font-black text-slate-900 uppercase tracking-wider truncate">Budget Plan</h2>
-                </div>
-                <div class="flex items-center gap-4 flex-wrap">
-                    <div class="flex items-center gap-2">
-                        <span class="text-[10px] font-bold uppercase text-slate-500 whitespace-nowrap">Total</span>
-                        <span class="text-slate-400" data-currency>AED</span>
-                        <input type="number" id="monthly-income-input" class="w-24 sm:w-28 bg-slate-100 border-0 rounded-lg px-2 py-1.5 text-sm font-black text-slate-900 outline-none focus:ring-2 focus:ring-indigo-300" onfocus="pushToUndo()" oninput="updateIncome(this.value); updateBudgetPlanAllocated();" placeholder="0">
+            <header class="budget-plan-header flex-shrink-0 bg-white border-b border-slate-200 shadow-sm">
+                <div class="max-w-xl mx-auto w-full px-4 py-4 flex flex-col gap-3 sm:gap-4">
+                    <div class="flex items-center gap-3">
+                        <button type="button" onclick="closeBudgetPlan()" class="p-2 -ml-2 rounded-lg text-slate-500 hover:bg-slate-100 transition flex-shrink-0" aria-label="Close">&#10005;</button>
+                        <h2 class="text-base sm:text-lg font-black text-slate-900 uppercase tracking-wider">Budget Plan</h2>
                     </div>
-                    <div id="budget-plan-allocated" class="text-[11px] font-bold text-slate-600 whitespace-nowrap">
-                        <span id="budget-plan-allocated-val">0</span> / <span id="budget-plan-total-val">0</span> allocated
+                    <div class="flex flex-wrap items-center gap-3 sm:gap-4 pl-10 sm:pl-10">
+                        <div class="flex items-center gap-2">
+                            <span class="text-[10px] font-bold uppercase text-slate-500">Total</span>
+                            <span class="text-slate-400" data-currency>AED</span>
+                            <input type="number" id="monthly-income-input" class="w-20 sm:w-28 bg-slate-100 border-0 rounded-lg px-2 py-1.5 text-sm font-black text-slate-900 outline-none focus:ring-2 focus:ring-indigo-300" onfocus="pushToUndo()" oninput="updateIncome(this.value); updateBudgetPlanAllocated();" placeholder="0">
+                        </div>
+                        <div id="budget-plan-allocated" class="text-[11px] font-bold text-slate-600">
+                            <span id="budget-plan-allocated-val">0</span> / <span id="budget-plan-total-val">0</span> allocated
+                        </div>
                     </div>
                 </div>
-                <span id="reality-total" class="hidden" aria-hidden="true">0</span>
+                <span id="reality-total-sr" class="hidden" aria-hidden="true">0</span>
             </header>
             <div class="budget-plan-body flex-1 overflow-y-auto overflow-x-hidden">
                 <div class="max-w-xl mx-auto px-4 py-6 space-y-6">
@@ -294,7 +315,7 @@
                 <div class="premium-card p-5 border-emerald-100 bg-emerald-50/20 relative">
                     <span class="text-[10px] font-bold uppercase tracking-widest text-emerald-600">Current Balance</span>
                     <div class="flex items-center justify-between">
-                        <p id="reality-total" class="text-3xl font-black text-slate-900 mt-1">0.00</p>
+                        <p id="reality-total-legacy" class="text-3xl font-black text-slate-900 mt-1">0.00</p>
                         <div class="flex items-center gap-2">
                             <button onclick="openLiquidityBreakdown()" class="bg-white p-2 rounded-xl text-emerald-600 shadow-sm hover:scale-105 transition" title="View Breakdown">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></svg>
