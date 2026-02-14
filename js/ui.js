@@ -181,6 +181,9 @@ function switchPage(page) {
     var appHeader = document.getElementById('app-header');
     if (appHeader) appHeader.classList.toggle('hidden', page !== 'ledger');
 
+    var mainContent = document.getElementById('main-content');
+    if (mainContent) mainContent.classList.toggle('main-content--budget', page === 'budget');
+
     if(page === 'ledger') renderLedger();
     if(page === 'budget') {
         renderStrategy();

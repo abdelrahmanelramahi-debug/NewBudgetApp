@@ -223,15 +223,28 @@ body.theme-dark .desktop-nav-item:hover {
     z-index: 1;
 }
 
-/* Budget Plan page: total box fixed as header; body scrolls below */
+/* When Budget Plan is visible: main-content doesn’t scroll; budget page fills and only body scrolls so header stays fixed (desktop + iOS) */
+#main-content.main-content--budget {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+#main-content.main-content--budget #page-budget-plan {
+    flex: 1 1 0;
+    min-height: 0;
+}
+
+/* Budget Plan page: total box stays at top; only body scrolls */
 .page-budget-plan .budget-plan-page-header {
-    position: sticky;
-    top: 0;
+    flex-shrink: 0;
     z-index: 20;
     background: white;
 }
 .page-budget-plan .budget-plan-page-body {
     -webkit-overflow-scrolling: touch;
+    min-height: 0;
 }
 
 /* --- STABLE STYLING --- */
