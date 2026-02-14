@@ -491,9 +491,10 @@ function renderLedger() {
 
     // Create categorical dropdowns matching the strategy structure
     state.categories.forEach(sec => {
-        // Filter items to skip hardcoded UI elements AND the Major Funds we just rendered manually
+        // Filter items to skip Major Funds (Food Base/Daily Food live in Food Cycle; others have their own cards)
         var majorLabels = typeof MAJOR_FUND_LABELS !== 'undefined' ? MAJOR_FUND_LABELS : ['Weekly Misc', 'Daily Food', 'General Savings', 'Car Fund', 'Payables'];
-        const relevantItems = sec.items.filter(item => !majorLabels.includes(item.label));
+        var skipLabels = majorLabels.concat(['Food Base']);
+        const relevantItems = sec.items.filter(item => !skipLabels.includes(item.label));
 
         if (relevantItems.length === 0) return;
 
