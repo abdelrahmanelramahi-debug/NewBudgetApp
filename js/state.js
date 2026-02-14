@@ -1,5 +1,7 @@
-// DATA
-const ACCOUNT_LABELS = ['General Savings', 'Payables', 'Car Fund', 'Weekly Misc'];
+// DATA (uses ITEM_LABELS from constants.js when available)
+const ACCOUNT_LABELS = typeof ITEM_LABELS !== 'undefined'
+    ? [ITEM_LABELS.GENERAL_SAVINGS, ITEM_LABELS.PAYABLES, ITEM_LABELS.CAR_FUND, ITEM_LABELS.WEEKLY_MISC]
+    : ['General Savings', 'Payables', 'Car Fund', 'Weekly Misc'];
 
 let state = {
     schemaVersion: 2,
@@ -82,16 +84,18 @@ let pendingDangerAction = null;
 let requiredDangerPhrase = "";
 
 // PERSISTENCE
-var STATE_MODIFIED_KEY = 'financeCmd_state_modified';
 function saveState() {
-    localStorage.setItem('financeCmd_state', JSON.stringify(state));
-    try { localStorage.setItem(STATE_MODIFIED_KEY, String(Date.now())); } catch (e) {}
+    var stateKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.STATE : 'financeCmd_state';
+    var modKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.MODIFIED : 'financeCmd_state_modified';
+    localStorage.setItem(stateKey, JSON.stringify(state));
+    try { localStorage.setItem(modKey, String(Date.now())); } catch (e) {}
     // Cloud sync will be handled by auth.js if user is logged in
 }
 window.saveState = saveState; // Make it globally accessible
 
 function loadState() {
-    const saved = localStorage.getItem('financeCmd_state');
+    var stateKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.STATE : 'financeCmd_state';
+    const saved = localStorage.getItem(stateKey);
     if (saved) {
         try {
             const loaded = JSON.parse(saved);
@@ -225,11 +229,12 @@ function ensureSystemSavings() {
 }
 
 function ensureCoreItems() {
-    let core = state.categories.find(s => s.id === 'core_essentials');
+    var coreId = typeof SECTION_IDS !== 'undefined' ? SECTION_IDS.CORE_ESSENTIALS : 'core_essentials';
+    let core = state.categories.find(s => s.id === coreId);
 
     if (!core) {
         state.categories.splice(1, 0, {
-            id: 'core_essentials',
+            id: coreId,
             label: 'Core Essentials',
             isSystem: true,
             items: [
@@ -246,18 +251,20 @@ function ensureCoreItems() {
     }
 
     state.categories.forEach(sec => {
-        if (sec.id !== 'core_essentials') {
+        if (sec.id !== coreId) {
             sec.items = sec.items.filter(i =>
-                i.label !== 'Weekly Misc' &&
-                i.label !== 'Food Base' &&
-                i.label !== 'Car Fund'
+                i.label !== (typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.WEEKLY_MISC : 'Weekly Misc') &&
+                i.label !== (typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.FOOD_BASE : 'Food Base') &&
+                i.label !== (typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.CAR_FUND : 'Car Fund')
             );
         }
     });
 }
 
 function getWeeklyConfigAmount() {
-    const misc = state.categories.find(s=>s.id==='core_essentials')?.items.find(i=>i.label==='Weekly Misc');
+    var cid = typeof SECTION_IDS !== 'undefined' ? SECTION_IDS.CORE_ESSENTIALS : 'core_essentials';
+    var wlabel = typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.WEEKLY_MISC : 'Weekly Misc';
+    const misc = state.categories.find(s=>s.id===cid)?.items.find(i=>i.label===wlabel);
     const fullAmt = misc ? misc.amount : 320;
     return fullAmt / 4;
 }
@@ -280,8 +287,11 @@ function ensureWeeklyState() {
 }
 
 function getFoodRemainderInfo() {
-    const fSec = state.categories.find(s=>s.id==='core_essentials') || state.categories.find(s=>s.id==='foundations');
-    const fItem = fSec ? fSec.items.find(i=>i.label==='Food Base') : null;
+    var cid = typeof SECTION_IDS !== 'undefined' ? SECTION_IDS.CORE_ESSENTIALS : 'core_essentials';
+    var fid = typeof SECTION_IDS !== 'undefined' ? SECTION_IDS.FOUNDATIONS : 'foundations';
+    var flabel = typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.FOOD_BASE : 'Food Base';
+    const fSec = state.categories.find(s=>s.id===cid) || state.categories.find(s=>s.id===fid);
+    const fItem = fSec ? fSec.items.find(i=>i.label===flabel) : null;
     const foodBase = fItem ? fItem.amount : 0;
     const daysLeft = state.food.daysTotal - state.food.daysUsed;
     const dailyRate = state.food.daysTotal > 0 ? (foodBase / state.food.daysTotal) : 0;
@@ -329,8 +339,7 @@ function globalUndo() {
     const prevState = undoStack.pop();
     state = JSON.parse(prevState);
     saveState();
-    renderLedger();
-    renderStrategy();
+    if (typeof refreshUI === 'function') refreshUI();
     updateUndoButtonUI();
     document.querySelectorAll('.modal-overlay').forEach(el => toggleModal(el.id, false));
 }

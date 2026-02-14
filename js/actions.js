@@ -68,11 +68,6 @@ function adjustItemBalance(label, delta) {
     setItemBalance(label, current + delta);
 }
 
-function getSavingsTotal() {
-    ensureAccountsState();
-    return Object.values(state.accounts.savingsBuckets).reduce((sum, val) => sum + (val || 0), 0);
-}
-
 function syncSavingsTotal() {
     ensureAccountsState();
     state.accounts.buckets['General Savings'] = getSavingsTotal();
@@ -734,8 +729,7 @@ function executeTransfer(targetId) {
     }
 
     saveState();
-    renderLedger();
-    updateGlobalUI(); // Ensure surplus/reality updates
+    if (typeof refreshUI === 'function') refreshUI();
     closeTool();
 }
 
@@ -1343,7 +1337,8 @@ function importStateFile(file) {
 }
 
 function recoverLocalData() {
-    const localBackup = localStorage.getItem('financeCmd_state');
+    var stateKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.STATE : 'financeCmd_state';
+    const localBackup = localStorage.getItem(stateKey);
     if (!localBackup) {
         alert('No local backup found in browser storage. Your data may have been cleared.');
         return;
@@ -1371,21 +1366,11 @@ function recoverLocalData() {
         ensureCoreItems();
         ensureSettings();
         saveState();
-        
-        // If signed in, optionally save recovered data to cloud
         if (currentUser && window.saveStateToCloud) {
             const saveToCloud = confirm('Save recovered data to cloud?');
-            if (saveToCloud) {
-                window.saveStateToCloud();
-            }
+            if (saveToCloud) window.saveStateToCloud();
         }
-        
-        renderLedger();
-        renderStrategy();
-        updateGlobalUI();
-        applySettings();
-        renderSettings();
-        
+        if (typeof refreshUI === 'function') refreshUI();
         alert('Data recovered successfully!');
     } catch (e) {
         alert('Failed to recover data: ' + e.message);
@@ -1396,6 +1381,9 @@ function recoverLocalData() {
 function resetAppData() {
     const proceed = confirm('This will delete all local data and reload the app. Continue?');
     if(!proceed) return;
-    localStorage.removeItem('financeCmd_state');
+    var stateKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.STATE : 'financeCmd_state';
+    var modKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.MODIFIED : 'financeCmd_state_modified';
+    localStorage.removeItem(stateKey);
+    try { localStorage.removeItem(modKey); } catch (e) {}
     location.reload();
 }

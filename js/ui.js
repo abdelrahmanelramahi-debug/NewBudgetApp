@@ -1,3 +1,21 @@
+// Cached DOM refs for header and frequent elements (avoids repeated getElementById)
+var _domCache = {};
+function getEl(id) {
+    if (!_domCache[id]) _domCache[id] = document.getElementById(id);
+    return _domCache[id];
+}
+function clearDomCache() { _domCache = {}; }
+
+/** Single entry point to refresh all UI after state change. Use instead of calling renderLedger + renderStrategy + updateGlobalUI + applySettings + renderSettings separately. */
+function refreshUI() {
+    if (typeof renderLedger === 'function') renderLedger();
+    if (typeof renderStrategy === 'function') renderStrategy();
+    if (typeof updateGlobalUI === 'function') updateGlobalUI();
+    if (typeof applySettings === 'function') applySettings();
+    if (typeof renderSettings === 'function') renderSettings();
+}
+if (typeof window !== 'undefined') window.refreshUI = refreshUI;
+
 function getCurrencyLabel() {
     return state.settings?.currency || 'AED';
 }
@@ -303,9 +321,8 @@ function renderLedger() {
     // Create categorical dropdowns matching the strategy structure
     state.categories.forEach(sec => {
         // Filter items to skip hardcoded UI elements AND the Major Funds we just rendered manually
-        const relevantItems = sec.items.filter(item =>
-            !['Weekly Misc', 'Food Base', 'General Savings', 'Car Fund', 'Payables'].includes(item.label)
-        );
+        var majorLabels = typeof MAJOR_FUND_LABELS !== 'undefined' ? MAJOR_FUND_LABELS : ['Weekly Misc', 'Food Base', 'General Savings', 'Car Fund', 'Payables'];
+        const relevantItems = sec.items.filter(item => !majorLabels.includes(item.label));
 
         if (relevantItems.length === 0) return;
 
@@ -395,8 +412,11 @@ function getMonthCalendarInfo() {
 }
 
 function updateFoodUI() {
-    var fSec = state.categories.find(s=>s.id==='core_essentials') || state.categories.find(s=>s.id==='foundations');
-    var fItem = fSec ? fSec.items.find(i=>i.label==='Food Base') : null;
+    var cid = typeof SECTION_IDS !== 'undefined' ? SECTION_IDS.CORE_ESSENTIALS : 'core_essentials';
+    var fid = typeof SECTION_IDS !== 'undefined' ? SECTION_IDS.FOUNDATIONS : 'foundations';
+    var flabel = typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.FOOD_BASE : 'Food Base';
+    var fSec = state.categories.find(s=>s.id===cid) || state.categories.find(s=>s.id===fid);
+    var fItem = fSec ? fSec.items.find(i=>i.label===flabel) : null;
     var foodBase = fItem ? fItem.amount : 840;
     var daily = foodBase / (state.food.daysTotal || 28);
     var daysUsed = state.food.daysUsed || 0;
@@ -521,16 +541,16 @@ function updateFoodUI() {
 
 function calculateReality() {
     var total = getCurrentBalance();
-    var realityTotal = document.getElementById('reality-total');
-    var headerReality = document.getElementById('header-reality');
+    var realityTotal = getEl('reality-total');
+    var headerReality = getEl('header-reality');
     if (realityTotal) realityTotal.innerText = formatMoney(total);
     if (headerReality) headerReality.innerText = formatMoney(total);
 }
 
 function updateGlobalUI() {
     var surplus = (state.accounts && state.accounts.surplus !== undefined) ? state.accounts.surplus : 0;
-    var surpEl = document.getElementById('global-surplus');
-    var dTrigger = document.getElementById('deficit-trigger');
+    var surpEl = getEl('global-surplus');
+    var dTrigger = getEl('deficit-trigger');
     if (surpEl) surpEl.innerText = formatSignedMoney(surplus);
 
     if (dTrigger && surpEl) {
@@ -546,9 +566,8 @@ function updateGlobalUI() {
     }
 
     calculateReality();
-    // Force reflow so header values paint (avoids "stuck at 0 until click/tab" on load)
-    var headerReality = document.getElementById('header-reality');
-    if (headerReality) void headerReality.offsetHeight;
+    var headerRealityEl = getEl('header-reality');
+    if (headerRealityEl) void headerRealityEl.offsetHeight;
     if (surpEl) void surpEl.offsetHeight;
 }
 

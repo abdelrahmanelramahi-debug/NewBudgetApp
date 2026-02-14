@@ -17,7 +17,8 @@ function initAuth() {
             updateAuthUI();
             // Load local state FIRST, then sync from cloud (cloud will merge/overwrite if valid)
             // This ensures we always have local data as fallback
-            const localState = localStorage.getItem('financeCmd_state');
+            var stateKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.STATE : 'financeCmd_state';
+            const localState = localStorage.getItem(stateKey);
             if (localState) {
                 try {
                     const local = JSON.parse(localState);
@@ -158,6 +159,15 @@ async function saveStateToCloud() {
     }
 }
 
+/** Returns true if payload has categories, accounts, or balances worth merging. */
+function hasMeaningfulData(data) {
+    if (!data || typeof data !== 'object') return false;
+    var hasCategories = data.categories && Array.isArray(data.categories) && data.categories.length > 0;
+    var hasAccounts = data.accounts && typeof data.accounts === 'object';
+    var hasBalances = data.balances && Object.keys(data.balances || {}).length > 0;
+    return hasCategories || hasAccounts || hasBalances;
+}
+
 // Load state from Firebase Firestore (with retry for timing/auth)
 async function loadStateFromCloud(retryCount) {
     if (!currentUser) return;
@@ -177,31 +187,20 @@ async function loadStateFromCloud(retryCount) {
             }
             var localModified = 0;
             try {
-                var stored = localStorage.getItem('financeCmd_state_modified');
+                var modKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.MODIFIED : 'financeCmd_state_modified';
+                var stored = localStorage.getItem(modKey);
                 if (stored) localModified = parseInt(stored, 10) || 0;
             } catch (e) {}
             if (localModified > cloudTime) {
-                // This device has newer data; keep local state and push to cloud
                 await saveStateToCloud();
-                if (typeof renderLedger === 'function') renderLedger();
-                if (typeof renderStrategy === 'function') renderStrategy();
-                if (typeof updateGlobalUI === 'function') updateGlobalUI();
-                if (typeof applySettings === 'function') applySettings();
-                if (typeof renderSettings === 'function') renderSettings();
+                if (typeof refreshUI === 'function') refreshUI();
                 updateSyncStatus('Synced (local was newer)', true);
                 if (cloudData.lastUpdated) lastSyncTime = cloudData.lastUpdated.toDate();
                 return;
             }
             
-            // Validate cloud data before merging
             if (cloudData.data && typeof cloudData.data === 'object') {
-                // Check if cloud data has meaningful content (not just defaults)
-                const hasCategories = cloudData.data.categories && Array.isArray(cloudData.data.categories) && cloudData.data.categories.length > 0;
-                const hasAccounts = cloudData.data.accounts && typeof cloudData.data.accounts === 'object';
-                const hasBalances = cloudData.data.balances && Object.keys(cloudData.data.balances).length > 0;
-                
-                // Only merge if cloud data has actual content
-                if (hasCategories || hasAccounts || hasBalances) {
+                if (hasMeaningfulData(cloudData.data)) {
                     // CRITICAL: Save reality (total liquidity) BEFORE merge so we can restore surplus
                     var realityBeforeMerge = getCurrentBalance();
                     var surplusBeforeMerge = state.accounts && (state.accounts.surplus !== undefined) ? state.accounts.surplus : null;
@@ -217,39 +216,27 @@ async function loadStateFromCloud(retryCount) {
                         var realityAfterMerge = getCurrentBalance();
                         state.accounts.surplus = realityBeforeMerge - (realityAfterMerge - (state.accounts.surplus || 0));
                     }
-                    // When surplus is still 0 after merge, derive from reality (sum of balances) if we have data
-                    var hasData = (cloudData.data.balances && Object.keys(cloudData.data.balances).length > 0) ||
-                        (cloudData.data.accounts && typeof cloudData.data.accounts === 'object') ||
-                        (cloudData.data.categories && Array.isArray(cloudData.data.categories) && cloudData.data.categories.length > 0);
-                    if (state.accounts && state.accounts.surplus === 0 && hasData && typeof recalculateSurplusFromReality === 'function') {
+                    if (state.accounts && state.accounts.surplus === 0 && hasMeaningfulData(cloudData.data) && typeof recalculateSurplusFromReality === 'function') {
                         recalculateSurplusFromReality();
                     }
                     
-                    // Save merged state locally as backup; set local modified = cloud time so we don't overwrite with stale local later
-                    localStorage.setItem('financeCmd_state', JSON.stringify(state));
+                    var stateKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.STATE : 'financeCmd_state';
+                    var modKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.MODIFIED : 'financeCmd_state_modified';
+                    localStorage.setItem(stateKey, JSON.stringify(state));
                     if (cloudData.lastUpdated && typeof cloudData.lastUpdated.toMillis === 'function') {
-                        try { localStorage.setItem('financeCmd_state_modified', String(cloudData.lastUpdated.toMillis())); } catch (e) {}
+                        try { localStorage.setItem(modKey, String(cloudData.lastUpdated.toMillis())); } catch (e) {}
                     }
-                    
-                    // Update UI
-                    renderLedger();
-                    renderStrategy();
-                    updateGlobalUI();
-                    applySettings();
-                    renderSettings();
-                    
+                    if (typeof refreshUI === 'function') refreshUI();
                     updateSyncStatus('Synced', true);
                 } else {
-                    // Cloud data exists but is empty/invalid - keep local state
                     console.warn('Cloud data is empty/invalid, keeping local state');
                     updateSyncStatus('Cloud empty, using local', true);
-                    updateGlobalUI();
+                    if (typeof updateGlobalUI === 'function') updateGlobalUI();
                 }
             } else {
-                // No valid cloud data - keep local state
                 console.warn('No valid cloud data found, keeping local state');
                 updateSyncStatus('No cloud data, using local', true);
-                updateGlobalUI();
+                if (typeof updateGlobalUI === 'function') updateGlobalUI();
             }
             
             if (cloudData.lastUpdated) {
@@ -258,10 +245,9 @@ async function loadStateFromCloud(retryCount) {
                 lastSyncTime = new Date();
             }
         } else {
-            // No cloud data yet, save current state
             await saveStateToCloud();
             updateSyncStatus('Synced', true);
-            updateGlobalUI();
+            if (typeof updateGlobalUI === 'function') updateGlobalUI();
         }
     } catch (error) {
         console.error('Load from cloud error:', error);
@@ -276,7 +262,8 @@ async function loadStateFromCloud(retryCount) {
         
         // On error after retry: use local data and show clear status
         try {
-            var localBackupStr = localStorage.getItem('financeCmd_state');
+            var stateKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.STATE : 'financeCmd_state';
+            var localBackupStr = localStorage.getItem(stateKey);
             if (localBackupStr) {
                 var localBackup = JSON.parse(localBackupStr);
                 state = { ...state, ...localBackup };
@@ -284,18 +271,11 @@ async function loadStateFromCloud(retryCount) {
                 ensureSystemSavings();
                 ensureCoreItems();
                 ensureSettings();
-                if (state.accounts && state.accounts.surplus === 0 && typeof recalculateSurplusFromReality === 'function') {
-                    var hasBal = Object.keys(state.balances || {}).length > 0;
-                    var hasBuck = state.accounts.buckets && Object.values(state.accounts.buckets).some(function (v) { return v !== 0; });
-                    var hasCat = state.categories && state.categories.length > 0;
-                    if (hasBal || hasBuck || hasCat) recalculateSurplusFromReality();
+                if (state.accounts && state.accounts.surplus === 0 && hasMeaningfulData(state) && typeof recalculateSurplusFromReality === 'function') {
+                    recalculateSurplusFromReality();
                 }
                 saveState();
-                renderLedger();
-                renderStrategy();
-                updateGlobalUI();
-                applySettings();
-                renderSettings();
+                if (typeof refreshUI === 'function') refreshUI();
             }
         } catch (e) {
             console.error('Failed to restore local backup:', e);
