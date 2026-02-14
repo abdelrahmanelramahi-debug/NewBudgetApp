@@ -1,6 +1,9 @@
 // INIT
 window.onload = function() {
     loadState();
+    if (typeof window.location !== 'undefined' && window.location.search.indexOf('onboarding=1') !== -1) {
+        state.onboardingComplete = false;
+    }
     ensureSystemSavings();
     ensureCoreItems();
 
@@ -39,26 +42,28 @@ window.onload = function() {
         initSurplusFromOpening();
     }
 
-    renderLedger();
-    renderStrategy();
-    updateUndoButtonUI();
-    updateRedoButtonUI();
-    applySettings();
-    renderSettings();
-    // Run header update in next paint frame so values aren't stuck at 0 until interaction
-    requestAnimationFrame(function() {
-        updateGlobalUI();
-        requestAnimationFrame(updateGlobalUI);
-    });
-    setTimeout(function() {
-        requestAnimationFrame(updateGlobalUI);
-    }, 0);
-    setTimeout(function() {
-        requestAnimationFrame(updateGlobalUI);
-    }, 450);
+    function runAppInit() {
+        renderLedger();
+        renderStrategy();
+        updateUndoButtonUI();
+        updateRedoButtonUI();
+        applySettings();
+        renderSettings();
+        requestAnimationFrame(function() {
+            updateGlobalUI();
+            requestAnimationFrame(updateGlobalUI);
+        });
+        setTimeout(function() { requestAnimationFrame(updateGlobalUI); }, 0);
+        setTimeout(function() { requestAnimationFrame(updateGlobalUI); }, 450);
+        const amortTotal = document.getElementById('amort-total');
+        const amortMonths = document.getElementById('amort-months');
+        if (amortTotal) amortTotal.oninput = updateAmortCalc;
+        if (amortMonths) amortMonths.oninput = updateAmortCalc;
+    }
 
-    const amortTotal = document.getElementById('amort-total');
-    const amortMonths = document.getElementById('amort-months');
-    if (amortTotal) amortTotal.oninput = updateAmortCalc;
-    if (amortMonths) amortMonths.oninput = updateAmortCalc;
+    if (!state.onboardingComplete && typeof showOnboarding === 'function') {
+        showOnboarding(runAppInit);
+        return;
+    }
+    runAppInit();
 };
