@@ -292,16 +292,17 @@ function getWeeklyConfigAmount() {
 function ensureWeeklyState() {
     const weeklyAmt = getWeeklyConfigAmount();
     if (!state.accounts) {
-        state.accounts = { surplus: 0, weekly: { balance: weeklyAmt, week: 1, balances: [weeklyAmt, 0, 0, 0] }, buckets: {} };
+        state.accounts = { surplus: 0, weekly: { balance: weeklyAmt, week: 1, balances: [weeklyAmt, weeklyAmt, weeklyAmt, weeklyAmt] }, buckets: {} };
     }
     if (!state.accounts.weekly) {
-        state.accounts.weekly = { balance: weeklyAmt, week: 1, balances: [weeklyAmt, 0, 0, 0] };
+        state.accounts.weekly = { balance: weeklyAmt, week: 1, balances: [weeklyAmt, weeklyAmt, weeklyAmt, weeklyAmt] };
     }
+    // Each week has its own allocation (80); migrate old single-balance to per-week
     if (!Array.isArray(state.accounts.weekly.balances) || state.accounts.weekly.balances.length !== WEEKLY_MAX_WEEKS) {
-        const cur = state.accounts.weekly.week;
-        const b = typeof state.accounts.weekly.balance === 'number' ? state.accounts.weekly.balance : weeklyAmt;
-        state.accounts.weekly.balances = [0, 0, 0, 0];
-        state.accounts.weekly.balances[Math.max(0, Math.min(cur - 1, 3))] = Math.max(0, b);
+        const cur = Math.max(1, Math.min(state.accounts.weekly.week || 1, WEEKLY_MAX_WEEKS));
+        const oldBal = typeof state.accounts.weekly.balance === 'number' ? state.accounts.weekly.balance : weeklyAmt;
+        state.accounts.weekly.balances = [weeklyAmt, weeklyAmt, weeklyAmt, weeklyAmt];
+        state.accounts.weekly.balances[cur - 1] = Math.max(0, oldBal);
     }
     if (typeof state.accounts.weekly.balance === 'number' && !Number.isNaN(state.accounts.weekly.balance)) {
         state.accounts.weekly.balances[state.accounts.weekly.week - 1] = state.accounts.weekly.balance;

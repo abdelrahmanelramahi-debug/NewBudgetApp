@@ -415,7 +415,7 @@ function renderLedger() {
             nextBtn.disabled = true;
         } else {
             nextBtn.classList.remove('opacity-50', 'pointer-events-none');
-            nextBtn.title = 'Start Next Week';
+            nextBtn.title = 'Next week';
             nextBtn.disabled = false;
         }
     }
@@ -427,7 +427,7 @@ function renderLedger() {
             prevBtn.disabled = true;
         } else {
             prevBtn.classList.remove('opacity-50', 'pointer-events-none');
-            prevBtn.title = 'Previous Week';
+            prevBtn.title = 'Previous week';
             prevBtn.disabled = false;
         }
     }

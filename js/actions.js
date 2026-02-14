@@ -223,15 +223,6 @@ function applyTransaction(tx) {
             adjustItemBalance('Weekly Misc', tx.delta);
             setWeeklyBalance(state.accounts.weekly.week, getWeeklyBalance() + tx.delta);
             break;
-        case 'weekly_next':
-            state.accounts.weekly.week += 1;
-            setWeeklyBalance(state.accounts.weekly.week, getWeeklyBalance() + tx.amount);
-            break;
-        case 'weekly_prev':
-            setWeeklyBalance(state.accounts.weekly.week, Math.max(0, getWeeklyBalance() - tx.amount));
-            state.accounts.weekly.week = Math.max(1, state.accounts.weekly.week - 1);
-            state.accounts.weekly.balance = getWeeklyBalance();
-            break;
         case 'food_spend':
             if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
             var list = state.food.consumedDays || [];
@@ -1004,32 +995,20 @@ function topUpWeeklyInline() {
 
 function nextWeek() {
     ensureWeeklyState();
-    if (state.accounts.weekly.week >= WEEKLY_MAX_WEEKS) {
-        showAppAlert('Week limit reached. Weekly allowance is capped at 4 weeks.');
-        return;
-    }
-    const weeklyAmt = getWeeklyConfigAmount();
-    showAppConfirm('Start next week? This will add +' + formatMoney(weeklyAmt) + ' ' + getCurrencyLabel() + ' to your weekly allowance.', function () {
-        pushToUndo();
-        applyTransaction({ type: 'weekly_next', amount: weeklyAmt });
-        saveState();
-        renderLedger();
-    }, null, { confirmLabel: 'Start Week' });
+    if (state.accounts.weekly.week >= WEEKLY_MAX_WEEKS) return;
+    state.accounts.weekly.week += 1;
+    state.accounts.weekly.balance = getWeeklyBalance();
+    saveState();
+    renderLedger();
 }
 
 function prevWeek() {
     ensureWeeklyState();
-    if (state.accounts.weekly.week <= 1) {
-        showAppAlert('Already at week 1.');
-        return;
-    }
-    const weeklyAmt = getWeeklyConfigAmount();
-    showAppConfirm('Go back to the previous week? This will subtract ' + formatMoney(weeklyAmt) + ' ' + getCurrencyLabel() + ' from your allowance (reverse of starting that week).', function () {
-        pushToUndo();
-        applyTransaction({ type: 'weekly_prev', amount: weeklyAmt });
-        saveState();
-        renderLedger();
-    }, null, { confirmLabel: 'Go Back' });
+    if (state.accounts.weekly.week <= 1) return;
+    state.accounts.weekly.week -= 1;
+    state.accounts.weekly.balance = getWeeklyBalance();
+    saveState();
+    renderLedger();
 }
 
 // Surplus
