@@ -213,6 +213,14 @@ textarea,
     border-left: 3px solid #4f46e5;
 }
 
+/* Major funds: compact on mobile */
+.major-fund-bar {
+    min-height: 44px;
+}
+.major-fund-bar button {
+    touch-action: manipulation;
+}
+
 /* Ledger horizontal bars */
 .ledger-bar {
     outline: none;

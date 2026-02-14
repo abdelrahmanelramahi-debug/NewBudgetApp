@@ -769,6 +769,20 @@ function applySurplusOrItemFromTool(type, val) {
     closeTool();
 }
 
+function applyItemAdjustment(label, amountStr, type) {
+    var val = parseFloat(amountStr);
+    if (!val || val <= 0) return;
+    var mod = type === 'deduct' ? -val : val;
+    pushToUndo();
+    if (getItemBalance(label, undefined) === undefined) {
+        setItemBalance(label, getPlanAmount(label));
+    }
+    applyTransaction({ type: 'adjust_item_balance', label: label, delta: mod });
+    logHistory(label, mod, 'Manual');
+    saveState();
+    if (typeof refreshUI === 'function') refreshUI();
+}
+
 function completeTask(label) {
     pushToUndo();
     if (getItemBalance(label, undefined) === undefined) {

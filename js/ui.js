@@ -279,11 +279,12 @@ function renderStrategy() {
                  ondragover="handleDragOver(event)"
                  ondrop="handleCatDrop(event, ${secIdx})">
                 <div class="flex justify-between items-center mb-4 pb-4 border-b border-slate-100">
-                    <div class="flex flex-col">
+                    <div class="flex flex-col gap-0.5">
                         <div class="flex items-center gap-2">
                             <span class="text-slate-300 ${sec.isSystem ? 'opacity-0' : 'cursor-move'} text-xs">☰</span>
                             <span class="text-[11px] font-black text-slate-800 uppercase tracking-widest">${sec.label}</span>
                         </div>
+                        <span class="text-[10px] font-bold text-slate-500 pl-5">${formatMoney(secTotal)} ${getCurrencyLabel()} allocated</span>
                     </div>
                     ${controls}
                 </div>
@@ -348,47 +349,78 @@ function renderLedger() {
     const payBal = getBal('Payables');
 
     const majorHtml = `
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-            <!-- General Savings -->
-            <div class="premium-card p-5 bg-indigo-600 text-white border-indigo-500 shadow-lg shadow-indigo-100 flex flex-col justify-between min-h-[11rem] relative overflow-hidden group">
-                <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        <div class="major-funds mb-4 sm:mb-6">
+            <!-- Mobile: compact bars (one row per fund) -->
+            <div class="space-y-1.5 sm:hidden">
+                <div class="major-fund-bar flex items-center justify-between gap-2 py-2.5 px-3 rounded-xl bg-indigo-600 text-white border border-indigo-500">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="flex-shrink-0 w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                        </span>
+                        <span class="text-[11px] font-bold uppercase tracking-wider truncate">General Savings</span>
+                    </div>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <span class="text-base font-black">${formatMoney(savBal)}</span>
+                        <button onclick="openSavingsBuckets()" class="py-1.5 px-2.5 rounded-lg bg-white/20 hover:bg-white/30 text-[10px] font-black uppercase">Manage</button>
+                    </div>
                 </div>
-                <div class="flex-shrink-0">
-                    <span class="text-[10px] font-bold uppercase tracking-widest text-indigo-200">General Savings</span>
-                    <div class="text-3xl font-black mt-1">${formatMoney(savBal)} <span class="text-xs text-indigo-300">${getCurrencyLabel()}</span></div>
+                <div class="major-fund-bar flex items-center justify-between gap-2 py-2.5 px-3 rounded-xl bg-slate-800 text-white border border-slate-700">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="flex-shrink-0 w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
+                        </span>
+                        <span class="text-[11px] font-bold uppercase tracking-wider truncate">Car Fund</span>
+                    </div>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <span class="text-base font-black">${formatMoney(carBal)}</span>
+                        <button onclick="openTool('Car Fund')" class="py-1.5 px-2.5 rounded-lg bg-white text-slate-800 hover:bg-slate-100 text-[10px] font-black uppercase">Manage</button>
+                    </div>
                 </div>
-                <button onclick="openSavingsBuckets()" class="w-full py-2 flex-shrink-0 mt-2 bg-white/20 hover:bg-white/30 rounded-lg text-[10px] font-black uppercase tracking-widest transition text-center backdrop-blur-sm">
-                    Manage
-                </button>
+                <div class="major-fund-bar flex items-center justify-between gap-2 py-2.5 px-3 rounded-xl bg-amber-500 text-white border border-amber-400">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="flex-shrink-0 w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><path d="M4 8h16"/><path d="M6 12h12"/><path d="M8 16h8"/><path d="M10 20h4"/></svg>
+                        </span>
+                        <span class="text-[11px] font-bold uppercase tracking-wider truncate">Payables</span>
+                    </div>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <span class="text-base font-black">${formatMoney(payBal)}</span>
+                        <button onclick="openTool('Payables')" class="py-1.5 px-2.5 rounded-lg bg-white text-amber-900 hover:bg-amber-50 text-[10px] font-black uppercase">Manage</button>
+                    </div>
+                </div>
             </div>
-
-            <!-- Car Fund -->
-            <div class="premium-card p-5 bg-slate-800 text-white border-slate-700 shadow-lg shadow-slate-200 flex flex-col justify-between min-h-[11rem] relative overflow-hidden group">
-                <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
+            <!-- Desktop: 3 cards, reduced height -->
+            <div class="hidden sm:grid grid-cols-3 gap-3">
+                <div class="premium-card p-4 bg-indigo-600 text-white border-indigo-500 shadow-md flex flex-col justify-between min-h-0 relative overflow-hidden group rounded-xl">
+                    <div class="absolute top-0 right-0 p-2 opacity-10 pointer-events-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-indigo-200">General Savings</span>
+                        <div class="text-2xl font-black mt-0.5">${formatMoney(savBal)} <span class="text-xs text-indigo-300">${getCurrencyLabel()}</span></div>
+                    </div>
+                    <button onclick="openSavingsBuckets()" class="w-full py-2 mt-2 bg-white/20 hover:bg-white/30 rounded-lg text-[10px] font-black uppercase transition text-center backdrop-blur-sm">Manage</button>
                 </div>
-                <div class="flex-shrink-0">
-                    <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Car Fund</span>
-                    <div class="text-3xl font-black mt-1">${formatMoney(carBal)} <span class="text-xs text-slate-500">${getCurrencyLabel()}</span></div>
+                <div class="premium-card p-4 bg-slate-800 text-white border-slate-700 shadow-md flex flex-col justify-between min-h-0 relative overflow-hidden group rounded-xl">
+                    <div class="absolute top-0 right-0 p-2 opacity-10 pointer-events-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Car Fund</span>
+                        <div class="text-2xl font-black mt-0.5">${formatMoney(carBal)} <span class="text-xs text-slate-500">${getCurrencyLabel()}</span></div>
+                    </div>
+                    <button onclick="openTool('Car Fund')" class="w-full py-2 mt-2 bg-white text-slate-800 hover:bg-slate-100 rounded-lg text-[10px] font-black uppercase transition text-center">Manage</button>
                 </div>
-                <button onclick="openTool('Car Fund')" class="w-full py-2.5 flex-shrink-0 mt-2 bg-white text-slate-800 hover:bg-slate-100 rounded-lg text-[10px] font-black uppercase tracking-widest transition text-center shadow-md">
-                    Manage
-                </button>
-            </div>
-
-            <!-- Payables -->
-            <div class="premium-card p-5 bg-amber-500 text-white border-amber-400 shadow-lg shadow-amber-100 flex flex-col justify-between min-h-[11rem] relative overflow-hidden group">
-                <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity pointer-events-none">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><path d="M4 8h16"/><path d="M6 12h12"/><path d="M8 16h8"/><path d="M10 20h4"/></svg>
+                <div class="premium-card p-4 bg-amber-500 text-white border-amber-400 shadow-md flex flex-col justify-between min-h-0 relative overflow-hidden group rounded-xl">
+                    <div class="absolute top-0 right-0 p-2 opacity-10 pointer-events-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><path d="M4 8h16"/><path d="M6 12h12"/><path d="M8 16h8"/><path d="M10 20h4"/></svg>
+                    </div>
+                    <div class="flex-shrink-0">
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-amber-100">Payables</span>
+                        <div class="text-2xl font-black mt-0.5">${formatMoney(payBal)} <span class="text-xs text-amber-100">${getCurrencyLabel()}</span></div>
+                    </div>
+                    <button onclick="openTool('Payables')" class="w-full py-2 mt-2 bg-white text-amber-900 hover:bg-amber-50 rounded-lg text-[10px] font-black uppercase transition text-center">Manage</button>
                 </div>
-                <div class="flex-shrink-0">
-                    <span class="text-[10px] font-bold uppercase tracking-widest text-amber-100">Payables</span>
-                    <div class="text-3xl font-black mt-1">${formatMoney(payBal)} <span class="text-xs text-amber-100">${getCurrencyLabel()}</span></div>
-                </div>
-                <button onclick="openTool('Payables')" class="w-full py-2.5 flex-shrink-0 mt-2 bg-white text-amber-900 hover:bg-amber-50 rounded-lg text-[10px] font-black uppercase tracking-widest transition text-center shadow-md">
-                    Manage
-                </button>
             </div>
         </div>
     `;
@@ -403,6 +435,12 @@ function renderLedger() {
         if (relevantItems.length === 0) return;
 
         const secId = `ledger-sec-${sec.id}`;
+        let sumLeft = 0;
+        let sumAllocated = 0;
+        relevantItems.forEach(item => {
+            sumLeft += getItemBalance(item.label, item.amount);
+            sumAllocated += (typeof item.amount === 'number' ? item.amount : 0);
+        });
 
         let barsHtml = '';
         relevantItems.forEach(item => {
@@ -414,34 +452,41 @@ function renderLedger() {
 
             let actionBtn = '';
             if (sec.isSingleAction && bal !== 0) {
-                actionBtn = `<button onclick="event.stopPropagation(); completeTask('${safeLabel}')" class="ledger-bar-complete flex-shrink-0 w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center text-sm font-bold hover:bg-emerald-600 transition shadow-sm" title="Mark used">✓</button>`;
+                actionBtn = `<button type="button" onclick="event.stopPropagation(); completeTask('${safeLabel}')" class="ledger-bar-complete flex-shrink-0 w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center text-sm font-bold hover:bg-emerald-600 transition shadow-sm" title="Mark used">✓</button>`;
             }
 
             barsHtml += `
-                <div role="button" tabindex="0" onclick="openTool('${safeLabel}')" class="ledger-bar flex items-center gap-3 w-full py-3 px-4 rounded-xl border border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm transition-all cursor-pointer group ${bal === 0 ? 'opacity-70' : ''}">
+                <div class="ledger-bar flex items-center gap-2 sm:gap-3 w-full py-2.5 px-3 sm:px-4 rounded-xl border border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm transition-all group ${bal === 0 ? 'opacity-70' : ''}">
                     <div class="flex-1 min-w-0 flex flex-col gap-0.5">
                         <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 truncate" title="${safeLabelAttr}">${item.label}</span>
-                        <div class="h-1.5 w-full max-w-[120px] rounded-full bg-slate-100 overflow-hidden">
+                        <div class="h-1.5 w-full max-w-[100px] rounded-full bg-slate-100 overflow-hidden">
                             <div class="ledger-bar-fill h-full rounded-full transition-all duration-300" style="width:${pct}%"></div>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2 flex-shrink-0">
-                        <div class="text-right">
-                            <p class="text-lg font-black text-slate-800 leading-tight">${formatMoney(bal)}</p>
-                            <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">${getCurrencyLabel()} left</p>
-                        </div>
+                    <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 text-right">
+                        <p class="text-base sm:text-lg font-black text-slate-800 leading-tight">${formatMoney(bal)}</p>
+                        <p class="text-[9px] font-bold text-slate-400 uppercase hidden sm:block">${getCurrencyLabel()} left</p>
+                    </div>
+                    <div class="ledger-bar-actions flex items-center gap-1 flex-shrink-0" onclick="event.stopPropagation()">
+                        <input type="number" class="ledger-bar-amount w-14 sm:w-16 h-8 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-200" placeholder="0" min="0" step="any">
+                        <button type="button" onclick="var b=this.closest('.ledger-bar'); var v=b.querySelector('.ledger-bar-amount').value; applyItemAdjustment('${safeLabel}', v, 'add'); b.querySelector('.ledger-bar-amount').value='';" class="h-8 px-2 rounded-lg bg-emerald-500 text-white text-[10px] font-bold uppercase hover:bg-emerald-600 transition">+</button>
+                        <button type="button" onclick="var b=this.closest('.ledger-bar'); var v=b.querySelector('.ledger-bar-amount').value; applyItemAdjustment('${safeLabel}', v, 'deduct'); b.querySelector('.ledger-bar-amount').value='';" class="h-8 px-2 rounded-lg bg-red-500 text-white text-[10px] font-bold uppercase hover:bg-red-600 transition">−</button>
+                        <button type="button" onclick="openTool('${safeLabel}')" class="h-8 w-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-sm font-bold transition" title="Transfer">⋯</button>
                         ${actionBtn}
                     </div>
                 </div>
             `;
         });
 
-        // Section HTML with Toggle
+        // Section HTML with Toggle + category total (left / allocated)
         const sectionHtml = `
             <div class="mb-4">
                 <button onclick="toggleLedgerSection('${secId}')" class="flex justify-between items-center w-full py-2.5 px-1 hover:bg-slate-50 rounded-lg transition group">
                     <span class="text-[11px] font-black text-slate-800 uppercase tracking-widest">${sec.label}</span>
-                    <svg id="icon-${secId}" class="w-4 h-4 text-slate-400 transform transition-transform group-hover:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    <span class="flex items-center gap-2">
+                        <span class="text-[10px] font-bold text-slate-500">${formatMoney(sumLeft)} / ${formatMoney(sumAllocated)} <span class="text-slate-400">${getCurrencyLabel()}</span></span>
+                        <svg id="icon-${secId}" class="w-4 h-4 text-slate-400 transform transition-transform group-hover:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </span>
                 </button>
                 <div id="${secId}" class="space-y-1.5 mt-1 transition-all">
                     ${barsHtml}
