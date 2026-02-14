@@ -467,10 +467,12 @@ function renderLedger() {
                         <p class="text-base sm:text-lg font-black text-slate-800 leading-tight">${formatMoney(bal)}</p>
                         <p class="text-[9px] font-bold text-slate-400 uppercase hidden sm:block">${getCurrencyLabel()} left</p>
                     </div>
-                    <div class="ledger-bar-actions flex items-center gap-1 flex-shrink-0" onclick="event.stopPropagation()">
+                    <div class="ledger-bar-actions flex items-center gap-1.5 flex-shrink-0" onclick="event.stopPropagation()">
                         <input type="number" class="ledger-bar-amount w-14 sm:w-16 h-8 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-200" placeholder="0" min="0" step="any">
-                        <button type="button" onclick="var b=this.closest('.ledger-bar'); var v=b.querySelector('.ledger-bar-amount').value; applyItemAdjustment('${safeLabel}', v, 'add'); b.querySelector('.ledger-bar-amount').value='';" class="h-8 px-2 rounded-lg bg-emerald-500 text-white text-[10px] font-bold uppercase hover:bg-emerald-600 transition">+</button>
-                        <button type="button" onclick="var b=this.closest('.ledger-bar'); var v=b.querySelector('.ledger-bar-amount').value; applyItemAdjustment('${safeLabel}', v, 'deduct'); b.querySelector('.ledger-bar-amount').value='';" class="h-8 px-2 rounded-lg bg-red-500 text-white text-[10px] font-bold uppercase hover:bg-red-600 transition">−</button>
+                        <div class="flex flex-col gap-0 rounded-lg border border-slate-200 overflow-hidden bg-slate-50/80">
+                            <button type="button" onclick="var b=this.closest('.ledger-bar'); var v=b.querySelector('.ledger-bar-amount').value; applyItemAdjustment('${safeLabel}', v, 'add'); b.querySelector('.ledger-bar-amount').value='';" class="w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none">+</button>
+                            <button type="button" onclick="var b=this.closest('.ledger-bar'); var v=b.querySelector('.ledger-bar-amount').value; applyItemAdjustment('${safeLabel}', v, 'deduct'); b.querySelector('.ledger-bar-amount').value='';" class="w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none border-t border-slate-200">−</button>
+                        </div>
                         <button type="button" onclick="openTool('${safeLabel}')" class="h-8 w-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-sm font-bold transition" title="Transfer">⋯</button>
                         ${actionBtn}
                     </div>
