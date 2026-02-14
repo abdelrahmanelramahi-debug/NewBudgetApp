@@ -118,7 +118,7 @@
                 <h1 class="text-xl font-black text-slate-900">Finance Command</h1>
                  <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
                     <span class="inline-flex items-center gap-1 flex-wrap">
-                        Bank Balance: <span id="header-reality" class="text-slate-800">0.00</span>
+                        Bank Balance: <button type="button" onclick="openLiquidityBreakdown()" class="text-slate-800 font-black underline-offset-2 hover:underline focus:outline-none focus:underline cursor-pointer bg-transparent border-0 p-0 align-baseline" aria-label="View what comprises bank balance"><span id="header-reality">0.00</span></button>
                         <button type="button" id="bank-balance-info-btn" onclick="document.getElementById('bank-balance-info').classList.toggle('hidden')" class="inline-flex items-center justify-center w-4 h-4 rounded-full border border-slate-400 text-slate-500 text-[10px] font-bold leading-none hover:bg-slate-200 focus:outline-none shrink-0" aria-label="What is Bank Balance?">i</button>
                     </span>
                     <span id="bank-balance-info" class="hidden block mt-1.5 text-[9px] font-normal normal-case text-slate-500 max-w-[240px] leading-snug">This is the reality check of what should read in your bank account.</span>
@@ -284,20 +284,22 @@
         <!-- Budget Plan popout (almost full page): vertical layout, same max-width as body -->
         <div id="budget-plan-modal" class="fixed inset-0 z-40 bg-slate-50 hidden flex flex-col">
             <header class="budget-plan-header flex-shrink-0 bg-white border-b border-slate-200 shadow-sm">
-                <div class="max-w-xl mx-auto w-full px-4 py-4 flex flex-col gap-3 sm:gap-4">
-                    <div class="flex items-center gap-3">
-                        <button type="button" onclick="closeBudgetPlan()" class="p-2 -ml-2 rounded-lg text-slate-500 hover:bg-slate-100 transition flex-shrink-0" aria-label="Close">&#10005;</button>
-                        <h2 class="text-base sm:text-lg font-black text-slate-900 uppercase tracking-wider">Budget Plan</h2>
+                <div class="max-w-xl mx-auto w-full px-4 py-3 flex flex-col gap-3">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="closeBudgetPlan()" class="p-2 -ml-1 rounded-lg text-slate-500 hover:bg-slate-100 transition flex-shrink-0" aria-label="Close">&#10005;</button>
+                            <h2 class="text-base font-black text-slate-900 uppercase tracking-wider">Budget Plan</h2>
+                        </div>
                     </div>
-                    <div class="flex flex-wrap items-center gap-3 sm:gap-4 pl-10 sm:pl-10">
+                    <div class="flex flex-col gap-1.5">
                         <div class="flex items-center gap-2">
                             <span class="text-[10px] font-bold uppercase text-slate-500">Total</span>
-                            <span class="text-slate-400" data-currency>AED</span>
-                            <input type="number" id="monthly-income-input" class="w-20 sm:w-28 bg-slate-100 border-0 rounded-lg px-2 py-1.5 text-sm font-black text-slate-900 outline-none focus:ring-2 focus:ring-indigo-300" onfocus="pushToUndo()" oninput="updateIncome(this.value); updateBudgetPlanAllocated();" placeholder="0">
+                            <span class="text-slate-400 text-sm" data-currency>AED</span>
+                            <input type="number" id="monthly-income-input" class="w-24 bg-slate-100 border-0 rounded-lg px-3 py-1.5 text-sm font-black text-slate-900 outline-none focus:ring-2 focus:ring-indigo-300" onfocus="pushToUndo()" oninput="updateIncome(this.value); updateBudgetPlanAllocated();" placeholder="0">
                         </div>
-                        <div id="budget-plan-allocated" class="text-[11px] font-bold text-slate-600">
+                        <p id="budget-plan-allocated" class="text-[11px] font-bold text-slate-600">
                             <span id="budget-plan-allocated-val">0</span> / <span id="budget-plan-total-val">0</span> allocated
-                        </div>
+                        </p>
                     </div>
                 </div>
                 <span id="reality-total-sr" class="hidden" aria-hidden="true">0</span>
