@@ -167,17 +167,47 @@ function switchPage(page) {
     if(tabs[page]) tabs[page].className = 'tab-btn tab-active';
 
     if(page === 'ledger') renderLedger();
-    if(page === 'strategy') renderStrategy();
+    if(page === 'strategy') openBudgetPlan();
     if(page === 'settings') {
         renderSettings();
         if (typeof updateAuthUI === 'function') updateAuthUI();
     }
 }
 
+// --- BUDGET PLAN POPOUT ---
+function openBudgetPlan() {
+    const modal = document.getElementById('budget-plan-modal');
+    if (modal) modal.classList.remove('hidden');
+    renderStrategy();
+    updateBudgetPlanAllocated();
+}
+function closeBudgetPlan() {
+    const modal = document.getElementById('budget-plan-modal');
+    if (modal) modal.classList.add('hidden');
+}
+function updateBudgetPlanAllocated() {
+    const total = typeof state.monthlyIncome === 'number' ? state.monthlyIncome : 0;
+    let allocated = 0;
+    if (state.categories && state.categories.length) {
+        state.categories.forEach(function (sec) {
+            sec.items.forEach(function (item) { allocated += (typeof item.amount === 'number' ? item.amount : 0); });
+        });
+    }
+    const allocEl = document.getElementById('budget-plan-allocated-val');
+    const totalEl = document.getElementById('budget-plan-total-val');
+    if (allocEl) allocEl.textContent = typeof formatMoney === 'function' ? formatMoney(allocated) : allocated.toFixed(0);
+    if (totalEl) totalEl.textContent = typeof formatMoney === 'function' ? formatMoney(total) : total.toFixed(0);
+}
+window.openBudgetPlan = openBudgetPlan;
+window.closeBudgetPlan = closeBudgetPlan;
+window.updateBudgetPlanAllocated = updateBudgetPlanAllocated;
+
 // --- STRATEGY RENDER ---
 function renderStrategy() {
     const container = document.getElementById('strategy-sections');
-    document.getElementById('monthly-income-input').value = state.monthlyIncome;
+    if (!container) return;
+    const incomeInput = document.getElementById('monthly-income-input');
+    if (incomeInput) incomeInput.value = state.monthlyIncome;
 
     let systemHtml = '';
     let customHtml = '';
@@ -208,10 +238,10 @@ function renderStrategy() {
         let rowsHtml = '';
         sec.items.forEach((item, idx) => {
             let amortLabel = item.amortData ? `<span class="text-[9px] bg-indigo-50 text-indigo-600 px-1 rounded font-bold ml-2">${item.amortData.total}/${item.amortData.months}mo</span>` : '';
-            const isFoodBase = item.label === 'Food Base';
+            const isFoodBase = item.label === 'Daily Food';
 
             // SMART BADGES FOR CORE ITEMS
-            if (item.label === 'Food Base') {
+            if (item.label === 'Daily Food') {
                 const dailyRate = item.amount / state.food.daysTotal;
                 amortLabel = `<span id="food-base-daily-badge" class="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold ml-2">${formatMoney(dailyRate)}/day</span>`;
             } else if (item.label === 'Weekly Misc') {
@@ -252,6 +282,21 @@ function renderStrategy() {
                     </div>
                 </div>
             ` : '';
+            const isWeeklyMisc = item.label === 'Weekly Misc';
+            const weeklyAmountMax = Math.max(500, Math.ceil((item.amount || 320) / 4) * 4 + 100);
+            const weeklySliderHtml = isWeeklyMisc ? `
+                <div class="px-6 pb-3">
+                    <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mb-1">
+                        <span>Monthly (4 weeks)</span>
+                        <span>${displayAmount} ${getCurrencyLabel()}</span>
+                    </div>
+                    <input type="range" id="weekly-amount-slider" min="0" max="${weeklyAmountMax}" step="4" value="${displayAmount}" oninput="syncWeeklyAmount('${sec.id}', ${idx}, this.value)" class="w-full">
+                    <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mt-1">
+                        <span>0</span>
+                        <span>${weeklyAmountMax}</span>
+                    </div>
+                </div>
+            ` : '';
 
             rowsHtml += `
                 <div class="draggable-row flex justify-between items-center py-3 border-b border-slate-50 last:border-0"
@@ -269,6 +314,7 @@ function renderStrategy() {
                     </div>
                 </div>
                 ${foodSliderHtml}
+                ${weeklySliderHtml}
             `;
         });
 
@@ -309,6 +355,7 @@ function renderStrategy() {
          container.innerHTML = toolBarHtml + '<div class="text-center py-10 text-slate-300 font-bold uppercase tracking-widest">No Strategies Yet</div>';
     }
     calculateReality();
+    if (typeof updateBudgetPlanAllocated === 'function') updateBudgetPlanAllocated();
 }
 
 // --- LEDGER RENDER ---
@@ -429,7 +476,7 @@ function renderLedger() {
     // Create categorical dropdowns matching the strategy structure
     state.categories.forEach(sec => {
         // Filter items to skip hardcoded UI elements AND the Major Funds we just rendered manually
-        var majorLabels = typeof MAJOR_FUND_LABELS !== 'undefined' ? MAJOR_FUND_LABELS : ['Weekly Misc', 'Food Base', 'General Savings', 'Car Fund', 'Payables'];
+        var majorLabels = typeof MAJOR_FUND_LABELS !== 'undefined' ? MAJOR_FUND_LABELS : ['Weekly Misc', 'Daily Food', 'General Savings', 'Car Fund', 'Payables'];
         const relevantItems = sec.items.filter(item => !majorLabels.includes(item.label));
 
         if (relevantItems.length === 0) return;
@@ -596,7 +643,7 @@ function getMonthCalendarInfo() {
 function updateFoodUI() {
     var cid = typeof SECTION_IDS !== 'undefined' ? SECTION_IDS.CORE_ESSENTIALS : 'core_essentials';
     var fid = typeof SECTION_IDS !== 'undefined' ? SECTION_IDS.FOUNDATIONS : 'foundations';
-    var flabel = typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.FOOD_BASE : 'Food Base';
+    var flabel = typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.FOOD_BASE : 'Daily Food';
     var fSec = state.categories.find(s=>s.id===cid) || state.categories.find(s=>s.id===fid);
     var fItem = fSec ? fSec.items.find(i=>i.label===flabel) : null;
     var foodBase = fItem ? fItem.amount : 840;

@@ -15,7 +15,7 @@ const ITEM_LABELS = {
     PAYABLES: 'Payables',
     CAR_FUND: 'Car Fund',
     WEEKLY_MISC: 'Weekly Misc',
-    FOOD_BASE: 'Food Base'
+    FOOD_BASE: 'Daily Food'
 };
 
 // Items that are rendered separately (Major Funds) or skipped in ledger category grids

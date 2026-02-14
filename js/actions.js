@@ -5,6 +5,7 @@ function updateIncome(val) {
         state.monthlyIncome = num;
         renderStrategy();
         saveState();
+        if (typeof updateBudgetPlanAllocated === 'function') updateBudgetPlanAllocated();
     }
 }
 
@@ -190,11 +191,14 @@ function applyTransaction(tx) {
             if (!item) break;
             const oldVal = item.amount;
             const newVal = tx.amount;
-            const delta = newVal - oldVal;
             item.amount = newVal;
             delete item.amortData;
+            if (isAccountLabel(item.label)) {
+                break;
+            }
+            const delta = newVal - oldVal;
             state.accounts.surplus -= delta;
-            if (isAccountLabel(item.label) || state.balances[item.label] !== undefined) {
+            if (state.balances[item.label] !== undefined) {
                 adjustItemBalance(item.label, delta);
             } else {
                 setItemBalance(item.label, newVal);
@@ -397,7 +401,7 @@ function openDeficitModal() {
 
     state.categories.forEach(sec => {
         sec.items.forEach(item => {
-            if(['Weekly Misc', 'Food Base'].includes(item.label)) return;
+            if(['Weekly Misc', 'Daily Food'].includes(item.label)) return;
 
             const bal = getItemBalance(item.label, item.amount);
             if(bal > 0) {
@@ -465,7 +469,7 @@ function raidFood(available) {
         fItem.amount = Math.max(0, fItem.amount - take);
         applyTransaction({ type: 'adjust_surplus', delta: take });
         applyTransaction({ type: 'food_deficit_raid', amount: take });
-        logHistory('Food Base', -take, 'Deficit Cover');
+        logHistory('Daily Food', -take, 'Deficit Cover');
         saveState();
         renderLedger();
         if(state.accounts.surplus >= 0) closeDeficitModal();
@@ -711,7 +715,7 @@ function renderTransferTargets(container) {
         sec.items.forEach(item => {
             // Skip if it is the current active category, or if it's already in priority list
             if(item.label === activeCat || ['Weekly Misc', 'General Savings'].includes(item.label)) return;
-            if(item.label === 'Food Base') return; // Usually locked/automated
+            if(item.label === 'Daily Food') return; // Usually locked/automated
 
             container.innerHTML += `
                 <button onclick="executeTransfer('${item.label}')" class="w-full text-left p-2.5 rounded-lg bg-white border border-slate-200 flex justify-between items-center text-slate-600 font-bold text-[11px] hover:bg-slate-50 transition">
@@ -885,7 +889,7 @@ function buyFoodDay() {
     const sourceId = (sourceEl && sourceEl.value) ? sourceEl.value : 'surplus';
 
     const fSec = state.categories.find(s=>s.id==='core_essentials') || state.categories.find(s=>s.id==='foundations');
-    const fItem = fSec ? fSec.items.find(i=>i.label==='Food Base') : null;
+    const fItem = fSec ? fSec.items.find(i=>i.label==='Daily Food') : null;
     const foodBase = fItem ? fItem.amount : 840;
     const dailyRate = foodBase / 28;
     const totalCost = dailyRate * daysInput;
@@ -1026,6 +1030,7 @@ function fastUpdateItemAmount(sid, idx, val) {
 
     // UI UPDATES (Without calling renderStrategy)
     updateGlobalUI();
+    if (typeof updateBudgetPlanAllocated === 'function') updateBudgetPlanAllocated();
 
     // Update Section Percentage
     const secTotal = sec.items.reduce((a, b) => a + b.amount, 0);
@@ -1033,7 +1038,7 @@ function fastUpdateItemAmount(sid, idx, val) {
     const percEl = document.getElementById(`sec-perc-${sid}`);
     if(percEl) percEl.innerText = perc + "%";
 
-    if(item.label === 'Food Base') {
+    if(item.label === 'Daily Food') {
         const slider = document.getElementById('food-daily-slider');
         const input = document.getElementById('food-base-input');
         if(slider) {
@@ -1069,12 +1074,17 @@ function syncFoodDailyRate(sid, idx, val) {
     syncFoodBaseAmount(sid, idx, total);
 }
 
+function syncWeeklyAmount(sid, idx, val) {
+    const num = parseFloat(val) || 0;
+    fastUpdateItemAmount(sid, idx, num);
+}
+
 // Paycheck + Allocation
 function getAllocatableItems() {
     const items = [];
     state.categories.forEach(sec => {
         sec.items.forEach(item => {
-            if (item.label === 'Food Base') return;
+            if (item.label === 'Daily Food') return;
             if (item.amount > 0) {
                 items.push({ label: item.label, amount: item.amount });
             }

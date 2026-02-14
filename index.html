@@ -157,9 +157,9 @@
             </div>
         </div>
 
-        <div class="nav-pill mt-4">
+        <div class="nav-pill mt-4 flex items-center gap-2">
             <div onclick="switchPage('ledger')" id="nav-ledger" class="tab-btn tab-active">Daily Entry</div>
-            <div onclick="switchPage('strategy')" id="nav-strategy" class="tab-btn tab-inactive">Budget Plan</div>
+            <button type="button" onclick="openBudgetPlan()" class="tab-btn tab-inactive py-2.5 px-4 rounded-xl text-[11px] font-black uppercase tracking-widest bg-indigo-50 text-indigo-700 border border-indigo-200 hover:bg-indigo-100 transition">Budget Plan</button>
             <div onclick="switchPage('settings')" id="nav-settings" class="tab-btn tab-inactive">Settings</div>
         </div>
     </nav>
@@ -261,16 +261,33 @@
             <div id="ledger-categories" class="space-y-6"></div>
         </div>
 
-        <!-- PAGE: STRATEGY -->
-        <div id="page-strategy" class="space-y-6 hidden">
-            <!-- Global Controls will be injected here via JS -->
-            
-            <div class="grid grid-cols-2 gap-4">
+        <!-- Budget Plan popout (almost full page) -->
+        <div id="budget-plan-modal" class="fixed inset-0 z-40 bg-slate-50 hidden flex flex-col">
+            <header class="budget-plan-header flex-shrink-0 flex items-center justify-between gap-4 px-4 py-4 bg-white border-b border-slate-200 shadow-sm">
+                <div class="flex items-center gap-3 min-w-0">
+                    <button type="button" onclick="closeBudgetPlan()" class="p-2 -ml-2 rounded-lg text-slate-500 hover:bg-slate-100 transition" aria-label="Close">&#10005;</button>
+                    <h2 class="text-lg font-black text-slate-900 uppercase tracking-wider truncate">Budget Plan</h2>
+                </div>
+                <div class="flex items-center gap-4 flex-wrap">
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-bold uppercase text-slate-500 whitespace-nowrap">Total</span>
+                        <span class="text-slate-400" data-currency>AED</span>
+                        <input type="number" id="monthly-income-input" class="w-24 sm:w-28 bg-slate-100 border-0 rounded-lg px-2 py-1.5 text-sm font-black text-slate-900 outline-none focus:ring-2 focus:ring-indigo-300" onfocus="pushToUndo()" oninput="updateIncome(this.value); updateBudgetPlanAllocated();" placeholder="0">
+                    </div>
+                    <div id="budget-plan-allocated" class="text-[11px] font-bold text-slate-600 whitespace-nowrap">
+                        <span id="budget-plan-allocated-val">0</span> / <span id="budget-plan-total-val">0</span> allocated
+                    </div>
+                </div>
+                <span id="reality-total" class="hidden" aria-hidden="true">0</span>
+            </header>
+            <div class="budget-plan-body flex-1 overflow-y-auto overflow-x-hidden">
+                <div class="max-w-xl mx-auto px-4 py-6 space-y-6">
+            <div class="grid grid-cols-2 gap-4 hidden" aria-hidden="true">
                 <div class="premium-card p-5 bg-slate-50 border-slate-100">
-                    <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Planned Income</span>
+                    <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Planned Income (legacy)</span>
                     <div class="flex items-center gap-1">
                         <span class="text-lg font-bold text-slate-300" data-currency>AED</span>
-                        <input type="number" id="monthly-income-input" class="w-full bg-transparent text-2xl font-black text-slate-900 outline-none" onfocus="pushToUndo()" oninput="updateIncome(this.value)" placeholder="0">
+                        <input type="number" id="monthly-income-input-legacy" class="w-full bg-transparent text-2xl font-black text-slate-900 outline-none" placeholder="0">
                     </div>
                     <p class="text-[10px] text-slate-400 mt-2">Used for plan percentages and first-time setup only. Changing it won’t add money.</p>
                 </div>

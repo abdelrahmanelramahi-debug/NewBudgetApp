@@ -24,7 +24,7 @@ let state = {
         ] },
         { id: 'core_essentials', label: 'Core Essentials', isSystem: true, items: [
             { label: 'Weekly Misc', amount: 320, isCore: true },
-            { label: 'Food Base', amount: 840, isCore: true },
+            { label: 'Daily Food', amount: 840, isCore: true },
             { label: 'Car Fund', amount: 500, isCore: true }
         ]},
         { id: 'health', label: 'Health', isLedgerLinked: true, isSingleAction: true, items: [
@@ -259,7 +259,7 @@ function ensureCoreItems() {
             isSystem: true,
             items: [
                 { label: 'Weekly Misc', amount: 320, isCore: true },
-                { label: 'Food Base', amount: 840, isCore: true },
+                { label: 'Daily Food', amount: 840, isCore: true },
                 { label: 'Car Fund', amount: 500, isCore: true }
             ]
         });
@@ -274,7 +274,7 @@ function ensureCoreItems() {
         if (sec.id !== coreId) {
             sec.items = sec.items.filter(i =>
                 i.label !== (typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.WEEKLY_MISC : 'Weekly Misc') &&
-                i.label !== (typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.FOOD_BASE : 'Food Base') &&
+                i.label !== (typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.FOOD_BASE : 'Daily Food') &&
                 i.label !== (typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.CAR_FUND : 'Car Fund')
             );
         }
@@ -309,7 +309,7 @@ function ensureWeeklyState() {
 function getFoodRemainderInfo() {
     var cid = typeof SECTION_IDS !== 'undefined' ? SECTION_IDS.CORE_ESSENTIALS : 'core_essentials';
     var fid = typeof SECTION_IDS !== 'undefined' ? SECTION_IDS.FOUNDATIONS : 'foundations';
-    var flabel = typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.FOOD_BASE : 'Food Base';
+    var flabel = typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.FOOD_BASE : 'Daily Food';
     const fSec = state.categories.find(s=>s.id===cid) || state.categories.find(s=>s.id===fid);
     const fItem = fSec ? fSec.items.find(i=>i.label===flabel) : null;
     const foodBase = fItem ? fItem.amount : 0;
