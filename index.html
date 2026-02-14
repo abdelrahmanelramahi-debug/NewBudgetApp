@@ -118,9 +118,9 @@
             <nav class="p-3 flex-1 space-y-0.5">
                 <button type="button" class="desktop-nav-item nav-ledger-pill tab-btn tab-active w-full text-left py-2.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition" onclick="switchPage('ledger'); closeSideMenu();">Daily Entry</button>
                 <button type="button" class="desktop-nav-item w-full text-left py-2.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition" onclick="openBudgetPlan(); closeSideMenu();">Budget Plan</button>
+                <button type="button" class="desktop-nav-item w-full text-left py-2.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition" onclick="switchPage('settings'); closeSideMenu();">Profile</button>
                 <button type="button" id="nav-settings" class="desktop-nav-item nav-settings-pill tab-btn tab-inactive w-full text-left py-2.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition" onclick="switchPage('settings'); closeSideMenu();">Settings</button>
-                <button type="button" class="desktop-nav-item w-full text-left py-2.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition" onclick="closeSideMenu();">Profile</button>
-                <a href="mailto:omniveradigital@gmail.com?subject=Finance%20Command%20Bug%20Report" onclick="closeSideMenu()" class="block py-2.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition">Report a bug</a>
+                <a href="mailto:omniveradigital@gmail.com?subject=Finance%20Command%20Bug%20Report" onclick="closeSideMenu()" class="block py-2.5 px-3 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 transition">Report a Bug</a>
             </nav>
         </aside>
         <div id="app-main" class="flex-1 flex flex-col min-w-0 w-full max-w-xl lg:max-w-none mx-auto px-4 lg:px-6">
@@ -183,9 +183,9 @@
     </nav>
 
     <!-- Side menu drawer -->
-    <div id="side-menu" class="fixed inset-0 z-30 hidden">
+    <div id="side-menu" class="fixed inset-0 z-[60] hidden">
         <div id="side-menu-backdrop" onclick="closeSideMenu()" class="absolute inset-0 bg-black/30"></div>
-        <div class="absolute top-0 left-0 bottom-0 w-72 max-w-[85vw] bg-white shadow-xl flex flex-col">
+        <div class="side-menu-panel absolute top-0 left-0 bottom-0 w-72 max-w-[85vw] bg-white shadow-xl flex flex-col">
             <div class="p-4 border-b border-slate-100 flex items-center justify-between">
                 <span class="text-xs font-black text-slate-500 uppercase tracking-widest">Menu</span>
                 <button type="button" onclick="closeSideMenu()" class="p-2 rounded-lg text-slate-500 hover:bg-slate-100">&#10005;</button>
@@ -193,9 +193,9 @@
             <nav class="p-3 space-y-1">
                 <button type="button" onclick="switchPage('ledger'); closeSideMenu();" class="w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Daily Entry</button>
                 <button type="button" onclick="openBudgetPlan(); closeSideMenu();" class="w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Budget Plan</button>
+                <button type="button" onclick="switchPage('settings'); closeSideMenu();" class="w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Profile</button>
                 <button type="button" onclick="switchPage('settings'); closeSideMenu();" class="w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Settings</button>
-                <button type="button" onclick="closeSideMenu();" class="w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Profile</button>
-                <a href="mailto:omniveradigital@gmail.com?subject=Finance%20Command%20Bug%20Report" onclick="closeSideMenu()" class="block w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Report a bug</a>
+                <a href="mailto:omniveradigital@gmail.com?subject=Finance%20Command%20Bug%20Report" onclick="closeSideMenu()" class="block w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Report a Bug</a>
             </nav>
         </div>
     </div>

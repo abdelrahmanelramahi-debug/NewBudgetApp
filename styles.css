@@ -199,6 +199,18 @@ body.theme-dark .desktop-nav-item:hover {
     background: #1e293b;
 }
 
+/* Sidebar nav: Title Case, not uppercase */
+.desktop-sidebar .desktop-nav-item,
+.desktop-sidebar nav a {
+    text-transform: none;
+}
+
+/* Side menu panel: above header on iOS, respect safe area */
+.side-menu-panel {
+    padding-top: env(safe-area-inset-top);
+    z-index: 1;
+}
+
 /* --- STABLE STYLING --- */
 .premium-card {
     background-color: white;
@@ -208,11 +220,11 @@ body.theme-dark .desktop-nav-item:hover {
     transition: all 0.2s;
 }
 
-/* Nav — keep above side menu on iOS (stacking context + higher z-index) */
+/* Nav — sticky header; side menu uses z-[60] so it draws on top when open */
 .nav-header {
     position: sticky;
     top: 0;
-    z-index: 50;
+    z-index: 40;
     background-color: rgba(255, 255, 255, 0.9);
     -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
