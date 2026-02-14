@@ -107,6 +107,7 @@ function loadState() {
     }
     migrateState();
     ensureSettings();
+    ensureFoodConsumedDays();
 }
 
 function migrateState() {
@@ -209,6 +210,16 @@ function ensureSettings() {
     if (typeof pd !== 'number' || pd < 1 || pd > 31) {
         state.settings.payDate = 28;
     }
+}
+
+function ensureFoodConsumedDays() {
+    if (!state.food) state.food = { daysTotal: 28, daysUsed: 0, lockedAmount: 0, history: [], viewWeek: 0 };
+    if (!Array.isArray(state.food.consumedDays)) {
+        var n = Math.max(0, Math.min(28, Math.floor(state.food.daysUsed || 0)));
+        state.food.consumedDays = [];
+        for (var i = 1; i <= n; i++) state.food.consumedDays.push(i);
+    }
+    state.food.daysUsed = state.food.consumedDays.length;
 }
 
 function ensureSystemSavings() {

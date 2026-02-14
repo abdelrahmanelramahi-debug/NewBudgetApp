@@ -210,7 +210,22 @@ function applyTransaction(tx) {
             state.accounts.weekly.week += 1;
             break;
         case 'food_spend':
-            state.food.daysUsed++;
+            if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
+            var list = state.food.consumedDays || [];
+            var todayDay = typeof window.getTodayCycleDay === 'function' ? window.getTodayCycleDay() : 0;
+            if (todayDay > 0 && list.indexOf(todayDay) === -1) {
+                list.push(todayDay);
+                list.sort(function(a, b) { return a - b; });
+                state.food.consumedDays = list;
+            } else if (todayDay <= 0) {
+                var next = (state.food.daysUsed || 0) + 1;
+                if (next <= 28 && list.indexOf(next) === -1) {
+                    list.push(next);
+                    list.sort(function(a, b) { return a - b; });
+                    state.food.consumedDays = list;
+                }
+            }
+            state.food.daysUsed = (state.food.consumedDays || []).length;
             state.food.history.unshift({type:'spend', amt: tx.amount});
             break;
         case 'food_lock':
@@ -815,11 +830,19 @@ function spendFoodDay() {
     }
 }
 
-function setFoodDaysUsedFromCalendar(targetDaysUsed) {
-    var clamped = Math.max(0, Math.min(28, Math.floor(targetDaysUsed)));
-    if (state.food.daysUsed === clamped) return;
+function setFoodDayFromCalendar(cycleDay, action) {
+    var day = Math.max(1, Math.min(28, Math.floor(cycleDay)));
+    if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
+    var list = state.food.consumedDays || [];
+    if (action === 'unmark') {
+        if (list.indexOf(day) === -1) return;
+        state.food.consumedDays = list.filter(function(d) { return d !== day; });
+    } else {
+        if (list.indexOf(day) !== -1) return;
+        state.food.consumedDays = list.concat([day]).sort(function(a, b) { return a - b; });
+    }
+    state.food.daysUsed = state.food.consumedDays.length;
     pushToUndo();
-    state.food.daysUsed = clamped;
     saveState();
     renderLedger();
     updateGlobalUI();
@@ -892,9 +915,15 @@ function releaseAllBuffer() {
 function undoFood(idx) {
     const h = state.food.history[idx];
     pushToUndo();
-    if(h.type==='spend') state.food.daysUsed--;
-    else {
-        // Restore funds (Simple restoration to surplus for now to avoid complex reverse waterfall)
+    if(h.type==='spend') {
+        if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
+        var list = state.food.consumedDays || [];
+        if (list.length > 0) {
+            var maxDay = Math.max.apply(null, list);
+            state.food.consumedDays = list.filter(function(d) { return d !== maxDay; });
+        }
+        state.food.daysUsed = (state.food.consumedDays || []).length;
+    } else {
         state.food.lockedAmount -= h.amt;
         state.accounts.surplus += h.amt;
     }

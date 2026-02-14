@@ -565,6 +565,20 @@ function getPayCycleInfo() {
     return { cycleStart: cycleStart, dates: dates, monthNames: monthNames };
 }
 
+function getTodayCycleDay() {
+    var info = getPayCycleInfo();
+    var today = new Date();
+    var d = today.getDate();
+    var m = today.getMonth();
+    var y = today.getFullYear();
+    for (var i = 0; i < info.dates.length; i++) {
+        if (info.dates[i].date === d && info.dates[i].month === m && info.dates[i].year === y)
+            return i + 1;
+    }
+    return 0;
+}
+if (typeof window !== 'undefined') window.getTodayCycleDay = getTodayCycleDay;
+
 function getMonthCalendarInfo() {
     var now = new Date();
     var year = now.getFullYear();
@@ -585,7 +599,9 @@ function updateFoodUI() {
     var fItem = fSec ? fSec.items.find(i=>i.label===flabel) : null;
     var foodBase = fItem ? fItem.amount : 840;
     var daily = foodBase / (state.food.daysTotal || 28);
-    var daysUsed = state.food.daysUsed || 0;
+    if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
+    var consumedDays = state.food.consumedDays || [];
+    var daysUsed = consumedDays.length;
     var daysTotal = state.food.daysTotal || 28;
     var lockedAmount = state.food.lockedAmount || 0;
     var bufferCount = daily > 0 ? Math.floor(lockedAmount / daily) : 0;
@@ -659,11 +675,11 @@ function updateFoodUI() {
                 var slot = r * 7 + col;
                 var p = dates[slot];
                 var cycleDay = slot + 1;
-                var consumed = cycleDay <= daysUsed;
+                var consumed = consumedDays.indexOf(cycleDay) !== -1;
                 var isToday = p.date === todayDate && p.month === todayMonth && p.year === todayYear;
-                var futureInCycle = cycleDay > daysUsed && cycleDay <= 28;
-                var targetDays = consumed ? cycleDay - 1 : cycleDay;
-                var clickAttr = ' onclick="setFoodDaysUsedFromCalendar(' + targetDays + ')" role="button"';
+                var futureInCycle = !consumed && cycleDay <= 28;
+                var action = consumed ? 'unmark' : 'mark';
+                var clickAttr = ' onclick="setFoodDayFromCalendar(' + cycleDay + ', \'' + action + '\')" role="button"';
                 var cls = 'food-overview-cell rounded-md flex items-center justify-center text-[10px] font-black min-h-[2rem] transition cursor-pointer ';
                 if (consumed) cls += 'bg-slate-200 text-slate-500 hover:bg-slate-300';
                 else if (isToday) cls += 'bg-indigo-500 text-white shadow-md hover:bg-indigo-600';
