@@ -292,14 +292,13 @@ function deleteCategory(sid) {
     if(idx === -1) return;
     const sec = state.categories[idx];
 
-    if(confirm(`Delete category "${sec.label}" and refund ${sec.items.length} items to Surplus?`)) {
+    showAppConfirm('Delete category "' + sec.label + '" and refund ' + sec.items.length + ' items to Surplus?', function () {
         pushToUndo();
         applyTransaction({ type: 'delete_category', sid });
-
         saveState();
         renderStrategy();
         updateGlobalUI();
-    }
+    }, null, { confirmLabel: 'Delete' });
 }
 
 // --- DRAG FUNCTIONS ---
@@ -519,7 +518,7 @@ function confirmDangerAction() {
         renderStrategy();
         closeDangerModal();
     } else {
-        alert("Incorrect phrase.");
+        showAppAlert('Incorrect phrase.');
     }
 }
 
@@ -741,28 +740,32 @@ function executeAction(type) {
             if(!canApplySurplusDelta(delta)) return;
             if(shouldConfirmSurplusEdit()) {
                 const actionLabel = type === 'deduct' ? 'deduct' : 'add';
-                const proceed = confirm(`You are about to ${actionLabel} funds directly to Surplus. This creates or removes money from thin air. Continue?`);
-                if (!proceed) return;
+                showAppConfirm('You are about to ' + actionLabel + ' funds directly to Surplus. This creates or removes money from thin air. Continue?', function () {
+                    pushToUndo();
+                    applySurplusOrItemFromTool(type, val);
+                });
+                return;
             }
         }
         pushToUndo();
-        const mod = type==='deduct' ? -val : val;
-
-        if (activeCat === 'Surplus') {
-            applyTransaction({ type: 'adjust_surplus', delta: mod });
-        } else {
-            if (getItemBalance(activeCat, undefined) === undefined) {
-                setItemBalance(activeCat, getPlanAmount(activeCat));
-            }
-            applyTransaction({ type: 'adjust_item_balance', label: activeCat, delta: mod });
-        }
-
-        logHistory(activeCat, mod, 'Manual');
-        saveState();
-        renderLedger();
-        updateGlobalUI();
-        closeTool();
+        applySurplusOrItemFromTool(type, val);
     }
+}
+
+function applySurplusOrItemFromTool(type, val) {
+    var mod = type === 'deduct' ? -val : val;
+    if (activeCat === 'Surplus') {
+        applyTransaction({ type: 'adjust_surplus', delta: mod });
+    } else {
+        if (getItemBalance(activeCat, undefined) === undefined) {
+            setItemBalance(activeCat, getPlanAmount(activeCat));
+        }
+        applyTransaction({ type: 'adjust_item_balance', label: activeCat, delta: mod });
+    }
+    logHistory(activeCat, mod, 'Manual');
+    saveState();
+    if (typeof refreshUI === 'function') refreshUI();
+    closeTool();
 }
 
 function completeTask(label) {
@@ -811,7 +814,7 @@ function buyFoodDay() {
     // Buffer is funded only from surplus/deficit
     var surplus = (state.accounts && typeof state.accounts.surplus === 'number') ? state.accounts.surplus : 0;
     if (surplus < totalCost) {
-        alert('Not enough surplus/deficit. Need ' + formatMoney(totalCost) + ' ' + getCurrencyLabel() + '.');
+        showAppAlert('Not enough surplus/deficit. Need ' + formatMoney(totalCost) + ' ' + getCurrencyLabel() + '.');
         return;
     }
 
@@ -877,21 +880,16 @@ function topUpWeeklyInline() {
 function nextWeek() {
     ensureWeeklyState();
     if (state.accounts.weekly.week >= WEEKLY_MAX_WEEKS) {
-        alert('Week limit reached. Weekly allowance is capped at 4 weeks.');
+        showAppAlert('Week limit reached. Weekly allowance is capped at 4 weeks.');
         return;
     }
-
     const weeklyAmt = getWeeklyConfigAmount();
-
-    if(confirm(`Start next week? This will add +${formatMoney(weeklyAmt)} ${getCurrencyLabel()} to your weekly allowance.`)) {
+    showAppConfirm('Start next week? This will add +' + formatMoney(weeklyAmt) + ' ' + getCurrencyLabel() + ' to your weekly allowance.', function () {
         pushToUndo();
         applyTransaction({ type: 'weekly_next', amount: weeklyAmt });
-        // Note: We don't add to state.balances['Weekly Misc'] here because that bucket holds the *total* month's assets already.
-        // The 'Weekly Misc' balance drains as we spend.
-        // The 'state.weekly.balance' acts as a view/limit for the current week.
         saveState();
         renderLedger();
-    }
+    }, null, { confirmLabel: 'Start Week' });
 }
 
 // Surplus
@@ -904,7 +902,7 @@ function shouldConfirmSurplusEdit() {
 }
 function canApplySurplusDelta(delta) {
     if(state.settings?.allowNegativeSurplus === false && (state.accounts.surplus + delta) < 0) {
-        alert('This would make Surplus negative. Enable "Allow negative Surplus" in Settings to proceed.');
+        showAppAlert('This would make Surplus negative. Enable "Allow negative Surplus" in Settings to proceed.');
         return false;
     }
     return true;
@@ -916,8 +914,13 @@ function adjustGlobalSurplus(dir) {
         if(!canApplySurplusDelta(delta)) return;
         if(shouldConfirmSurplusEdit()) {
             const actionLabel = dir > 0 ? 'add' : 'deduct';
-            const proceed = confirm(`You are about to ${actionLabel} funds directly to Surplus. This creates or removes money from thin air. Continue?`);
-            if (!proceed) return;
+            showAppConfirm('You are about to ' + actionLabel + ' funds directly to Surplus. This creates or removes money from thin air. Continue?', function () {
+                pushToUndo();
+                applyTransaction({ type: 'adjust_surplus', delta: delta });
+                document.getElementById('surplus-adjust-val').value = '';
+                if (typeof refreshUI === 'function') refreshUI();
+            });
+            return;
         }
         pushToUndo();
         applyTransaction({ type: 'adjust_surplus', delta });
@@ -1024,12 +1027,10 @@ function applyPaycheckDistribute() {
     applyTransaction({ type: 'adjust_surplus', delta: val });
 
     if (totalDeficit <= 0) {
-        alert('All planned categories are already funded. The paycheck was added to Surplus.');
+        showAppAlert('All planned categories are already funded. The paycheck was added to Surplus.');
         document.getElementById('paycheck-amount').value = '';
         saveState();
-        renderLedger();
-        renderStrategy();
-        updateGlobalUI();
+        if (typeof refreshUI === 'function') refreshUI();
         return;
     }
 
@@ -1042,10 +1043,10 @@ function applyPaycheckDistribute() {
 
     const leftoverFromPaycheck = Math.max(0, val - totalDeficit);
     if (leftoverFromPaycheck > 0) {
-        alert(`Fully funded all planned categories. ${formatMoney(leftoverFromPaycheck)} ${getCurrencyLabel()} stayed in Surplus.`);
+        showAppAlert('Fully funded all planned categories. ' + formatMoney(leftoverFromPaycheck) + ' ' + getCurrencyLabel() + ' stayed in Surplus.');
     } else if (totalDeficit > val) {
         const shortfall = totalDeficit - val;
-        alert(`Plan required more than this paycheck. ${formatMoney(shortfall)} ${getCurrencyLabel()} was taken from Surplus.`);
+        showAppAlert('Plan required more than this paycheck. ' + formatMoney(shortfall) + ' ' + getCurrencyLabel() + ' was taken from Surplus.');
     }
 
     document.getElementById('paycheck-amount').value = '';
@@ -1179,7 +1180,7 @@ function createSavingsBucket() {
     if (!name) return;
     ensureAccountsState();
     if (state.accounts.savingsBuckets[name] !== undefined) {
-        alert('Bucket already exists.');
+        showAppAlert('Bucket already exists.');
         return;
     }
     pushToUndo();
@@ -1203,7 +1204,7 @@ function renameSavingsBucket(oldName) {
     if (!newName || newName.trim() === '' || newName === oldName) return;
     ensureAccountsState();
     if (state.accounts.savingsBuckets[newName] !== undefined) {
-        alert('Bucket already exists.');
+        showAppAlert('Bucket already exists.');
         return;
     }
     pushToUndo();
@@ -1222,22 +1223,22 @@ function deleteSavingsBucket(name) {
     ensureAccountsState();
     const remaining = Object.keys(state.accounts.savingsBuckets).length;
     if (remaining <= 1) {
-        alert('You must keep at least one bucket.');
+        showAppAlert('You must keep at least one bucket.');
         return;
     }
-    const proceed = confirm(`Delete "${name}" bucket and move its funds to Surplus?`);
-    if (!proceed) return;
-    const amount = state.accounts.savingsBuckets[name] || 0;
-    pushToUndo();
-    delete state.accounts.savingsBuckets[name];
-    if (state.accounts.savingsDefaultBucket === name) {
-        state.accounts.savingsDefaultBucket = Object.keys(state.accounts.savingsBuckets)[0];
-    }
-    syncSavingsTotal();
-    applyTransaction({ type: 'adjust_surplus', delta: amount });
-    saveState();
-    renderSavingsBuckets();
-    updateGlobalUI();
+    showAppConfirm('Delete "' + name + '" bucket and move its funds to Surplus?', function () {
+        const amount = state.accounts.savingsBuckets[name] || 0;
+        pushToUndo();
+        delete state.accounts.savingsBuckets[name];
+        if (state.accounts.savingsDefaultBucket === name) {
+            state.accounts.savingsDefaultBucket = Object.keys(state.accounts.savingsBuckets)[0];
+        }
+        syncSavingsTotal();
+        applyTransaction({ type: 'adjust_surplus', delta: amount });
+        saveState();
+        renderSavingsBuckets();
+        updateGlobalUI();
+    }, null, { confirmLabel: 'Delete' });
 }
 
 // Settings
@@ -1330,7 +1331,7 @@ function importStateFile(file) {
             saveState();
             location.reload();
         } catch (err) {
-            alert('Import failed. The file is not valid JSON.');
+            showAppAlert('Import failed. The file is not valid JSON.');
         }
     };
     reader.readAsText(file);
@@ -1340,7 +1341,7 @@ function recoverLocalData() {
     var stateKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.STATE : 'financeCmd_state';
     const localBackup = localStorage.getItem(stateKey);
     if (!localBackup) {
-        alert('No local backup found in browser storage. Your data may have been cleared.');
+        showAppAlert('No local backup found in browser storage. Your data may have been cleared.');
         return;
     }
     
@@ -1352,38 +1353,39 @@ function recoverLocalData() {
                        (recovered.balances && Object.keys(recovered.balances).length > 0);
         
         if (!hasData) {
-            alert('Local backup exists but appears empty. Your data may have been overwritten by empty cloud data.');
+            showAppAlert('Local backup exists but appears empty. Your data may have been overwritten by empty cloud data.');
             return;
         }
-        
-        const proceed = confirm('Found local backup data. Restore it? This will overwrite current state.');
-        if (!proceed) return;
-        
-        pushToUndo();
-        state = { ...state, ...recovered };
-        migrateState();
-        ensureSystemSavings();
-        ensureCoreItems();
-        ensureSettings();
-        saveState();
-        if (currentUser && window.saveStateToCloud) {
-            const saveToCloud = confirm('Save recovered data to cloud?');
-            if (saveToCloud) window.saveStateToCloud();
-        }
-        if (typeof refreshUI === 'function') refreshUI();
-        alert('Data recovered successfully!');
+        showAppConfirm('Found local backup data. Restore it? This will overwrite current state.', function () {
+            pushToUndo();
+            state = { ...state, ...recovered };
+            migrateState();
+            ensureSystemSavings();
+            ensureCoreItems();
+            ensureSettings();
+            saveState();
+            if (currentUser && window.saveStateToCloud) {
+                showAppConfirm('Save recovered data to cloud?', function () {
+                    window.saveStateToCloud();
+                    showAppAlert('Data recovered successfully!');
+                }, null, { confirmLabel: 'Save to Cloud' });
+            } else {
+                showAppAlert('Data recovered successfully!');
+            }
+            if (typeof refreshUI === 'function') refreshUI();
+        }, null, { confirmLabel: 'Restore' });
     } catch (e) {
-        alert('Failed to recover data: ' + e.message);
+        showAppAlert('Failed to recover data: ' + e.message);
         console.error('Recovery error:', e);
     }
 }
 
 function resetAppData() {
-    const proceed = confirm('This will delete all local data and reload the app. Continue?');
-    if(!proceed) return;
-    var stateKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.STATE : 'financeCmd_state';
-    var modKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.MODIFIED : 'financeCmd_state_modified';
-    localStorage.removeItem(stateKey);
-    try { localStorage.removeItem(modKey); } catch (e) {}
-    location.reload();
+    showAppConfirm('This will delete all local data and reload the app. Continue?', function () {
+        var stateKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.STATE : 'financeCmd_state';
+        var modKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.MODIFIED : 'financeCmd_state_modified';
+        localStorage.removeItem(stateKey);
+        try { localStorage.removeItem(modKey); } catch (e) {}
+        location.reload();
+    }, null, { confirmLabel: 'Delete & Reload' });
 }

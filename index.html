@@ -34,7 +34,13 @@
         <div class="flex justify-between items-center mb-4 max-w-xl mx-auto">
             <div>
                 <h1 class="text-xl font-black text-slate-900">Finance Command</h1>
-                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Reality: <span id="header-reality" class="text-slate-800">0.00</span></p>
+                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                    <span class="inline-flex items-center gap-1 flex-wrap">
+                        Bank Balance: <span id="header-reality" class="text-slate-800">0.00</span>
+                        <button type="button" id="bank-balance-info-btn" onclick="document.getElementById('bank-balance-info').classList.toggle('hidden')" class="inline-flex items-center justify-center w-4 h-4 rounded-full border border-slate-400 text-slate-500 text-[10px] font-bold leading-none hover:bg-slate-200 focus:outline-none shrink-0" aria-label="What is Bank Balance?">i</button>
+                    </span>
+                    <span id="bank-balance-info" class="hidden block mt-1.5 text-[9px] font-normal normal-case text-slate-500 max-w-[240px] leading-snug">This is the reality check of what should read in your bank account.</span>
+                </p>
             </div>
             <div class="flex items-center gap-3">
                 <button onclick="globalUndo()" id="global-undo-btn" class="p-2 bg-slate-200 rounded-lg text-slate-600 hover:bg-slate-300 transition opacity-30 pointer-events-none" title="Undo Last Action">
@@ -527,6 +533,21 @@
             <div class="flex gap-3 mt-6">
                 <button onclick="closeDeleteModal()" class="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black text-[10px] uppercase">Cancel</button>
                 <button onclick="confirmDelete()" class="flex-1 py-4 bg-red-500 text-white rounded-2xl font-black text-[10px] uppercase">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- In-app Alert / Confirm Modal (replaces browser alert/confirm) -->
+    <div id="app-alert-modal" class="modal-overlay hidden">
+        <div class="modal-content text-center max-w-sm">
+            <div id="app-alert-icon" class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 bg-indigo-50 text-indigo-500">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+            </div>
+            <h3 id="app-alert-title" class="text-lg font-black text-slate-900 mb-2 hidden"></h3>
+            <p id="app-alert-message" class="text-sm text-slate-600 mb-6 leading-relaxed"></p>
+            <div id="app-alert-buttons" class="flex gap-3">
+                <button type="button" id="app-alert-ok" class="flex-1 py-3.5 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-wider hover:bg-indigo-700 transition">OK</button>
+                <button type="button" id="app-alert-cancel" class="flex-1 py-3.5 bg-slate-100 text-slate-600 rounded-2xl font-black text-[10px] uppercase tracking-wider hover:bg-slate-200 transition hidden">Cancel</button>
             </div>
         </div>
     </div>

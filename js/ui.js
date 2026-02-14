@@ -16,6 +16,80 @@ function refreshUI() {
 }
 if (typeof window !== 'undefined') window.refreshUI = refreshUI;
 
+// --- In-app Alert / Confirm (replaces browser alert/confirm) ---
+var _appAlertConfirmCallback = null;
+var _appAlertCancelCallback = null;
+
+function _showAppAlertModal(show) {
+    var el = getEl('app-alert-modal');
+    if (!el) return;
+    if (show) {
+        el.classList.remove('hidden');
+        setTimeout(function () { el.classList.add('modal-open'); }, 10);
+    } else {
+        el.classList.remove('modal-open');
+        setTimeout(function () { el.classList.add('hidden'); }, 300);
+    }
+}
+
+function _closeAppAlertModal() {
+    _showAppAlertModal(false);
+    _appAlertConfirmCallback = null;
+    _appAlertCancelCallback = null;
+}
+
+/** Show an in-app alert (one OK button). Replaces alert(message). */
+function showAppAlert(message, title) {
+    var titleEl = getEl('app-alert-title');
+    var messageEl = getEl('app-alert-message');
+    var okBtn = getEl('app-alert-ok');
+    var cancelBtn = getEl('app-alert-cancel');
+    if (!messageEl || !okBtn) return;
+    if (titleEl) {
+        titleEl.textContent = title || '';
+        titleEl.classList.toggle('hidden', !title);
+    }
+    messageEl.textContent = message || '';
+    okBtn.textContent = 'OK';
+    if (cancelBtn) cancelBtn.classList.add('hidden');
+    _appAlertConfirmCallback = null;
+    _appAlertCancelCallback = null;
+    okBtn.onclick = function () { _closeAppAlertModal(); };
+    _showAppAlertModal(true);
+}
+
+/** Show an in-app confirm (Cancel + primary button). Replaces confirm(message). Callbacks are called when user clicks. */
+function showAppConfirm(message, onConfirm, onCancel, options) {
+    options = options || {};
+    var title = options.title;
+    var confirmLabel = options.confirmLabel || 'Continue';
+    var titleEl = getEl('app-alert-title');
+    var messageEl = getEl('app-alert-message');
+    var okBtn = getEl('app-alert-ok');
+    var cancelBtn = getEl('app-alert-cancel');
+    if (!messageEl || !okBtn) return;
+    if (titleEl) {
+        titleEl.textContent = title || '';
+        titleEl.classList.toggle('hidden', !title);
+    }
+    messageEl.textContent = message || '';
+    okBtn.textContent = confirmLabel;
+    if (cancelBtn) cancelBtn.classList.remove('hidden');
+    _appAlertConfirmCallback = onConfirm || null;
+    _appAlertCancelCallback = onCancel || null;
+    okBtn.onclick = function () {
+        var cb = _appAlertConfirmCallback;
+        _closeAppAlertModal();
+        if (typeof cb === 'function') cb();
+    };
+    cancelBtn.onclick = function () {
+        var cb = _appAlertCancelCallback;
+        _closeAppAlertModal();
+        if (typeof cb === 'function') cb();
+    };
+    _showAppAlertModal(true);
+}
+
 function getCurrencyLabel() {
     return state.settings?.currency || 'AED';
 }

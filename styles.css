@@ -29,6 +29,14 @@ body.theme-dark .premium-card {
     box-shadow: none;
 }
 body.theme-dark .modal-content { background: #111827; }
+body.theme-dark #app-alert-modal .modal-content #app-alert-title,
+body.theme-dark #app-alert-modal .modal-content #app-alert-message { color: #e2e8f0; }
+body.theme-dark #app-alert-modal .modal-content #app-alert-icon { background: rgba(99, 102, 241, 0.2); color: #818cf8; }
+body.theme-dark #app-alert-modal .modal-content #app-alert-cancel { background: #1e293b; color: #94a3b8; }
+body.theme-dark #app-alert-modal .modal-content #app-alert-cancel:hover { background: #334155; }
+body.theme-dark #bank-balance-info { color: #94a3b8; }
+body.theme-dark #bank-balance-info-btn { border-color: #64748b; color: #94a3b8; }
+body.theme-dark #bank-balance-info-btn:hover { background: #334155; }
 
 /* Compact mode */
 body.compact .nav-header { padding: 0.5rem; }
