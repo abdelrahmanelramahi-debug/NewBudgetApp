@@ -201,25 +201,16 @@ async function loadStateFromCloud(retryCount) {
             
             if (cloudData.data && typeof cloudData.data === 'object') {
                 if (hasMeaningfulData(cloudData.data)) {
-                    // CRITICAL: Save reality (total liquidity) BEFORE merge so we can restore surplus
-                    var realityBeforeMerge = getCurrentBalance();
-                    var surplusBeforeMerge = state.accounts && (state.accounts.surplus !== undefined) ? state.accounts.surplus : null;
-                    
+                    // Apply cloud state as-is (last-write-wins). Do NOT "restore" surplus or run
+                    // recalculateSurplusFromReality here — that overwrites correct cloud data with
+                    // device-specific values and causes wrong Extra/Weekly across devices.
                     state = { ...state, ...cloudData.data };
                     migrateState();
                     ensureSystemSavings();
                     ensureCoreItems();
                     ensureSettings();
-                    
-                    // Restore surplus if cloud overwrote it with 0 but we had real data
-                    if (state.accounts && (state.accounts.surplus === 0 || state.accounts.surplus === undefined) && typeof surplusBeforeMerge === 'number' && surplusBeforeMerge !== 0) {
-                        var realityAfterMerge = getCurrentBalance();
-                        state.accounts.surplus = realityBeforeMerge - (realityAfterMerge - (state.accounts.surplus || 0));
-                    }
-                    if (state.accounts && state.accounts.surplus === 0 && hasMeaningfulData(cloudData.data) && typeof recalculateSurplusFromReality === 'function') {
-                        recalculateSurplusFromReality();
-                    }
-                    
+                    if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
+
                     var stateKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.STATE : 'financeCmd_state';
                     var modKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.MODIFIED : 'financeCmd_state_modified';
                     localStorage.setItem(stateKey, JSON.stringify(state));
