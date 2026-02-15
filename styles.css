@@ -236,6 +236,18 @@ body.theme-dark .desktop-nav-item:hover {
     min-height: 0;
 }
 
+/* iOS / mobile: ensure Budget Plan has visible height when viewport is short */
+@media (max-width: 1023px) {
+    #app-shell {
+        min-height: 100vh;
+        min-height: 100dvh;
+    }
+    #main-content.main-content--budget {
+        min-height: 50vh;
+        min-height: 50dvh;
+    }
+}
+
 /* Budget Plan page: total box stays at top; only body scrolls */
 .page-budget-plan .budget-plan-page-header {
     flex-shrink: 0;

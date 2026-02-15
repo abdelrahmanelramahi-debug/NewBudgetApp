@@ -137,7 +137,7 @@
     </div>
 
     <!-- Main app (hidden when onboarding is visible) -->
-    <div id="app-shell" class="flex flex-col lg:flex-row lg:min-h-screen">
+    <div id="app-shell" class="flex flex-col min-h-screen min-h-dvh lg:flex-row">
         <!-- Desktop sidebar (visible from lg up) -->
         <aside id="desktop-sidebar" class="desktop-sidebar hidden lg:flex flex-col w-56 flex-shrink-0 border-r border-slate-200 bg-white/95 backdrop-blur">
             <div class="p-4 border-b border-slate-100">
@@ -151,7 +151,7 @@
                 <a href="mailto:omniveradigital@gmail.com?subject=Finance%20Command%20Bug%20Report" onclick="closeSideMenu()" class="block py-2 px-3 rounded-md text-sm font-semibold text-slate-600 hover:bg-slate-100 transition">Report a Bug</a>
             </nav>
         </aside>
-        <div id="app-main" class="flex-1 flex flex-col min-w-0 w-full max-w-xl lg:max-w-none mx-auto px-4 lg:px-6">
+        <div id="app-main" class="flex-1 flex flex-col min-h-0 min-w-0 w-full max-w-xl lg:max-w-none mx-auto px-4 lg:px-6">
     <!-- First-action prompt (shown once after onboarding; existing users never see this) -->
     <div id="first-action-prompt" class="hidden mb-4 p-4 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-between gap-3">
         <p class="text-sm font-bold text-indigo-900">Add your first spend from Weekly Allowance, or open Budget Plan to see your categories.</p>
