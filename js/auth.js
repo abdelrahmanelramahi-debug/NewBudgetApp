@@ -3,26 +3,43 @@
 let currentUser = null;
 let syncInProgress = false;
 let lastSyncTime = null;
+var authReady = false;
+var authReadyCallbacks = [];
+
+function runAuthReadyCallbacks() {
+    if (authReady) return;
+    authReady = true;
+    authReadyCallbacks.forEach(function (cb) { try { cb(); } catch (e) { console.error(e); } });
+    authReadyCallbacks = [];
+}
+
+/** Call when app is ready to show (after cloud load if logged in). Use so first paint has correct state and no surplus flash. */
+function whenAuthReady(callback) {
+    if (authReady) {
+        try { callback(); } catch (e) { console.error(e); }
+        return;
+    }
+    authReadyCallbacks.push(callback);
+}
 
 // Initialize Firebase Auth
 function initAuth() {
     if (!window.firebaseAuth) {
         console.error('Firebase not initialized');
+        runAuthReadyCallbacks();
         return;
     }
-    
+
     window.firebaseAuth.onAuthStateChanged((user) => {
         if (user) {
             currentUser = user;
             updateAuthUI();
             // Load local state FIRST, then sync from cloud (cloud will merge/overwrite if valid)
-            // This ensures we always have local data as fallback
             var stateKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.STATE : 'financeCmd_state';
             const localState = localStorage.getItem(stateKey);
             if (localState) {
                 try {
                     const local = JSON.parse(localState);
-                    // Only restore if local has actual data (not empty defaults)
                     if (local.categories && local.categories.length > 0) {
                         state = { ...state, ...local };
                         migrateState();
@@ -34,26 +51,24 @@ function initAuth() {
                     console.error('Failed to load local state:', e);
                 }
             }
-            // Wait for auth token to be ready before Firestore (fixes "Load failed")
             user.getIdToken(true).then(function() {
                 loadStateFromCloud().then(function() {
                     if (typeof requestAnimationFrame !== 'undefined' && typeof updateGlobalUI === 'function') {
                         requestAnimationFrame(updateGlobalUI);
                     } else if (typeof updateGlobalUI === 'function') updateGlobalUI();
                     startAutoSync();
-                });
+                }).finally(runAuthReadyCallbacks);
             }).catch(function() {
                 loadStateFromCloud().then(function() {
-                    if (typeof requestAnimationFrame !== 'undefined' && typeof updateGlobalUI === 'function') {
-                        requestAnimationFrame(updateGlobalUI);
-                    } else if (typeof updateGlobalUI === 'function') updateGlobalUI();
+                    if (typeof updateGlobalUI === 'function') updateGlobalUI();
                     startAutoSync();
-                });
+                }).finally(runAuthReadyCallbacks);
             });
         } else {
             currentUser = null;
             updateAuthUI();
             stopAutoSync();
+            runAuthReadyCallbacks();
         }
     });
 }

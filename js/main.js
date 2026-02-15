@@ -79,5 +79,10 @@ window.onload = function() {
         showOnboarding(runAppInit);
         return;
     }
-    runAppInit();
+    // Defer first paint until auth (and cloud load if logged in) so we don't flash stale surplus (e.g. -1175) from localStorage
+    if (typeof whenAuthReady === 'function') {
+        whenAuthReady(runAppInit);
+    } else {
+        runAppInit();
+    }
 };
