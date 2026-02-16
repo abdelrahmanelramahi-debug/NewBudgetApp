@@ -969,13 +969,19 @@ function undoFood(idx) {
 }
 
 // Weekly
+function getWeeklyInlineNote() {
+    var el = document.getElementById('weekly-inline-note');
+    return el ? (el.value || '').trim() : '';
+}
 function inlineWeeklyAdjust(dir) {
     const val = parseFloat(document.getElementById('weekly-inline-val').value);
     if(val) {
         pushToUndo();
         applyTransaction({ type: 'weekly_adjust', delta: val * dir });
-        logHistory('Weekly Misc', val*dir, 'Spend');
+        logHistory('Weekly Misc', val*dir, 'Spend', getWeeklyInlineNote());
         document.getElementById('weekly-inline-val').value = '';
+        var noteEl = document.getElementById('weekly-inline-note');
+        if (noteEl) noteEl.value = '';
         saveState();
         renderLedger();
     }
@@ -986,8 +992,10 @@ function topUpWeeklyInline() {
         pushToUndo();
         applyTransaction({ type: 'adjust_surplus', delta: -val });
         applyTransaction({ type: 'weekly_adjust', delta: val });
-        logHistory('Weekly Misc', val, 'Top Up');
+        logHistory('Weekly Misc', val, 'Top Up', getWeeklyInlineNote());
         document.getElementById('weekly-inline-val').value = '';
+        var noteEl = document.getElementById('weekly-inline-note');
+        if (noteEl) noteEl.value = '';
         saveState();
         renderLedger();
     }

@@ -432,7 +432,7 @@ function updateRedoButtonUI() {
     }
 }
 
-function logHistory(cat, amt, res) {
+function logHistory(cat, amt, res, note) {
     if(!state.histories[cat]) state.histories[cat] = [];
-    state.histories[cat].unshift({amt, res, time: 'Now'});
+    state.histories[cat].unshift({amt, res, time: 'Now', note: (note && String(note).trim()) || ''});
 }

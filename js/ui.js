@@ -885,10 +885,16 @@ function updateGlobalUI() {
 function renderCategoryHistory() {
     // FIX: Use global 'activeCat'
     const data = state.histories[activeCat] || [];
-    document.getElementById('category-history-log').innerHTML = data.map(i => `
-        <div class="flex justify-between items-center py-2 border-b border-slate-50 last:border-0 text-[10px]">
-            <span class="font-bold text-slate-400 uppercase">${i.res}</span>
-            <span class="${i.amt < 0 ? 'text-red-500' : 'text-emerald-500'} font-black">${formatMoney(i.amt)}</span>
-        </div>
-    `).join('') || '<div class="text-center text-slate-300 text-[10px] py-2">No History</div>';
+    document.getElementById('category-history-log').innerHTML = data.map(i => {
+        const esc = (s) => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        const noteHtml = (i.note && i.note.trim()) ? `<div class="text-slate-500 text-[9px] mt-0.5 truncate" title="${esc(i.note)}">${esc(i.note)}</div>` : '';
+        return `
+        <div class="py-2 border-b border-slate-50 last:border-0 text-[10px]">
+            <div class="flex justify-between items-center">
+                <span class="font-bold text-slate-400 uppercase">${i.res}</span>
+                <span class="${i.amt < 0 ? 'text-red-500' : 'text-emerald-500'} font-black">${formatMoney(i.amt)}</span>
+            </div>
+            ${noteHtml}
+        </div>`;
+    }).join('') || '<div class="text-center text-slate-300 text-[10px] py-2">No History</div>';
 }
