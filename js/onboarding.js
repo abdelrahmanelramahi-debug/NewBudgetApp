@@ -8,9 +8,8 @@ var onboardingBudgetTipIndex = 0;
 
 var ONBOARDING_BUDGET_TIPS = [
     { title: 'Watch the total', body: 'The box above shows how much you\'ve allocated. We\'ll nudge you if you\'re under or over. You can change anything later in Budget Plan.', target: '#onboarding-cat-total-card' },
-    { title: 'Start here', body: 'Change amounts with the number or the slider under each row. Savings and core spending are your base—you can tweak them later in Budget Plan.', target: '#onboarding-strategy-sections' },
-    { title: 'Add categories', body: 'Tap + Health, + Groceries, and so on to add more, or use Add Category for your own.', target: '#onboarding-suggestions-row' },
-    { title: 'Use the sliders', body: 'Use the sliders for Weekly Misc, Food, General Savings, and Car Fund to set amounts in clear steps.', target: '#onboarding-strategy-sections' }
+    { title: 'Start here', body: 'Change amounts with the number or the slider under each row. Savings and core spending are your base—you can tweak them later in Budget Plan.', target: '#onboarding-strategy-sections .premium-card' },
+    { title: 'Add categories', body: 'Tap + Health, + Groceries, and so on to add more, or use Add Category for your own.', target: '#onboarding-suggestions-row' }
 ];
 
 /** Suggested categories (emptied: amounts at 0 so user can fill). Same structure as template. */
@@ -99,9 +98,9 @@ function showBudgetPlanTip(index) {
     /* Remove highlight from previous target */
     var step = document.getElementById('onboarding-step-categories');
     if (step) {
-        step.querySelectorAll('.onboarding-tip-highlight').forEach(function(el) {
-            el.classList.remove('onboarding-tip-highlight');
-        });
+        step.querySelectorAll('.onboarding-tip-highlight').forEach(function(el) { el.classList.remove('onboarding-tip-highlight'); });
+        step.querySelectorAll('.onboarding-tip-highlight-card').forEach(function(el) { el.classList.remove('onboarding-tip-highlight-card'); });
+        step.querySelectorAll('.onboarding-tip-raise').forEach(function(el) { el.classList.remove('onboarding-tip-raise'); });
     }
     
     titleEl.textContent = tip.title;
@@ -113,12 +112,18 @@ function showBudgetPlanTip(index) {
     if (tip.target && step && overlay && card) {
         var targetEl = step.querySelector(tip.target);
         if (targetEl) {
-            /* Add highlight class to target */
-            targetEl.classList.add('onboarding-tip-highlight');
+            // Highlight: prefer the card container if present
+            var highlightEl = targetEl.closest('.premium-card') || targetEl;
+            highlightEl.classList.add('onboarding-tip-highlight');
+            if (highlightEl.classList.contains('premium-card')) highlightEl.classList.add('onboarding-tip-highlight-card');
+
+            // If target lives inside the sticky header, raise that stacking context above the dim overlay
+            var sticky = highlightEl.closest('.sticky');
+            if (sticky) sticky.classList.add('onboarding-tip-raise');
             
             targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
             var positionTip = function () {
-                var tr = targetEl.getBoundingClientRect();
+                var tr = highlightEl.getBoundingClientRect();
                 var or = overlay.getBoundingClientRect();
                 var cr = card.getBoundingClientRect();
                 var pad = 16;
@@ -160,7 +165,10 @@ function showBudgetPlanTip(index) {
             }
             window._onboardingTipResize = positionTip;
             window.addEventListener('resize', positionTip);
-            setTimeout(positionTip, 150);
+            // Smooth scroll is async; re-position a few times so the card follows the target
+            setTimeout(positionTip, 50);
+            setTimeout(positionTip, 200);
+            setTimeout(positionTip, 400);
         }
     }
 }
@@ -183,9 +191,9 @@ function finishBudgetPlanTips() {
     var step = document.getElementById('onboarding-step-categories');
     if (step) {
         step.classList.remove('tips-active');
-        step.querySelectorAll('.onboarding-tip-highlight').forEach(function(el) {
-            el.classList.remove('onboarding-tip-highlight');
-        });
+        step.querySelectorAll('.onboarding-tip-highlight').forEach(function(el) { el.classList.remove('onboarding-tip-highlight'); });
+        step.querySelectorAll('.onboarding-tip-highlight-card').forEach(function(el) { el.classList.remove('onboarding-tip-highlight-card'); });
+        step.querySelectorAll('.onboarding-tip-raise').forEach(function(el) { el.classList.remove('onboarding-tip-raise'); });
     }
     var overlay = document.getElementById('onboarding-budget-tips-overlay');
     if (overlay) {

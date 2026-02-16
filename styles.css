@@ -680,22 +680,25 @@ body.theme-dark .desktop-nav-item:hover {
     cursor: not-allowed;
 }
 
-/* Onboarding tips overlay: gray out everything except tip card and target */
+/* Onboarding tips overlay: dim everything, spotlight the target */
 #onboarding-budget-tips-overlay {
     pointer-events: none;
 }
 #onboarding-budget-tips-overlay #onboarding-tip-card {
     pointer-events: auto;
-    z-index: 30;
+    z-index: 40;
 }
-#onboarding-step-categories.tips-active > *:not(#onboarding-budget-tips-overlay) {
-    opacity: 0.3;
-    transition: opacity 0.2s;
-    pointer-events: none;
+/* The overlay itself provides the dim; bring the highlighted area ABOVE it */
+.onboarding-tip-highlight {
+    position: relative !important;
+    z-index: 35 !important;
 }
-#onboarding-step-categories.tips-active .onboarding-tip-highlight {
-    opacity: 1 !important;
-    position: relative;
-    z-index: 25;
-    pointer-events: auto;
+.onboarding-tip-highlight-card {
+    background: #fff !important;
+    border-color: rgba(99, 102, 241, 0.35) !important;
+    box-shadow: 0 16px 36px rgba(15, 23, 42, 0.18) !important;
+}
+.onboarding-tip-raise {
+    position: relative !important;
+    z-index: 35 !important;
 }
