@@ -1,5 +1,10 @@
 /** Onboarding flow: welcome → currency → income → reality → categories → summary */
 
+function isMobileDevice() {
+    return (typeof navigator !== 'undefined') &&
+        /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+}
+
 var ONBOARDING_STEPS = ['welcome', 'currency', 'income', 'reality', 'categories', 'summary'];
 var onboardingStepIndex = 0;
 var onboardingCompleteCallback = null;
@@ -7,10 +12,10 @@ var onboardingCategoriesInitialized = false;
 var onboardingBudgetTipIndex = 0;
 
 var ONBOARDING_BUDGET_TIPS = [
-    { title: 'Watch the total', body: 'The box above shows how much you\'ve allocated. We\'ll nudge you if you\'re under or over. You can change anything later in Budget Plan.' },
-    { title: 'Start here', body: 'Change amounts with the number or the slider under each row. Savings and core spending are your base—you can tweak them later in Budget Plan.' },
-    { title: 'Add categories', body: 'Tap + Health, + Groceries, and so on to add more, or use Add Category for your own.' },
-    { title: 'Fill in categories', body: 'In each category (like Health or Groceries), tap the number to type an amount for an item. Use the + button to add a new item, and the pencil/trash to edit or remove. Leaving items at 0 is totally fine—you can come back later.' }
+    { title: 'Watch the total', body: 'The box above shows how much you\'ve allocated. We\'ll nudge you if you\'re under or over. You can change anything later in Budget Plan.', target: '#onboarding-cat-total-card' },
+    { title: 'Start here', body: 'Change amounts with the number or the slider under each row. Savings and core spending are your base—you can tweak them later in Budget Plan.', target: '#onboarding-strategy-sections' },
+    { title: 'Add categories', body: 'Tap + Health, + Groceries, and so on to add more, or use Add Category for your own.', target: '#onboarding-suggestions-row' },
+    { title: 'Fill in categories', body: 'In each category (like Health or Groceries), tap the number to type an amount for an item. Use the + button to add a new item, and the pencil/trash to edit or remove. Leaving items at 0 is totally fine—you can come back later.', target: '#onboarding-strategy-sections' }
 ];
 
 /** Suggested categories (emptied: amounts at 0 so user can fill). Same structure as template. */
@@ -78,6 +83,14 @@ function showOnboardingStep(index) {
 }
 
 function startBudgetPlanTips() {
+    // Disable onboarding tips on mobile – desktop only
+    if (isMobileDevice()) {
+        if (typeof state !== 'undefined') {
+            state._sawBudgetPlanTips = true;
+            if (typeof saveState === 'function') saveState();
+        }
+        return;
+    }
     if (typeof state !== 'undefined' && state._sawBudgetPlanTips) return;
     onboardingBudgetTipIndex = 0;
     var overlay = document.getElementById('onboarding-budget-tips-overlay');
@@ -92,10 +105,34 @@ function showBudgetPlanTip(index) {
     if (!titleEl || !bodyEl || !nextBtn) return;
     var tip = ONBOARDING_BUDGET_TIPS[index];
     if (!tip) return;
-    
+
     titleEl.textContent = tip.title;
     bodyEl.textContent = tip.body;
     nextBtn.textContent = index >= ONBOARDING_BUDGET_TIPS.length - 1 ? 'Got it' : 'Next';
+
+    // Scroll and lightly highlight the relevant area (works on mobile & desktop)
+    if (tip.target) {
+        var step = document.getElementById('onboarding-step-categories');
+        if (!step) return;
+
+        // Clear previous highlights
+        step.querySelectorAll('.onboarding-tip-highlight').forEach(function (el) {
+            el.classList.remove('onboarding-tip-highlight');
+        });
+
+        var targetEl = step.querySelector(tip.target);
+        if (!targetEl) return;
+
+        // Add highlight class
+        targetEl.classList.add('onboarding-tip-highlight');
+
+        // Smooth scroll so the target is near the center of the screen
+        try {
+            targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } catch (e) {
+            targetEl.scrollIntoView(true);
+        }
+    }
 }
 function nextBudgetPlanTip() {
     onboardingBudgetTipIndex++;
@@ -125,13 +162,21 @@ window.nextBudgetPlanTip = nextBudgetPlanTip;
 window.skipBudgetPlanTips = skipBudgetPlanTips;
 
 var HOME_TOUR_STEPS = [
-    { title: 'Weekly Allowance', body: 'Track your weekly spending here. Enter an amount and tap Spend, or Top Up from Extra. Use Transfer to move between weeks.' },
-    { title: 'Food Tracker', body: 'Mark days you\'ve eaten to use your food budget. Use "Mark Day Consumed" and the calendar below. You can extend your cycle with buffer days.' },
-    { title: 'Categories', body: 'Spend from your budget categories (Health, Groceries, etc.). Tap a category to deduct or add. Single-action items can be checked off when done.' },
-    { title: 'Bank Balance', body: 'The header shows your reality check — what should be in your bank. Extra is unallocated funds. Tap the balance for a breakdown.' }
+    { title: 'Weekly Allowance', body: 'Track your weekly spending here. Enter an amount and tap Spend, or Top Up from Extra. Use Transfer to move between weeks.', target: '.weekly-hero' },
+    { title: 'Food Tracker', body: 'Mark days you\'ve eaten to use your food budget. Use \"Mark Day Consumed\" and the calendar below. You can extend your cycle with buffer days.', target: '#page-ledger .premium-card:nth-of-type(2)' },
+    { title: 'Categories', body: 'Spend from your budget categories (Health, Groceries, etc.). Tap a category to deduct or add. Single-action items can be checked off when done.', target: '#ledger-categories' },
+    { title: 'Bank Balance', body: 'This shows how your real money compares to your plan. Extra is money that isn\'t assigned yet. Tap it to see a breakdown.', target: '#app-header' }
 ];
 var homeTourStepIndex = 0;
 function startHomeTour() {
+    // Disable home tour on mobile – desktop only
+    if (isMobileDevice()) {
+        if (typeof state !== 'undefined') {
+            state._sawHomePageTour = true;
+            if (typeof saveState === 'function') saveState();
+        }
+        return;
+    }
     if (typeof state !== 'undefined' && state._sawHomePageTour) return;
     homeTourStepIndex = 0;
     var overlay = document.getElementById('home-tour-overlay');
@@ -151,6 +196,26 @@ function showHomeTourStep(index) {
     titleEl.textContent = step.title;
     bodyEl.textContent = step.body;
     if (nextBtn) nextBtn.textContent = index >= HOME_TOUR_STEPS.length - 1 ? 'Got it' : 'Next';
+
+    // Scroll and highlight the relevant area on the home screen
+    if (step.target) {
+        var root = document;
+
+        // Clear previous highlights
+        root.querySelectorAll('.home-tour-highlight').forEach(function (el) {
+            el.classList.remove('home-tour-highlight');
+        });
+
+        var targetEl = root.querySelector(step.target);
+        if (!targetEl) return;
+
+        targetEl.classList.add('home-tour-highlight');
+        try {
+            targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } catch (e) {
+            targetEl.scrollIntoView(true);
+        }
+    }
 }
 function nextHomeTourStep() {
     homeTourStepIndex++;

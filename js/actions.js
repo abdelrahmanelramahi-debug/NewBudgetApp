@@ -974,17 +974,55 @@ function getWeeklyInlineNote() {
     return el ? (el.value || '').trim() : '';
 }
 function inlineWeeklyAdjust(dir) {
-    const val = parseFloat(document.getElementById('weekly-inline-val').value);
-    if(val) {
-        pushToUndo();
-        applyTransaction({ type: 'weekly_adjust', delta: val * dir });
-        logHistory('Weekly Misc', val*dir, 'Spend', getWeeklyInlineNote());
-        document.getElementById('weekly-inline-val').value = '';
-        var noteEl = document.getElementById('weekly-inline-note');
-        if (noteEl) noteEl.value = '';
-        saveState();
-        renderLedger();
+    const inputEl = document.getElementById('weekly-inline-val');
+    const raw = inputEl ? inputEl.value : '';
+    const val = parseFloat(raw);
+    if (!val) return;
+
+    // Spending path (dir === -1)
+    if (dir < 0) {
+        ensureWeeklyState();
+        const current = getWeeklyBalance();
+
+        // Overspend: more than current weekly allowance
+        if (val > current) {
+            const over = val - current;
+            // Check Extra (surplus) can actually cover the overspend
+            if (!canApplySurplusDelta(-over)) return;
+
+            const msg =
+                'You only have ' + formatMoney(current) + ' ' + getCurrencyLabel() + ' left this week. ' +
+                'Spending ' + formatMoney(val) + ' will also take ' + formatMoney(over) + ' from Extra. Continue?';
+
+            showAppConfirm(msg, function () {
+                pushToUndo();
+                // Take everything that is left in this week
+                if (current !== 0) {
+                    applyTransaction({ type: 'weekly_adjust', delta: -current });
+                    logHistory('Weekly Misc', -current, 'Spend', getWeeklyInlineNote());
+                }
+                // And cover the remainder from Extra
+                applyTransaction({ type: 'adjust_surplus', delta: -over });
+
+                if (inputEl) inputEl.value = '';
+                var noteEl = document.getElementById('weekly-inline-note');
+                if (noteEl) noteEl.value = '';
+                saveState();
+                renderLedger();
+            }, null, { confirmLabel: 'Spend anyway' });
+            return;
+        }
     }
+
+    // Normal spend / top up within available weekly amount
+    pushToUndo();
+    applyTransaction({ type: 'weekly_adjust', delta: val * dir });
+    logHistory('Weekly Misc', val * dir, 'Spend', getWeeklyInlineNote());
+    if (inputEl) inputEl.value = '';
+    var noteEl = document.getElementById('weekly-inline-note');
+    if (noteEl) noteEl.value = '';
+    saveState();
+    renderLedger();
 }
 function topUpWeeklyInline() {
     const val = parseFloat(document.getElementById('weekly-inline-val').value);
