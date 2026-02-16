@@ -1104,6 +1104,32 @@ function fastUpdateItemAmount(sid, idx, val) {
         if (totalEl) totalEl.textContent = typeof formatMoney === 'function' ? formatMoney(total) : total;
         if (totalValEl) totalValEl.textContent = typeof formatMoney === 'function' ? formatMoney(total) : total;
         if (allocValEl) allocValEl.textContent = typeof formatMoney === 'function' ? formatMoney(allocated) : allocated;
+        var unallocAlert = document.getElementById('onboarding-cat-unallocated-alert');
+        var unallocAmount = document.getElementById('onboarding-cat-unallocated-amount');
+        var overAlert = document.getElementById('onboarding-cat-overallocated-alert');
+        var overAmount = document.getElementById('onboarding-cat-overallocated-amount');
+        if (unallocAlert && unallocAmount && total > 0) {
+            var unallocated = total - allocated;
+            if (unallocated > 0.001) {
+                unallocAmount.textContent = typeof formatMoney === 'function' ? formatMoney(unallocated) : unallocated.toFixed(2);
+                unallocAlert.classList.remove('hidden');
+            } else {
+                unallocAlert.classList.add('hidden');
+            }
+        } else if (unallocAlert) {
+            unallocAlert.classList.add('hidden');
+        }
+        if (overAlert && overAmount && total > 0) {
+            if (allocated > total + 0.001) {
+                var over = allocated - total;
+                overAmount.textContent = typeof formatMoney === 'function' ? formatMoney(over) : over.toFixed(2);
+                overAlert.classList.remove('hidden');
+            } else {
+                overAlert.classList.add('hidden');
+            }
+        } else if (overAlert) {
+            overAlert.classList.add('hidden');
+        }
     }
 }
 
@@ -1130,6 +1156,19 @@ var WEEKLY_SLIDER_STEP = 20;
 function syncWeeklyAmount(sid, idx, val) {
     const num = parseFloat(val) || 0;
     const snapped = Math.round(num / WEEKLY_SLIDER_STEP) * WEEKLY_SLIDER_STEP;
+    fastUpdateItemAmount(sid, idx, snapped);
+}
+var SAVINGS_SLIDER_STEP = 50;
+function syncGeneralSavingsAmount(sid, idx, val) {
+    const num = parseFloat(val) || 0;
+    const snapped = Math.round(num / SAVINGS_SLIDER_STEP) * SAVINGS_SLIDER_STEP;
+    fastUpdateItemAmount(sid, idx, snapped);
+    if (typeof syncSavingsTotal === 'function') syncSavingsTotal();
+}
+var CAR_SLIDER_STEP = 20;
+function syncCarFundAmount(sid, idx, val) {
+    const num = parseFloat(val) || 0;
+    const snapped = Math.round(num / CAR_SLIDER_STEP) * CAR_SLIDER_STEP;
     fastUpdateItemAmount(sid, idx, snapped);
 }
 
@@ -1529,6 +1568,29 @@ function recoverLocalData() {
         showAppAlert('Failed to recover data: ' + e.message);
         console.error('Recovery error:', e);
     }
+}
+
+function loadExampleBudget() {
+    if (typeof getExampleBudget !== 'function') return;
+    showAppConfirm('Replace your current budget plan and amounts with the example budget? Your settings, currency, and account link will be kept.', function () {
+        var ex = getExampleBudget();
+        state.monthlyIncome = ex.monthlyIncome;
+        state.categories = JSON.parse(JSON.stringify(ex.categories));
+        if (state.accounts) {
+            state.accounts.buckets = JSON.parse(JSON.stringify(ex.buckets));
+            state.accounts.weekly = { balance: ex.weekly.balance, week: ex.weekly.week || 1 };
+            if (!state.accounts.weekly.balances) state.accounts.weekly.balances = [ex.weekly.balance, ex.weekly.balance, ex.weekly.balance, ex.weekly.balance];
+            else state.accounts.weekly.balances[0] = state.accounts.weekly.balances[1] = state.accounts.weekly.balances[2] = state.accounts.weekly.balances[3] = ex.weekly.balance;
+        }
+        state.balances = JSON.parse(JSON.stringify(ex.balances));
+        if (typeof ensureSystemSavings === 'function') ensureSystemSavings();
+        if (typeof ensureCoreItems === 'function') ensureCoreItems();
+        if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
+        if (typeof initSurplusFromOpening === 'function') initSurplusFromOpening();
+        if (typeof saveState === 'function') saveState();
+        if (typeof refreshUI === 'function') refreshUI();
+        showAppAlert('Example budget loaded. You can edit it in Budget Plan.');
+    }, null, { confirmLabel: 'Load example' });
 }
 
 function resetAppData() {

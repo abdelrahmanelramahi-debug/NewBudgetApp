@@ -73,6 +73,10 @@ window.onload = function() {
                 };
             }
         }
+        // Home page introductory tour: show once for new users (after onboarding)
+        setTimeout(function() {
+            if (state && !state._sawHomePageTour && typeof startHomeTour === 'function') startHomeTour();
+        }, 600);
     }
 
     if (!state.onboardingComplete && typeof showOnboarding === 'function') {

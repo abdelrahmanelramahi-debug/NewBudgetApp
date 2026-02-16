@@ -355,6 +355,9 @@ if (typeof document !== 'undefined') {
     window.addEventListener('pagehide', flushCloudSave);
 }
 
+function isLoggedIn() { return !!currentUser; }
+if (typeof window !== 'undefined') window.isLoggedIn = isLoggedIn;
+
 // Auth UI Functions
 function openAuthModal() {
     toggleModal('auth-modal', true);

@@ -4,6 +4,14 @@ var ONBOARDING_STEPS = ['welcome', 'currency', 'income', 'reality', 'categories'
 var onboardingStepIndex = 0;
 var onboardingCompleteCallback = null;
 var onboardingCategoriesInitialized = false;
+var onboardingBudgetTipIndex = 0;
+
+var ONBOARDING_BUDGET_TIPS = [
+    { title: 'Start here', body: 'Essentials (Savings & Core) are locked. Adjust amounts with the number fields or sliders below each row.' },
+    { title: 'Add categories', body: 'Click + Health, + Groceries, etc. to add suggested categories, or use "Add Category" for your own.' },
+    { title: 'Use the sliders', body: 'Drag sliders for Weekly Misc, Food, General Savings, and Car Fund to set amounts in clear steps.' },
+    { title: 'Watch the total', body: 'The sticky box above shows how much you\'ve allocated. Alerts appear if you\'re under or over your total. You can edit everything later in Budget Plan.' }
+];
 
 /** Suggested categories (emptied: amounts at 0 so user can fill). Same structure as template. */
 var ONBOARDING_SUGGESTIONS = {
@@ -62,8 +70,105 @@ function showOnboardingStep(index) {
     var panel = document.getElementById('onboarding-step-' + stepId);
     if (panel) panel.classList.remove('hidden');
     if (stepId === 'categories') initAndRenderOnboardingCategories();
-    if (stepId === 'summary') updateOnboardingSummary();
+    if (stepId === 'summary') {
+        updateOnboardingSummary();
+        var card = document.getElementById('onboarding-account-card');
+        if (card && (typeof isLoggedIn !== 'function' || !isLoggedIn())) card.classList.remove('hidden');
+    }
 }
+
+function startBudgetPlanTips() {
+    if (typeof state !== 'undefined' && state._sawBudgetPlanTips) return;
+    onboardingBudgetTipIndex = 0;
+    var overlay = document.getElementById('onboarding-budget-tips-overlay');
+    if (!overlay) return;
+    showBudgetPlanTip(0);
+    overlay.classList.remove('hidden');
+}
+function showBudgetPlanTip(index) {
+    var titleEl = document.getElementById('onboarding-tip-title');
+    var bodyEl = document.getElementById('onboarding-tip-body');
+    var nextBtn = document.getElementById('onboarding-tip-next');
+    if (!titleEl || !bodyEl || !nextBtn) return;
+    var tip = ONBOARDING_BUDGET_TIPS[index];
+    if (!tip) return;
+    titleEl.textContent = tip.title;
+    bodyEl.textContent = tip.body;
+    nextBtn.textContent = index >= ONBOARDING_BUDGET_TIPS.length - 1 ? 'Got it' : 'Next';
+}
+function nextBudgetPlanTip() {
+    onboardingBudgetTipIndex++;
+    if (onboardingBudgetTipIndex >= ONBOARDING_BUDGET_TIPS.length) {
+        finishBudgetPlanTips();
+        return;
+    }
+    showBudgetPlanTip(onboardingBudgetTipIndex);
+}
+function skipBudgetPlanTips() {
+    finishBudgetPlanTips();
+}
+function finishBudgetPlanTips() {
+    var overlay = document.getElementById('onboarding-budget-tips-overlay');
+    if (overlay) overlay.classList.add('hidden');
+    if (typeof state !== 'undefined') {
+        state._sawBudgetPlanTips = true;
+        if (typeof saveState === 'function') saveState();
+    }
+}
+window.startBudgetPlanTips = startBudgetPlanTips;
+window.nextBudgetPlanTip = nextBudgetPlanTip;
+window.skipBudgetPlanTips = skipBudgetPlanTips;
+
+var HOME_TOUR_STEPS = [
+    { title: 'Weekly Allowance', body: 'Track your weekly spending here. Enter an amount and tap Spend, or Top Up from Extra. Use Transfer to move between weeks.' },
+    { title: 'Food Tracker', body: 'Mark days you\'ve eaten to use your food budget. Use "Mark Day Consumed" and the calendar below. You can extend your cycle with buffer days.' },
+    { title: 'Categories', body: 'Spend from your budget categories (Health, Groceries, etc.). Tap a category to deduct or add. Single-action items can be checked off when done.' },
+    { title: 'Bank Balance', body: 'The header shows your reality check — what should be in your bank. Extra is unallocated funds. Tap the balance for a breakdown.' }
+];
+var homeTourStepIndex = 0;
+function startHomeTour() {
+    if (typeof state !== 'undefined' && state._sawHomePageTour) return;
+    homeTourStepIndex = 0;
+    var overlay = document.getElementById('home-tour-overlay');
+    if (!overlay) return;
+    showHomeTourStep(0);
+    overlay.classList.remove('hidden');
+}
+function showHomeTourStep(index) {
+    var stepNum = document.getElementById('home-tour-step-num');
+    var titleEl = document.getElementById('home-tour-title');
+    var bodyEl = document.getElementById('home-tour-body');
+    var nextBtn = document.getElementById('home-tour-next-btn');
+    if (!titleEl || !bodyEl) return;
+    var step = HOME_TOUR_STEPS[index];
+    if (!step) return;
+    if (stepNum) stepNum.textContent = index + 1;
+    titleEl.textContent = step.title;
+    bodyEl.textContent = step.body;
+    if (nextBtn) nextBtn.textContent = index >= HOME_TOUR_STEPS.length - 1 ? 'Got it' : 'Next';
+}
+function nextHomeTourStep() {
+    homeTourStepIndex++;
+    if (homeTourStepIndex >= HOME_TOUR_STEPS.length) {
+        finishHomeTour();
+        return;
+    }
+    showHomeTourStep(homeTourStepIndex);
+}
+function skipHomeTour() {
+    finishHomeTour();
+}
+function finishHomeTour() {
+    var overlay = document.getElementById('home-tour-overlay');
+    if (overlay) overlay.classList.add('hidden');
+    if (typeof state !== 'undefined') {
+        state._sawHomePageTour = true;
+        if (typeof saveState === 'function') saveState();
+    }
+}
+window.startHomeTour = startHomeTour;
+window.nextHomeTourStep = nextHomeTourStep;
+window.skipHomeTour = skipHomeTour;
 
 function initAndRenderOnboardingCategories() {
     if (!onboardingCategoriesInitialized && typeof state !== 'undefined') {
@@ -91,6 +196,9 @@ function initAndRenderOnboardingCategories() {
     if (typeof renderStrategy === 'function') {
         renderStrategy({ containerId: 'onboarding-strategy-sections', onboarding: true });
     }
+    setTimeout(function () {
+        if (typeof state !== 'undefined' && !state._sawBudgetPlanTips) startBudgetPlanTips();
+    }, 300);
 }
 
 function addOnboardingSuggestion(key) {
@@ -243,3 +351,13 @@ window.onboardingComplete = onboardingComplete;
 window.updateOnboardingSummary = updateOnboardingSummary;
 window.addOnboardingSuggestion = addOnboardingSuggestion;
 window.initAndRenderOnboardingCategories = initAndRenderOnboardingCategories;
+
+function onboardingOpenAuth() {
+    if (typeof openAuthModal === 'function') openAuthModal();
+}
+function onboardingSkipAccount() {
+    var card = document.getElementById('onboarding-account-card');
+    if (card) card.classList.add('hidden');
+}
+window.onboardingOpenAuth = onboardingOpenAuth;
+window.onboardingSkipAccount = onboardingSkipAccount;

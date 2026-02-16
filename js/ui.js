@@ -362,6 +362,40 @@ function renderStrategy(opts) {
                     </div>
                 </div>
             ` : '';
+            const isGeneralSavings = item.label === 'General Savings';
+            const SAVINGS_SLIDER_STEP = 50;
+            const savingsMax = Math.max(2000, Math.ceil((state.monthlyIncome || 5000) * 0.6 / SAVINGS_SLIDER_STEP) * SAVINGS_SLIDER_STEP);
+            const savingsSnapped = Math.round((item.amount || 0) / SAVINGS_SLIDER_STEP) * SAVINGS_SLIDER_STEP;
+            const generalSavingsSliderHtml = isGeneralSavings ? `
+                <div class="px-6 pb-3">
+                    <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mb-1">
+                        <span>Monthly</span>
+                        <span>${savingsSnapped} ${getCurrencyLabel()}</span>
+                    </div>
+                    <input type="range" id="general-savings-slider" min="0" max="${savingsMax}" step="${SAVINGS_SLIDER_STEP}" value="${savingsSnapped}" oninput="syncGeneralSavingsAmount('${sec.id}', ${idx}, this.value)" class="w-full">
+                    <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mt-1">
+                        <span>0</span>
+                        <span>${savingsMax}</span>
+                    </div>
+                </div>
+            ` : '';
+            const isCarFund = item.label === 'Car Fund';
+            const CAR_SLIDER_STEP = 20;
+            const carMax = Math.max(400, Math.ceil((item.amount || 300) / CAR_SLIDER_STEP) * CAR_SLIDER_STEP + CAR_SLIDER_STEP);
+            const carSnapped = Math.round((item.amount || 0) / CAR_SLIDER_STEP) * CAR_SLIDER_STEP;
+            const carFundSliderHtml = isCarFund ? `
+                <div class="px-6 pb-3">
+                    <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mb-1">
+                        <span>Monthly (4 weeks)</span>
+                        <span>${carSnapped} ${getCurrencyLabel()}</span>
+                    </div>
+                    <input type="range" id="car-fund-slider" min="0" max="${carMax}" step="${CAR_SLIDER_STEP}" value="${carSnapped}" oninput="syncCarFundAmount('${sec.id}', ${idx}, this.value)" class="w-full">
+                    <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mt-1">
+                        <span>0</span>
+                        <span>${carMax}</span>
+                    </div>
+                </div>
+            ` : '';
 
             rowsHtml += `
                 <div class="draggable-row flex justify-between items-center py-3 border-b border-slate-50 last:border-0"
@@ -380,6 +414,8 @@ function renderStrategy(opts) {
                 </div>
                 ${foodSliderHtml}
                 ${weeklySliderHtml}
+                ${generalSavingsSliderHtml}
+                ${carFundSliderHtml}
             `;
         });
 
@@ -430,6 +466,32 @@ function renderStrategy(opts) {
         if (totalEl) totalEl.textContent = typeof formatMoney === 'function' ? formatMoney(total) : total;
         if (totalValEl) totalValEl.textContent = typeof formatMoney === 'function' ? formatMoney(total) : total;
         if (allocValEl) allocValEl.textContent = typeof formatMoney === 'function' ? formatMoney(allocated) : allocated;
+        var unallocAlert = document.getElementById('onboarding-cat-unallocated-alert');
+        var unallocAmount = document.getElementById('onboarding-cat-unallocated-amount');
+        var overAlert = document.getElementById('onboarding-cat-overallocated-alert');
+        var overAmount = document.getElementById('onboarding-cat-overallocated-amount');
+        if (unallocAlert && unallocAmount && total > 0) {
+            var unallocated = total - allocated;
+            if (unallocated > 0.001) {
+                unallocAmount.textContent = typeof formatMoney === 'function' ? formatMoney(unallocated) : unallocated.toFixed(2);
+                unallocAlert.classList.remove('hidden');
+            } else {
+                unallocAlert.classList.add('hidden');
+            }
+        } else if (unallocAlert) {
+            unallocAlert.classList.add('hidden');
+        }
+        if (overAlert && overAmount && total > 0) {
+            if (allocated > total + 0.001) {
+                var over = allocated - total;
+                overAmount.textContent = typeof formatMoney === 'function' ? formatMoney(over) : over.toFixed(2);
+                overAlert.classList.remove('hidden');
+            } else {
+                overAlert.classList.add('hidden');
+            }
+        } else if (overAlert) {
+            overAlert.classList.add('hidden');
+        }
     } else {
         calculateReality();
         if (typeof updateBudgetPlanAllocated === 'function') updateBudgetPlanAllocated();

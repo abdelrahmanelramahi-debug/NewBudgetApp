@@ -86,6 +86,44 @@ const WEEKLY_MAX_WEEKS = 4;
 let pendingDangerAction = null;
 let requiredDangerPhrase = "";
 
+/** Returns a fresh example budget (generic defaults, not personal). Use for "Load example budget" in Settings. */
+function getExampleBudget() {
+    return {
+        monthlyIncome: 5000,
+        categories: [
+            { id: 'sys_savings', label: 'System Savings', isSystem: true, items: [
+                { label: 'General Savings', amount: 1000, isAutoCalculated: false },
+                { label: 'Payables', amount: 0, isAutoCalculated: false }
+            ] },
+            { id: 'core_essentials', label: 'Core Essentials', isSystem: true, items: [
+                { label: 'Weekly Misc', amount: 400, isCore: true },
+                { label: 'Daily Food', amount: 600, isCore: true },
+                { label: 'Car Fund', amount: 300, isCore: true }
+            ]},
+            { id: 'health', label: 'Health', isLedgerLinked: true, isSingleAction: true, items: [
+                { label: 'Supplements', amount: 50 }, { label: 'Protein', amount: 75 }, { label: 'Vitamins', amount: 50 }, { label: 'Other health', amount: 40 }
+            ]},
+            { id: 'groceries', label: 'Groceries', isLedgerLinked: true, isSingleAction: true, items: [
+                { label: 'Staples', amount: 40 }, { label: 'Produce', amount: 30 }
+            ]},
+            { id: 'misc', label: 'Misc', isLedgerLinked: true, isSingleAction: true, items: [
+                { label: 'Snacks', amount: 50 }, { label: 'Misc', amount: 30 }, { label: 'Personal', amount: 25 }, { label: 'Household', amount: 15 }
+            ]},
+            { id: 'subscriptions', label: 'Subscriptions', isLedgerLinked: true, isSingleAction: true, items: [
+                { label: 'Streaming', amount: 50 }, { label: 'App 1', amount: 20 }, { label: 'App 2', amount: 15 }, { label: 'Cloud', amount: 5 }, { label: 'Sub other', amount: 15 }
+            ]}
+        ],
+        buckets: { 'General Savings': 1000, 'Payables': 0, 'Car Fund': 300, 'Weekly Misc': 400 },
+        balances: {
+            'Supplements': 50, 'Protein': 75, 'Vitamins': 50, 'Other health': 40,
+            'Staples': 40, 'Produce': 30,
+            'Snacks': 50, 'Misc': 30, 'Personal': 25, 'Household': 15,
+            'Streaming': 50, 'App 1': 20, 'App 2': 15, 'Cloud': 5, 'Sub other': 15
+        },
+        weekly: { balance: 100, week: 1 }
+    };
+}
+
 // PERSISTENCE
 function saveState() {
     var stateKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.STATE : 'financeCmd_state';

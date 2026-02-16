@@ -80,7 +80,7 @@
                     <button type="button" onclick="onboardingNext()" class="flex-1 py-3 px-6 bg-indigo-600 text-white rounded-xl text-sm font-black uppercase tracking-wider">Next</button>
                 </div>
             </div>
-            <div id="onboarding-step-categories" class="onboarding-step hidden flex flex-col min-h-0">
+            <div id="onboarding-step-categories" class="onboarding-step hidden flex flex-col min-h-0 relative">
                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Step 4 of 6</p>
                 <h2 class="text-xl font-black text-slate-900 mb-1">Set up your budget plan</h2>
                 <p class="text-sm text-slate-600 mb-4">Start with essentials below. Add suggested categories or create your own. You can edit amounts and add more in Budget Plan later.</p>
@@ -95,6 +95,28 @@
                             <span id="onboarding-cat-allocated-val">0</span> / <span id="onboarding-cat-total-val">0</span> allocated
                         </p>
                     </div>
+                    <div id="onboarding-cat-unallocated-alert" class="hidden mt-3 rounded-xl overflow-hidden border-2 border-amber-300 bg-gradient-to-r from-amber-50 to-amber-100/80 shadow-sm animate-pulse-subtle">
+                        <div class="flex items-center gap-3 px-4 py-3">
+                            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-amber-200/80 flex items-center justify-center text-amber-700">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 8v4"/><path d="M12 16h.01"/><circle cx="12" cy="12" r="10"/></svg>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-xs font-black text-amber-800 uppercase tracking-wide">Under budget</p>
+                                <p class="text-[11px] font-bold text-amber-700 mt-0.5"><span id="onboarding-cat-unallocated-amount">0</span> <span data-currency>AED</span> not allocated yet</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="onboarding-cat-overallocated-alert" class="hidden mt-3 rounded-xl overflow-hidden border-2 border-red-300 bg-gradient-to-r from-red-50 to-red-100/80 shadow-sm animate-pulse-subtle">
+                        <div class="flex items-center gap-3 px-4 py-3">
+                            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-red-200/80 flex items-center justify-center text-red-700">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 9v2"/><path d="M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-xs font-black text-red-800 uppercase tracking-wide">Over budget</p>
+                                <p class="text-[11px] font-bold text-red-700 mt-0.5"><span id="onboarding-cat-overallocated-amount">0</span> <span data-currency>AED</span> over — reduce allocations</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="flex flex-wrap gap-2 mb-4 flex-shrink-0">
                     <span class="text-[10px] font-bold text-slate-500 self-center mr-1">Suggestions:</span>
@@ -104,6 +126,16 @@
                     <button type="button" onclick="addOnboardingSuggestion('subscriptions')" class="onboarding-suggestion-btn py-2 px-3 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-indigo-100 hover:text-indigo-700 border border-slate-200 transition">+ Subscriptions</button>
                 </div>
                 <div id="onboarding-strategy-sections" class="flex-1 min-h-0 overflow-y-auto space-y-4 pb-4"></div>
+                <div id="onboarding-budget-tips-overlay" class="hidden absolute inset-0 z-20 flex items-center justify-center p-4 bg-black/40">
+                    <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 border-2 border-indigo-200">
+                        <p id="onboarding-tip-title" class="text-xs font-black text-indigo-800 uppercase tracking-wide mb-2">Tip</p>
+                        <p id="onboarding-tip-body" class="text-sm text-slate-700 mb-6 leading-relaxed"></p>
+                        <div class="flex gap-2">
+                            <button type="button" id="onboarding-tip-skip" onclick="skipBudgetPlanTips()" class="py-2.5 px-4 text-slate-500 text-xs font-bold hover:text-slate-700">Skip tips</button>
+                            <button type="button" id="onboarding-tip-next" onclick="nextBudgetPlanTip()" class="flex-1 py-2.5 px-4 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase">Next</button>
+                        </div>
+                    </div>
+                </div>
                 <div class="flex gap-3 flex-shrink-0 pt-2">
                     <button type="button" onclick="onboardingBack()" class="py-3 px-6 border border-slate-300 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-100">Back</button>
                     <button type="button" onclick="onboardingNext()" class="flex-1 py-3 px-6 bg-indigo-600 text-white rounded-xl text-sm font-black uppercase tracking-wider">Next</button>
@@ -132,12 +164,20 @@
                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Step 6 of 6</p>
                 <h2 class="text-xl font-black text-slate-900 mb-2">You’re all set</h2>
                 <p class="text-sm text-slate-600 mb-4">Check your choices below. You can add or edit categories in Budget Plan and change income or currency in Settings.</p>
-                <div id="onboarding-summary-list" class="bg-slate-50 rounded-xl p-4 space-y-2 mb-6 text-sm">
+                <div id="onboarding-summary-list" class="bg-slate-50 rounded-xl p-4 space-y-2 mb-4 text-sm">
                     <div class="flex justify-between items-center"><span class="text-slate-600">Currency</span><span id="onboarding-summary-currency" class="font-bold text-slate-900">—</span><button type="button" onclick="showOnboardingStep(1)" class="text-indigo-600 text-xs font-bold">Edit</button></div>
                     <div class="flex justify-between items-center"><span class="text-slate-600">Monthly income</span><span id="onboarding-summary-income" class="font-bold text-slate-900">—</span><button type="button" onclick="showOnboardingStep(2)" class="text-indigo-600 text-xs font-bold">Edit</button></div>
                     <div class="flex justify-between items-center"><span class="text-slate-600">Bank balance (reality)</span><span id="onboarding-summary-reality" class="font-bold text-slate-900">—</span><button type="button" onclick="showOnboardingStep(3)" class="text-indigo-600 text-xs font-bold">Edit</button></div>
                     <div class="flex justify-between items-center"><span class="text-slate-600">Categories</span><span id="onboarding-summary-categories" class="font-bold text-slate-900">—</span><button type="button" onclick="showOnboardingStep(4)" class="text-indigo-600 text-xs font-bold">Edit</button></div>
                     <div class="flex justify-between items-center"><span class="text-slate-600">Weekly pre-fill</span><span id="onboarding-summary-weekly" class="font-bold text-slate-900">—</span><button type="button" onclick="showOnboardingStep(5)" class="text-indigo-600 text-xs font-bold">Edit</button></div>
+                </div>
+                <div id="onboarding-account-card" class="rounded-xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 to-white p-4 mb-6">
+                    <p class="text-xs font-black text-indigo-900 uppercase tracking-wide mb-1">Sync across devices?</p>
+                    <p class="text-[11px] text-slate-600 mb-4">Create a free account to access your budget on phone, tablet, and desktop.</p>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="onboardingOpenAuth()" class="flex-1 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-wider">Create account</button>
+                        <button type="button" onclick="onboardingSkipAccount()" class="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl text-[10px] font-bold hover:bg-slate-200">Skip</button>
+                    </div>
                 </div>
                 <button type="button" onclick="onboardingComplete()" class="w-full py-4 px-6 bg-indigo-600 text-white rounded-xl text-sm font-black uppercase tracking-wider">Go to app</button>
             </div>
@@ -235,7 +275,18 @@
     <div id="main-content" class="mt-6 space-y-6 pb-6">
 
         <!-- LEDGER PAGE -->
-        <div id="page-ledger" class="space-y-6">
+        <div id="page-ledger" class="space-y-6 relative">
+            <div id="home-tour-overlay" class="hidden absolute inset-0 z-30 flex items-center justify-center p-4 bg-black/40">
+                <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 border-2 border-indigo-200">
+                    <p id="home-tour-step" class="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-2">Step <span id="home-tour-step-num">1</span> of 4</p>
+                    <p id="home-tour-title" class="text-sm font-black text-slate-900 mb-2"></p>
+                    <p id="home-tour-body" class="text-xs text-slate-600 mb-6 leading-relaxed"></p>
+                    <div class="flex gap-2">
+                        <button type="button" onclick="skipHomeTour()" class="py-2.5 px-4 text-slate-500 text-xs font-bold hover:text-slate-700">Skip tour</button>
+                        <button type="button" id="home-tour-next-btn" onclick="nextHomeTourStep()" class="flex-1 py-2.5 px-4 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase">Next</button>
+                    </div>
+                </div>
+            </div>
             <div class="ledger-top-grid grid grid-cols-1 lg:grid-cols-1 gap-4">
             <!-- Weekly Hero (compact on desktop) -->
             <div class="premium-card p-6 lg:p-4 bg-indigo-600 text-white border-indigo-600 shadow-xl shadow-indigo-100 weekly-hero">
@@ -555,13 +606,14 @@
             <div class="premium-card p-6 space-y-4">
                 <div>
                     <h3 class="text-sm font-black text-slate-800 uppercase tracking-widest">Data</h3>
-                    <p class="text-xs text-slate-500 mt-1">Backup, restore, or reset your local data.</p>
+                    <p class="text-xs text-slate-500 mt-1">Backup, restore, load the example budget, or reset all data.</p>
                 </div>
                 <div class="flex flex-col gap-2">
                     <button onclick="exportState()" class="w-full py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Export Backup</button>
                     <button onclick="triggerImport()" class="w-full py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Import Backup</button>
                     <button onclick="recoverLocalData()" class="w-full py-3 bg-amber-50 text-amber-700 rounded-xl text-[10px] font-black uppercase tracking-widest">Recover from Local Storage</button>
                     <button onclick="rebuildTotals()" class="w-full py-3 bg-emerald-50 text-emerald-600 rounded-xl text-[10px] font-black uppercase tracking-widest">Rebuild Totals</button>
+                    <button onclick="loadExampleBudget()" class="w-full py-3 bg-indigo-50 text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest">Load example budget</button>
                     <button onclick="resetAppData()" class="w-full py-3 bg-red-50 text-red-500 rounded-xl text-[10px] font-black uppercase tracking-widest">Reset All Data</button>
                     <input type="file" id="settings-import-file" accept="application/json" class="hidden" onchange="importStateFile(this.files[0])">
                 </div>
@@ -757,8 +809,9 @@
             </div>
         </div>
     </div>
+    </div><!-- /app-shell -->
 
-    <!-- Auth Modal -->
+    <!-- Auth Modal (outside app-shell so it works during onboarding) -->
     <div id="auth-modal" class="modal-overlay hidden">
         <div class="modal-content">
             <div class="flex justify-between items-center mb-6">
@@ -787,7 +840,6 @@
             </div>
         </div>
     </div>
-    </div><!-- /app-shell -->
 
     <!-- Add Item Modal (outside app-shell so it works during onboarding) -->
     <div id="add-item-tool" class="modal-overlay hidden">

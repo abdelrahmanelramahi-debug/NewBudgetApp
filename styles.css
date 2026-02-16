@@ -418,6 +418,13 @@ body.theme-dark .desktop-nav-item:hover {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.85; }
 }
+@keyframes pulseSubtle {
+    0%, 100% { opacity: 1; box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05); }
+    50% { opacity: 0.98; box-shadow: 0 2px 8px -2px rgb(0 0 0 / 0.08); }
+}
+.animate-pulse-subtle {
+    animation: pulseSubtle 2.5s ease-in-out infinite;
+}
 .home-header-surplus-panel {
     display: flex;
     flex-wrap: wrap;
