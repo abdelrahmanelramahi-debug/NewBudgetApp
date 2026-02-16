@@ -144,7 +144,7 @@
                 <h1 class="text-sm font-black text-slate-900 tracking-tight">Finance Command</h1>
             </div>
             <nav class="p-2 flex-1 flex flex-col gap-0.5">
-                <button type="button" class="desktop-nav-item nav-ledger-pill tab-btn tab-active w-full text-left py-2 px-3 rounded-md text-sm font-semibold text-slate-700 hover:bg-slate-100 transition" onclick="switchPage('ledger'); closeSideMenu();">Daily Entry</button>
+                <button type="button" class="desktop-nav-item nav-ledger-pill tab-btn tab-active w-full text-left py-2 px-3 rounded-md text-sm font-semibold text-slate-700 hover:bg-slate-100 transition" onclick="switchPage('ledger'); closeSideMenu();">Home</button>
                 <button type="button" id="nav-budget" class="desktop-nav-item tab-btn tab-inactive w-full text-left py-2 px-3 rounded-md text-sm font-semibold text-slate-700 hover:bg-slate-100 transition" onclick="switchPage('budget'); closeSideMenu();">Budget Plan</button>
                 <button type="button" id="nav-profile" class="desktop-nav-item tab-btn tab-inactive w-full text-left py-2 px-3 rounded-md text-sm font-semibold text-slate-700 hover:bg-slate-100 transition" onclick="switchPage('profile'); closeSideMenu();">Profile</button>
                 <button type="button" id="nav-settings" class="desktop-nav-item tab-btn tab-inactive w-full text-left py-2 px-3 rounded-md text-sm font-semibold text-slate-700 hover:bg-slate-100 transition" onclick="switchPage('settings'); closeSideMenu();">Settings</button>
@@ -157,62 +157,54 @@
         <p class="text-sm font-bold text-indigo-900">Add your first spend from Weekly Allowance, or open Budget Plan to see your categories.</p>
         <button type="button" id="first-action-dismiss" class="shrink-0 py-2 px-3 rounded-lg bg-indigo-200 text-indigo-800 text-xs font-bold uppercase hover:bg-indigo-300 transition">Dismiss</button>
     </div>
-    <!-- Header (home/Daily Entry only) -->
-    <nav id="app-header" class="nav-header w-full">
-        <div class="flex flex-wrap items-center gap-x-6 gap-y-4 justify-between mb-5">
-            <!-- Menu + current page (mobile only; desktop uses sidebar) -->
-            <div class="flex items-center gap-2 flex-shrink-0 order-first lg:hidden">
-                <button type="button" onclick="toggleSideMenu()" class="p-2.5 bg-slate-100 rounded-xl text-slate-600 hover:bg-slate-200 transition" aria-label="Open menu">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-                </button>
-                <div id="nav-ledger" class="nav-ledger-pill tab-btn tab-active py-2.5 px-4 rounded-xl text-[11px] font-black uppercase tracking-widest cursor-pointer select-none" onclick="switchPage('ledger'); closeSideMenu();">Daily Entry</div>
-            </div>
-            <!-- Title + bank balance (title hidden on desktop; sidebar has it) -->
-            <div class="min-w-0 flex-1 order-2 px-2 sm:px-4">
-                <h1 class="text-xl font-black text-slate-900 lg:hidden">Finance Command</h1>
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1.5 lg:mt-0">
-                    <span class="inline-flex items-center gap-1 flex-wrap">
-                        Bank Balance: <button type="button" onclick="openLiquidityBreakdown()" class="text-slate-800 font-black underline-offset-2 hover:underline focus:outline-none focus:underline cursor-pointer bg-transparent border-0 p-0 align-baseline" aria-label="View what comprises bank balance"><span id="header-reality">0.00</span></button>
-                        <button type="button" id="bank-balance-info-btn" onclick="document.getElementById('bank-balance-info').classList.toggle('hidden')" class="inline-flex items-center justify-center w-4 h-4 rounded-full border border-slate-400 text-slate-500 text-[10px] font-bold leading-none hover:bg-slate-200 focus:outline-none shrink-0" aria-label="What is Bank Balance?">i</button>
-                    </span>
-                    <span id="bank-balance-info" class="hidden block mt-1.5 text-[9px] font-normal normal-case text-slate-500 max-w-[240px] leading-snug">This is the reality check of what should read in your bank account.</span>
-                </p>
-            </div>
-            <!-- Extra, undo, resolve: grouped with spacing -->
-            <div class="flex items-center gap-2 sm:gap-4 flex-shrink-0 order-3">
-                <div class="flex items-center gap-1.5 flex-shrink-0">
-                    <button onclick="globalUndo()" id="global-undo-btn" class="p-2 bg-slate-200 rounded-lg text-slate-600 hover:bg-slate-300 transition opacity-30 pointer-events-none" title="Undo Last Action">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+    <!-- Home header: sticky only on Home (ledger) page -->
+    <nav id="app-header" class="nav-header home-header w-full">
+        <div class="home-header-inner">
+            <div class="flex flex-wrap items-center gap-x-4 gap-y-3 sm:gap-x-6 justify-between">
+                <div class="flex items-center gap-2 flex-shrink-0 order-first lg:hidden">
+                    <button type="button" onclick="toggleSideMenu()" class="home-header-icon-btn" aria-label="Open menu">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
                     </button>
-                    <button onclick="globalRedo()" id="global-redo-btn" class="p-2 bg-slate-200 rounded-lg text-slate-600 hover:bg-slate-300 transition opacity-30 pointer-events-none" title="Redo Last Action">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg>
+                    <div id="nav-ledger" class="nav-ledger-pill tab-btn tab-active home-nav-pill" onclick="switchPage('ledger'); closeSideMenu();">Home</div>
+                </div>
+                <div class="min-w-0 flex-1 order-2 px-1 sm:px-2">
+                    <div class="home-header-balance">
+                        <span class="home-header-label">Bank balance</span>
+                        <button type="button" onclick="openLiquidityBreakdown()" class="home-header-amount" aria-label="View breakdown">
+                            <span id="header-reality">0.00</span>
+                        </button>
+                        <button type="button" id="bank-balance-info-btn" onclick="document.getElementById('bank-balance-info').classList.toggle('hidden')" class="home-header-info-btn" aria-label="What is Bank Balance?">i</button>
+                    </div>
+                    <p id="bank-balance-info" class="hidden mt-1.5 text-[10px] text-slate-500 max-w-[240px] leading-snug">This is the reality check of what should read in your bank account.</p>
+                </div>
+                <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0 order-3">
+                    <div class="home-header-actions">
+                        <button onclick="globalUndo()" id="global-undo-btn" class="home-header-icon-btn opacity-40 pointer-events-none" title="Undo"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg></button>
+                        <button onclick="globalRedo()" id="global-redo-btn" class="home-header-icon-btn opacity-40 pointer-events-none" title="Redo"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg></button>
+                    </div>
+                    <div class="home-header-extra">
+                        <span class="home-header-label">Extra</span>
+                        <span class="home-header-extra-amount text-emerald-600" id="global-surplus">0.00</span>
+                    </div>
+                    <div id="deficit-trigger" class="hidden">
+                        <button onclick="openDeficitModal()" class="home-header-resolve-btn">Resolve</button>
+                    </div>
+                    <button onclick="toggleSurplusControls()" class="home-header-icon-btn" aria-label="Extra options">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
                     </button>
-                </div>
-                <div class="text-right">
-                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Extra</span>
-                    <span class="text-lg font-black text-emerald-600" id="global-surplus">0.00</span>
-                </div>
-                <div id="deficit-trigger" class="hidden">
-                    <button onclick="openDeficitModal()" class="bg-red-500 text-white px-3 py-2 rounded-lg text-[10px] font-bold uppercase animate-pulse">Resolve</button>
-                </div>
-                <button onclick="toggleSurplusControls()" class="p-2 bg-slate-100 rounded-lg text-slate-500 hover:bg-slate-200">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="m6 9 6 6 6-6"/></svg>
-                </button>
-            </div>
-        </div>
-
-        <!-- Extra Controls -->
-        <div id="surplus-controls" class="hidden mt-4 overflow-hidden">
-            <div class="premium-card p-4 flex flex-wrap gap-2 sm:gap-3 bg-emerald-50 border-emerald-100 min-w-0">
-                <input type="number" id="surplus-adjust-val" placeholder="AED..." data-currency-placeholder class="flex-1 min-w-0 rounded-lg border-0 px-3 py-2 font-bold text-sm w-full sm:w-auto">
-                <div class="flex flex-wrap gap-2 flex-shrink-0 w-full sm:w-auto justify-end sm:justify-start">
-                    <button onclick="adjustGlobalSurplus(1)" class="bg-emerald-500 text-white px-3 py-2 rounded-lg text-xs font-bold uppercase whitespace-nowrap">Add</button>
-                    <button onclick="adjustGlobalSurplus(-1)" class="bg-red-500 text-white px-3 py-2 rounded-lg text-xs font-bold uppercase whitespace-nowrap">Deduct</button>
-                    <button onclick="openTool('Surplus', 'Extra Fund', true)" class="bg-indigo-500 text-white px-3 py-2 rounded-lg text-xs font-bold uppercase whitespace-nowrap">Transfer</button>
                 </div>
             </div>
         </div>
-
+        <div id="surplus-controls" class="hidden overflow-hidden">
+            <div class="home-header-surplus-panel">
+                <input type="number" id="surplus-adjust-val" placeholder="Amount..." data-currency-placeholder class="home-header-surplus-input">
+                <div class="flex flex-wrap gap-2 flex-shrink-0">
+                    <button onclick="adjustGlobalSurplus(1)" class="home-header-surplus-btn home-header-surplus-add">Add</button>
+                    <button onclick="adjustGlobalSurplus(-1)" class="home-header-surplus-btn home-header-surplus-deduct">Deduct</button>
+                    <button onclick="openTool('Surplus', 'Extra Fund', true)" class="home-header-surplus-btn home-header-surplus-transfer">Transfer</button>
+                </div>
+            </div>
+        </div>
     </nav>
 
     <!-- Side menu drawer -->
@@ -224,7 +216,7 @@
                 <button type="button" onclick="closeSideMenu()" class="p-2 rounded-lg text-slate-500 hover:bg-slate-100">&#10005;</button>
             </div>
             <nav class="p-3 space-y-1">
-                <button type="button" onclick="switchPage('ledger'); closeSideMenu();" class="w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Daily Entry</button>
+                <button type="button" onclick="switchPage('ledger'); closeSideMenu();" class="w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Home</button>
                 <button type="button" onclick="switchPage('budget'); closeSideMenu();" class="w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Budget Plan</button>
                 <button type="button" onclick="switchPage('profile'); closeSideMenu();" class="w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Profile</button>
                 <button type="button" onclick="switchPage('settings'); closeSideMenu();" class="w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Settings</button>
@@ -357,6 +349,9 @@
                 </div>
                 <div id="budget-plan-unallocated-alert" class="hidden mt-2 py-2 px-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold">
                     <span id="budget-plan-unallocated-amount">0</span> <span data-currency>AED</span> not allocated yet.
+                </div>
+                <div id="budget-plan-overallocated-alert" class="hidden mt-2 py-2 px-3 rounded-lg bg-red-50 border border-red-200 text-red-800 text-xs font-semibold">
+                    <span id="budget-plan-overallocated-amount">0</span> <span data-currency>AED</span> over-allocated. Reduce allocations to match your total.
                 </div>
                 <span id="reality-total-sr" class="hidden" aria-hidden="true">0</span>
             </header>

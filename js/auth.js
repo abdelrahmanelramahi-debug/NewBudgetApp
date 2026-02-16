@@ -190,7 +190,8 @@ async function loadStateFromCloud(retryCount) {
     
     try {
         var userDocRef = window.firebaseDb.collection('users').doc(currentUser.uid);
-        var docSnap = await userDocRef.get();
+        // Force server read so we get the latest data (e.g. from phone), not stale cache that would overwrite other devices
+        var docSnap = await userDocRef.get({ source: 'server' });
         
         if (docSnap.exists) {
             const cloudData = docSnap.data();
@@ -340,9 +341,16 @@ function flushCloudSave() {
         saveStateToCloud();
     }
 }
+// When user returns to the tab, pull from cloud so desktop shows latest (e.g. logs from phone)
+function pullFromCloudWhenVisible() {
+    if (currentUser && document.visibilityState === 'visible' && !syncInProgress) {
+        loadStateFromCloud();
+    }
+}
 if (typeof document !== 'undefined') {
     document.addEventListener('visibilitychange', function() {
         if (document.visibilityState === 'hidden') flushCloudSave();
+        if (document.visibilityState === 'visible') pullFromCloudWhenVisible();
     });
     window.addEventListener('pagehide', flushCloudSave);
 }

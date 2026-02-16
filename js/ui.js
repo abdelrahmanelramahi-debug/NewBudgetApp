@@ -215,6 +215,8 @@ function updateBudgetPlanAllocated() {
 
     var alertEl = document.getElementById('budget-plan-unallocated-alert');
     var amountEl = document.getElementById('budget-plan-unallocated-amount');
+    var overEl = document.getElementById('budget-plan-overallocated-alert');
+    var overAmountEl = document.getElementById('budget-plan-overallocated-amount');
     if (alertEl && amountEl && total > 0) {
         var unallocated = total - allocated;
         if (unallocated > 0.001) {
@@ -225,6 +227,17 @@ function updateBudgetPlanAllocated() {
         }
     } else if (alertEl) {
         alertEl.classList.add('hidden');
+    }
+    if (overEl && overAmountEl && total > 0) {
+        if (allocated > total + 0.001) {
+            var over = allocated - total;
+            overAmountEl.textContent = typeof formatMoney === 'function' ? formatMoney(over) : over.toFixed(2);
+            overEl.classList.remove('hidden');
+        } else {
+            overEl.classList.add('hidden');
+        }
+    } else if (overEl) {
+        overEl.classList.add('hidden');
     }
 }
 window.openBudgetPlan = openBudgetPlan;
@@ -278,10 +291,10 @@ function renderStrategy() {
         let rowsHtml = '';
         sec.items.forEach((item, idx) => {
             let amortLabel = item.amortData ? `<span class="text-[9px] bg-indigo-50 text-indigo-600 px-1 rounded font-bold ml-2">${item.amortData.total}/${item.amortData.months}mo</span>` : '';
-            const isFoodBase = item.label === 'Daily Food';
+            const isFoodBase = item.label === 'Daily Food' || item.label === 'Food Base';
 
             // SMART BADGES FOR CORE ITEMS
-            if (item.label === 'Daily Food') {
+            if (item.label === 'Daily Food' || item.label === 'Food Base') {
                 const dailyRate = item.amount / state.food.daysTotal;
                 amortLabel = `<span id="food-base-daily-badge" class="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold ml-2">${formatMoney(dailyRate)}/day</span>`;
             } else if (item.label === 'Weekly Misc') {
@@ -323,14 +336,16 @@ function renderStrategy() {
                 </div>
             ` : '';
             const isWeeklyMisc = item.label === 'Weekly Misc';
-            const weeklyAmountMax = Math.max(500, Math.ceil((item.amount || 320) / 4) * 4 + 100);
+            const WEEKLY_SLIDER_STEP = 20;
+            const weeklyAmountMax = Math.max(400, Math.ceil((item.amount || 320) / WEEKLY_SLIDER_STEP) * WEEKLY_SLIDER_STEP + WEEKLY_SLIDER_STEP);
+            const weeklySnapped = Math.round((item.amount || 0) / WEEKLY_SLIDER_STEP) * WEEKLY_SLIDER_STEP;
             const weeklySliderHtml = isWeeklyMisc ? `
                 <div class="px-6 pb-3">
                     <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mb-1">
                         <span>Monthly (4 weeks)</span>
-                        <span>${displayAmount} ${getCurrencyLabel()}</span>
+                        <span>${weeklySnapped} ${getCurrencyLabel()}</span>
                     </div>
-                    <input type="range" id="weekly-amount-slider" min="0" max="${weeklyAmountMax}" step="4" value="${displayAmount}" oninput="syncWeeklyAmount('${sec.id}', ${idx}, this.value)" class="w-full">
+                    <input type="range" id="weekly-amount-slider" min="0" max="${weeklyAmountMax}" step="${WEEKLY_SLIDER_STEP}" value="${weeklySnapped}" oninput="syncWeeklyAmount('${sec.id}', ${idx}, this.value)" class="w-full">
                     <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mt-1">
                         <span>0</span>
                         <span>${weeklyAmountMax}</span>

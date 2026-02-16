@@ -1105,9 +1105,11 @@ function syncFoodDailyRate(sid, idx, val) {
     syncFoodBaseAmount(sid, idx, total);
 }
 
+var WEEKLY_SLIDER_STEP = 20;
 function syncWeeklyAmount(sid, idx, val) {
     const num = parseFloat(val) || 0;
-    fastUpdateItemAmount(sid, idx, num);
+    const snapped = Math.round(num / WEEKLY_SLIDER_STEP) * WEEKLY_SLIDER_STEP;
+    fastUpdateItemAmount(sid, idx, snapped);
 }
 
 // Paycheck + Allocation
