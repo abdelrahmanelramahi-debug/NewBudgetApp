@@ -918,7 +918,7 @@ function buyFoodDay() {
 
     const fSec = state.categories.find(s=>s.id==='core_essentials') || state.categories.find(s=>s.id==='foundations');
     const fItem = fSec ? fSec.items.find(i=>i.label==='Daily Food') : null;
-    const foodBase = fItem ? fItem.amount : 840;
+    const foodBase = fItem ? fItem.amount : 600;
     const dailyRate = foodBase / 28;
     const totalCost = dailyRate * daysInput;
 

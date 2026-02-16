@@ -14,10 +14,10 @@ window.onload = function() {
         // Force update if it's auto-calculated OR if it is sitting at the old default of 0
         if(item && (item.isAutoCalculated || item.amount === 0)) {
             item.isAutoCalculated = false;
-            item.amount = 1457;
+            item.amount = 1000;
             // Also update the running balance if it's 0 or undefined
             if(state.accounts?.buckets?.['General Savings'] === undefined || state.accounts.buckets['General Savings'] === 0) {
-                state.accounts.buckets['General Savings'] = 1457;
+                state.accounts.buckets['General Savings'] = 1000;
             }
         }
         const payables = sys.items.find(i=>i.label==='Payables');

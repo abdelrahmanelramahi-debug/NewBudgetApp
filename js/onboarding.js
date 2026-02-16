@@ -8,16 +8,16 @@ var onboardingCategoriesInitialized = false;
 /** Suggested categories (emptied: amounts at 0 so user can fill). Same structure as template. */
 var ONBOARDING_SUGGESTIONS = {
     health: { id: 'health', label: 'Health', isLedgerLinked: true, isSingleAction: true, items: [
-        { label: 'Boron Complex', amount: 0 }, { label: 'Protein', amount: 0 }, { label: 'Creatine', amount: 0 }, { label: 'Mg, Sl, Zc', amount: 0 }
+        { label: 'Supplements', amount: 0 }, { label: 'Protein', amount: 0 }, { label: 'Vitamins', amount: 0 }, { label: 'Other health', amount: 0 }
     ]},
     groceries: { id: 'groceries', label: 'Groceries', isLedgerLinked: true, isSingleAction: true, items: [
-        { label: 'Oats', amount: 0 }, { label: 'Eggs', amount: 0 }
+        { label: 'Staples', amount: 0 }, { label: 'Produce', amount: 0 }
     ]},
     misc: { id: 'misc', label: 'Misc', isLedgerLinked: true, isSingleAction: true, items: [
-        { label: 'Mixed Nuts', amount: 0 }, { label: 'Misc', amount: 0 }, { label: 'Hair cut', amount: 0 }, { label: 'Toilet Paper', amount: 0 }
+        { label: 'Snacks', amount: 0 }, { label: 'Misc', amount: 0 }, { label: 'Personal', amount: 0 }, { label: 'Household', amount: 0 }
     ]},
     subscriptions: { id: 'subscriptions', label: 'Subscriptions', isLedgerLinked: true, isSingleAction: true, items: [
-        { label: 'Etisalat', amount: 0 }, { label: 'Tarteel', amount: 0 }, { label: 'YouTube', amount: 0 }, { label: 'iCloud', amount: 0 }, { label: 'Adib', amount: 0 }
+        { label: 'Streaming', amount: 0 }, { label: 'App 1', amount: 0 }, { label: 'App 2', amount: 0 }, { label: 'Cloud', amount: 0 }, { label: 'Sub other', amount: 0 }
     ]}
 };
 
@@ -111,7 +111,7 @@ function updateOnboardingSummary() {
     var realityEl = document.getElementById('onboarding-reality');
     var weeklyRadios = document.getElementsByName('onboarding-weekly');
     var cur = (curEl && curEl.value) ? curEl.value : 'AED';
-    var inc = (incEl && incEl.value.trim() !== '') ? incEl.value : '4000';
+    var inc = (incEl && incEl.value.trim() !== '') ? incEl.value : '5000';
     var reality = (realityEl && realityEl.value.trim() !== '') ? realityEl.value : '0';
     var cat = 'Custom';
     if (typeof state !== 'undefined' && state.categories && state.categories.length) {
@@ -177,7 +177,7 @@ function applyOnboardingValues(skipAll) {
     var realityEl = document.getElementById('onboarding-reality');
     var weeklyRadios = document.getElementsByName('onboarding-weekly');
     if (state.settings) state.settings.currency = (currencyEl && currencyEl.value) ? currencyEl.value : 'AED';
-    var income = 4000;
+    var income = 5000;
     if (!skipAll && incomeEl && incomeEl.value.trim() !== '') {
         var parsed = parseFloat(incomeEl.value);
         if (!isNaN(parsed) && parsed >= 0) income = parsed;

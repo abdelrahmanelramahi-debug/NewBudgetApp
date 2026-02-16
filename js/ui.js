@@ -347,7 +347,7 @@ function renderStrategy(opts) {
             ` : '';
             const isWeeklyMisc = item.label === 'Weekly Misc';
             const WEEKLY_SLIDER_STEP = 20;
-            const weeklyAmountMax = Math.max(400, Math.ceil((item.amount || 320) / WEEKLY_SLIDER_STEP) * WEEKLY_SLIDER_STEP + WEEKLY_SLIDER_STEP);
+            const weeklyAmountMax = Math.max(400, Math.ceil((item.amount || 400) / WEEKLY_SLIDER_STEP) * WEEKLY_SLIDER_STEP + WEEKLY_SLIDER_STEP);
             const weeklySnapped = Math.round((item.amount || 0) / WEEKLY_SLIDER_STEP) * WEEKLY_SLIDER_STEP;
             const weeklySliderHtml = isWeeklyMisc ? `
                 <div class="px-6 pb-3">
@@ -742,7 +742,7 @@ function updateFoodUI() {
     var flabel = typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.FOOD_BASE : 'Daily Food';
     var fSec = state.categories.find(s=>s.id===cid) || state.categories.find(s=>s.id===fid);
     var fItem = fSec ? fSec.items.find(i=>i.label===flabel) : null;
-    var foodBase = fItem ? fItem.amount : 840;
+    var foodBase = fItem ? fItem.amount : 600;
     var daily = foodBase / (state.food.daysTotal || 28);
     if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
     var consumedDays = state.food.consumedDays || [];

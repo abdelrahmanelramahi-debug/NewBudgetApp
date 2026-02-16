@@ -6,7 +6,7 @@ const ACCOUNT_LABELS = typeof ITEM_LABELS !== 'undefined'
 let state = {
     schemaVersion: 2,
     onboardingComplete: false,
-    monthlyIncome: 4000,
+    monthlyIncome: 5000,
     settings: {
         currency: 'AED',
         decimals: 2,
@@ -19,53 +19,53 @@ let state = {
     },
     categories: [
         { id: 'sys_savings', label: 'System Savings', isSystem: true, items: [
-            { label: 'General Savings', amount: 1457, isAutoCalculated: false },
+            { label: 'General Savings', amount: 1000, isAutoCalculated: false },
             { label: 'Payables', amount: 0, isAutoCalculated: false }
         ] },
         { id: 'core_essentials', label: 'Core Essentials', isSystem: true, items: [
-            { label: 'Weekly Misc', amount: 320, isCore: true },
-            { label: 'Daily Food', amount: 840, isCore: true },
-            { label: 'Car Fund', amount: 500, isCore: true }
+            { label: 'Weekly Misc', amount: 400, isCore: true },
+            { label: 'Daily Food', amount: 600, isCore: true },
+            { label: 'Car Fund', amount: 300, isCore: true }
         ]},
         { id: 'health', label: 'Health', isLedgerLinked: true, isSingleAction: true, items: [
-            { label: 'Boron Complex', amount: 80 },
-            { label: 'Protein', amount: 150 },
-            { label: 'Creatine', amount: 100 },
-            { label: 'Mg, Sl, Zc', amount: 70 }
+            { label: 'Supplements', amount: 50 },
+            { label: 'Protein', amount: 75 },
+            { label: 'Vitamins', amount: 50 },
+            { label: 'Other health', amount: 40 }
         ]},
         { id: 'groceries', label: 'Groceries', isLedgerLinked: true, isSingleAction: true, items: [
-            { label: 'Oats', amount: 60 },
-            { label: 'Eggs', amount: 42 }
+            { label: 'Staples', amount: 40 },
+            { label: 'Produce', amount: 30 }
         ]},
         { id: 'misc', label: 'Misc', isLedgerLinked: true, isSingleAction: true, items: [
-            { label: 'Mixed Nuts', amount: 91 },
-            { label: 'Misc', amount: 50 },
-            { label: 'Hair cut', amount: 35 },
-            { label: 'Toilet Paper', amount: 16 }
+            { label: 'Snacks', amount: 50 },
+            { label: 'Misc', amount: 30 },
+            { label: 'Personal', amount: 25 },
+            { label: 'Household', amount: 15 }
         ]},
         { id: 'subscriptions', label: 'Subscriptions', isLedgerLinked: true, isSingleAction: true, items: [
-            { label: 'Etisalat', amount: 100 },
-            { label: 'Tarteel', amount: 35 },
-            { label: 'YouTube', amount: 24 },
-            { label: 'iCloud', amount: 4 },
-            { label: 'Adib', amount: 26 }
+            { label: 'Streaming', amount: 50 },
+            { label: 'App 1', amount: 20 },
+            { label: 'App 2', amount: 15 },
+            { label: 'Cloud', amount: 5 },
+            { label: 'Sub other', amount: 15 }
         ]}
     ],
     accounts: {
         surplus: 0,
-        weekly: { balance: 80, week: 1 },
+        weekly: { balance: 100, week: 1 },
         buckets: {
-            'General Savings': 1457,
+            'General Savings': 1000,
             'Payables': 0,
-            'Car Fund': 500,
-            'Weekly Misc': 320
+            'Car Fund': 300,
+            'Weekly Misc': 400
         }
     },
     balances: {
-        'Boron Complex': 80, 'Protein': 150, 'Creatine': 100, 'Mg, Sl, Zc': 70,
-        'Oats': 60, 'Eggs': 42,
-        'Mixed Nuts': 91, 'Misc': 50, 'Hair cut': 35, 'Toilet Paper': 16,
-        'Etisalat': 100, 'Tarteel': 35, 'YouTube': 24, 'iCloud': 4, 'Adib': 26
+        'Supplements': 50, 'Protein': 75, 'Vitamins': 50, 'Other health': 40,
+        'Staples': 40, 'Produce': 30,
+        'Snacks': 50, 'Misc': 30, 'Personal': 25, 'Household': 15,
+        'Streaming': 50, 'App 1': 20, 'App 2': 15, 'Cloud': 5, 'Sub other': 15
     },
     food: { daysTotal: 28, daysUsed: 0, lockedAmount: 0, history: [], viewWeek: 0 },
     histories: {}
@@ -103,7 +103,7 @@ function loadState() {
         try {
             const loaded = JSON.parse(saved);
             state = { ...state, ...loaded };
-            if(typeof state.monthlyIncome === 'undefined') state.monthlyIncome = 4000;
+            if(typeof state.monthlyIncome === 'undefined') state.monthlyIncome = 5000;
             if(!('onboardingComplete' in loaded)) state.onboardingComplete = true;
         } catch(e) { console.error("Save data corrupt, using default"); }
     }
@@ -232,14 +232,14 @@ function ensureSystemSavings() {
             label: 'System Savings',
             isSystem: true,
             items: [
-                { label: 'General Savings', amount: 1457, isAutoCalculated: false },
+                { label: 'General Savings', amount: 1000, isAutoCalculated: false },
                 { label: 'Payables', amount: 0, isAutoCalculated: false }
             ]
         });
     } else {
         const savings = sys.items.find(i => i.label === 'General Savings');
         if (!savings) {
-            sys.items.unshift({ label: 'General Savings', amount: 1457, isAutoCalculated: false });
+            sys.items.unshift({ label: 'General Savings', amount: 1000, isAutoCalculated: false });
         }
         const payables = sys.items.find(i => i.label === 'Payables');
         if (!payables) {
@@ -258,15 +258,15 @@ function ensureCoreItems() {
             label: 'Core Essentials',
             isSystem: true,
             items: [
-                { label: 'Weekly Misc', amount: 320, isCore: true },
-                { label: 'Daily Food', amount: 840, isCore: true },
-                { label: 'Car Fund', amount: 500, isCore: true }
+                { label: 'Weekly Misc', amount: 400, isCore: true },
+                { label: 'Daily Food', amount: 600, isCore: true },
+                { label: 'Car Fund', amount: 300, isCore: true }
             ]
         });
     } else {
         const car = core.items.find(i => i.label === 'Car Fund');
         if (!car) {
-            core.items.push({ label: 'Car Fund', amount: 500, isCore: true });
+            core.items.push({ label: 'Car Fund', amount: 300, isCore: true });
         }
     }
 
@@ -285,7 +285,7 @@ function getWeeklyConfigAmount() {
     var cid = typeof SECTION_IDS !== 'undefined' ? SECTION_IDS.CORE_ESSENTIALS : 'core_essentials';
     var wlabel = typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.WEEKLY_MISC : 'Weekly Misc';
     const misc = state.categories.find(s=>s.id===cid)?.items.find(i=>i.label===wlabel);
-    const fullAmt = misc ? misc.amount : 320;
+    const fullAmt = misc ? misc.amount : 400;
     return fullAmt / 4;
 }
 
