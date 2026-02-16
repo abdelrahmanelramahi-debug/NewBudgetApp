@@ -537,11 +537,34 @@ function renderLedger() {
         }
     }
     const weeklyTotalFourEl = document.getElementById('weekly-total-four');
-    if (weeklyTotalFourEl && state.accounts?.weekly?.balances && state.accounts.weekly.balances.length >= 4) {
-        const total = (state.accounts.weekly.balances[0] || 0) + (state.accounts.weekly.balances[1] || 0) + (state.accounts.weekly.balances[2] || 0) + (state.accounts.weekly.balances[3] || 0);
-        weeklyTotalFourEl.textContent = formatMoney(total) + ' total across 4 weeks. ';
-    } else if (weeklyTotalFourEl) {
-        weeklyTotalFourEl.textContent = '';
+    const weeklyMiniEl = document.getElementById('weekly-mini-totals');
+    if (state.accounts?.weekly?.balances && state.accounts.weekly.balances.length >= 4) {
+        const totalLeft =
+            (state.accounts.weekly.balances[0] || 0) +
+            (state.accounts.weekly.balances[1] || 0) +
+            (state.accounts.weekly.balances[2] || 0) +
+            (state.accounts.weekly.balances[3] || 0);
+
+        let perWeekAllocated = 0;
+        if (typeof getWeeklyConfigAmount === 'function') {
+            try { perWeekAllocated = Number(getWeeklyConfigAmount()) || 0; } catch (e) {}
+        }
+        const totalAllocated = Math.max(0, perWeekAllocated) * 4;
+
+        // Main line: show left vs allocated (across all 4 weeks)
+        if (weeklyTotalFourEl) {
+            weeklyTotalFourEl.textContent =
+                formatMoney(totalLeft) + ' left / ' + formatMoney(totalAllocated) + ' allocated. ';
+        }
+
+        // Small badge beside title
+        if (weeklyMiniEl) {
+            weeklyMiniEl.textContent =
+                formatMoney(totalLeft) + ' left / ' + formatMoney(totalAllocated);
+        }
+    } else {
+        if (weeklyTotalFourEl) weeklyTotalFourEl.textContent = '';
+        if (weeklyMiniEl) weeklyMiniEl.textContent = '—';
     }
 
     // --- NEW: MAJOR FUNDS SECTION (Savings & Car) ---

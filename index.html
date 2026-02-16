@@ -289,13 +289,16 @@
                 <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between lg:gap-4">
                     <div class="flex justify-between items-start mb-5 lg:mb-0">
                         <div class="flex-1 min-w-0">
-                            <span class="text-[10px] font-bold uppercase tracking-widest text-indigo-200">Weekly Allowance</span>
+                            <div class="flex items-baseline gap-2 flex-wrap">
+                                <span class="text-[10px] font-bold uppercase tracking-widest text-indigo-200">Weekly Allowance</span>
+                                <span id="weekly-mini-totals" class="text-[9px] font-bold text-indigo-200/90">—</span>
+                            </div>
                             <span class="text-[9px] font-bold uppercase tracking-widest text-indigo-300 block mt-1.5">Week <span id="weekly-week-count">1</span>/4</span>
                             <div class="flex items-baseline gap-2 mt-3">
                                 <h2 id="bal-weekly" class="text-6xl lg:text-3xl font-black">0</h2>
                                 <span class="text-xl lg:text-base font-bold text-indigo-300" data-currency>AED</span>
                             </div>
-                            <p id="weekly-allowance-explanation" class="text-[10px] text-indigo-200/90 mt-5 leading-relaxed"><span id="weekly-total-four"></span>Arrows switch week · Transfer moves money between weeks.</p>
+                            <p id="weekly-allowance-explanation" class="text-[10px] text-indigo-200/90 mt-5 leading-relaxed"><span id="weekly-total-four"></span>Split into 4 weeks · Arrows switch week · Transfer moves money between weeks.</p>
                         </div>
                         <div class="flex gap-2 ml-4 flex-shrink-0">
                             <button id="prev-week-btn" onclick="prevWeek()" class="p-2 bg-white/20 rounded-lg hover:bg-white/30 transition group" title="Previous week">
