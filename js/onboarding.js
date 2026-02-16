@@ -1,16 +1,16 @@
-/** Onboarding flow: welcome → currency → income → reality → categories → weekly → summary */
+/** Onboarding flow: welcome → currency → income → reality → categories → summary */
 
-var ONBOARDING_STEPS = ['welcome', 'currency', 'income', 'reality', 'categories', 'weekly', 'summary'];
+var ONBOARDING_STEPS = ['welcome', 'currency', 'income', 'reality', 'categories', 'summary'];
 var onboardingStepIndex = 0;
 var onboardingCompleteCallback = null;
 var onboardingCategoriesInitialized = false;
 var onboardingBudgetTipIndex = 0;
 
 var ONBOARDING_BUDGET_TIPS = [
-    { title: 'Start here', body: 'Essentials (Savings & Core) are locked. Adjust amounts with the number fields or sliders below each row.' },
-    { title: 'Add categories', body: 'Click + Health, + Groceries, etc. to add suggested categories, or use "Add Category" for your own.' },
-    { title: 'Use the sliders', body: 'Drag sliders for Weekly Misc, Food, General Savings, and Car Fund to set amounts in clear steps.' },
-    { title: 'Watch the total', body: 'The sticky box above shows how much you\'ve allocated. Alerts appear if you\'re under or over your total. You can edit everything later in Budget Plan.' }
+    { title: 'Start here', body: 'Change amounts with the number or the slider under each row. Savings and core spending are your base—you can tweak them later in Budget Plan.', target: '#onboarding-cat-total-card' },
+    { title: 'Add categories', body: 'Tap + Health, + Groceries, and so on to add more, or use Add Category for your own.', target: '#onboarding-suggestions-row' },
+    { title: 'Use the sliders', body: 'Use the sliders for Weekly Misc, Food, General Savings, and Car Fund to set amounts in clear steps.', target: '#onboarding-strategy-sections' },
+    { title: 'Watch the total', body: 'The box above shows how much you\'ve allocated. We\'ll nudge you if you\'re under or over. You can change anything later in Budget Plan.', target: '#onboarding-cat-total-card' }
 ];
 
 /** Suggested categories (emptied: amounts at 0 so user can fill). Same structure as template. */
@@ -95,6 +95,36 @@ function showBudgetPlanTip(index) {
     titleEl.textContent = tip.title;
     bodyEl.textContent = tip.body;
     nextBtn.textContent = index >= ONBOARDING_BUDGET_TIPS.length - 1 ? 'Got it' : 'Next';
+
+    var step = document.getElementById('onboarding-step-categories');
+    var overlay = document.getElementById('onboarding-budget-tips-overlay');
+    var card = document.getElementById('onboarding-tip-card');
+    if (tip.target && step && overlay && card) {
+        var targetEl = step.querySelector(tip.target);
+        if (targetEl) {
+            targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            var positionTip = function () {
+                var tr = targetEl.getBoundingClientRect();
+                var or = overlay.getBoundingClientRect();
+                var cr = card.getBoundingClientRect();
+                var pad = 12;
+                var preferBelow = tr.bottom + pad + cr.height <= or.bottom;
+                var top = preferBelow ? tr.bottom - or.top + pad : tr.top - or.top - cr.height - pad;
+                var left = tr.left - or.left + (tr.width / 2) - (cr.width / 2);
+                left = Math.max(pad, Math.min(or.width - cr.width - pad, left));
+                top = Math.max(pad, Math.min(or.height - cr.height - pad, top));
+                card.style.left = left + 'px';
+                card.style.top = top + 'px';
+            };
+            if (window._onboardingTipResize) {
+                window.removeEventListener('resize', window._onboardingTipResize);
+                window._onboardingTipResize = null;
+            }
+            window._onboardingTipResize = positionTip;
+            window.addEventListener('resize', positionTip);
+            setTimeout(positionTip, 100);
+        }
+    }
 }
 function nextBudgetPlanTip() {
     onboardingBudgetTipIndex++;
@@ -108,6 +138,10 @@ function skipBudgetPlanTips() {
     finishBudgetPlanTips();
 }
 function finishBudgetPlanTips() {
+    if (window._onboardingTipResize) {
+        window.removeEventListener('resize', window._onboardingTipResize);
+        window._onboardingTipResize = null;
+    }
     var overlay = document.getElementById('onboarding-budget-tips-overlay');
     if (overlay) overlay.classList.add('hidden');
     if (typeof state !== 'undefined') {
@@ -174,9 +208,17 @@ function initAndRenderOnboardingCategories() {
     if (!onboardingCategoriesInitialized && typeof state !== 'undefined') {
         onboardingCategoriesInitialized = true;
         state.categories = (state.categories || []).filter(function (s) { return s.isSystem; });
+        /* Pre-create generic categories with items (user can edit amounts) */
+        var keys = Object.keys(ONBOARDING_SUGGESTIONS);
+        for (var i = 0; i < keys.length; i++) {
+            var template = ONBOARDING_SUGGESTIONS[keys[i]];
+            if (template && !state.categories.some(function (s) { return s.id === template.id; })) {
+                state.categories.push(JSON.parse(JSON.stringify(template)));
+            }
+        }
         if (state.balances) {
-            var keys = Object.keys(state.balances);
-            keys.forEach(function (k) { delete state.balances[k]; });
+            var balKeys = Object.keys(state.balances);
+            balKeys.forEach(function (k) { delete state.balances[k]; });
         }
         if (state.accounts && state.accounts.buckets) {
             var sysLabels = ['General Savings', 'Payables', 'Car Fund', 'Weekly Misc'];
@@ -217,31 +259,22 @@ function updateOnboardingSummary() {
     var curEl = document.getElementById('onboarding-currency');
     var incEl = document.getElementById('onboarding-income');
     var realityEl = document.getElementById('onboarding-reality');
-    var weeklyRadios = document.getElementsByName('onboarding-weekly');
     var cur = (curEl && curEl.value) ? curEl.value : 'AED';
     var inc = (incEl && incEl.value.trim() !== '') ? incEl.value : '5000';
     var reality = (realityEl && realityEl.value.trim() !== '') ? realityEl.value : '0';
     var cat = 'Custom';
     if (typeof state !== 'undefined' && state.categories && state.categories.length) {
         var customCount = state.categories.filter(function (s) { return !s.isSystem; }).length;
-        cat = customCount ? customCount + ' custom categories' : 'Essentials only';
-    }
-    var weekly = 'No';
-    if (weeklyRadios && weeklyRadios.length) {
-        for (var j = 0; j < weeklyRadios.length; j++) {
-            if (weeklyRadios[j].checked && weeklyRadios[j].value === 'yes') { weekly = 'Yes'; break; }
-        }
+        cat = customCount ? customCount + ' categories' : 'Essentials only';
     }
     var sumCur = document.getElementById('onboarding-summary-currency');
     var sumInc = document.getElementById('onboarding-summary-income');
     var sumReality = document.getElementById('onboarding-summary-reality');
     var sumCat = document.getElementById('onboarding-summary-categories');
-    var sumWeekly = document.getElementById('onboarding-summary-weekly');
     if (sumCur) sumCur.textContent = cur;
     if (sumInc) sumInc.textContent = inc;
     if (sumReality) sumReality.textContent = reality;
     if (sumCat) sumCat.textContent = cat;
-    if (sumWeekly) sumWeekly.textContent = weekly;
 }
 
 function onboardingNext() {
@@ -283,7 +316,6 @@ function applyOnboardingValues(skipAll) {
     var currencyEl = document.getElementById('onboarding-currency');
     var incomeEl = document.getElementById('onboarding-income');
     var realityEl = document.getElementById('onboarding-reality');
-    var weeklyRadios = document.getElementsByName('onboarding-weekly');
     if (state.settings) state.settings.currency = (currencyEl && currencyEl.value) ? currencyEl.value : 'AED';
     var income = 5000;
     if (!skipAll && incomeEl && incomeEl.value.trim() !== '') {
@@ -297,14 +329,6 @@ function applyOnboardingValues(skipAll) {
         if (!isNaN(ex) && ex >= 0) reality = ex;
     }
     state._onboardingReality = reality;
-    /* Categories: keep state.categories as edited in onboarding (budget-plan step). No template/minimal overwrite. */
-    var prefillWeeks = false;
-    if (!skipAll && weeklyRadios && weeklyRadios.length) {
-        for (var k = 0; k < weeklyRadios.length; k++) {
-            if (weeklyRadios[k].checked && weeklyRadios[k].value === 'yes') { prefillWeeks = true; break; }
-        }
-    }
-    state._onboardingPrefillWeeks = prefillWeeks;
 }
 
 function finishOnboarding() {
@@ -313,16 +337,6 @@ function finishOnboarding() {
     if (typeof ensureSystemSavings === 'function') ensureSystemSavings();
     if (typeof ensureCoreItems === 'function') ensureCoreItems();
     if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
-    if (state._onboardingPrefillWeeks && state.accounts && state.accounts.weekly && typeof getWeeklyConfigAmount === 'function') {
-        var amt = getWeeklyConfigAmount();
-        if (state.accounts.weekly.balances && state.accounts.weekly.balances.length >= 4) {
-            state.accounts.weekly.balances[0] = amt;
-            state.accounts.weekly.balances[1] = amt;
-            state.accounts.weekly.balances[2] = amt;
-            state.accounts.weekly.balances[3] = amt;
-        }
-        state.accounts.weekly.balance = state.accounts.weekly.balances[state.accounts.weekly.week - 1] || amt;
-    }
     if (typeof initSurplusFromOpening === 'function') initSurplusFromOpening();
     var reality = state._onboardingReality;
     if (typeof reality === 'number' && reality >= 0 && typeof getLiquidityBreakdown === 'function') {
@@ -334,7 +348,6 @@ function finishOnboarding() {
     }
     state._showFirstActionPrompt = true;
     delete state._onboardingReality;
-    delete state._onboardingPrefillWeeks;
     if (typeof saveState === 'function') saveState();
     if (onboardingCompleteCallback) {
         onboardingCompleteCallback();

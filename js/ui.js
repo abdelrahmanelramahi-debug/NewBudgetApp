@@ -536,6 +536,13 @@ function renderLedger() {
             prevBtn.disabled = false;
         }
     }
+    const weeklyTotalFourEl = document.getElementById('weekly-total-four');
+    if (weeklyTotalFourEl && state.accounts?.weekly?.balances && state.accounts.weekly.balances.length >= 4) {
+        const total = (state.accounts.weekly.balances[0] || 0) + (state.accounts.weekly.balances[1] || 0) + (state.accounts.weekly.balances[2] || 0) + (state.accounts.weekly.balances[3] || 0);
+        weeklyTotalFourEl.textContent = formatMoney(total) + ' total across 4 weeks. ';
+    } else if (weeklyTotalFourEl) {
+        weeklyTotalFourEl.textContent = '';
+    }
 
     // --- NEW: MAJOR FUNDS SECTION (Savings & Car) ---
     // Extract values safely

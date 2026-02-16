@@ -43,7 +43,7 @@
                 </div>
             </div>
             <div id="onboarding-step-currency" class="onboarding-step hidden">
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Step 1 of 6</p>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Step 1 of 5</p>
                 <h2 class="text-xl font-black text-slate-900 mb-2">Currency</h2>
                 <p class="text-sm text-slate-600 mb-6">What currency do you use? You can change this in Settings.</p>
                 <select id="onboarding-currency" class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-800 bg-white mb-6">
@@ -60,7 +60,7 @@
                 </div>
             </div>
             <div id="onboarding-step-income" class="onboarding-step hidden">
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Step 2 of 6</p>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Step 2 of 5</p>
                 <h2 class="text-xl font-black text-slate-900 mb-2">Monthly income</h2>
                 <p class="text-sm text-slate-600 mb-6">Your total monthly income (after tax). We use this to suggest savings, weekly allowance, and categories. You can set this to 0 if you only track expenses.</p>
                 <input type="number" id="onboarding-income" min="0" step="1" placeholder="5000" class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-800 bg-white mb-2">
@@ -71,7 +71,7 @@
                 </div>
             </div>
             <div id="onboarding-step-reality" class="onboarding-step hidden">
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Step 3 of 6</p>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Step 3 of 5</p>
                 <h2 class="text-xl font-black text-slate-900 mb-2">What’s in your bank right now?</h2>
                 <p class="text-sm text-slate-600 mb-6">Roughly how much do you have (e.g. in your main account or wallet)? We’ll make your Bank Balance match this. You can fine-tune in Profile later. Skip for 0.</p>
                 <input type="number" id="onboarding-reality" min="0" step="any" placeholder="0" class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-800 bg-white mb-6">
@@ -81,11 +81,11 @@
                 </div>
             </div>
             <div id="onboarding-step-categories" class="onboarding-step hidden flex flex-col min-h-0 relative">
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Step 4 of 6</p>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Step 4 of 5</p>
                 <h2 class="text-xl font-black text-slate-900 mb-1">Set up your budget plan</h2>
-                <p class="text-sm text-slate-600 mb-4">Start with essentials below. Add suggested categories or create your own. You can edit amounts and add more in Budget Plan later.</p>
+                <p class="text-sm text-slate-600 mb-4">Your budget includes common categories and items below—tweak amounts or add more in Budget Plan later.</p>
                 <div class="sticky top-0 z-10 bg-slate-50 -mx-6 px-6 pt-1 pb-4 flex-shrink-0 mb-2">
-                    <div class="premium-card px-4 py-3 flex flex-col gap-2 border border-slate-200 rounded-xl shadow-sm">
+                    <div id="onboarding-cat-total-card" class="premium-card px-4 py-3 flex flex-col gap-2 border border-slate-200 rounded-xl shadow-sm">
                         <div class="flex items-center gap-2 flex-wrap">
                             <span class="text-[10px] font-bold uppercase text-slate-500">Total</span>
                             <span id="onboarding-cat-total" class="text-lg font-black text-slate-900">0</span>
@@ -118,7 +118,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="flex flex-wrap gap-2 mb-4 flex-shrink-0">
+                <div id="onboarding-suggestions-row" class="flex flex-wrap gap-2 mb-4 flex-shrink-0">
                     <span class="text-[10px] font-bold text-slate-500 self-center mr-1">Suggestions:</span>
                     <button type="button" onclick="addOnboardingSuggestion('health')" class="onboarding-suggestion-btn py-2 px-3 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-indigo-100 hover:text-indigo-700 border border-slate-200 transition">+ Health</button>
                     <button type="button" onclick="addOnboardingSuggestion('groceries')" class="onboarding-suggestion-btn py-2 px-3 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-indigo-100 hover:text-indigo-700 border border-slate-200 transition">+ Groceries</button>
@@ -126,8 +126,8 @@
                     <button type="button" onclick="addOnboardingSuggestion('subscriptions')" class="onboarding-suggestion-btn py-2 px-3 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-indigo-100 hover:text-indigo-700 border border-slate-200 transition">+ Subscriptions</button>
                 </div>
                 <div id="onboarding-strategy-sections" class="flex-1 min-h-0 overflow-y-auto space-y-4 pb-4"></div>
-                <div id="onboarding-budget-tips-overlay" class="hidden absolute inset-0 z-20 flex items-center justify-center p-4 bg-black/40">
-                    <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 border-2 border-indigo-200">
+                <div id="onboarding-budget-tips-overlay" class="hidden absolute inset-0 z-20 p-4 bg-black/40 overflow-hidden">
+                    <div id="onboarding-tip-card" class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 border-2 border-indigo-200 absolute">
                         <p id="onboarding-tip-title" class="text-xs font-black text-indigo-800 uppercase tracking-wide mb-2">Tip</p>
                         <p id="onboarding-tip-body" class="text-sm text-slate-700 mb-6 leading-relaxed"></p>
                         <div class="flex gap-2">
@@ -141,27 +141,8 @@
                     <button type="button" onclick="onboardingNext()" class="flex-1 py-3 px-6 bg-indigo-600 text-white rounded-xl text-sm font-black uppercase tracking-wider">Next</button>
                 </div>
             </div>
-            <div id="onboarding-step-weekly" class="onboarding-step hidden">
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Step 5 of 6</p>
-                <h2 class="text-xl font-black text-slate-900 mb-2">Weekly allowance</h2>
-                <p class="text-sm text-slate-600 mb-6">Your income is split into 4 weeks. Pre-fill all 4 weeks with your weekly amount so you can switch and transfer between them?</p>
-                <div class="space-y-2 mb-6">
-                    <label class="flex items-center gap-3 p-4 rounded-xl border-2 border-slate-200 hover:border-indigo-200 cursor-pointer transition has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-50/50">
-                        <input type="radio" name="onboarding-weekly" value="yes" class="w-4 h-4 accent-indigo-600">
-                        <span class="text-sm font-bold text-slate-800">Yes, pre-fill all 4 weeks</span>
-                    </label>
-                    <label class="flex items-center gap-3 p-4 rounded-xl border-2 border-slate-200 hover:border-indigo-200 cursor-pointer transition has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-50/50">
-                        <input type="radio" name="onboarding-weekly" value="no" class="w-4 h-4 accent-indigo-600" checked>
-                        <span class="text-sm font-bold text-slate-800">No, start with 0 and I’ll top up as I go</span>
-                    </label>
-                </div>
-                <div class="flex gap-3">
-                    <button type="button" onclick="onboardingBack()" class="py-3 px-6 border border-slate-300 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-100">Back</button>
-                    <button type="button" onclick="onboardingNext()" class="flex-1 py-3 px-6 bg-indigo-600 text-white rounded-xl text-sm font-black uppercase tracking-wider">Next</button>
-                </div>
-            </div>
             <div id="onboarding-step-summary" class="onboarding-step hidden">
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Step 6 of 6</p>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Step 5 of 5</p>
                 <h2 class="text-xl font-black text-slate-900 mb-2">You’re all set</h2>
                 <p class="text-sm text-slate-600 mb-4">Check your choices below. You can add or edit categories in Budget Plan and change income or currency in Settings.</p>
                 <div id="onboarding-summary-list" class="bg-slate-50 rounded-xl p-4 space-y-2 mb-4 text-sm">
@@ -169,7 +150,6 @@
                     <div class="flex justify-between items-center"><span class="text-slate-600">Monthly income</span><span id="onboarding-summary-income" class="font-bold text-slate-900">—</span><button type="button" onclick="showOnboardingStep(2)" class="text-indigo-600 text-xs font-bold">Edit</button></div>
                     <div class="flex justify-between items-center"><span class="text-slate-600">Bank balance (reality)</span><span id="onboarding-summary-reality" class="font-bold text-slate-900">—</span><button type="button" onclick="showOnboardingStep(3)" class="text-indigo-600 text-xs font-bold">Edit</button></div>
                     <div class="flex justify-between items-center"><span class="text-slate-600">Categories</span><span id="onboarding-summary-categories" class="font-bold text-slate-900">—</span><button type="button" onclick="showOnboardingStep(4)" class="text-indigo-600 text-xs font-bold">Edit</button></div>
-                    <div class="flex justify-between items-center"><span class="text-slate-600">Weekly pre-fill</span><span id="onboarding-summary-weekly" class="font-bold text-slate-900">—</span><button type="button" onclick="showOnboardingStep(5)" class="text-indigo-600 text-xs font-bold">Edit</button></div>
                 </div>
                 <div id="onboarding-account-card" class="rounded-xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 to-white p-4 mb-6">
                     <p class="text-xs font-black text-indigo-900 uppercase tracking-wide mb-1">Sync across devices?</p>
@@ -299,6 +279,7 @@
                                 <h2 id="bal-weekly" class="text-6xl lg:text-3xl font-black">0</h2>
                                 <span class="text-xl lg:text-base font-bold text-indigo-300" data-currency>AED</span>
                             </div>
+                            <p id="weekly-allowance-explanation" class="text-[10px] text-indigo-200/90 mt-1.5 leading-snug"><span id="weekly-total-four"></span>Arrows switch week · Transfer moves money between weeks.</p>
                         </div>
                         <div class="flex gap-2 ml-6 flex-shrink-0">
                             <button id="prev-week-btn" onclick="prevWeek()" class="p-2 bg-white/20 rounded-lg hover:bg-white/30 transition group" title="Previous week">
