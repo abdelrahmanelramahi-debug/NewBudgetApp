@@ -158,13 +158,30 @@ async function saveStateToCloud() {
         syncInProgress = true;
         const userDocRef = window.firebaseDb.collection('users').doc(currentUser.uid);
         
+        var serverTimestamp = firebase.firestore.FieldValue.serverTimestamp();
         await userDocRef.set({
             data: state,
-            lastUpdated: firebase.firestore.FieldValue.serverTimestamp(),
+            lastUpdated: serverTimestamp,
             version: state.schemaVersion || 2
         }, { merge: true });
         
-        lastSyncTime = new Date();
+        // Get the actual timestamp after save
+        var docSnap = await userDocRef.get({ source: 'server' });
+        var savedTime = Date.now();
+        if (docSnap.exists && docSnap.data().lastUpdated) {
+            var lastUpdated = docSnap.data().lastUpdated;
+            if (typeof lastUpdated.toMillis === 'function') {
+                savedTime = lastUpdated.toMillis();
+            }
+        }
+        
+        // Update lastSynced timestamp in localStorage
+        try {
+            var syncKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.LAST_SYNCED : 'financeCmd_last_synced_to_cloud';
+            localStorage.setItem(syncKey, String(savedTime));
+        } catch (e) {}
+        
+        lastSyncTime = new Date(savedTime);
         updateSyncStatus('Synced', true);
     } catch (error) {
         console.error('Save to cloud error:', error);
@@ -197,23 +214,40 @@ async function loadStateFromCloud(retryCount) {
             const cloudData = docSnap.data();
             
             // Last-write-wins: use whichever is newer (cloud or this device's local)
+            // IMPORTANT: Only trust local if we've made changes SINCE last syncing to cloud
+            // This prevents stale local state from overwriting cloud on page refresh
             var cloudTime = 0;
             if (cloudData.lastUpdated && typeof cloudData.lastUpdated.toMillis === 'function') {
                 cloudTime = cloudData.lastUpdated.toMillis();
             }
             var localModified = 0;
+            var lastSyncedToCloud = 0;
             try {
                 var modKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.MODIFIED : 'financeCmd_state_modified';
+                var syncKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.LAST_SYNCED : 'financeCmd_last_synced_to_cloud';
                 var stored = localStorage.getItem(modKey);
+                var synced = localStorage.getItem(syncKey);
                 if (stored) localModified = parseInt(stored, 10) || 0;
+                if (synced) lastSyncedToCloud = parseInt(synced, 10) || 0;
             } catch (e) {}
-            if (localModified > cloudTime) {
+            
+            // Only use local if:
+            // 1. Local was modified AFTER we last synced to cloud (meaning we made changes on this device)
+            // 2. AND local is newer than cloud (or cloud is missing)
+            // This ensures we don't overwrite cloud with stale state on page refresh
+            var hasLocalChangesSinceLastSync = localModified > lastSyncedToCloud && lastSyncedToCloud > 0;
+            var localIsNewerThanCloud = localModified > cloudTime;
+            
+            if (hasLocalChangesSinceLastSync && localIsNewerThanCloud) {
                 await saveStateToCloud();
                 if (typeof refreshUI === 'function') refreshUI();
                 updateSyncStatus('Synced (local was newer)', true);
                 if (cloudData.lastUpdated) lastSyncTime = cloudData.lastUpdated.toDate();
                 return;
             }
+            
+            // If cloud is newer or we haven't made local changes since last sync, use cloud
+            // This ensures phone changes aren't overwritten by stale desktop state
             
             if (cloudData.data && typeof cloudData.data === 'object') {
                 if (hasMeaningfulData(cloudData.data)) {
@@ -229,9 +263,14 @@ async function loadStateFromCloud(retryCount) {
 
                     var stateKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.STATE : 'financeCmd_state';
                     var modKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.MODIFIED : 'financeCmd_state_modified';
+                    var syncKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.LAST_SYNCED : 'financeCmd_last_synced_to_cloud';
                     localStorage.setItem(stateKey, JSON.stringify(state));
                     if (cloudData.lastUpdated && typeof cloudData.lastUpdated.toMillis === 'function') {
-                        try { localStorage.setItem(modKey, String(cloudData.lastUpdated.toMillis())); } catch (e) {}
+                        var cloudMillis = cloudData.lastUpdated.toMillis();
+                        try { 
+                            localStorage.setItem(modKey, String(cloudMillis)); 
+                            localStorage.setItem(syncKey, String(cloudMillis)); // Update lastSynced to match cloud
+                        } catch (e) {}
                     }
                     if (typeof refreshUI === 'function') refreshUI();
                     updateSyncStatus('Synced', true);

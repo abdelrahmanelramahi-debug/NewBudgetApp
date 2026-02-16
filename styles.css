@@ -113,9 +113,21 @@ textarea,
     .weekly-hero {
         overflow: hidden;
     }
+    
+    /* Better spacing for weekly hero on mobile/iOS */
+    @media (max-width: 1023px) {
+        .weekly-hero {
+            padding: 1.5rem !important;
+        }
+    }
+    
+    #bal-weekly {
+        line-height: 1.1;
+    }
 
     .weekly-inline-controls {
         flex-wrap: wrap;
+        gap: 0.5rem;
     }
 
     .weekly-inline-controls input {
@@ -125,6 +137,7 @@ textarea,
     .weekly-inline-controls button {
         flex: 1 1 30%;
         min-width: 90px;
+        padding: 0.625rem 1rem;
     }
 }
 

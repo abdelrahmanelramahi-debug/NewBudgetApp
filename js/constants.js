@@ -1,7 +1,8 @@
 // Shared constants to avoid magic strings and reduce duplication
 const STORAGE_KEYS = {
     STATE: 'financeCmd_state',
-    MODIFIED: 'financeCmd_state_modified'
+    MODIFIED: 'financeCmd_state_modified',
+    LAST_SYNCED: 'financeCmd_last_synced_to_cloud'
 };
 
 const SECTION_IDS = {
