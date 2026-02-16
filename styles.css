@@ -146,18 +146,8 @@ textarea,
     }
 
     .weekly-inline-controls {
-        flex-wrap: wrap;
+        /* Let inner rows control their own layout; keep mobile tweaks minimal */
         gap: 0.5rem;
-    }
-
-    .weekly-inline-controls input {
-        flex: 1 1 100%;
-    }
-
-    .weekly-inline-controls button {
-        flex: 1 1 30%;
-        min-width: 90px;
-        padding: 0.625rem 1rem;
     }
 }
 

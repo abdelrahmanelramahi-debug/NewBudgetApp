@@ -310,16 +310,29 @@
                         </div>
                     </div>
                 </div>
-                <div class="flex gap-2 p-1 bg-indigo-800/30 rounded-xl border border-indigo-400/30 weekly-inline-controls mt-6 lg:mt-3">
-                    <div class="flex flex-1 min-w-0 rounded-lg overflow-hidden bg-transparent">
-                        <input type="number" id="weekly-inline-val" placeholder="Spend..." class="flex-[2] min-w-0 bg-transparent border-none px-3 py-2 font-bold text-white placeholder-indigo-300 text-sm outline-none focus:placeholder-indigo-400">
-                        <div class="flex-[1] max-w-[33%] flex min-w-0 rounded-md bg-white/15 border border-white/20">
-                            <input type="text" id="weekly-inline-note" placeholder="Add note..." maxlength="80" class="w-full min-w-0 bg-transparent border-none px-2 py-2 text-white placeholder-indigo-300/90 text-xs outline-none focus:placeholder-indigo-200">
+                <div class="flex flex-col gap-2 p-3 bg-indigo-800/30 rounded-xl border border-indigo-400/30 weekly-inline-controls mt-6 lg:mt-3">
+                    <div class="flex gap-2">
+                        <input
+                            type="number"
+                            id="weekly-inline-val"
+                            placeholder="Spend..."
+                            class="flex-[2] min-w-0 bg-transparent border-none px-3 py-2 font-bold text-white placeholder-indigo-300 text-sm outline-none focus:placeholder-indigo-400"
+                        >
+                        <div class="flex-[1] max-w-[45%] flex min-w-0 rounded-md bg-white/15 border border-white/20">
+                            <input
+                                type="text"
+                                id="weekly-inline-note"
+                                placeholder="Add note..."
+                                maxlength="80"
+                                class="w-full min-w-0 bg-transparent border-none px-2 py-2 text-white placeholder-indigo-300/90 text-xs outline-none focus:placeholder-indigo-200"
+                            >
                         </div>
                     </div>
-                    <button onclick="inlineWeeklyAdjust(-1)" class="bg-white text-indigo-900 px-4 py-2 rounded-lg text-[10px] font-black uppercase">Spend</button>
-                    <button onclick="topUpWeeklyInline()" class="bg-emerald-400 text-emerald-900 px-4 py-2 rounded-lg text-[10px] font-black uppercase">Top Up</button>
-                    <button onclick="openTool('Weekly Misc', 'Weekly Allowance', true)" class="bg-indigo-500 text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase">Transfer</button>
+                    <div class="flex gap-2">
+                        <button onclick="inlineWeeklyAdjust(-1)" class="flex-1 bg-white text-indigo-900 px-4 py-2 rounded-lg text-[10px] font-black uppercase">Spend</button>
+                        <button onclick="topUpWeeklyInline()" class="flex-1 bg-emerald-400 text-emerald-900 px-4 py-2 rounded-lg text-[10px] font-black uppercase">Top Up</button>
+                        <button onclick="openTool('Weekly Misc', 'Weekly Allowance', true)" class="flex-1 bg-indigo-500 text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase">Transfer</button>
+                    </div>
                 </div>
             </div>
 
