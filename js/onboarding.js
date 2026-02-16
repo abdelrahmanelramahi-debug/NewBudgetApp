@@ -7,10 +7,10 @@ var onboardingCategoriesInitialized = false;
 var onboardingBudgetTipIndex = 0;
 
 var ONBOARDING_BUDGET_TIPS = [
-    { title: 'Start here', body: 'Change amounts with the number or the slider under each row. Savings and core spending are your base—you can tweak them later in Budget Plan.', target: '#onboarding-cat-total-card' },
+    { title: 'Watch the total', body: 'The box above shows how much you\'ve allocated. We\'ll nudge you if you\'re under or over. You can change anything later in Budget Plan.', target: '#onboarding-cat-total-card' },
+    { title: 'Start here', body: 'Change amounts with the number or the slider under each row. Savings and core spending are your base—you can tweak them later in Budget Plan.', target: '#onboarding-strategy-sections' },
     { title: 'Add categories', body: 'Tap + Health, + Groceries, and so on to add more, or use Add Category for your own.', target: '#onboarding-suggestions-row' },
-    { title: 'Use the sliders', body: 'Use the sliders for Weekly Misc, Food, General Savings, and Car Fund to set amounts in clear steps.', target: '#onboarding-strategy-sections' },
-    { title: 'Watch the total', body: 'The box above shows how much you\'ve allocated. We\'ll nudge you if you\'re under or over. You can change anything later in Budget Plan.', target: '#onboarding-cat-total-card' }
+    { title: 'Use the sliders', body: 'Use the sliders for Weekly Misc, Food, General Savings, and Car Fund to set amounts in clear steps.', target: '#onboarding-strategy-sections' }
 ];
 
 /** Suggested categories (emptied: amounts at 0 so user can fill). Same structure as template. */
@@ -81,9 +81,12 @@ function startBudgetPlanTips() {
     if (typeof state !== 'undefined' && state._sawBudgetPlanTips) return;
     onboardingBudgetTipIndex = 0;
     var overlay = document.getElementById('onboarding-budget-tips-overlay');
-    if (!overlay) return;
-    showBudgetPlanTip(0);
+    var step = document.getElementById('onboarding-step-categories');
+    if (!overlay || !step) return;
     overlay.classList.remove('hidden');
+    overlay.classList.add('onboarding-tips-active');
+    step.classList.add('tips-active');
+    showBudgetPlanTip(0);
 }
 function showBudgetPlanTip(index) {
     var titleEl = document.getElementById('onboarding-tip-title');
@@ -92,29 +95,64 @@ function showBudgetPlanTip(index) {
     if (!titleEl || !bodyEl || !nextBtn) return;
     var tip = ONBOARDING_BUDGET_TIPS[index];
     if (!tip) return;
+    
+    /* Remove highlight from previous target */
+    var step = document.getElementById('onboarding-step-categories');
+    if (step) {
+        step.querySelectorAll('.onboarding-tip-highlight').forEach(function(el) {
+            el.classList.remove('onboarding-tip-highlight');
+        });
+    }
+    
     titleEl.textContent = tip.title;
     bodyEl.textContent = tip.body;
     nextBtn.textContent = index >= ONBOARDING_BUDGET_TIPS.length - 1 ? 'Got it' : 'Next';
 
-    var step = document.getElementById('onboarding-step-categories');
     var overlay = document.getElementById('onboarding-budget-tips-overlay');
     var card = document.getElementById('onboarding-tip-card');
     if (tip.target && step && overlay && card) {
         var targetEl = step.querySelector(tip.target);
         if (targetEl) {
+            /* Add highlight class to target */
+            targetEl.classList.add('onboarding-tip-highlight');
+            
             targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
             var positionTip = function () {
                 var tr = targetEl.getBoundingClientRect();
                 var or = overlay.getBoundingClientRect();
                 var cr = card.getBoundingClientRect();
-                var pad = 12;
-                var preferBelow = tr.bottom + pad + cr.height <= or.bottom;
-                var top = preferBelow ? tr.bottom - or.top + pad : tr.top - or.top - cr.height - pad;
-                var left = tr.left - or.left + (tr.width / 2) - (cr.width / 2);
-                left = Math.max(pad, Math.min(or.width - cr.width - pad, left));
-                top = Math.max(pad, Math.min(or.height - cr.height - pad, top));
-                card.style.left = left + 'px';
-                card.style.top = top + 'px';
+                var pad = 16;
+                var gap = 12;
+                
+                /* Try positions: below, above, right, left */
+                var positions = [
+                    { side: 'below', top: tr.bottom - or.top + gap, left: tr.left - or.left + (tr.width / 2) - (cr.width / 2) },
+                    { side: 'above', top: tr.top - or.top - cr.height - gap, left: tr.left - or.left + (tr.width / 2) - (cr.width / 2) },
+                    { side: 'right', top: tr.top - or.top + (tr.height / 2) - (cr.height / 2), left: tr.right - or.left + gap },
+                    { side: 'left', top: tr.top - or.top + (tr.height / 2) - (cr.height / 2), left: tr.left - or.left - cr.width - gap }
+                ];
+                
+                var bestPos = null;
+                for (var i = 0; i < positions.length; i++) {
+                    var p = positions[i];
+                    var fits = p.top >= pad && p.top + cr.height <= or.height - pad &&
+                                p.left >= pad && p.left + cr.width <= or.width - pad;
+                    if (fits && (!bestPos || (p.side === 'below' || p.side === 'above'))) {
+                        bestPos = p;
+                        if (p.side === 'below' || p.side === 'above') break;
+                    }
+                }
+                
+                if (!bestPos) {
+                    /* Fallback: center near target */
+                    bestPos = {
+                        top: Math.max(pad, Math.min(or.height - cr.height - pad, tr.top - or.top + (tr.height / 2) - (cr.height / 2))),
+                        left: Math.max(pad, Math.min(or.width - cr.width - pad, tr.left - or.left + (tr.width / 2) - (cr.width / 2)))
+                    };
+                }
+                
+                card.style.left = bestPos.left + 'px';
+                card.style.top = bestPos.top + 'px';
             };
             if (window._onboardingTipResize) {
                 window.removeEventListener('resize', window._onboardingTipResize);
@@ -122,7 +160,7 @@ function showBudgetPlanTip(index) {
             }
             window._onboardingTipResize = positionTip;
             window.addEventListener('resize', positionTip);
-            setTimeout(positionTip, 100);
+            setTimeout(positionTip, 150);
         }
     }
 }
@@ -142,8 +180,18 @@ function finishBudgetPlanTips() {
         window.removeEventListener('resize', window._onboardingTipResize);
         window._onboardingTipResize = null;
     }
+    var step = document.getElementById('onboarding-step-categories');
+    if (step) {
+        step.classList.remove('tips-active');
+        step.querySelectorAll('.onboarding-tip-highlight').forEach(function(el) {
+            el.classList.remove('onboarding-tip-highlight');
+        });
+    }
     var overlay = document.getElementById('onboarding-budget-tips-overlay');
-    if (overlay) overlay.classList.add('hidden');
+    if (overlay) {
+        overlay.classList.add('hidden');
+        overlay.classList.remove('onboarding-tips-active');
+    }
     if (typeof state !== 'undefined') {
         state._sawBudgetPlanTips = true;
         if (typeof saveState === 'function') saveState();
