@@ -536,7 +536,6 @@ function renderLedger() {
             prevBtn.disabled = false;
         }
     }
-    const weeklyTotalFourEl = document.getElementById('weekly-total-four');
     const weeklyMiniEl = document.getElementById('weekly-mini-totals');
     if (state.accounts?.weekly?.balances && state.accounts.weekly.balances.length >= 4) {
         const totalLeft =
@@ -551,19 +550,12 @@ function renderLedger() {
         }
         const totalAllocated = Math.max(0, perWeekAllocated) * 4;
 
-        // Main line: show left vs allocated (across all 4 weeks)
-        if (weeklyTotalFourEl) {
-            weeklyTotalFourEl.textContent =
-                formatMoney(totalLeft) + ' left / ' + formatMoney(totalAllocated) + ' allocated. ';
-        }
-
         // Small badge beside title
         if (weeklyMiniEl) {
             weeklyMiniEl.textContent =
                 formatMoney(totalLeft) + ' left / ' + formatMoney(totalAllocated);
         }
     } else {
-        if (weeklyTotalFourEl) weeklyTotalFourEl.textContent = '';
         if (weeklyMiniEl) weeklyMiniEl.textContent = '—';
     }
 
