@@ -256,15 +256,25 @@ window.toggleSideMenu = toggleSideMenu;
 window.closeSideMenu = closeSideMenu;
 
 // --- STRATEGY RENDER ---
-function renderStrategy() {
-    const container = document.getElementById('strategy-sections');
+function renderStrategy(opts) {
+    opts = opts || {};
+    var containerId = opts.containerId || 'strategy-sections';
+    var forOnboarding = !!opts.onboarding;
+    var container = document.getElementById(containerId);
     if (!container) return;
-    const incomeInput = document.getElementById('monthly-income-input');
-    if (incomeInput) incomeInput.value = state.monthlyIncome;
+    if (!forOnboarding) {
+        var incomeInput = document.getElementById('monthly-income-input');
+        if (incomeInput) incomeInput.value = state.monthlyIncome;
+    } else {
+        var obInc = document.getElementById('onboarding-income');
+        if (obInc && obInc.value.trim() !== '') {
+            var parsed = parseFloat(obInc.value);
+            if (!isNaN(parsed) && parsed >= 0) state.monthlyIncome = parsed;
+        }
+    }
 
     let systemHtml = '';
     let customHtml = '';
-    let fullHtml = ''; // For fallback check
 
     state.categories.forEach((sec, secIdx) => {
         const secTotal = sec.items.reduce((a, b) => a + b.amount, 0);
@@ -397,20 +407,37 @@ function renderStrategy() {
         else customHtml += cardHtml;
     });
 
-    const toolBarHtml = `
-        <div class="flex gap-2 mb-6">
+    var toolBarHtml = forOnboarding
+        ? `<div class="flex gap-2 mb-6"><button onclick="openAddCategoryTool()" class="flex-1 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Add Category</button></div>`
+        : `<div class="flex gap-2 mb-6">
             <button onclick="openAddCategoryTool()" class="flex-1 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Add Category</button>
             <button onclick="openDangerModal('global', null)" class="flex-1 py-3 bg-red-50 text-red-500 hover:bg-red-100 rounded-xl text-[10px] font-black uppercase tracking-widest">Clear All</button>
-        </div>
-    `;
+        </div>`;
 
     container.innerHTML = systemHtml + toolBarHtml + customHtml;
 
     if(!systemHtml && !customHtml) {
          container.innerHTML = toolBarHtml + '<div class="text-center py-10 text-slate-300 font-bold uppercase tracking-widest">No Strategies Yet</div>';
     }
-    calculateReality();
-    if (typeof updateBudgetPlanAllocated === 'function') updateBudgetPlanAllocated();
+    if (forOnboarding) {
+        var total = state.monthlyIncome || 0;
+        var allocated = state.categories.reduce(function (sum, sec) {
+            return sum + (sec.items || []).reduce(function (s, i) { return s + (i.amount || 0); }, 0);
+        }, 0);
+        var totalEl = document.getElementById('onboarding-cat-total');
+        var totalValEl = document.getElementById('onboarding-cat-total-val');
+        var allocValEl = document.getElementById('onboarding-cat-allocated-val');
+        if (totalEl) totalEl.textContent = typeof formatMoney === 'function' ? formatMoney(total) : total;
+        if (totalValEl) totalValEl.textContent = typeof formatMoney === 'function' ? formatMoney(total) : total;
+        if (allocValEl) allocValEl.textContent = typeof formatMoney === 'function' ? formatMoney(allocated) : allocated;
+    } else {
+        calculateReality();
+        if (typeof updateBudgetPlanAllocated === 'function') updateBudgetPlanAllocated();
+        var obStep = document.getElementById('onboarding-step-categories');
+        if (obStep && !obStep.classList.contains('hidden') && document.getElementById('onboarding-strategy-sections')) {
+            renderStrategy({ containerId: 'onboarding-strategy-sections', onboarding: true });
+        }
+    }
 }
 
 // --- LEDGER RENDER ---

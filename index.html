@@ -80,23 +80,29 @@
                     <button type="button" onclick="onboardingNext()" class="flex-1 py-3 px-6 bg-indigo-600 text-white rounded-xl text-sm font-black uppercase tracking-wider">Next</button>
                 </div>
             </div>
-            <div id="onboarding-step-categories" class="onboarding-step hidden">
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Step 4 of 6</p>
-                <h2 class="text-xl font-black text-slate-900 mb-2">Categories</h2>
-                <p class="text-sm text-slate-600 mb-6">Template adds more categories; minimal keeps only Savings, Weekly Allowance, Food, and Car. You can add or edit in Budget Plan later.</p>
-                <div class="space-y-2 mb-6">
-                    <label class="flex items-center gap-3 p-4 rounded-xl border-2 border-slate-200 hover:border-indigo-200 cursor-pointer transition has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-50/50">
-                        <input type="radio" name="onboarding-categories" value="template" class="w-4 h-4 accent-indigo-600" checked>
-                        <span class="text-sm font-bold text-slate-800">Suggested template</span>
-                        <span class="text-xs text-slate-500">Health, Groceries, Misc, Subscriptions, etc.</span>
-                    </label>
-                    <label class="flex items-center gap-3 p-4 rounded-xl border-2 border-slate-200 hover:border-indigo-200 cursor-pointer transition has-[:checked]:border-indigo-500 has-[:checked]:bg-indigo-50/50">
-                        <input type="radio" name="onboarding-categories" value="minimal" class="w-4 h-4 accent-indigo-600">
-                        <span class="text-sm font-bold text-slate-800">Minimal</span>
-                        <span class="text-xs text-slate-500">Just essentials: Savings, Weekly, Food, Car.</span>
-                    </label>
+            <div id="onboarding-step-categories" class="onboarding-step hidden flex flex-col min-h-0">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Step 4 of 6</p>
+                <h2 class="text-xl font-black text-slate-900 mb-1">Set up your budget plan</h2>
+                <p class="text-sm text-slate-600 mb-4">Start with essentials below. Add suggested categories or create your own. You can edit amounts and add more in Budget Plan later.</p>
+                <div class="premium-card px-4 py-3 flex flex-col gap-2 border border-slate-200 rounded-xl mb-4 flex-shrink-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-[10px] font-bold uppercase text-slate-500">Total</span>
+                        <span id="onboarding-cat-total" class="text-lg font-black text-slate-900">0</span>
+                        <span class="text-sm font-bold text-slate-400" data-currency>AED</span>
+                    </div>
+                    <p id="onboarding-cat-allocated" class="text-[11px] font-bold text-slate-600">
+                        <span id="onboarding-cat-allocated-val">0</span> / <span id="onboarding-cat-total-val">0</span> allocated
+                    </p>
                 </div>
-                <div class="flex gap-3">
+                <div class="flex flex-wrap gap-2 mb-4 flex-shrink-0">
+                    <span class="text-[10px] font-bold text-slate-500 self-center mr-1">Suggestions:</span>
+                    <button type="button" onclick="addOnboardingSuggestion('health')" class="onboarding-suggestion-btn py-2 px-3 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-indigo-100 hover:text-indigo-700 border border-slate-200 transition">+ Health</button>
+                    <button type="button" onclick="addOnboardingSuggestion('groceries')" class="onboarding-suggestion-btn py-2 px-3 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-indigo-100 hover:text-indigo-700 border border-slate-200 transition">+ Groceries</button>
+                    <button type="button" onclick="addOnboardingSuggestion('misc')" class="onboarding-suggestion-btn py-2 px-3 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-indigo-100 hover:text-indigo-700 border border-slate-200 transition">+ Misc</button>
+                    <button type="button" onclick="addOnboardingSuggestion('subscriptions')" class="onboarding-suggestion-btn py-2 px-3 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-indigo-100 hover:text-indigo-700 border border-slate-200 transition">+ Subscriptions</button>
+                </div>
+                <div id="onboarding-strategy-sections" class="flex-1 min-h-0 overflow-y-auto space-y-4 pb-4"></div>
+                <div class="flex gap-3 flex-shrink-0 pt-2">
                     <button type="button" onclick="onboardingBack()" class="py-3 px-6 border border-slate-300 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-100">Back</button>
                     <button type="button" onclick="onboardingNext()" class="flex-1 py-3 px-6 bg-indigo-600 text-white rounded-xl text-sm font-black uppercase tracking-wider">Next</button>
                 </div>
@@ -702,43 +708,6 @@
         </div>
     </div>
 
-    <!-- Add Item Modal -->
-    <div id="add-item-tool" class="modal-overlay hidden">
-        <div class="modal-content">
-            <div class="flex justify-between items-center mb-6">
-                <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">New Entry</span>
-                <button onclick="closeAddItemTool()" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
-            </div>
-            <div class="space-y-4">
-                <input type="text" id="new-item-label" placeholder="Item Name" class="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 text-lg font-bold text-slate-900 outline-none">
-                <div class="relative">
-                    <input type="number" id="new-item-amount" placeholder="0.00" class="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 text-2xl font-black text-slate-900 outline-none">
-                </div>
-                <button onclick="confirmAddItem()" class="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest">Create Item</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Add Category Modal -->
-    <div id="add-category-tool" class="modal-overlay hidden">
-        <div class="modal-content">
-            <div class="flex justify-between items-center mb-6">
-                <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">New Category</span>
-                <button onclick="closeAddCategoryTool()" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
-            </div>
-            <div class="space-y-4">
-                <input type="text" id="new-cat-label" placeholder="Category Name" class="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 text-lg font-bold text-slate-900 outline-none">
-                <div class="flex flex-col gap-3">
-                     <div class="flex items-center gap-3 bg-slate-50 p-3 rounded-xl">
-                        <input type="checkbox" id="new-cat-single" class="w-5 h-5 accent-indigo-600 rounded">
-                        <label for="new-cat-single" class="text-xs font-bold text-slate-600">Single Action (Checkmark Completion)</label>
-                    </div>
-                </div>
-                <button onclick="confirmAddCategory()" class="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest">Create Category</button>
-            </div>
-        </div>
-    </div>
-
     <!-- Danger Zone / Safety Modal -->
     <div id="danger-modal" class="modal-overlay hidden">
         <div class="modal-content">
@@ -817,6 +786,43 @@
         </div>
     </div>
     </div><!-- /app-shell -->
+
+    <!-- Add Item Modal (outside app-shell so it works during onboarding) -->
+    <div id="add-item-tool" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">New Entry</span>
+                <button onclick="closeAddItemTool()" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
+            </div>
+            <div class="space-y-4">
+                <input type="text" id="new-item-label" placeholder="Item Name" class="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 text-lg font-bold text-slate-900 outline-none">
+                <div class="relative">
+                    <input type="number" id="new-item-amount" placeholder="0.00" class="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 text-2xl font-black text-slate-900 outline-none">
+                </div>
+                <button onclick="confirmAddItem()" class="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest">Create Item</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Category Modal (outside app-shell so it works during onboarding) -->
+    <div id="add-category-tool" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-6">
+                <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">New Category</span>
+                <button onclick="closeAddCategoryTool()" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
+            </div>
+            <div class="space-y-4">
+                <input type="text" id="new-cat-label" placeholder="Category Name" class="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 text-lg font-bold text-slate-900 outline-none">
+                <div class="flex flex-col gap-3">
+                     <div class="flex items-center gap-3 bg-slate-50 p-3 rounded-xl">
+                        <input type="checkbox" id="new-cat-single" class="w-5 h-5 accent-indigo-600 rounded">
+                        <label for="new-cat-single" class="text-xs font-bold text-slate-600">Single Action (Checkmark Completion)</label>
+                    </div>
+                </div>
+                <button onclick="confirmAddCategory()" class="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest">Create Category</button>
+            </div>
+        </div>
+    </div>
 
     <script src="js/constants.js"></script>
     <script src="js/state.js"></script>

@@ -3,6 +3,23 @@
 var ONBOARDING_STEPS = ['welcome', 'currency', 'income', 'reality', 'categories', 'weekly', 'summary'];
 var onboardingStepIndex = 0;
 var onboardingCompleteCallback = null;
+var onboardingCategoriesInitialized = false;
+
+/** Suggested categories (emptied: amounts at 0 so user can fill). Same structure as template. */
+var ONBOARDING_SUGGESTIONS = {
+    health: { id: 'health', label: 'Health', isLedgerLinked: true, isSingleAction: true, items: [
+        { label: 'Boron Complex', amount: 0 }, { label: 'Protein', amount: 0 }, { label: 'Creatine', amount: 0 }, { label: 'Mg, Sl, Zc', amount: 0 }
+    ]},
+    groceries: { id: 'groceries', label: 'Groceries', isLedgerLinked: true, isSingleAction: true, items: [
+        { label: 'Oats', amount: 0 }, { label: 'Eggs', amount: 0 }
+    ]},
+    misc: { id: 'misc', label: 'Misc', isLedgerLinked: true, isSingleAction: true, items: [
+        { label: 'Mixed Nuts', amount: 0 }, { label: 'Misc', amount: 0 }, { label: 'Hair cut', amount: 0 }, { label: 'Toilet Paper', amount: 0 }
+    ]},
+    subscriptions: { id: 'subscriptions', label: 'Subscriptions', isLedgerLinked: true, isSingleAction: true, items: [
+        { label: 'Etisalat', amount: 0 }, { label: 'Tarteel', amount: 0 }, { label: 'YouTube', amount: 0 }, { label: 'iCloud', amount: 0 }, { label: 'Adib', amount: 0 }
+    ]}
+};
 
 function getOnboardingEl() { return document.getElementById('onboarding'); }
 function getAppShellEl() { return document.getElementById('app-shell'); }
@@ -10,6 +27,7 @@ function getAppShellEl() { return document.getElementById('app-shell'); }
 function showOnboarding(onComplete) {
     onboardingCompleteCallback = onComplete;
     onboardingStepIndex = 0;
+    onboardingCategoriesInitialized = false;
     var el = getOnboardingEl();
     var app = getAppShellEl();
     if (el) el.classList.remove('hidden');
@@ -43,23 +61,62 @@ function showOnboardingStep(index) {
     });
     var panel = document.getElementById('onboarding-step-' + stepId);
     if (panel) panel.classList.remove('hidden');
+    if (stepId === 'categories') initAndRenderOnboardingCategories();
     if (stepId === 'summary') updateOnboardingSummary();
+}
+
+function initAndRenderOnboardingCategories() {
+    if (!onboardingCategoriesInitialized && typeof state !== 'undefined') {
+        onboardingCategoriesInitialized = true;
+        state.categories = (state.categories || []).filter(function (s) { return s.isSystem; });
+        if (state.balances) {
+            var keys = Object.keys(state.balances);
+            keys.forEach(function (k) { delete state.balances[k]; });
+        }
+        if (state.accounts && state.accounts.buckets) {
+            var sysLabels = ['General Savings', 'Payables', 'Car Fund', 'Weekly Misc'];
+            var bucketKeys = Object.keys(state.accounts.buckets);
+            bucketKeys.forEach(function (k) {
+                if (sysLabels.indexOf(k) === -1) delete state.accounts.buckets[k];
+            });
+        }
+        if (typeof ensureSystemSavings === 'function') ensureSystemSavings();
+        if (typeof ensureCoreItems === 'function') ensureCoreItems();
+    }
+    var obInc = document.getElementById('onboarding-income');
+    if (obInc && obInc.value.trim() !== '' && typeof state !== 'undefined') {
+        var parsed = parseFloat(obInc.value);
+        if (!isNaN(parsed) && parsed >= 0) state.monthlyIncome = parsed;
+    }
+    if (typeof renderStrategy === 'function') {
+        renderStrategy({ containerId: 'onboarding-strategy-sections', onboarding: true });
+    }
+}
+
+function addOnboardingSuggestion(key) {
+    var template = ONBOARDING_SUGGESTIONS[key];
+    if (!template || typeof state === 'undefined') return;
+    if (state.categories.some(function (s) { return s.id === template.id; })) return;
+    var clone = JSON.parse(JSON.stringify(template));
+    state.categories.push(clone);
+    if (typeof saveState === 'function') saveState();
+    if (typeof renderStrategy === 'function') {
+        renderStrategy({ containerId: 'onboarding-strategy-sections', onboarding: true });
+    }
 }
 
 function updateOnboardingSummary() {
     var curEl = document.getElementById('onboarding-currency');
     var incEl = document.getElementById('onboarding-income');
     var realityEl = document.getElementById('onboarding-reality');
-    var categoriesRadios = document.getElementsByName('onboarding-categories');
     var weeklyRadios = document.getElementsByName('onboarding-weekly');
     var cur = (curEl && curEl.value) ? curEl.value : 'AED';
     var inc = (incEl && incEl.value.trim() !== '') ? incEl.value : '4000';
     var reality = (realityEl && realityEl.value.trim() !== '') ? realityEl.value : '0';
-    var cat = 'Template';
-    if (categoriesRadios && categoriesRadios.length) {
-        for (var i = 0; i < categoriesRadios.length; i++) {
-            if (categoriesRadios[i].checked) { cat = categoriesRadios[i].value === 'minimal' ? 'Minimal' : 'Template'; break; }
-        }
+    var cat = 'Custom';
+    if (typeof state !== 'undefined' && state.categories && state.categories.length) {
+        var customCount = state.categories.filter(function (s) { return !s.isSystem; }).length;
+        cat = customCount ? customCount + ' custom categories' : 'Essentials only';
     }
     var weekly = 'No';
     if (weeklyRadios && weeklyRadios.length) {
@@ -117,7 +174,6 @@ function applyOnboardingValues(skipAll) {
     if (typeof state === 'undefined') return;
     var currencyEl = document.getElementById('onboarding-currency');
     var incomeEl = document.getElementById('onboarding-income');
-    var categoriesRadios = document.getElementsByName('onboarding-categories');
     var realityEl = document.getElementById('onboarding-reality');
     var weeklyRadios = document.getElementsByName('onboarding-weekly');
     if (state.settings) state.settings.currency = (currencyEl && currencyEl.value) ? currencyEl.value : 'AED';
@@ -133,17 +189,7 @@ function applyOnboardingValues(skipAll) {
         if (!isNaN(ex) && ex >= 0) reality = ex;
     }
     state._onboardingReality = reality;
-    if (!skipAll && categoriesRadios && categoriesRadios.length) {
-        var choice = 'template';
-        for (var i = 0; i < categoriesRadios.length; i++) {
-            if (categoriesRadios[i].checked) { choice = categoriesRadios[i].value; break; }
-        }
-        if (choice === 'minimal') {
-            state.categories = (state.categories || []).filter(function (s) { return s.isSystem; });
-            state.balances = {};
-            if (state.accounts) state.accounts.buckets = {};
-        }
-    }
+    /* Categories: keep state.categories as edited in onboarding (budget-plan step). No template/minimal overwrite. */
     var prefillWeeks = false;
     if (!skipAll && weeklyRadios && weeklyRadios.length) {
         for (var k = 0; k < weeklyRadios.length; k++) {
@@ -195,3 +241,5 @@ window.onboardingBack = onboardingBack;
 window.onboardingSkipAll = onboardingSkipAll;
 window.onboardingComplete = onboardingComplete;
 window.updateOnboardingSummary = updateOnboardingSummary;
+window.addOnboardingSuggestion = addOnboardingSuggestion;
+window.initAndRenderOnboardingCategories = initAndRenderOnboardingCategories;

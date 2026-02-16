@@ -1092,6 +1092,19 @@ function fastUpdateItemAmount(sid, idx, val) {
             badge.innerText = `${formatMoney(dailyRate)}/day`;
         }
     }
+    var obStep = document.getElementById('onboarding-step-categories');
+    if (obStep && !obStep.classList.contains('hidden')) {
+        var total = state.monthlyIncome || 0;
+        var allocated = state.categories.reduce(function (sum, sec) {
+            return sum + (sec.items || []).reduce(function (s, i) { return s + (i.amount || 0); }, 0);
+        }, 0);
+        var totalEl = document.getElementById('onboarding-cat-total');
+        var totalValEl = document.getElementById('onboarding-cat-total-val');
+        var allocValEl = document.getElementById('onboarding-cat-allocated-val');
+        if (totalEl) totalEl.textContent = typeof formatMoney === 'function' ? formatMoney(total) : total;
+        if (totalValEl) totalValEl.textContent = typeof formatMoney === 'function' ? formatMoney(total) : total;
+        if (allocValEl) allocValEl.textContent = typeof formatMoney === 'function' ? formatMoney(allocated) : allocated;
+    }
 }
 
 function syncFoodBaseAmount(sid, idx, val) {
