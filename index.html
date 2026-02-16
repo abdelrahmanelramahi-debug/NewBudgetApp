@@ -146,10 +146,26 @@
                 <h2 class="text-xl font-black text-slate-900 mb-2">You’re all set</h2>
                 <p class="text-sm text-slate-600 mb-4">Check your choices below. You can add or edit categories in Budget Plan and change income or currency in Settings.</p>
                 <div id="onboarding-summary-list" class="bg-slate-50 rounded-xl p-4 space-y-2 mb-4 text-sm">
-                    <div class="flex justify-between items-center"><span class="text-slate-600">Currency</span><span id="onboarding-summary-currency" class="font-bold text-slate-900">—</span><button type="button" onclick="showOnboardingStep(1)" class="text-indigo-600 text-xs font-bold">Edit</button></div>
-                    <div class="flex justify-between items-center"><span class="text-slate-600">Monthly income</span><span id="onboarding-summary-income" class="font-bold text-slate-900">—</span><button type="button" onclick="showOnboardingStep(2)" class="text-indigo-600 text-xs font-bold">Edit</button></div>
-                    <div class="flex justify-between items-center"><span class="text-slate-600">Bank balance (reality)</span><span id="onboarding-summary-reality" class="font-bold text-slate-900">—</span><button type="button" onclick="showOnboardingStep(3)" class="text-indigo-600 text-xs font-bold">Edit</button></div>
-                    <div class="flex justify-between items-center"><span class="text-slate-600">Categories</span><span id="onboarding-summary-categories" class="font-bold text-slate-900">—</span><button type="button" onclick="showOnboardingStep(4)" class="text-indigo-600 text-xs font-bold">Edit</button></div>
+                    <div class="flex items-center gap-4">
+                        <span class="text-slate-600 flex-shrink-0">Currency</span>
+                        <span id="onboarding-summary-currency" class="font-bold text-slate-900 flex-1 text-right">—</span>
+                        <button type="button" onclick="showOnboardingStep(1)" class="text-indigo-600 text-xs font-bold flex-shrink-0">Edit</button>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <span class="text-slate-600 flex-shrink-0">Monthly income</span>
+                        <span id="onboarding-summary-income" class="font-bold text-slate-900 flex-1 text-right">—</span>
+                        <button type="button" onclick="showOnboardingStep(2)" class="text-indigo-600 text-xs font-bold flex-shrink-0">Edit</button>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <span class="text-slate-600 flex-shrink-0">Bank balance (reality)</span>
+                        <span id="onboarding-summary-reality" class="font-bold text-slate-900 flex-1 text-right">—</span>
+                        <button type="button" onclick="showOnboardingStep(3)" class="text-indigo-600 text-xs font-bold flex-shrink-0">Edit</button>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <span class="text-slate-600 flex-shrink-0">Categories</span>
+                        <span id="onboarding-summary-categories" class="font-bold text-slate-900 flex-1 text-right">—</span>
+                        <button type="button" onclick="showOnboardingStep(4)" class="text-indigo-600 text-xs font-bold flex-shrink-0">Edit</button>
+                    </div>
                 </div>
                 <div id="onboarding-account-card" class="rounded-xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 to-white p-4 mb-6">
                     <p class="text-xs font-black text-indigo-900 uppercase tracking-wide mb-1">Sync across devices?</p>
@@ -275,11 +291,11 @@
                         <div class="flex-1 min-w-0">
                             <span class="text-[10px] font-bold uppercase tracking-widest text-indigo-200">Weekly Allowance</span>
                             <span class="text-[9px] font-bold uppercase tracking-widest text-indigo-300 block mt-1.5">Week <span id="weekly-week-count">1</span>/4</span>
-                            <div class="flex items-baseline gap-2 mt-2">
+                            <div class="flex items-baseline gap-2 mt-3">
                                 <h2 id="bal-weekly" class="text-6xl lg:text-3xl font-black">0</h2>
                                 <span class="text-xl lg:text-base font-bold text-indigo-300" data-currency>AED</span>
                             </div>
-                            <p id="weekly-allowance-explanation" class="text-[10px] text-indigo-200/90 mt-3 leading-relaxed"><span id="weekly-total-four"></span>Arrows switch week · Transfer moves money between weeks.</p>
+                            <p id="weekly-allowance-explanation" class="text-[10px] text-indigo-200/90 mt-5 leading-relaxed"><span id="weekly-total-four"></span>Arrows switch week · Transfer moves money between weeks.</p>
                         </div>
                         <div class="flex gap-2 ml-4 flex-shrink-0">
                             <button id="prev-week-btn" onclick="prevWeek()" class="p-2 bg-white/20 rounded-lg hover:bg-white/30 transition group" title="Previous week">
@@ -294,7 +310,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="flex gap-2 p-1 bg-indigo-800/30 rounded-xl border border-indigo-400/30 weekly-inline-controls mt-5 lg:mt-3">
+                <div class="flex gap-2 p-1 bg-indigo-800/30 rounded-xl border border-indigo-400/30 weekly-inline-controls mt-6 lg:mt-3">
                     <div class="flex flex-1 min-w-0 rounded-lg overflow-hidden bg-transparent">
                         <input type="number" id="weekly-inline-val" placeholder="Spend..." class="flex-[2] min-w-0 bg-transparent border-none px-3 py-2 font-bold text-white placeholder-indigo-300 text-sm outline-none focus:placeholder-indigo-400">
                         <div class="flex-[1] max-w-[33%] flex min-w-0 rounded-md bg-white/15 border border-white/20">

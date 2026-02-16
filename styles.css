@@ -117,7 +117,27 @@ textarea,
     /* Better spacing for weekly hero on mobile/iOS */
     @media (max-width: 1023px) {
         .weekly-hero {
-            padding: 1.5rem !important;
+            padding: 2rem 1.5rem !important;
+        }
+        
+        .weekly-hero > div:first-child {
+            margin-bottom: 1.5rem !important;
+        }
+        
+        #weekly-allowance-explanation {
+            margin-top: 1.5rem !important;
+            line-height: 1.6 !important;
+        }
+        
+        .weekly-inline-controls {
+            margin-top: 1.75rem !important;
+            padding: 0.75rem !important;
+            gap: 0.75rem !important;
+        }
+        
+        .weekly-inline-controls button {
+            padding: 0.75rem 1rem !important;
+            min-height: 44px; /* iOS touch target */
         }
     }
     
