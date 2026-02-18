@@ -918,10 +918,8 @@ function buyFoodDay() {
     const sourceEl = document.getElementById('food-buffer-source');
     const sourceId = (sourceEl && sourceEl.value) ? sourceEl.value : 'surplus';
 
-    const fSec = state.categories.find(s=>s.id==='core_essentials') || state.categories.find(s=>s.id==='foundations');
-    const fItem = fSec ? fSec.items.find(i=>i.label==='Daily Food') : null;
-    const foodBase = fItem ? fItem.amount : 600;
-    const dailyRate = foodBase / 28;
+    const info = typeof getFoodRemainderInfo === 'function' ? getFoodRemainderInfo() : null;
+    const dailyRate = (info && info.dailyRate > 0) ? info.dailyRate : (600 / 28);
     const totalCost = dailyRate * daysInput;
 
     const available = getBufferSourceBalance(sourceId);
