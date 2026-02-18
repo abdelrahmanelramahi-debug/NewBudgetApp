@@ -301,10 +301,10 @@ function renderStrategy(opts) {
         let rowsHtml = '';
         sec.items.forEach((item, idx) => {
             let amortLabel = item.amortData ? `<span class="text-[9px] bg-indigo-50 text-indigo-600 px-1 rounded font-bold ml-2">${item.amortData.total}/${item.amortData.months}mo</span>` : '';
-            const isFoodBase = item.label === 'Daily Food';
+            const isFoodBase = item.label === 'Daily Food' || item.label === 'Food Base';
 
             // SMART BADGES FOR CORE ITEMS
-            if (item.label === 'Daily Food') {
+            if (item.label === 'Daily Food' || item.label === 'Food Base') {
                 const dailyRate = item.amount / state.food.daysTotal;
                 amortLabel = `<span id="food-base-daily-badge" class="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold ml-2">${formatMoney(dailyRate)}/day</span>`;
             } else if (item.label === 'Weekly Misc') {
@@ -654,9 +654,9 @@ function renderLedger() {
 
     // Create categorical dropdowns matching the strategy structure
     state.categories.forEach(sec => {
-        // Filter items to skip Major Funds (Daily Food lives in Food Cycle; others have their own cards)
-        var majorLabels = typeof MAJOR_FUND_LABELS !== 'undefined' ? MAJOR_FUND_LABELS : ['Weekly Misc', 'Daily Food', 'General Savings', 'Car Fund', 'Payables'];
-        var skipLabels = majorLabels.slice();
+// Filter items to skip Major Funds (Daily Food / Food Base lives in Food Cycle; others have their own cards)
+    var majorLabels = typeof MAJOR_FUND_LABELS !== 'undefined' ? MAJOR_FUND_LABELS : ['Weekly Misc', 'Daily Food', 'General Savings', 'Car Fund', 'Payables'];
+    var skipLabels = majorLabels.concat(['Food Base']);
         const relevantItems = sec.items.filter(item => !skipLabels.includes(item.label));
 
         if (relevantItems.length === 0) return;
@@ -825,7 +825,8 @@ function updateFoodUI() {
     var fid = typeof SECTION_IDS !== 'undefined' ? SECTION_IDS.FOUNDATIONS : 'foundations';
     var flabel = typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.FOOD_BASE : 'Daily Food';
     var fSec = state.categories.find(s=>s.id===cid) || state.categories.find(s=>s.id===fid);
-    var fItem = fSec ? fSec.items.find(i=>i.label===flabel) : null;
+    // Match same item as getFoodRemainderInfo (Daily Food or Food Base) so rate and remainder stay in sync
+    var fItem = fSec ? fSec.items.find(i=>i.label===flabel || i.label==='Food Base') : null;
     var foodBase = fItem ? fItem.amount : 600;
     var daily = foodBase / (state.food.daysTotal || 28);
     if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
