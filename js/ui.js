@@ -301,10 +301,10 @@ function renderStrategy(opts) {
         let rowsHtml = '';
         sec.items.forEach((item, idx) => {
             let amortLabel = item.amortData ? `<span class="text-[9px] bg-indigo-50 text-indigo-600 px-1 rounded font-bold ml-2">${item.amortData.total}/${item.amortData.months}mo</span>` : '';
-            const isFoodBase = item.label === 'Daily Food' || item.label === 'Food Base';
+            const isFoodBase = item.label === 'Daily Food';
 
             // SMART BADGES FOR CORE ITEMS
-            if (item.label === 'Daily Food' || item.label === 'Food Base') {
+            if (item.label === 'Daily Food') {
                 const dailyRate = item.amount / state.food.daysTotal;
                 amortLabel = `<span id="food-base-daily-badge" class="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold ml-2">${formatMoney(dailyRate)}/day</span>`;
             } else if (item.label === 'Weekly Misc') {
@@ -654,9 +654,9 @@ function renderLedger() {
 
     // Create categorical dropdowns matching the strategy structure
     state.categories.forEach(sec => {
-        // Filter items to skip Major Funds (Food Base/Daily Food live in Food Cycle; others have their own cards)
+        // Filter items to skip Major Funds (Daily Food lives in Food Cycle; others have their own cards)
         var majorLabels = typeof MAJOR_FUND_LABELS !== 'undefined' ? MAJOR_FUND_LABELS : ['Weekly Misc', 'Daily Food', 'General Savings', 'Car Fund', 'Payables'];
-        var skipLabels = majorLabels.concat(['Food Base']);
+        var skipLabels = majorLabels.slice();
         const relevantItems = sec.items.filter(item => !skipLabels.includes(item.label));
 
         if (relevantItems.length === 0) return;

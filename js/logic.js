@@ -33,7 +33,7 @@ function getLiquidityBreakdown() {
 
     state.categories.forEach(sec => {
         sec.items.forEach(item => {
-            if (item.label === _foodBaseLabel || item.label === 'Food Base' || item.label === _weeklyMiscLabel) return;
+            if (item.label === _foodBaseLabel || item.label === _weeklyMiscLabel) return;
             if (item.label === _generalSavingsLabel && state.accounts?.savingsBuckets) {
                 Object.entries(state.accounts.savingsBuckets).forEach(([key, amount]) => {
                     items.push({ label: `Savings: ${key}`, amount: amount });

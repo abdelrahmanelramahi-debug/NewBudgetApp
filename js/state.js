@@ -378,8 +378,7 @@ function getFoodRemainderInfo() {
     var fid = typeof SECTION_IDS !== 'undefined' ? SECTION_IDS.FOUNDATIONS : 'foundations';
     var flabel = typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.FOOD_BASE : 'Daily Food';
     const fSec = state.categories.find(s=>s.id===cid) || state.categories.find(s=>s.id===fid);
-    // Support both "Daily Food" and "Food Base" so remainder calculates correctly if user renamed the line
-    const fItem = fSec ? fSec.items.find(i=>i.label===flabel || i.label==='Food Base') : null;
+    const fItem = fSec ? fSec.items.find(i=>i.label===flabel) : null;
     const foodBase = fItem ? fItem.amount : 0;
     const daysLeft = state.food.daysTotal - state.food.daysUsed;
     const dailyRate = state.food.daysTotal > 0 ? (foodBase / state.food.daysTotal) : 0;
