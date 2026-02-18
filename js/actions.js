@@ -857,8 +857,10 @@ function setFoodViewWeek(weekIndexOrDelta) {
 
 function spendFoodDay() {
     if(state.food.daysUsed < state.food.daysTotal) {
+        var info = typeof getFoodRemainderInfo === 'function' ? getFoodRemainderInfo() : null;
+        var amount = (info && info.dailyRate > 0) ? info.dailyRate : 30;
         pushToUndo();
-        applyTransaction({ type: 'food_spend', amount: 30 });
+        applyTransaction({ type: 'food_spend', amount: amount });
         saveState();
         renderLedger();
     }
