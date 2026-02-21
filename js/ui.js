@@ -962,12 +962,50 @@ function updateFoodUI() {
     if (markBtn) markBtn.disabled = daysUsed >= daysTotal;
 }
 
+function getBankBalanceSegmentColor(label) {
+    if (!label) return 'bg-slate-400';
+    var l = label.toLowerCase();
+    if (l.indexOf('extra') !== -1 || l === 'extra (unallocated)') return 'bg-emerald-400';
+    if (l.indexOf('weekly') !== -1) return 'bg-indigo-400';
+    if (l.indexOf('food') !== -1) return 'bg-amber-400';
+    if (l.indexOf('savings') !== -1) return 'bg-sky-400';
+    return 'bg-slate-400';
+}
+
+function renderBankBalanceCard() {
+    var total = getCurrentBalance();
+    var totalEl = getEl('bank-balance-total');
+    var barEl = getEl('bank-balance-bar');
+    if (totalEl) totalEl.innerText = typeof formatMoney === 'function' ? formatMoney(total) : total.toFixed(2);
+    if (!barEl) return;
+
+    if (typeof getLiquidityBreakdown !== 'function') return;
+    var lb = getLiquidityBreakdown();
+    var items = (lb.items || []).filter(function (i) { return i.amount > 0; });
+    var totalLiquid = lb.totalLiquid || total;
+    if (totalLiquid <= 0) {
+        barEl.innerHTML = '<div class="flex-1 rounded-lg bg-slate-200" title="No balance"></div>';
+        return;
+    }
+    var currency = typeof getCurrencyLabel === 'function' ? getCurrencyLabel() : 'AED';
+    var html = items.map(function (item) {
+        var pct = Math.max(0, (item.amount / totalLiquid) * 100);
+        var width = pct < 0.5 ? '0.5' : pct.toFixed(1);
+        var color = getBankBalanceSegmentColor(item.label);
+        var titleText = item.label + (item.meta ? ' (' + item.meta + ')' : '') + ': ' + (typeof formatMoney === 'function' ? formatMoney(item.amount) : item.amount.toFixed(2)) + ' ' + currency;
+        var safeTitle = (titleText || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return '<div class="bank-balance-segment ' + color + ' transition-all duration-300 hover:opacity-90 cursor-default" style="width:' + width + '%" title="' + safeTitle + '" data-amount="' + item.amount + '"> </div>';
+    }).join('');
+    barEl.innerHTML = html || '<div class="flex-1 rounded-lg bg-slate-200" title="No balance"></div>';
+}
+
 function calculateReality() {
     var total = getCurrentBalance();
     var realityTotal = getEl('reality-total');
     var headerReality = getEl('header-reality');
-    if (realityTotal) realityTotal.innerText = formatMoney(total);
-    if (headerReality) headerReality.innerText = formatMoney(total);
+    if (realityTotal) realityTotal.innerText = typeof formatMoney === 'function' ? formatMoney(total) : total.toFixed(2);
+    if (headerReality) headerReality.innerText = typeof formatMoney === 'function' ? formatMoney(total) : total.toFixed(2);
+    if (typeof renderBankBalanceCard === 'function') renderBankBalanceCard();
 }
 
 function updateGlobalUI() {

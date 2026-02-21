@@ -57,6 +57,25 @@ body.theme-dark #app-alert-modal .modal-content #app-alert-cancel:hover { backgr
 body.theme-dark #bank-balance-info { color: #94a3b8; }
 body.theme-dark #bank-balance-info-btn { border-color: #64748b; color: #94a3b8; }
 body.theme-dark #bank-balance-info-btn:hover { background: #334155; }
+
+/* Bank Balance card (above Weekly Allowance) */
+.bank-balance-card .bank-balance-bar-wrap { min-height: 2rem; }
+.bank-balance-segment {
+    min-width: 4px;
+    border-radius: 0;
+    flex-shrink: 0;
+}
+.bank-balance-segment:first-of-type { border-radius: 6px 0 0 6px; }
+.bank-balance-segment:last-of-type { border-radius: 0 6px 6px 0; }
+.bank-balance-segment:only-child { border-radius: 6px; }
+body.theme-dark .bank-balance-card {
+    background-color: #111827;
+    border-color: #1f2937;
+}
+body.theme-dark #bank-balance-total { color: #f1f5f9; }
+body.theme-dark .bank-balance-bar-wrap { background: #1e293b; }
+body.theme-dark .bank-balance-info-btn { border-color: #475569; color: #94a3b8; }
+body.theme-dark .bank-balance-info-btn:hover { background: #334155; color: #e2e8f0; }
 body.theme-dark .food-calendar-buffer {
     border-top-color: #059669;
     background: linear-gradient(to bottom, rgba(16, 185, 129, 0.12), transparent);

@@ -165,7 +165,7 @@ var HOME_TOUR_STEPS = [
     { title: 'Weekly Allowance', body: 'Track your weekly spending here. Enter an amount and tap Spend, or Top Up from Extra. Use Transfer to move between weeks.', target: '.weekly-hero' },
     { title: 'Food Tracker', body: 'Mark days you\'ve eaten to use your food budget. Use \"Mark Day Consumed\" and the calendar below. You can extend your cycle with buffer days.', target: '#page-ledger .premium-card:nth-of-type(2)' },
     { title: 'Categories', body: 'Spend from your budget categories (Health, Groceries, etc.). Tap a category to deduct or add. Single-action items can be checked off when done.', target: '#ledger-categories' },
-    { title: 'Bank Balance', body: 'This shows how your real money compares to your plan. Extra is money that isn\'t assigned yet. Tap it to see a breakdown.', target: '#app-header' }
+    { title: 'Bank Balance', body: 'This is the reality check of what should read in your bank account. The bar shows how it\'s split (Extra, Weekly, Food, etc.). Tap Breakdown for details.', target: '.bank-balance-card' }
 ];
 var homeTourStepIndex = 0;
 function startHomeTour() {
