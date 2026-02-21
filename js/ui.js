@@ -962,14 +962,77 @@ function updateFoodUI() {
     if (markBtn) markBtn.disabled = daysUsed >= daysTotal;
 }
 
+// High-level segments for the bank balance bar: overarching categories + standalone major funds (no micro items, no "Other").
+function getBankBalanceBarSegments() {
+    var segments = [];
+    var getBal = typeof getItemBalance === 'function' ? getItemBalance : function() { return 0; };
+    var getSavings = typeof getSavingsTotal === 'function' ? getSavingsTotal() : (state.accounts?.buckets?.['General Savings'] ?? 0);
+    var gsLabel = typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.GENERAL_SAVINGS : 'General Savings';
+    var payLabel = typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.PAYABLES : 'Payables';
+    var carLabel = typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.CAR_FUND : 'Car Fund';
+    var foodLabel = typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.FOOD_BASE : 'Daily Food';
+    var weeklyLabel = typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.WEEKLY_MISC : 'Weekly Misc';
+
+    var surplus = (state.accounts && state.accounts.surplus !== undefined) ? state.accounts.surplus : 0;
+    if (surplus > 0) segments.push({ label: 'Extra (Unallocated)', amount: surplus });
+
+    if (getSavings > 0) segments.push({ label: gsLabel, amount: getSavings });
+    if (getBal(payLabel, 0) > 0) segments.push({ label: payLabel, amount: getBal(payLabel, 0) });
+    if (getBal(carLabel, 0) > 0) segments.push({ label: carLabel, amount: getBal(carLabel, 0) });
+
+    if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
+    var w1 = Math.max(0, (state.accounts.weekly.balances && state.accounts.weekly.balances[0]) || 0);
+    var w2 = Math.max(0, (state.accounts.weekly.balances && state.accounts.weekly.balances[1]) || 0);
+    var w3 = Math.max(0, (state.accounts.weekly.balances && state.accounts.weekly.balances[2]) || 0);
+    var w4 = Math.max(0, (state.accounts.weekly.balances && state.accounts.weekly.balances[3]) || 0);
+    var totalWeekly = w1 + w2 + w3 + w4;
+    if (totalWeekly > 0) segments.push({ label: 'Weekly Allowance', amount: totalWeekly, meta: 'Week 1–4' });
+
+    if (typeof getFoodRemainderInfo === 'function') {
+        var foodInfo = getFoodRemainderInfo();
+        if (foodInfo.remainder > 0) segments.push({ label: 'Food Remainder', amount: foodInfo.remainder, meta: foodInfo.daysLeft + ' days' });
+    }
+    var locked = state.food?.lockedAmount || 0;
+    if (locked > 0) segments.push({ label: 'Food Buffer', amount: locked, meta: 'Locked' });
+
+    // One segment per category section (Health, Groceries, Misc, Subscriptions, etc.) – not per item.
+    var skipLabels = [foodLabel, 'Food Base', weeklyLabel, gsLabel, payLabel, carLabel];
+    (state.categories || []).forEach(function (sec) {
+        if (!sec.items || !sec.items.length) return;
+        var sectionSum = 0;
+        sec.items.forEach(function (item) {
+            if (skipLabels.indexOf(item.label) !== -1) return;
+            sectionSum += getBal(item.label, 0);
+        });
+        if (sectionSum > 0) segments.push({ label: sec.label, amount: sectionSum });
+    });
+
+    return segments;
+}
+
+var _bankBalanceColorMap = {
+    'extra (unallocated)': 'bg-emerald-400',
+    'general savings': 'bg-sky-400',
+    'payables': 'bg-rose-400',
+    'car fund': 'bg-violet-400',
+    'weekly allowance': 'bg-indigo-400',
+    'food remainder': 'bg-amber-400',
+    'food buffer': 'bg-amber-300',
+    'health': 'bg-teal-400',
+    'groceries': 'bg-orange-400',
+    'misc': 'bg-cyan-400',
+    'subscriptions': 'bg-fuchsia-400'
+};
+var _bankBalanceColorFallbacks = ['bg-lime-400', 'bg-pink-400', 'bg-rose-300', 'bg-violet-300', 'bg-teal-300'];
+var _bankBalanceColorFallbackIndex = 0;
+
 function getBankBalanceSegmentColor(label) {
-    if (!label) return 'bg-slate-400';
-    var l = label.toLowerCase();
-    if (l.indexOf('extra') !== -1 || l === 'extra (unallocated)') return 'bg-emerald-400';
-    if (l.indexOf('weekly') !== -1) return 'bg-indigo-400';
-    if (l.indexOf('food') !== -1) return 'bg-amber-400';
-    if (l.indexOf('savings') !== -1) return 'bg-sky-400';
-    return 'bg-slate-400';
+    if (!label) return _bankBalanceColorFallbacks[0];
+    var key = (label || '').toLowerCase().trim();
+    if (_bankBalanceColorMap[key]) return _bankBalanceColorMap[key];
+    var fallback = _bankBalanceColorFallbacks[_bankBalanceColorFallbackIndex % _bankBalanceColorFallbacks.length];
+    _bankBalanceColorFallbackIndex += 1;
+    return fallback;
 }
 
 function renderBankBalanceCard() {
@@ -979,17 +1042,18 @@ function renderBankBalanceCard() {
     if (totalEl) totalEl.innerText = typeof formatMoney === 'function' ? formatMoney(total) : total.toFixed(2);
     if (!barEl) return;
 
-    if (typeof getLiquidityBreakdown !== 'function') return;
-    var lb = getLiquidityBreakdown();
-    var items = (lb.items || []).filter(function (i) { return i.amount > 0; });
-    var totalLiquid = lb.totalLiquid || total;
-    if (totalLiquid <= 0) {
+    _bankBalanceColorFallbackIndex = 0;
+    var segments = typeof getBankBalanceBarSegments === 'function' ? getBankBalanceBarSegments() : [];
+    segments = segments.filter(function (s) { return s.amount > 0; });
+    if (segments.length === 0 || total <= 0) {
         barEl.innerHTML = '<div class="flex-1 rounded-lg bg-slate-200" title="No balance"></div>';
         return;
     }
+    var totalAmount = segments.reduce(function (sum, s) { return sum + s.amount; }, 0);
+    if (totalAmount <= 0) totalAmount = total;
     var currency = typeof getCurrencyLabel === 'function' ? getCurrencyLabel() : 'AED';
-    var html = items.map(function (item) {
-        var pct = Math.max(0, (item.amount / totalLiquid) * 100);
+    var html = segments.map(function (item) {
+        var pct = Math.max(0, (item.amount / totalAmount) * 100);
         var width = pct < 0.5 ? '0.5' : pct.toFixed(1);
         var color = getBankBalanceSegmentColor(item.label);
         var titleText = item.label + (item.meta ? ' (' + item.meta + ')' : '') + ': ' + (typeof formatMoney === 'function' ? formatMoney(item.amount) : item.amount.toFixed(2)) + ' ' + currency;
