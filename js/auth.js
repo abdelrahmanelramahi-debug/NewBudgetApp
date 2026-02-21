@@ -306,7 +306,8 @@ async function loadStateFromCloud(retryCount) {
             return;
         }
         
-        // On error after retry: use local data and show clear status
+        // On error after retry: use local data for this device only. Do NOT call saveState() –
+        // that would set MODIFIED and trigger saveStateToCloud, overwriting other devices' newer data.
         try {
             var stateKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.STATE : 'financeCmd_state';
             var localBackupStr = localStorage.getItem(stateKey);
@@ -320,7 +321,7 @@ async function loadStateFromCloud(retryCount) {
                 if (state.accounts && state.accounts.surplus === 0 && hasMeaningfulData(state) && typeof recalculateSurplusFromReality === 'function') {
                     recalculateSurplusFromReality();
                 }
-                saveState();
+                localStorage.setItem(stateKey, JSON.stringify(state));
                 if (typeof refreshUI === 'function') refreshUI();
             }
         } catch (e) {
