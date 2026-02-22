@@ -1052,15 +1052,85 @@ function renderBankBalanceCard() {
     var totalAmount = segments.reduce(function (sum, s) { return sum + s.amount; }, 0);
     if (totalAmount <= 0) totalAmount = total;
     var currency = typeof getCurrencyLabel === 'function' ? getCurrencyLabel() : 'AED';
+    var escapeAttr = function (s) { return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
     var html = segments.map(function (item) {
         var pct = Math.max(0, (item.amount / totalAmount) * 100);
         var width = pct < 0.5 ? '0.5' : pct.toFixed(1);
         var color = getBankBalanceSegmentColor(item.label);
-        var titleText = item.label + (item.meta ? ' (' + item.meta + ')' : '') + ': ' + (typeof formatMoney === 'function' ? formatMoney(item.amount) : item.amount.toFixed(2)) + ' ' + currency;
-        var safeTitle = (titleText || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        return '<div class="bank-balance-segment ' + color + ' transition-all duration-300 hover:opacity-90 cursor-default" style="width:' + width + '%" title="' + safeTitle + '" data-amount="' + item.amount + '"> </div>';
+        var labelEsc = escapeAttr(item.label);
+        var metaEsc = escapeAttr(item.meta || '');
+        var amountStr = typeof formatMoney === 'function' ? formatMoney(item.amount) : item.amount.toFixed(2);
+        return '<div class="bank-balance-segment ' + color + ' transition-all duration-200 hover:opacity-90 cursor-pointer" style="width:' + width + '%" data-label="' + labelEsc + '" data-meta="' + metaEsc + '" data-amount="' + amountStr + '" data-currency="' + escapeAttr(currency) + '" role="button" tabindex="0"> </div>';
     }).join('');
     barEl.innerHTML = html || '<div class="flex-1 rounded-lg bg-slate-200" title="No balance"></div>';
+
+    var tooltipEl = getEl('bank-balance-tooltip');
+    if (tooltipEl) {
+        tooltipEl.classList.add('hidden');
+        tooltipEl.setAttribute('aria-hidden', 'true');
+    }
+    function showSegmentTooltip(segment) {
+        if (!segment || !tooltipEl) return;
+        var label = segment.getAttribute('data-label') || '';
+        var meta = segment.getAttribute('data-meta') || '';
+        var amount = segment.getAttribute('data-amount') || '';
+        var currency = segment.getAttribute('data-currency') || '';
+        var line2 = amount + ' ' + currency;
+        if (meta) line2 = meta + ' · ' + line2;
+        tooltipEl.innerHTML = '<span class="bank-balance-tooltip-label">' + label + '</span><span class="bank-balance-tooltip-amount">' + line2 + '</span>';
+        tooltipEl.style.opacity = '0';
+        tooltipEl.classList.remove('hidden');
+        tooltipEl.setAttribute('aria-hidden', 'false');
+        var rect = segment.getBoundingClientRect();
+        requestAnimationFrame(function () {
+            var ttRect = tooltipEl.getBoundingClientRect();
+            var left = rect.left + (rect.width / 2) - (ttRect.width / 2);
+            var top = rect.top - ttRect.height - 8;
+            if (left < 8) left = 8;
+            if (left + ttRect.width > window.innerWidth - 8) left = window.innerWidth - ttRect.width - 8;
+            if (top < 8) top = rect.bottom + 8;
+            tooltipEl.style.left = left + 'px';
+            tooltipEl.style.top = top + 'px';
+            tooltipEl.style.opacity = '1';
+        });
+    }
+    function hideSegmentTooltip() {
+        if (tooltipEl) {
+            tooltipEl.classList.add('hidden');
+            tooltipEl.setAttribute('aria-hidden', 'true');
+        }
+    }
+    barEl.removeEventListener('mouseenter', barEl._bankBalanceTooltipEnter);
+    barEl.removeEventListener('mouseleave', barEl._bankBalanceTooltipLeave);
+    barEl.removeEventListener('click', barEl._bankBalanceTooltipClick);
+    barEl._bankBalanceTooltipEnter = function (e) {
+        var seg = e.target.closest && e.target.closest('.bank-balance-segment');
+        if (seg) showSegmentTooltip(seg);
+    };
+    barEl._bankBalanceTooltipLeave = function (e) {
+        var seg = e.target.closest && e.target.closest('.bank-balance-segment');
+        if (seg) hideSegmentTooltip();
+    };
+    barEl._bankBalanceTooltipClick = function (e) {
+        var seg = e.target.closest && e.target.closest('.bank-balance-segment');
+        if (seg) {
+            if (tooltipEl && !tooltipEl.classList.contains('hidden')) hideSegmentTooltip();
+            else showSegmentTooltip(seg);
+        }
+    };
+    barEl.addEventListener('mouseenter', barEl._bankBalanceTooltipEnter, true);
+    barEl.addEventListener('mouseleave', barEl._bankBalanceTooltipLeave, true);
+    barEl.addEventListener('click', barEl._bankBalanceTooltipClick);
+    if (!window._bankBalanceTooltipDocClick) {
+        window._bankBalanceTooltipDocClick = function (e) {
+            var tooltip = document.getElementById('bank-balance-tooltip');
+            if (!tooltip || tooltip.classList.contains('hidden')) return;
+            if (e.target.closest && (e.target.closest('#bank-balance-bar') || e.target.closest('#bank-balance-tooltip'))) return;
+            tooltip.classList.add('hidden');
+            tooltip.setAttribute('aria-hidden', 'true');
+        };
+        document.addEventListener('click', window._bankBalanceTooltipDocClick);
+    }
 }
 
 function calculateReality() {

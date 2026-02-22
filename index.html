@@ -289,15 +289,16 @@
                     </div>
                 </div>
                 <p id="bank-balance-info" class="hidden text-[10px] text-slate-500 leading-snug mb-3">This is the reality check of what should read in your bank account. The bar below shows how it’s split (Extra, Weekly, Food, categories, etc.).</p>
-                <div class="bank-balance-bar-wrap rounded-xl overflow-hidden bg-slate-100 h-8 flex" id="bank-balance-bar" role="img" aria-label="Bank balance breakdown by source"></div>
-                <p class="text-[9px] text-slate-400 mt-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-                    <span class="inline-block w-2 h-2 rounded-full bg-emerald-400" title="Extra"></span> Extra
-                    <span class="inline-block w-2 h-2 rounded-full bg-sky-400" title="Savings"></span> Savings
-                    <span class="inline-block w-2 h-2 rounded-full bg-rose-400" title="Payables"></span> Payables
-                    <span class="inline-block w-2 h-2 rounded-full bg-violet-400" title="Car"></span> Car
-                    <span class="inline-block w-2 h-2 rounded-full bg-indigo-400" title="Weekly"></span> Weekly
-                    <span class="inline-block w-2 h-2 rounded-full bg-amber-400" title="Food"></span> Food
-                    <span class="inline-block w-2 h-2 rounded-full bg-teal-400" title="Categories"></span> Health · Groceries · etc.
+                <div class="bank-balance-bar-wrap relative rounded-xl overflow-hidden bg-slate-100 h-8 flex" id="bank-balance-bar" role="img" aria-label="Bank balance breakdown by source"></div>
+                <div id="bank-balance-tooltip" class="bank-balance-tooltip hidden" aria-hidden="true"></div>
+                <p class="bank-balance-legend text-[9px] text-slate-400 mt-2 flex items-center gap-x-2.5 gap-y-0 flex-nowrap overflow-x-auto overflow-y-hidden pb-0.5 min-h-[1.25rem]">
+                    <span class="inline-flex items-center gap-1 shrink-0"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> Extra</span>
+                    <span class="inline-flex items-center gap-1 shrink-0"><span class="w-2 h-2 rounded-full bg-sky-400"></span> Savings</span>
+                    <span class="inline-flex items-center gap-1 shrink-0"><span class="w-2 h-2 rounded-full bg-rose-400"></span> Payables</span>
+                    <span class="inline-flex items-center gap-1 shrink-0"><span class="w-2 h-2 rounded-full bg-violet-400"></span> Car</span>
+                    <span class="inline-flex items-center gap-1 shrink-0"><span class="w-2 h-2 rounded-full bg-indigo-400"></span> Weekly</span>
+                    <span class="inline-flex items-center gap-1 shrink-0"><span class="w-2 h-2 rounded-full bg-amber-400"></span> Food</span>
+                    <span class="inline-flex items-center gap-1 shrink-0"><span class="w-2 h-2 rounded-full bg-teal-400"></span> Categories</span>
                 </p>
             </div>
             <!-- Weekly Hero (compact on desktop) -->

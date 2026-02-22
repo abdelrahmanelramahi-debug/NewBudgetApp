@@ -68,6 +68,55 @@ body.theme-dark #bank-balance-info-btn:hover { background: #334155; }
 .bank-balance-segment:first-of-type { border-radius: 6px 0 0 6px; }
 .bank-balance-segment:last-of-type { border-radius: 0 6px 6px 0; }
 .bank-balance-segment:only-child { border-radius: 6px; }
+
+/* Legend: single line on iOS/desktop, scroll if needed instead of wrapping */
+.bank-balance-legend {
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+.bank-balance-legend::-webkit-scrollbar { display: none; }
+
+/* Custom segment tooltip (replaces native title) */
+.bank-balance-tooltip {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 100;
+    padding: 8px 12px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06);
+    pointer-events: none;
+    white-space: nowrap;
+    max-width: 90vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: opacity 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.bank-balance-tooltip-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #0f172a;
+}
+.bank-balance-tooltip-amount {
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+}
+body.theme-dark .bank-balance-tooltip {
+    background: #1e293b;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.4), 0 0 0 1px rgba(51,65,85,0.8);
+}
+body.theme-dark .bank-balance-tooltip-label { color: #f1f5f9; }
+body.theme-dark .bank-balance-tooltip-amount { color: #94a3b8; }
+.bank-balance-tooltip.hidden {
+    visibility: hidden;
+    pointer-events: none;
+}
+
 body.theme-dark .bank-balance-card {
     background-color: #111827;
     border-color: #1f2937;
