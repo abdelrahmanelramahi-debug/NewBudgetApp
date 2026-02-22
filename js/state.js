@@ -161,7 +161,8 @@ function migrateState() {
                 surplus: state.surplus || 0,
                 weekly: state.weekly || { balance: getWeeklyConfigAmount(), week: 1 },
                 buckets: {},
-                savingsBuckets: {}
+                savingsBuckets: {},
+                payablesBuckets: {}
             };
         }
         if (!state.accounts.buckets) state.accounts.buckets = {};
@@ -171,6 +172,13 @@ function migrateState() {
         }
         if (!state.accounts.savingsDefaultBucket) {
             state.accounts.savingsDefaultBucket = 'Main';
+        }
+        if (!state.accounts.payablesBuckets) {
+            const seed = state.accounts.buckets['Payables'] ?? 0;
+            state.accounts.payablesBuckets = { Main: seed };
+        }
+        if (!state.accounts.payablesDefaultBucket) {
+            state.accounts.payablesDefaultBucket = 'Main';
         }
         ACCOUNT_LABELS.forEach(label => {
             if (state.accounts.buckets[label] === undefined) {
@@ -212,7 +220,11 @@ function migrateState() {
             savingsBuckets: {
                 Main: buckets['General Savings'] ?? 0
             },
-            savingsDefaultBucket: 'Main'
+            savingsDefaultBucket: 'Main',
+            payablesBuckets: {
+                Main: buckets['Payables'] ?? 0
+            },
+            payablesDefaultBucket: 'Main'
         },
         balances: Object.keys(legacyBalances).reduce((acc, key) => {
             if (!ACCOUNT_LABELS.includes(key)) acc[key] = legacyBalances[key];
@@ -398,6 +410,12 @@ function initSurplusFromOpening() {
     }
     if (!state.accounts.savingsDefaultBucket) {
         state.accounts.savingsDefaultBucket = 'Main';
+    }
+    if (!state.accounts.payablesBuckets) {
+        state.accounts.payablesBuckets = { Main: state.accounts.buckets['Payables'] ?? 0 };
+    }
+    if (!state.accounts.payablesDefaultBucket) {
+        state.accounts.payablesDefaultBucket = 'Main';
     }
 
     state.categories.forEach(sec => {

@@ -611,7 +611,7 @@ function renderLedger() {
                     </div>
                     <div class="flex items-center gap-2 flex-shrink-0">
                         <span class="text-base font-black">${formatMoney(payBal)}</span>
-                        <button onclick="openTool('Payables')" class="py-1.5 px-2.5 rounded-lg bg-white text-amber-900 hover:bg-amber-50 text-[10px] font-black uppercase">Manage</button>
+                        <button onclick="openPayablesBuckets()" class="py-1.5 px-2.5 rounded-lg bg-white text-amber-900 hover:bg-amber-50 text-[10px] font-black uppercase">Manage</button>
                     </div>
                 </div>
             </div>
@@ -645,7 +645,7 @@ function renderLedger() {
                         <span class="text-[10px] font-bold uppercase tracking-widest text-amber-100">Payables</span>
                         <div class="text-2xl font-black mt-0.5">${formatMoney(payBal)} <span class="text-xs text-amber-100">${getCurrencyLabel()}</span></div>
                     </div>
-                    <button onclick="openTool('Payables')" class="w-full py-2 mt-2 bg-white text-amber-900 hover:bg-amber-50 rounded-lg text-[10px] font-black uppercase transition text-center">Manage</button>
+                    <button onclick="openPayablesBuckets()" class="w-full py-2 mt-2 bg-white text-amber-900 hover:bg-amber-50 rounded-lg text-[10px] font-black uppercase transition text-center">Manage</button>
                 </div>
             </div>
         </div>
@@ -1060,7 +1060,7 @@ function renderBankBalanceCard() {
         var labelEsc = escapeAttr(item.label);
         var metaEsc = escapeAttr(item.meta || '');
         var amountStr = typeof formatMoney === 'function' ? formatMoney(item.amount) : item.amount.toFixed(2);
-        return '<div class="bank-balance-segment ' + color + ' transition-all duration-200 hover:opacity-90 cursor-pointer" style="width:' + width + '%" data-label="' + labelEsc + '" data-meta="' + metaEsc + '" data-amount="' + amountStr + '" data-currency="' + escapeAttr(currency) + '" role="button" tabindex="0"> </div>';
+        return '<div class="bank-balance-segment ' + color + ' transition-all duration-200 hover:opacity-90 cursor-pointer" style="width:' + width + '%" data-label="' + labelEsc + '" data-meta="' + metaEsc + '" data-amount="' + amountStr + '" data-segment-currency="' + escapeAttr(currency) + '" role="button" tabindex="0"> </div>';
     }).join('');
     barEl.innerHTML = html || '<div class="flex-1 rounded-lg bg-slate-200" title="No balance"></div>';
 
@@ -1074,7 +1074,7 @@ function renderBankBalanceCard() {
         var label = segment.getAttribute('data-label') || '';
         var meta = segment.getAttribute('data-meta') || '';
         var amount = segment.getAttribute('data-amount') || '';
-        var currency = segment.getAttribute('data-currency') || '';
+        var currency = segment.getAttribute('data-segment-currency') || '';
         var line2 = amount + ' ' + currency;
         if (meta) line2 = meta + ' · ' + line2;
         tooltipEl.innerHTML = '<span class="bank-balance-tooltip-label">' + label + '</span><span class="bank-balance-tooltip-amount">' + line2 + '</span>';

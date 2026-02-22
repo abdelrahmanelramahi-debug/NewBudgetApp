@@ -1,5 +1,6 @@
 // --- LOGIC ---
 var _generalSavingsLabel = typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.GENERAL_SAVINGS : 'General Savings';
+var _payablesLabel = typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.PAYABLES : 'Payables';
 var _foodBaseLabel = typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.FOOD_BASE : 'Daily Food';
 var _weeklyMiscLabel = typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.WEEKLY_MISC : 'Weekly Misc';
 
@@ -9,9 +10,18 @@ function getSavingsTotal() {
     return Object.values(buckets).reduce((sum, val) => sum + (val || 0), 0);
 }
 
+function getPayablesTotal() {
+    const buckets = state.accounts?.payablesBuckets;
+    if (!buckets) return state.accounts?.buckets?.[_payablesLabel] ?? 0;
+    return Object.values(buckets).reduce((sum, val) => sum + (val || 0), 0);
+}
+
 function getItemBalance(label, fallback = 0) {
     if (label === _generalSavingsLabel) {
         return getSavingsTotal();
+    }
+    if (label === _payablesLabel) {
+        return getPayablesTotal();
     }
     if (isAccountLabel(label)) {
         return state.accounts?.buckets?.[label] ?? fallback;
@@ -37,6 +47,13 @@ function getLiquidityBreakdown() {
             if (item.label === _generalSavingsLabel && state.accounts?.savingsBuckets) {
                 Object.entries(state.accounts.savingsBuckets).forEach(([key, amount]) => {
                     items.push({ label: `Savings: ${key}`, amount: amount });
+                    totalLiquid += amount;
+                });
+                return;
+            }
+            if (item.label === _payablesLabel && state.accounts?.payablesBuckets) {
+                Object.entries(state.accounts.payablesBuckets).forEach(([key, amount]) => {
+                    items.push({ label: `Payables: ${key}`, amount: amount });
                     totalLiquid += amount;
                 });
                 return;

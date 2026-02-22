@@ -25,6 +25,13 @@ function ensureAccountsState() {
     if (!state.accounts.savingsDefaultBucket) {
         state.accounts.savingsDefaultBucket = 'Main';
     }
+    if (!state.accounts.payablesBuckets) {
+        const seed = state.accounts.buckets['Payables'] ?? 0;
+        state.accounts.payablesBuckets = { Main: seed };
+    }
+    if (!state.accounts.payablesDefaultBucket) {
+        state.accounts.payablesDefaultBucket = 'Main';
+    }
 }
 
 function setItemBalance(label, value) {
@@ -36,6 +43,13 @@ function setItemBalance(label, value) {
         }
         state.accounts.savingsBuckets[target] = value;
         syncSavingsTotal();
+    } else if (label === 'Payables') {
+        const target = state.accounts.payablesDefaultBucket || 'Main';
+        if (state.accounts.payablesBuckets[target] === undefined) {
+            state.accounts.payablesBuckets[target] = 0;
+        }
+        state.accounts.payablesBuckets[target] = value;
+        syncPayablesTotal();
     } else if (isAccountLabel(label)) {
         state.accounts.buckets[label] = value;
     } else {
@@ -52,6 +66,11 @@ function removeItemBalance(label) {
                 state.accounts.savingsBuckets[key] = 0;
             });
             syncSavingsTotal();
+        } else if (label === 'Payables') {
+            Object.keys(state.accounts.payablesBuckets).forEach(key => {
+                state.accounts.payablesBuckets[key] = 0;
+            });
+            syncPayablesTotal();
         } else {
             state.accounts.buckets[label] = 0;
         }
@@ -65,6 +84,10 @@ function adjustItemBalance(label, delta) {
         adjustSavingsTotal(delta);
         return;
     }
+    if (label === 'Payables') {
+        adjustPayablesTotal(delta);
+        return;
+    }
     const current = getItemBalance(label, 0);
     setItemBalance(label, current + delta);
 }
@@ -72,6 +95,46 @@ function adjustItemBalance(label, delta) {
 function syncSavingsTotal() {
     ensureAccountsState();
     state.accounts.buckets['General Savings'] = getSavingsTotal();
+}
+
+function syncPayablesTotal() {
+    ensureAccountsState();
+    state.accounts.buckets['Payables'] = getPayablesTotal();
+}
+
+function adjustPayablesTotal(delta) {
+    if (delta === 0) return;
+    if (delta > 0) {
+        creditPayables(delta);
+    } else {
+        debitPayables(Math.abs(delta));
+    }
+}
+
+function creditPayables(amount) {
+    ensureAccountsState();
+    const target = state.accounts.payablesDefaultBucket || 'Main';
+    if (state.accounts.payablesBuckets[target] === undefined) {
+        state.accounts.payablesBuckets[target] = 0;
+    }
+    state.accounts.payablesBuckets[target] += amount;
+    syncPayablesTotal();
+}
+
+function debitPayables(amount) {
+    ensureAccountsState();
+    let remaining = amount;
+    const target = state.accounts.payablesDefaultBucket || 'Main';
+    const keys = Object.keys(state.accounts.payablesBuckets);
+    const order = [target, ...keys.filter(k => k !== target)];
+    order.forEach(key => {
+        if (remaining <= 0) return;
+        const available = state.accounts.payablesBuckets[key] || 0;
+        const take = Math.min(available, remaining);
+        state.accounts.payablesBuckets[key] = available - take;
+        remaining -= take;
+    });
+    syncPayablesTotal();
 }
 
 function adjustSavingsTotal(delta) {
@@ -1466,6 +1529,191 @@ function deleteSavingsBucket(name) {
     }, null, { confirmLabel: 'Delete' });
 }
 
+// Payables Buckets (subcategories like Savings)
+function openPayablesBuckets() {
+    renderPayablesBuckets();
+    toggleModal('payables-buckets-modal', true);
+}
+
+function closePayablesBuckets() {
+    toggleModal('payables-buckets-modal', false);
+}
+
+function adjustPayablesBucket(bucketKey, delta) {
+    ensureAccountsState();
+    if (state.accounts.payablesBuckets[bucketKey] === undefined) {
+        state.accounts.payablesBuckets[bucketKey] = 0;
+    }
+    state.accounts.payablesBuckets[bucketKey] += delta;
+    if (state.accounts.payablesBuckets[bucketKey] < 0) {
+        state.accounts.payablesBuckets[bucketKey] = 0;
+    }
+    syncPayablesTotal();
+}
+
+function getPayablesBucketAmount(bucketKey) {
+    ensureAccountsState();
+    return state.accounts.payablesBuckets[bucketKey] || 0;
+}
+
+function renderPayablesBuckets() {
+    ensureAccountsState();
+    const list = document.getElementById('payables-buckets-list');
+    if (!list) return;
+    const entries = Object.entries(state.accounts.payablesBuckets);
+    const defaultBucket = state.accounts.payablesDefaultBucket || 'Main';
+
+    const defaultSelect = `
+        <div class="bg-amber-50 p-3 rounded-xl mb-3">
+            <label class="text-[9px] font-bold uppercase text-amber-600">Default Incoming Bucket</label>
+            <select id="payables-default-bucket" class="w-full bg-transparent text-sm font-black outline-none mt-1" onchange="updatePayablesDefaultBucket(this.value)">
+                ${entries.map(([key]) => `<option value="${key}" ${key === defaultBucket ? 'selected' : ''}>${key}</option>`).join('')}
+            </select>
+        </div>
+    `;
+    if (!entries.length) {
+        list.innerHTML = defaultSelect + '<div class="text-center text-[10px] text-slate-300 py-2">No subcategories yet</div>';
+        return;
+    }
+    list.innerHTML = defaultSelect + entries.map(([key, amount]) => `
+        <div class="flex justify-between items-center p-3 bg-amber-50 rounded-xl">
+            <div>
+                <span class="block text-xs font-bold text-slate-800">${key}</span>
+                <span class="text-[10px] text-slate-500">${formatMoney(amount)} ${getCurrencyLabel()}</span>
+            </div>
+            <div class="flex gap-2 flex-wrap">
+                <button onclick="applyPayablesBucketDelta('${key}', 1)" class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg text-[10px] font-bold uppercase">Add</button>
+                <button onclick="applyPayablesBucketDelta('${key}', -1)" class="bg-red-100 text-red-600 px-2 py-1 rounded-lg text-[10px] font-bold uppercase">Deduct</button>
+                <button onclick="transferPayablesBucketToSurplus('${key}')" class="bg-slate-200 text-slate-700 px-2 py-1 rounded-lg text-[10px] font-bold uppercase">To Extra</button>
+                <select onchange="movePayablesBucket('${key}', this.value)" class="bg-white border border-slate-200 px-2 py-1 rounded-lg text-[10px] font-bold uppercase">
+                    <option value="">Move To...</option>
+                    ${entries.filter(([target]) => target !== key).map(([target]) => `<option value="${target}">${target}</option>`).join('')}
+                </select>
+                <button onclick="renamePayablesBucket('${key}')" class="bg-amber-200 text-amber-900 px-2 py-1 rounded-lg text-[10px] font-bold uppercase">Rename</button>
+                <button onclick="deletePayablesBucket('${key}')" class="bg-rose-100 text-rose-700 px-2 py-1 rounded-lg text-[10px] font-bold uppercase">Delete</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function applyPayablesBucketDelta(bucketKey, dir) {
+    const val = parseFloat(document.getElementById('payables-bucket-amount').value);
+    if (!val || val <= 0) return;
+    pushToUndo();
+    if (dir > 0) {
+        if (!canApplySurplusDelta(-val)) return;
+        adjustPayablesBucket(bucketKey, val);
+        applyTransaction({ type: 'adjust_surplus', delta: -val });
+    } else {
+        const available = getPayablesBucketAmount(bucketKey);
+        const take = Math.min(val, available);
+        if (take <= 0) return;
+        adjustPayablesBucket(bucketKey, -take);
+        applyTransaction({ type: 'adjust_surplus', delta: take });
+    }
+    saveState();
+    renderPayablesBuckets();
+    updateGlobalUI();
+}
+
+function transferPayablesBucketToSurplus(bucketKey) {
+    const val = parseFloat(document.getElementById('payables-bucket-amount').value);
+    if (!val || val <= 0) return;
+    pushToUndo();
+    const available = getPayablesBucketAmount(bucketKey);
+    const take = Math.min(val, available);
+    if (take <= 0) return;
+    adjustPayablesBucket(bucketKey, -take);
+    applyTransaction({ type: 'adjust_surplus', delta: take });
+    saveState();
+    renderPayablesBuckets();
+    updateGlobalUI();
+}
+
+function movePayablesBucket(fromKey, toKey) {
+    if (!fromKey || !toKey || fromKey === toKey) return;
+    const val = parseFloat(document.getElementById('payables-bucket-amount').value);
+    if (!val || val <= 0) return;
+    ensureAccountsState();
+    const available = getPayablesBucketAmount(fromKey);
+    const take = Math.min(val, available);
+    if (take <= 0) return;
+    pushToUndo();
+    state.accounts.payablesBuckets[fromKey] = available - take;
+    state.accounts.payablesBuckets[toKey] = (state.accounts.payablesBuckets[toKey] || 0) + take;
+    syncPayablesTotal();
+    saveState();
+    renderPayablesBuckets();
+    updateGlobalUI();
+}
+
+function createPayablesBucket() {
+    const input = document.getElementById('payables-bucket-name');
+    const name = input?.value?.trim();
+    if (!name) return;
+    ensureAccountsState();
+    if (state.accounts.payablesBuckets[name] !== undefined) {
+        showAppAlert('Subcategory already exists.');
+        return;
+    }
+    pushToUndo();
+    state.accounts.payablesBuckets[name] = 0;
+    syncPayablesTotal();
+    input.value = '';
+    saveState();
+    renderPayablesBuckets();
+    updateGlobalUI();
+}
+
+function updatePayablesDefaultBucket(value) {
+    if (!value) return;
+    ensureAccountsState();
+    state.accounts.payablesDefaultBucket = value;
+    saveState();
+}
+
+function renamePayablesBucket(oldName) {
+    const newName = prompt('Rename subcategory:', oldName);
+    if (!newName || newName.trim() === '' || newName === oldName) return;
+    ensureAccountsState();
+    if (state.accounts.payablesBuckets[newName] !== undefined) {
+        showAppAlert('Subcategory already exists.');
+        return;
+    }
+    pushToUndo();
+    state.accounts.payablesBuckets[newName] = state.accounts.payablesBuckets[oldName] || 0;
+    delete state.accounts.payablesBuckets[oldName];
+    if (state.accounts.payablesDefaultBucket === oldName) {
+        state.accounts.payablesDefaultBucket = newName;
+    }
+    syncPayablesTotal();
+    saveState();
+    renderPayablesBuckets();
+    updateGlobalUI();
+}
+
+function deletePayablesBucket(name) {
+    ensureAccountsState();
+    const remaining = Object.keys(state.accounts.payablesBuckets).length;
+    if (remaining <= 1) {
+        showAppAlert('You must keep at least one subcategory.');
+        return;
+    }
+    showAppConfirm('Delete "' + name + '" and move its funds to Extra?', function () {
+        const amount = state.accounts.payablesBuckets[name] || 0;
+        pushToUndo();
+        delete state.accounts.payablesBuckets[name];
+        if (state.accounts.payablesDefaultBucket === name) {
+            state.accounts.payablesDefaultBucket = Object.keys(state.accounts.payablesBuckets)[0];
+        }
+        syncPayablesTotal();
+        applyTransaction({ type: 'adjust_surplus', delta: amount });
+        saveState();
+        renderPayablesBuckets();
+        updateGlobalUI();
+    }, null, { confirmLabel: 'Delete' });
+}
+
 // Settings
 function saveSettingsFromUI() {
     const currencyInput = document.getElementById('settings-currency');
@@ -1513,6 +1761,11 @@ function rebuildTotals() {
                         state.accounts.savingsBuckets.Main = item.amount;
                     }
                     syncSavingsTotal();
+                } else if (item.label === 'Payables') {
+                    if (state.accounts.payablesBuckets.Main === undefined) {
+                        state.accounts.payablesBuckets.Main = item.amount;
+                    }
+                    syncPayablesTotal();
                 } else if (state.accounts.buckets[item.label] === undefined) {
                     state.accounts.buckets[item.label] = item.amount;
                 }
