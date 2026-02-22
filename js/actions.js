@@ -1409,14 +1409,25 @@ function renderSavingsBuckets() {
     var entries = Object.entries(state.accounts.savingsBuckets);
     var defaultBucket = state.accounts.savingsDefaultBucket || 'Main';
     var esc = function (s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); };
+    var bucketOpts = entries.map(function (e) { return '<option value="' + esc(e[0]) + '">' + esc(e[0]) + '</option>'; }).join('');
 
-    var fromSel = document.getElementById('savings-transfer-from');
-    var toSel = document.getElementById('savings-transfer-to');
-    if (fromSel && toSel) {
-        var opts = '<option value="' + SAVINGS_EXTRA + '">Extra</option>' + entries.map(function (e) { return '<option value="' + esc(e[0]) + '">' + esc(e[0]) + '</option>'; }).join('');
-        fromSel.innerHTML = opts;
-        toSel.innerHTML = opts;
+    var moveCard = document.getElementById('savings-move-between-card');
+    var moveFrom = document.getElementById('savings-move-from');
+    var moveTo = document.getElementById('savings-move-to');
+    if (moveCard && moveFrom && moveTo) {
+        if (entries.length < 2) {
+            moveCard.style.display = 'none';
+        } else {
+            moveCard.style.display = '';
+            moveFrom.innerHTML = bucketOpts;
+            moveTo.innerHTML = bucketOpts;
+        }
     }
+
+    var addExtraTo = document.getElementById('savings-add-extra-to');
+    var sendExtraFrom = document.getElementById('savings-send-extra-from');
+    if (addExtraTo) addExtraTo.innerHTML = bucketOpts;
+    if (sendExtraFrom) sendExtraFrom.innerHTML = bucketOpts;
 
     var defaultSel = document.getElementById('savings-default-bucket');
     if (defaultSel) {
@@ -1427,7 +1438,7 @@ function renderSavingsBuckets() {
     var list = document.getElementById('savings-buckets-list');
     if (!list) return;
     if (!entries.length) {
-        list.innerHTML = '<div class="text-center text-[10px] text-slate-300 py-2">No buckets yet. Create one above.</div>';
+        list.innerHTML = '<div class="text-center text-[10px] text-slate-300 py-2">No buckets yet. Create one below.</div>';
         return;
     }
     list.innerHTML = entries.map(function (e) {
@@ -1453,14 +1464,32 @@ function renderSavingsBuckets() {
         });
     }
 
-    var transferBtn = document.getElementById('savings-transfer-btn');
-    if (transferBtn && !transferBtn._savingsTransferWired) {
-        transferBtn._savingsTransferWired = true;
-        transferBtn.addEventListener('click', function () {
-            var from = document.getElementById('savings-transfer-from');
-            var to = document.getElementById('savings-transfer-to');
-            var amountEl = document.getElementById('savings-transfer-amount');
+    var moveBtn = document.getElementById('savings-move-btn');
+    if (moveBtn && !moveBtn._wired) {
+        moveBtn._wired = true;
+        moveBtn.addEventListener('click', function () {
+            var from = document.getElementById('savings-move-from');
+            var to = document.getElementById('savings-move-to');
+            var amountEl = document.getElementById('savings-move-amount');
             if (from && to && amountEl) doSavingsTransfer(from.value, to.value, amountEl.value);
+        });
+    }
+    var addExtraBtn = document.getElementById('savings-add-extra-btn');
+    if (addExtraBtn && !addExtraBtn._wired) {
+        addExtraBtn._wired = true;
+        addExtraBtn.addEventListener('click', function () {
+            var to = document.getElementById('savings-add-extra-to');
+            var amountEl = document.getElementById('savings-add-extra-amount');
+            if (to && amountEl) doSavingsTransfer(SAVINGS_EXTRA, to.value, amountEl.value);
+        });
+    }
+    var sendExtraBtn = document.getElementById('savings-send-extra-btn');
+    if (sendExtraBtn && !sendExtraBtn._wired) {
+        sendExtraBtn._wired = true;
+        sendExtraBtn.addEventListener('click', function () {
+            var from = document.getElementById('savings-send-extra-from');
+            var amountEl = document.getElementById('savings-send-extra-amount');
+            if (from && amountEl) doSavingsTransfer(from.value, SAVINGS_EXTRA, amountEl.value);
         });
     }
 }
@@ -1665,14 +1694,25 @@ function renderPayablesBuckets() {
     var entries = Object.entries(state.accounts.payablesBuckets);
     var defaultBucket = state.accounts.payablesDefaultBucket || 'Main';
     var esc = function (s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); };
+    var bucketOpts = entries.map(function (e) { return '<option value="' + esc(e[0]) + '">' + esc(e[0]) + '</option>'; }).join('');
 
-    var fromSel = document.getElementById('payables-transfer-from');
-    var toSel = document.getElementById('payables-transfer-to');
-    if (fromSel && toSel) {
-        var opts = '<option value="' + PAYABLES_EXTRA + '">Extra</option>' + entries.map(function (e) { return '<option value="' + esc(e[0]) + '">' + esc(e[0]) + '</option>'; }).join('');
-        fromSel.innerHTML = opts;
-        toSel.innerHTML = opts;
+    var moveCard = document.getElementById('payables-move-between-card');
+    var moveFrom = document.getElementById('payables-move-from');
+    var moveTo = document.getElementById('payables-move-to');
+    if (moveCard && moveFrom && moveTo) {
+        if (entries.length < 2) {
+            moveCard.style.display = 'none';
+        } else {
+            moveCard.style.display = '';
+            moveFrom.innerHTML = bucketOpts;
+            moveTo.innerHTML = bucketOpts;
+        }
     }
+
+    var addExtraTo = document.getElementById('payables-add-extra-to');
+    var sendExtraFrom = document.getElementById('payables-send-extra-from');
+    if (addExtraTo) addExtraTo.innerHTML = bucketOpts;
+    if (sendExtraFrom) sendExtraFrom.innerHTML = bucketOpts;
 
     var defaultSel = document.getElementById('payables-default-bucket');
     if (defaultSel) {
@@ -1683,7 +1723,7 @@ function renderPayablesBuckets() {
     var list = document.getElementById('payables-buckets-list');
     if (!list) return;
     if (!entries.length) {
-        list.innerHTML = '<div class="text-center text-[10px] text-slate-300 py-2">No buckets yet. Create one above.</div>';
+        list.innerHTML = '<div class="text-center text-[10px] text-slate-300 py-2">No buckets yet. Create one below.</div>';
         return;
     }
     list.innerHTML = entries.map(function (e) {
@@ -1709,14 +1749,32 @@ function renderPayablesBuckets() {
         });
     }
 
-    var transferBtn = document.getElementById('payables-transfer-btn');
-    if (transferBtn && !transferBtn._payablesTransferWired) {
-        transferBtn._payablesTransferWired = true;
-        transferBtn.addEventListener('click', function () {
-            var from = document.getElementById('payables-transfer-from');
-            var to = document.getElementById('payables-transfer-to');
-            var amountEl = document.getElementById('payables-transfer-amount');
+    var moveBtn = document.getElementById('payables-move-btn');
+    if (moveBtn && !moveBtn._wired) {
+        moveBtn._wired = true;
+        moveBtn.addEventListener('click', function () {
+            var from = document.getElementById('payables-move-from');
+            var to = document.getElementById('payables-move-to');
+            var amountEl = document.getElementById('payables-move-amount');
             if (from && to && amountEl) doPayablesTransfer(from.value, to.value, amountEl.value);
+        });
+    }
+    var addExtraBtn = document.getElementById('payables-add-extra-btn');
+    if (addExtraBtn && !addExtraBtn._wired) {
+        addExtraBtn._wired = true;
+        addExtraBtn.addEventListener('click', function () {
+            var to = document.getElementById('payables-add-extra-to');
+            var amountEl = document.getElementById('payables-add-extra-amount');
+            if (to && amountEl) doPayablesTransfer(PAYABLES_EXTRA, to.value, amountEl.value);
+        });
+    }
+    var sendExtraBtn = document.getElementById('payables-send-extra-btn');
+    if (sendExtraBtn && !sendExtraBtn._wired) {
+        sendExtraBtn._wired = true;
+        sendExtraBtn.addEventListener('click', function () {
+            var from = document.getElementById('payables-send-extra-from');
+            var amountEl = document.getElementById('payables-send-extra-amount');
+            if (from && amountEl) doPayablesTransfer(from.value, PAYABLES_EXTRA, amountEl.value);
         });
     }
 }
