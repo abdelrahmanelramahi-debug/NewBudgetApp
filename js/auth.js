@@ -396,16 +396,18 @@ function flushCloudSave() {
         saveStateToCloud();
     }
 }
-// When user returns to the tab, pull from cloud so desktop shows latest (e.g. logs from phone)
+// When user returns to the tab we do NOT auto-pull from cloud — that was overwriting local
+// and bringing back deleted buckets (e.g. payables "S"). We only push on hide so your
+// deletes stick. Use manual sync / refresh if you need to pull from another device.
 function pullFromCloudWhenVisible() {
-    if (currentUser && document.visibilityState === 'visible' && !syncInProgress) {
-        loadStateFromCloud();
-    }
+    // Disabled: was overwriting local state when returning to tab, making deleted buckets reappear.
+    // if (currentUser && document.visibilityState === 'visible' && !syncInProgress) loadStateFromCloud();
 }
 if (typeof document !== 'undefined') {
     document.addEventListener('visibilitychange', function() {
         if (document.visibilityState === 'hidden') flushCloudSave();
-        if (document.visibilityState === 'visible') pullFromCloudWhenVisible();
+        // Don't pull when visible — keeps local edits (e.g. deleted "S") from being overwritten
+        // if (document.visibilityState === 'visible') pullFromCloudWhenVisible();
     });
     window.addEventListener('pagehide', flushCloudSave);
 }

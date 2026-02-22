@@ -1123,7 +1123,9 @@ function adjustGlobalSurplus(dir) {
                 pushToUndo();
                 applyTransaction({ type: 'adjust_surplus', delta: delta });
                 document.getElementById('surplus-adjust-val').value = '';
+                saveState();
                 if (typeof refreshUI === 'function') refreshUI();
+                if (typeof updateGlobalUI === 'function') updateGlobalUI();
             });
             return;
         }
