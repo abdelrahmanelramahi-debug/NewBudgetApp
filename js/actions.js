@@ -1380,32 +1380,34 @@ function renderSavingsBuckets() {
 
     const defaultSelect = `
         <div class="bg-slate-50 p-3 rounded-xl mb-3">
-            <label class="text-[9px] font-bold uppercase text-slate-400">Default Incoming Bucket</label>
+            <label class="text-[9px] font-bold uppercase text-slate-400">New money from Extra goes to</label>
             <select id="savings-default-bucket" class="w-full bg-transparent text-sm font-black outline-none mt-1" onchange="updateSavingsDefaultBucket(this.value)">
                 ${entries.map(([key]) => `<option value="${key}" ${key === defaultBucket ? 'selected' : ''}>${key}</option>`).join('')}
             </select>
         </div>
     `;
     if (!entries.length) {
-        list.innerHTML = defaultSelect + '<div class="text-center text-[10px] text-slate-300 py-2">No buckets yet</div>';
+        list.innerHTML = defaultSelect + '<div class="text-center text-[10px] text-slate-300 py-2">No buckets yet. Create one above.</div>';
         return;
     }
     list.innerHTML = defaultSelect + entries.map(([key, amount]) => `
-        <div class="flex justify-between items-center p-3 bg-slate-50 rounded-xl">
-            <div>
-                <span class="block text-xs font-bold text-slate-800">${key}</span>
-                <span class="text-[10px] text-slate-400">${formatMoney(amount)} ${getCurrencyLabel()}</span>
+        <div class="p-3 bg-slate-50 rounded-xl space-y-2">
+            <div class="flex justify-between items-baseline">
+                <span class="text-sm font-bold text-slate-800">${key}</span>
+                <span class="text-[10px] text-slate-500">${formatMoney(amount)} ${getCurrencyLabel()}</span>
             </div>
-            <div class="flex gap-2 flex-wrap">
-                <button onclick="applySavingsBucketDelta('${key}', 1)" class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg text-[10px] font-bold uppercase">Add</button>
-                <button onclick="applySavingsBucketDelta('${key}', -1)" class="bg-red-100 text-red-600 px-2 py-1 rounded-lg text-[10px] font-bold uppercase">Deduct</button>
-                <button onclick="transferSavingsBucketToSurplus('${key}')" class="bg-slate-200 text-slate-700 px-2 py-1 rounded-lg text-[10px] font-bold uppercase">To Extra</button>
-                <select onchange="moveSavingsBucket('${key}', this.value)" class="bg-white border border-slate-200 px-2 py-1 rounded-lg text-[10px] font-bold uppercase">
-                    <option value="">Move To...</option>
+            <div class="flex flex-wrap gap-2">
+                <button onclick="applySavingsBucketDelta('${key}', 1)" class="bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg text-[10px] font-bold">Add</button>
+                <button onclick="applySavingsBucketDelta('${key}', -1)" class="bg-red-100 text-red-600 px-3 py-1.5 rounded-lg text-[10px] font-bold">Deduct</button>
+                <button onclick="transferSavingsBucketToSurplus('${key}')" class="bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-[10px] font-bold">To Extra</button>
+                <select onchange="moveSavingsBucket('${key}', this.value); this.selectedIndex=0" class="bg-white border border-slate-200 px-2 py-1.5 rounded-lg text-[10px] font-bold">
+                    <option value="">Move to…</option>
                     ${entries.filter(([target]) => target !== key).map(([target]) => `<option value="${target}">${target}</option>`).join('')}
                 </select>
-                <button onclick="renameSavingsBucket('${key}')" class="bg-indigo-100 text-indigo-700 px-2 py-1 rounded-lg text-[10px] font-bold uppercase">Rename</button>
-                <button onclick="deleteSavingsBucket('${key}')" class="bg-rose-100 text-rose-700 px-2 py-1 rounded-lg text-[10px] font-bold uppercase">Delete</button>
+            </div>
+            <div class="flex gap-2 pt-0.5 border-t border-slate-200/60">
+                <button onclick="renameSavingsBucket('${key}')" class="text-[10px] font-bold text-slate-500 hover:text-slate-700">Rename</button>
+                <button onclick="deleteSavingsBucket('${key}')" class="text-[10px] font-bold text-rose-600 hover:text-rose-700">Delete</button>
             </div>
         </div>
     `).join('');
@@ -1565,32 +1567,34 @@ function renderPayablesBuckets() {
 
     const defaultSelect = `
         <div class="bg-amber-50 p-3 rounded-xl mb-3">
-            <label class="text-[9px] font-bold uppercase text-amber-600">Default Incoming Bucket</label>
+            <label class="text-[9px] font-bold uppercase text-amber-600">New money from Extra goes to</label>
             <select id="payables-default-bucket" class="w-full bg-transparent text-sm font-black outline-none mt-1" onchange="updatePayablesDefaultBucket(this.value)">
                 ${entries.map(([key]) => `<option value="${key}" ${key === defaultBucket ? 'selected' : ''}>${key}</option>`).join('')}
             </select>
         </div>
     `;
     if (!entries.length) {
-        list.innerHTML = defaultSelect + '<div class="text-center text-[10px] text-slate-300 py-2">No subcategories yet</div>';
+        list.innerHTML = defaultSelect + '<div class="text-center text-[10px] text-slate-300 py-2">No buckets yet. Create one above.</div>';
         return;
     }
     list.innerHTML = defaultSelect + entries.map(([key, amount]) => `
-        <div class="flex justify-between items-center p-3 bg-amber-50 rounded-xl">
-            <div>
-                <span class="block text-xs font-bold text-slate-800">${key}</span>
+        <div class="p-3 bg-amber-50 rounded-xl space-y-2">
+            <div class="flex justify-between items-baseline">
+                <span class="text-sm font-bold text-slate-800">${key}</span>
                 <span class="text-[10px] text-slate-500">${formatMoney(amount)} ${getCurrencyLabel()}</span>
             </div>
-            <div class="flex gap-2 flex-wrap">
-                <button onclick="applyPayablesBucketDelta('${key}', 1)" class="bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg text-[10px] font-bold uppercase">Add</button>
-                <button onclick="applyPayablesBucketDelta('${key}', -1)" class="bg-red-100 text-red-600 px-2 py-1 rounded-lg text-[10px] font-bold uppercase">Deduct</button>
-                <button onclick="transferPayablesBucketToSurplus('${key}')" class="bg-slate-200 text-slate-700 px-2 py-1 rounded-lg text-[10px] font-bold uppercase">To Extra</button>
-                <select onchange="movePayablesBucket('${key}', this.value)" class="bg-white border border-slate-200 px-2 py-1 rounded-lg text-[10px] font-bold uppercase">
-                    <option value="">Move To...</option>
+            <div class="flex flex-wrap gap-2">
+                <button onclick="applyPayablesBucketDelta('${key}', 1)" class="bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg text-[10px] font-bold">Add</button>
+                <button onclick="applyPayablesBucketDelta('${key}', -1)" class="bg-red-100 text-red-600 px-3 py-1.5 rounded-lg text-[10px] font-bold">Deduct</button>
+                <button onclick="transferPayablesBucketToSurplus('${key}')" class="bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-[10px] font-bold">To Extra</button>
+                <select onchange="movePayablesBucket('${key}', this.value); this.selectedIndex=0" class="bg-white border border-amber-200 px-2 py-1.5 rounded-lg text-[10px] font-bold">
+                    <option value="">Move to…</option>
                     ${entries.filter(([target]) => target !== key).map(([target]) => `<option value="${target}">${target}</option>`).join('')}
                 </select>
-                <button onclick="renamePayablesBucket('${key}')" class="bg-amber-200 text-amber-900 px-2 py-1 rounded-lg text-[10px] font-bold uppercase">Rename</button>
-                <button onclick="deletePayablesBucket('${key}')" class="bg-rose-100 text-rose-700 px-2 py-1 rounded-lg text-[10px] font-bold uppercase">Delete</button>
+            </div>
+            <div class="flex gap-2 pt-0.5 border-t border-amber-200/60">
+                <button onclick="renamePayablesBucket('${key}')" class="text-[10px] font-bold text-slate-500 hover:text-slate-700">Rename</button>
+                <button onclick="deletePayablesBucket('${key}')" class="text-[10px] font-bold text-rose-600 hover:text-rose-700">Delete</button>
             </div>
         </div>
     `).join('');

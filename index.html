@@ -697,19 +697,20 @@
     <!-- Savings Buckets Modal -->
     <div id="savings-buckets-modal" class="modal-overlay hidden">
         <div class="modal-content">
-            <div class="flex justify-between items-center mb-6">
-                <span class="text-[10px] font-bold uppercase tracking-widest text-indigo-500">Savings Buckets</span>
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-[10px] font-bold uppercase tracking-widest text-indigo-500">Savings</span>
                 <button onclick="closeSavingsBuckets()" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
             </div>
+            <p class="text-xs text-slate-500 mb-4">Split savings into buckets (e.g. Emergency, Vacation). Enter an amount below, then choose Add, Deduct, Move or To Extra for each bucket.</p>
 
             <div class="space-y-3 mb-4">
                 <div class="bg-slate-50 p-4 rounded-xl">
-                    <label class="text-[9px] font-bold uppercase text-slate-400">Adjustment Amount</label>
+                    <label class="text-[9px] font-bold uppercase text-slate-400">Amount (for the buttons below)</label>
                     <input type="number" id="savings-bucket-amount" placeholder="0.00" class="w-full bg-transparent text-xl font-black outline-none mt-1">
                 </div>
                 <div class="flex gap-2">
                     <input type="text" id="savings-bucket-name" placeholder="New bucket name" class="flex-1 bg-slate-50 border-none rounded-xl px-4 text-sm font-bold outline-none">
-                    <button onclick="createSavingsBucket()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase">Add</button>
+                    <button onclick="createSavingsBucket()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase">Create bucket</button>
                 </div>
             </div>
 
@@ -717,22 +718,23 @@
         </div>
     </div>
 
-    <!-- Payables Buckets Modal (subcategories like Savings) -->
+    <!-- Payables Buckets Modal -->
     <div id="payables-buckets-modal" class="modal-overlay hidden">
         <div class="modal-content">
-            <div class="flex justify-between items-center mb-6">
-                <span class="text-[10px] font-bold uppercase tracking-widest text-amber-600">Payables subcategories</span>
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-[10px] font-bold uppercase tracking-widest text-amber-600">Payables</span>
                 <button onclick="closePayablesBuckets()" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
             </div>
+            <p class="text-xs text-slate-500 mb-4">Split payables into buckets (e.g. Rent, Bills). Enter an amount below, then choose Add, Deduct, Move or To Extra for each bucket.</p>
 
             <div class="space-y-3 mb-4">
                 <div class="bg-amber-50 p-4 rounded-xl">
-                    <label class="text-[9px] font-bold uppercase text-amber-600">Adjustment amount</label>
+                    <label class="text-[9px] font-bold uppercase text-amber-600">Amount (for the buttons below)</label>
                     <input type="number" id="payables-bucket-amount" placeholder="0.00" class="w-full bg-transparent text-xl font-black outline-none mt-1">
                 </div>
                 <div class="flex gap-2">
-                    <input type="text" id="payables-bucket-name" placeholder="New subcategory name" class="flex-1 bg-amber-50 border border-amber-200 rounded-xl px-4 text-sm font-bold outline-none">
-                    <button onclick="createPayablesBucket()" class="bg-amber-600 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase">Add</button>
+                    <input type="text" id="payables-bucket-name" placeholder="New bucket name" class="flex-1 bg-amber-50 border border-amber-200 rounded-xl px-4 text-sm font-bold outline-none">
+                    <button onclick="createPayablesBucket()" class="bg-amber-600 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase">Create bucket</button>
                 </div>
             </div>
 
