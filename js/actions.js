@@ -1344,8 +1344,10 @@ function applyPaycheckDistribute() {
     updateGlobalUI();
 }
 
-// Savings Buckets (Extra option value in From/To dropdowns)
+// Savings Buckets (source/dest options for "outside" buckets)
 var SAVINGS_EXTRA = '__extra__';
+var SAVINGS_WEEKLY = '__weekly__';
+function getWeeklyLabel() { return (typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.WEEKLY_MISC : 'Weekly Misc'); }
 
 function openSavingsBuckets() {
     renderSavingsBuckets();
@@ -1404,6 +1406,35 @@ function doSavingsTransfer(fromKey, toKey, amount) {
     updateGlobalUI();
 }
 
+function doSavingsAddFromWeekly(toBucketKey, amount) {
+    var val = parseFloat(amount);
+    if (!val || val <= 0) return;
+    var wlabel = getWeeklyLabel();
+    var available = getItemBalance(wlabel, 0);
+    var take = Math.min(val, available);
+    if (take <= 0) return;
+    pushToUndo();
+    adjustItemBalance(wlabel, -take);
+    adjustSavingsBucket(toBucketKey, take);
+    saveState();
+    renderSavingsBuckets();
+    updateGlobalUI();
+}
+
+function doSavingsSendToWeekly(fromBucketKey, amount) {
+    var val = parseFloat(amount);
+    if (!val || val <= 0) return;
+    var available = getSavingsBucketAmount(fromBucketKey);
+    var take = Math.min(val, available);
+    if (take <= 0) return;
+    pushToUndo();
+    adjustSavingsBucket(fromBucketKey, -take);
+    adjustItemBalance(getWeeklyLabel(), take);
+    saveState();
+    renderSavingsBuckets();
+    updateGlobalUI();
+}
+
 function renderSavingsBuckets() {
     ensureAccountsState();
     var entries = Object.entries(state.accounts.savingsBuckets);
@@ -1424,8 +1455,14 @@ function renderSavingsBuckets() {
         }
     }
 
+    var addSource = document.getElementById('savings-add-source');
+    var sendDest = document.getElementById('savings-send-dest');
+    var outsideOpts = '<option value="' + SAVINGS_EXTRA + '">Extra</option><option value="' + SAVINGS_WEEKLY + '">Weekly Allowance</option>';
+    if (addSource) addSource.innerHTML = outsideOpts;
+    if (sendDest) sendDest.innerHTML = outsideOpts;
+
     var addExtraTo = document.getElementById('savings-add-extra-to');
-    var sendExtraFrom = document.getElementById('savings-send-extra-from');
+    var sendExtraFrom = document.getElementById('savings-send-from');
     if (addExtraTo) addExtraTo.innerHTML = bucketOpts;
     if (sendExtraFrom) sendExtraFrom.innerHTML = bucketOpts;
 
@@ -1478,18 +1515,26 @@ function renderSavingsBuckets() {
     if (addExtraBtn && !addExtraBtn._wired) {
         addExtraBtn._wired = true;
         addExtraBtn.addEventListener('click', function () {
+            var source = document.getElementById('savings-add-source');
             var to = document.getElementById('savings-add-extra-to');
             var amountEl = document.getElementById('savings-add-extra-amount');
-            if (to && amountEl) doSavingsTransfer(SAVINGS_EXTRA, to.value, amountEl.value);
+            if (!to || !amountEl) return;
+            var src = source ? source.value : SAVINGS_EXTRA;
+            if (src === SAVINGS_WEEKLY) doSavingsAddFromWeekly(to.value, amountEl.value);
+            else doSavingsTransfer(SAVINGS_EXTRA, to.value, amountEl.value);
         });
     }
     var sendExtraBtn = document.getElementById('savings-send-extra-btn');
     if (sendExtraBtn && !sendExtraBtn._wired) {
         sendExtraBtn._wired = true;
         sendExtraBtn.addEventListener('click', function () {
-            var from = document.getElementById('savings-send-extra-from');
+            var from = document.getElementById('savings-send-from');
             var amountEl = document.getElementById('savings-send-extra-amount');
-            if (from && amountEl) doSavingsTransfer(from.value, SAVINGS_EXTRA, amountEl.value);
+            var dest = document.getElementById('savings-send-dest');
+            if (!from || !amountEl) return;
+            var d = dest ? dest.value : SAVINGS_EXTRA;
+            if (d === SAVINGS_WEEKLY) doSavingsSendToWeekly(from.value, amountEl.value);
+            else doSavingsTransfer(from.value, SAVINGS_EXTRA, amountEl.value);
         });
     }
 }
@@ -1629,8 +1674,9 @@ function deleteSavingsBucket(name) {
     }, null, { confirmLabel: 'Delete' });
 }
 
-// Payables Buckets (subcategories like Savings; Extra option in From/To)
+// Payables Buckets (source/dest options for "outside" buckets)
 var PAYABLES_EXTRA = '__extra__';
+var PAYABLES_WEEKLY = '__weekly__';
 
 function openPayablesBuckets() {
     renderPayablesBuckets();
@@ -1689,6 +1735,35 @@ function doPayablesTransfer(fromKey, toKey, amount) {
     updateGlobalUI();
 }
 
+function doPayablesAddFromWeekly(toBucketKey, amount) {
+    var val = parseFloat(amount);
+    if (!val || val <= 0) return;
+    var wlabel = getWeeklyLabel();
+    var available = getItemBalance(wlabel, 0);
+    var take = Math.min(val, available);
+    if (take <= 0) return;
+    pushToUndo();
+    adjustItemBalance(wlabel, -take);
+    adjustPayablesBucket(toBucketKey, take);
+    saveState();
+    renderPayablesBuckets();
+    updateGlobalUI();
+}
+
+function doPayablesSendToWeekly(fromBucketKey, amount) {
+    var val = parseFloat(amount);
+    if (!val || val <= 0) return;
+    var available = getPayablesBucketAmount(fromBucketKey);
+    var take = Math.min(val, available);
+    if (take <= 0) return;
+    pushToUndo();
+    adjustPayablesBucket(fromBucketKey, -take);
+    adjustItemBalance(getWeeklyLabel(), take);
+    saveState();
+    renderPayablesBuckets();
+    updateGlobalUI();
+}
+
 function renderPayablesBuckets() {
     ensureAccountsState();
     var entries = Object.entries(state.accounts.payablesBuckets);
@@ -1709,8 +1784,14 @@ function renderPayablesBuckets() {
         }
     }
 
+    var addSource = document.getElementById('payables-add-source');
+    var sendDest = document.getElementById('payables-send-dest');
+    var outsideOpts = '<option value="' + PAYABLES_EXTRA + '">Extra</option><option value="' + PAYABLES_WEEKLY + '">Weekly Allowance</option>';
+    if (addSource) addSource.innerHTML = outsideOpts;
+    if (sendDest) sendDest.innerHTML = outsideOpts;
+
     var addExtraTo = document.getElementById('payables-add-extra-to');
-    var sendExtraFrom = document.getElementById('payables-send-extra-from');
+    var sendExtraFrom = document.getElementById('payables-send-from');
     if (addExtraTo) addExtraTo.innerHTML = bucketOpts;
     if (sendExtraFrom) sendExtraFrom.innerHTML = bucketOpts;
 
@@ -1763,18 +1844,26 @@ function renderPayablesBuckets() {
     if (addExtraBtn && !addExtraBtn._wired) {
         addExtraBtn._wired = true;
         addExtraBtn.addEventListener('click', function () {
+            var source = document.getElementById('payables-add-source');
             var to = document.getElementById('payables-add-extra-to');
             var amountEl = document.getElementById('payables-add-extra-amount');
-            if (to && amountEl) doPayablesTransfer(PAYABLES_EXTRA, to.value, amountEl.value);
+            if (!to || !amountEl) return;
+            var src = source ? source.value : PAYABLES_EXTRA;
+            if (src === PAYABLES_WEEKLY) doPayablesAddFromWeekly(to.value, amountEl.value);
+            else doPayablesTransfer(PAYABLES_EXTRA, to.value, amountEl.value);
         });
     }
     var sendExtraBtn = document.getElementById('payables-send-extra-btn');
     if (sendExtraBtn && !sendExtraBtn._wired) {
         sendExtraBtn._wired = true;
         sendExtraBtn.addEventListener('click', function () {
-            var from = document.getElementById('payables-send-extra-from');
+            var from = document.getElementById('payables-send-from');
             var amountEl = document.getElementById('payables-send-extra-amount');
-            if (from && amountEl) doPayablesTransfer(from.value, PAYABLES_EXTRA, amountEl.value);
+            var dest = document.getElementById('payables-send-dest');
+            if (!from || !amountEl) return;
+            var d = dest ? dest.value : PAYABLES_EXTRA;
+            if (d === PAYABLES_WEEKLY) doPayablesSendToWeekly(from.value, amountEl.value);
+            else doPayablesTransfer(from.value, PAYABLES_EXTRA, amountEl.value);
         });
     }
 }
