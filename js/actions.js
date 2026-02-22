@@ -1353,10 +1353,12 @@ function openSavingsBuckets() {
     renderSavingsBuckets();
     toggleModal('savings-buckets-modal', true);
 }
+window.openSavingsBuckets = openSavingsBuckets;
 
 function closeSavingsBuckets() {
     toggleModal('savings-buckets-modal', false);
 }
+window.closeSavingsBuckets = closeSavingsBuckets;
 
 function adjustSavingsBucket(bucketKey, delta) {
     ensureAccountsState();
@@ -1678,10 +1680,12 @@ function openPayablesBuckets() {
     renderPayablesBuckets();
     toggleModal('payables-buckets-modal', true);
 }
+window.openPayablesBuckets = openPayablesBuckets;
 
 function closePayablesBuckets() {
     toggleModal('payables-buckets-modal', false);
 }
+window.closePayablesBuckets = closePayablesBuckets;
 
 function adjustPayablesBucket(bucketKey, delta) {
     ensureAccountsState();
