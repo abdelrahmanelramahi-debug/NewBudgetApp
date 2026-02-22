@@ -1455,13 +1455,21 @@ function renderSavingsBuckets() {
     }
     list.innerHTML = entries.map(function (e) {
         var key = e[0], amount = e[1];
-        return '<div class="bucket-row flex justify-between items-center py-3 border-b border-slate-50 last:border-0" data-bucket-key="' + esc(key) + '">' +
-            '<div class="flex items-center gap-3"><span class="text-xs font-bold text-slate-600">' + esc(key) + '</span></div>' +
-            '<div class="flex items-center gap-2">' +
-            '<span class="bucket-amount text-[10px] font-bold text-slate-500">' + formatMoney(amount) + ' ' + getCurrencyLabel() + '</span>' +
-            '<button type="button" data-action="rename" class="p-1.5 text-indigo-400 hover:bg-indigo-50 rounded" title="Rename">✎</button>' +
-            '<button type="button" data-action="delete" class="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded" title="Delete">×</button>' +
-            '</div></div>';
+        return '<div class="bucket-row bucket-row-card" data-bucket-key="' + esc(key) + '">' +
+            '<span class="bucket-row-label">' + esc(key) + '</span>' +
+            '<span class="bucket-row-balance bucket-amount">' + formatMoney(amount) + '</span>' +
+            '<input type="number" class="bucket-amount-input" placeholder="0" min="0" step="any" inputmode="decimal">' +
+            '<div class="bucket-stepper">' +
+            '<button type="button" class="bucket-stepper-plus" data-dir="1" aria-label="Add">+</button>' +
+            '<button type="button" class="bucket-stepper-minus" data-dir="-1" aria-label="Subtract">−</button>' +
+            '</div>' +
+            '<div class="bucket-more-wrap">' +
+            '<button type="button" class="bucket-more-btn" aria-label="More options">⋯</button>' +
+            '<div class="bucket-dropdown">' +
+            '<button type="button" data-action="rename">Rename</button>' +
+            '<button type="button" data-action="delete">Delete</button>' +
+            '</div></div></div>';
+    }).join('');
     }).join('');
 
     if (!list._savingsDelegation) {
@@ -1470,11 +1478,38 @@ function renderSavingsBuckets() {
             var row = e.target.closest('.bucket-row');
             if (!row) return;
             var key = row.getAttribute('data-bucket-key');
-            var btn = e.target.closest('button[data-action]');
-            if (!btn || !key) return;
-            var action = btn.getAttribute('data-action');
-            if (action === 'rename') renameSavingsBucket(key);
-            else if (action === 'delete') deleteSavingsBucket(key);
+            if (!key) return;
+
+            var stepperBtn = e.target.closest('.bucket-stepper-plus, .bucket-stepper-minus');
+            if (stepperBtn) {
+                var dir = parseInt(stepperBtn.getAttribute('data-dir'), 10);
+                var input = row.querySelector('.bucket-amount-input');
+                if (dir && input) applySavingsBucketDelta(key, dir, input);
+                return;
+            }
+
+            var moreBtn = e.target.closest('.bucket-more-btn');
+            if (moreBtn) {
+                e.stopPropagation();
+                var wrap = row.querySelector('.bucket-more-wrap');
+                var drop = wrap && wrap.querySelector('.bucket-dropdown');
+                list.querySelectorAll('.bucket-dropdown.open').forEach(function (d) {
+                    if (d !== drop) d.classList.remove('open');
+                });
+                if (drop) drop.classList.toggle('open');
+                return;
+            }
+
+            var menuAction = e.target.closest('.bucket-dropdown button[data-action]');
+            if (menuAction) {
+                var action = menuAction.getAttribute('data-action');
+                row.querySelectorAll('.bucket-dropdown').forEach(function (d) { d.classList.remove('open'); });
+                if (action === 'rename') renameSavingsBucket(key);
+                else if (action === 'delete') deleteSavingsBucket(key);
+            }
+        });
+        document.addEventListener('click', function closeSavingsDropdown() {
+            list.querySelectorAll('.bucket-dropdown.open').forEach(function (d) { d.classList.remove('open'); });
         });
     }
 
@@ -1500,8 +1535,8 @@ function renderSavingsBuckets() {
     }
 }
 
-function applySavingsBucketDelta(bucketKey, dir) {
-    var el = document.getElementById('savings-bucket-amount');
+function applySavingsBucketDelta(bucketKey, dir, amountEl) {
+    var el = amountEl || document.getElementById('savings-bucket-amount');
     var val = el ? parseFloat(el.value) : NaN;
     if (!val || val <= 0) return;
     pushToUndo();
@@ -1561,8 +1596,8 @@ function updateSavingsBucketRowAmount(bucketKey) {
     var rows = list.querySelectorAll('.bucket-row');
     for (var i = 0; i < rows.length; i++) {
         if (rows[i].getAttribute('data-bucket-key') === bucketKey) {
-            var el = rows[i].querySelector('.bucket-amount');
-            if (el) el.textContent = formatMoney(getSavingsBucketAmount(bucketKey)) + ' ' + getCurrencyLabel();
+            var el = rows[i].querySelector('.bucket-row-balance') || rows[i].querySelector('.bucket-amount');
+            if (el) el.textContent = formatMoney(getSavingsBucketAmount(bucketKey));
             return;
         }
     }
@@ -1745,13 +1780,20 @@ function renderPayablesBuckets() {
     }
     list.innerHTML = entries.map(function (e) {
         var key = e[0], amount = e[1];
-        return '<div class="bucket-row flex justify-between items-center py-3 border-b border-amber-50 last:border-0" data-bucket-key="' + esc(key) + '">' +
-            '<div class="flex items-center gap-3"><span class="text-xs font-bold text-slate-600">' + esc(key) + '</span></div>' +
-            '<div class="flex items-center gap-2">' +
-            '<span class="bucket-amount text-[10px] font-bold text-slate-500">' + formatMoney(amount) + ' ' + getCurrencyLabel() + '</span>' +
-            '<button type="button" data-action="rename" class="p-1.5 text-amber-500 hover:bg-amber-50 rounded" title="Rename">✎</button>' +
-            '<button type="button" data-action="delete" class="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded" title="Delete">×</button>' +
-            '</div></div>';
+        return '<div class="bucket-row bucket-row-card" data-bucket-key="' + esc(key) + '">' +
+            '<span class="bucket-row-label">' + esc(key) + '</span>' +
+            '<span class="bucket-row-balance bucket-amount">' + formatMoney(amount) + '</span>' +
+            '<input type="number" class="bucket-amount-input" placeholder="0" min="0" step="any" inputmode="decimal">' +
+            '<div class="bucket-stepper">' +
+            '<button type="button" class="bucket-stepper-plus" data-dir="1" aria-label="Add">+</button>' +
+            '<button type="button" class="bucket-stepper-minus" data-dir="-1" aria-label="Subtract">−</button>' +
+            '</div>' +
+            '<div class="bucket-more-wrap">' +
+            '<button type="button" class="bucket-more-btn" aria-label="More options">⋯</button>' +
+            '<div class="bucket-dropdown">' +
+            '<button type="button" data-action="rename">Rename</button>' +
+            '<button type="button" data-action="delete">Delete</button>' +
+            '</div></div></div>';
     }).join('');
 
     if (!list._payablesDelegation) {
@@ -1760,11 +1802,38 @@ function renderPayablesBuckets() {
             var row = e.target.closest('.bucket-row');
             if (!row) return;
             var key = row.getAttribute('data-bucket-key');
-            var btn = e.target.closest('button[data-action]');
-            if (!btn || !key) return;
-            var action = btn.getAttribute('data-action');
-            if (action === 'rename') renamePayablesBucket(key);
-            else if (action === 'delete') deletePayablesBucket(key);
+            if (!key) return;
+
+            var stepperBtn = e.target.closest('.bucket-stepper-plus, .bucket-stepper-minus');
+            if (stepperBtn) {
+                var dir = parseInt(stepperBtn.getAttribute('data-dir'), 10);
+                var input = row.querySelector('.bucket-amount-input');
+                if (dir && input) applyPayablesBucketDelta(key, dir, input);
+                return;
+            }
+
+            var moreBtn = e.target.closest('.bucket-more-btn');
+            if (moreBtn) {
+                e.stopPropagation();
+                var wrap = row.querySelector('.bucket-more-wrap');
+                var drop = wrap && wrap.querySelector('.bucket-dropdown');
+                list.querySelectorAll('.bucket-dropdown.open').forEach(function (d) {
+                    if (d !== drop) d.classList.remove('open');
+                });
+                if (drop) drop.classList.toggle('open');
+                return;
+            }
+
+            var menuAction = e.target.closest('.bucket-dropdown button[data-action]');
+            if (menuAction) {
+                var action = menuAction.getAttribute('data-action');
+                row.querySelectorAll('.bucket-dropdown').forEach(function (d) { d.classList.remove('open'); });
+                if (action === 'rename') renamePayablesBucket(key);
+                else if (action === 'delete') deletePayablesBucket(key);
+            }
+        });
+        document.addEventListener('click', function closePayablesDropdown() {
+            list.querySelectorAll('.bucket-dropdown.open').forEach(function (d) { d.classList.remove('open'); });
         });
     }
 
@@ -1790,8 +1859,8 @@ function renderPayablesBuckets() {
     }
 }
 
-function applyPayablesBucketDelta(bucketKey, dir) {
-    var el = document.getElementById('payables-bucket-amount');
+function applyPayablesBucketDelta(bucketKey, dir, amountEl) {
+    var el = amountEl || document.getElementById('payables-bucket-amount');
     var val = el ? parseFloat(el.value) : NaN;
     if (!val || val <= 0) return;
     pushToUndo();
@@ -1851,8 +1920,8 @@ function updatePayablesBucketRowAmount(bucketKey) {
     var rows = list.querySelectorAll('.bucket-row');
     for (var i = 0; i < rows.length; i++) {
         if (rows[i].getAttribute('data-bucket-key') === bucketKey) {
-            var el = rows[i].querySelector('.bucket-amount');
-            if (el) el.textContent = formatMoney(getPayablesBucketAmount(bucketKey)) + ' ' + getCurrencyLabel();
+            var el = rows[i].querySelector('.bucket-row-balance') || rows[i].querySelector('.bucket-amount');
+            if (el) el.textContent = formatMoney(getPayablesBucketAmount(bucketKey));
             return;
         }
     }

@@ -154,6 +154,181 @@ body.theme-dark #bank-balance-total { color: #f1f5f9; }
 body.theme-dark .bank-balance-bar-wrap { background: #1e293b; }
 body.theme-dark .bank-balance-info-btn { border-color: #475569; color: #94a3b8; }
 body.theme-dark .bank-balance-info-btn:hover { background: #334155; color: #e2e8f0; }
+
+/* Savings/Payables bucket rows — category-style card with label, balance, input, +/- stepper, more menu */
+.bucket-row-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    margin-bottom: 0.5rem;
+}
+.bucket-row-card:last-child { margin-bottom: 0; }
+.bucket-row-label {
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #475569;
+    min-width: 0;
+    flex-shrink: 1;
+}
+.bucket-row-balance {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #0f172a;
+    flex-shrink: 0;
+}
+.bucket-row-input {
+    width: 4rem;
+    padding: 0.4rem 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-align: center;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    background: #fff;
+    outline: none;
+}
+.bucket-row-input:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+}
+.bucket-stepper {
+    display: flex;
+    flex-direction: column;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    background: #fff;
+}
+.bucket-stepper button {
+    width: 2rem;
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #475569;
+    background: #fff;
+    border: none;
+    border-bottom: 1px solid #e2e8f0;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
+.bucket-stepper button:last-child { border-bottom: none; }
+.bucket-stepper button:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+.bucket-more-btn {
+    width: 2.25rem;
+    height: 2.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #64748b;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.bucket-more-btn:hover {
+    background: #e2e8f0;
+    color: #475569;
+}
+.bucket-more-wrap {
+    position: relative;
+    flex-shrink: 0;
+}
+.bucket-dropdown {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    margin-top: 4px;
+    min-width: 120px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    z-index: 50;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+}
+.bucket-dropdown.open { display: flex; }
+.bucket-dropdown button {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: left;
+    background: none;
+    border: none;
+    color: #475569;
+    cursor: pointer;
+}
+.bucket-dropdown button:hover {
+    background: #f1f5f9;
+}
+.bucket-dropdown button[data-action="delete"]:hover {
+    background: #fef2f2;
+    color: #dc2626;
+}
+body.theme-dark .bucket-row-card {
+    background: #1e293b;
+    border-color: #334155;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+body.theme-dark .bucket-row-label { color: #94a3b8; }
+body.theme-dark .bucket-row-balance { color: #f1f5f9; }
+body.theme-dark .bucket-row-input {
+    background: #0f172a;
+    border-color: #475569;
+    color: #e2e8f0;
+}
+body.theme-dark .bucket-stepper {
+    background: #1e293b;
+    border-color: #475569;
+}
+body.theme-dark .bucket-stepper button {
+    background: #1e293b;
+    color: #94a3b8;
+    border-color: #334155;
+}
+body.theme-dark .bucket-stepper button:hover {
+    background: #334155;
+    color: #e2e8f0;
+}
+body.theme-dark .bucket-more-btn {
+    background: #334155;
+    border-color: #475569;
+    color: #94a3b8;
+}
+body.theme-dark .bucket-more-btn:hover {
+    background: #475569;
+    color: #e2e8f0;
+}
+body.theme-dark .bucket-dropdown {
+    background: #1e293b;
+    border-color: #475569;
+}
+body.theme-dark .bucket-dropdown button {
+    color: #94a3b8;
+}
+body.theme-dark .bucket-dropdown button:hover {
+    background: #334155;
+}
+
 body.theme-dark .food-calendar-buffer {
     border-top-color: #059669;
     background: linear-gradient(to bottom, rgba(16, 185, 129, 0.12), transparent);
