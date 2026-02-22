@@ -701,11 +701,16 @@
                 <span class="text-[10px] font-bold uppercase tracking-widest text-indigo-500">Savings</span>
                 <button onclick="closeSavingsBuckets()" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
             </div>
-            <p class="text-xs text-slate-500 mb-4">Split savings into buckets (e.g. Emergency, Vacation). Enter an amount below, then choose Add, Deduct, Move or To Extra for each bucket.</p>
+            <p class="text-xs text-slate-500 mb-3">Split savings into buckets (e.g. Emergency, Vacation).</p>
+            <p class="text-xs font-semibold text-slate-600 mb-1">To move money between buckets:</p>
+            <ol class="text-xs text-slate-500 mb-4 list-decimal list-inside space-y-0.5">
+                <li>Enter the amount (e.g. 10) in the box below.</li>
+                <li>On the bucket you’re moving <em>from</em>, open “Move to…” and pick a bucket — the move runs immediately.</li>
+            </ol>
 
             <div class="space-y-3 mb-4">
                 <div class="bg-slate-50 p-4 rounded-xl">
-                    <label class="text-[9px] font-bold uppercase text-slate-400">Amount (for the buttons below)</label>
+                    <label class="text-[9px] font-bold uppercase text-slate-400">Amount (used by Add, Deduct, To Extra, and Move to…)</label>
                     <input type="number" id="savings-bucket-amount" placeholder="0.00" class="w-full bg-transparent text-xl font-black outline-none mt-1">
                 </div>
                 <div class="flex gap-2">
@@ -725,11 +730,16 @@
                 <span class="text-[10px] font-bold uppercase tracking-widest text-amber-600">Payables</span>
                 <button onclick="closePayablesBuckets()" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
             </div>
-            <p class="text-xs text-slate-500 mb-4">Split payables into buckets (e.g. Rent, Bills). Enter an amount below, then choose Add, Deduct, Move or To Extra for each bucket.</p>
+            <p class="text-xs text-slate-500 mb-3">Split payables into buckets (e.g. Rent, Bills).</p>
+            <p class="text-xs font-semibold text-slate-600 mb-1">To move money between buckets:</p>
+            <ol class="text-xs text-slate-500 mb-4 list-decimal list-inside space-y-0.5">
+                <li>Enter the amount (e.g. 10) in the box below.</li>
+                <li>On the bucket you’re moving <em>from</em>, open “Move to…” and pick a bucket — the move runs immediately.</li>
+            </ol>
 
             <div class="space-y-3 mb-4">
                 <div class="bg-amber-50 p-4 rounded-xl">
-                    <label class="text-[9px] font-bold uppercase text-amber-600">Amount (for the buttons below)</label>
+                    <label class="text-[9px] font-bold uppercase text-amber-600">Amount (used by Add, Deduct, To Extra, and Move to…)</label>
                     <input type="number" id="payables-bucket-amount" placeholder="0.00" class="w-full bg-transparent text-xl font-black outline-none mt-1">
                 </div>
                 <div class="flex gap-2">

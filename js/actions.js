@@ -1390,27 +1390,53 @@ function renderSavingsBuckets() {
         list.innerHTML = defaultSelect + '<div class="text-center text-[10px] text-slate-300 py-2">No buckets yet. Create one above.</div>';
         return;
     }
+    var esc = function (s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); };
     list.innerHTML = defaultSelect + entries.map(([key, amount]) => `
-        <div class="p-3 bg-slate-50 rounded-xl space-y-2">
+        <div class="bucket-row p-3 bg-slate-50 rounded-xl space-y-2" data-bucket-key="${esc(key)}">
             <div class="flex justify-between items-baseline">
-                <span class="text-sm font-bold text-slate-800">${key}</span>
-                <span class="text-[10px] text-slate-500">${formatMoney(amount)} ${getCurrencyLabel()}</span>
+                <span class="text-sm font-bold text-slate-800">${esc(key)}</span>
+                <span class="bucket-amount text-[10px] text-slate-500">${formatMoney(amount)} ${getCurrencyLabel()}</span>
             </div>
             <div class="flex flex-wrap gap-2">
-                <button onclick="applySavingsBucketDelta('${key}', 1)" class="bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg text-[10px] font-bold">Add</button>
-                <button onclick="applySavingsBucketDelta('${key}', -1)" class="bg-red-100 text-red-600 px-3 py-1.5 rounded-lg text-[10px] font-bold">Deduct</button>
-                <button onclick="transferSavingsBucketToSurplus('${key}')" class="bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-[10px] font-bold">To Extra</button>
-                <select onchange="moveSavingsBucket('${key}', this.value); this.selectedIndex=0" class="bg-white border border-slate-200 px-2 py-1.5 rounded-lg text-[10px] font-bold">
+                <button type="button" data-action="add" class="bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg text-[10px] font-bold">Add</button>
+                <button type="button" data-action="deduct" class="bg-red-100 text-red-600 px-3 py-1.5 rounded-lg text-[10px] font-bold">Deduct</button>
+                <button type="button" data-action="to-extra" class="bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-[10px] font-bold">To Extra</button>
+                <select data-action="move" class="bg-white border border-slate-200 px-2 py-1.5 rounded-lg text-[10px] font-bold">
                     <option value="">Move to…</option>
-                    ${entries.filter(([target]) => target !== key).map(([target]) => `<option value="${target}">${target}</option>`).join('')}
+                    ${entries.filter(([target]) => target !== key).map(([target]) => `<option value="${esc(target)}">${esc(target)}</option>`).join('')}
                 </select>
             </div>
             <div class="flex gap-2 pt-0.5 border-t border-slate-200/60">
-                <button onclick="renameSavingsBucket('${key}')" class="text-[10px] font-bold text-slate-500 hover:text-slate-700">Rename</button>
-                <button onclick="deleteSavingsBucket('${key}')" class="text-[10px] font-bold text-rose-600 hover:text-rose-700">Delete</button>
+                <button type="button" data-action="rename" class="text-[10px] font-bold text-slate-500 hover:text-slate-700">Rename</button>
+                <button type="button" data-action="delete" class="text-[10px] font-bold text-rose-600 hover:text-rose-700">Delete</button>
             </div>
         </div>
     `).join('');
+    if (!list._savingsDelegation) {
+        list._savingsDelegation = true;
+        list.addEventListener('click', function (e) {
+            var row = e.target.closest('.bucket-row');
+            if (!row) return;
+            var key = row.getAttribute('data-bucket-key');
+            var btn = e.target.closest('button[data-action]');
+            if (!btn || !key) return;
+            var action = btn.getAttribute('data-action');
+            if (action === 'add') applySavingsBucketDelta(key, 1);
+            else if (action === 'deduct') applySavingsBucketDelta(key, -1);
+            else if (action === 'to-extra') transferSavingsBucketToSurplus(key);
+            else if (action === 'rename') renameSavingsBucket(key);
+            else if (action === 'delete') deleteSavingsBucket(key);
+        });
+        list.addEventListener('change', function (e) {
+            var sel = e.target;
+            if (sel.getAttribute('data-action') !== 'move' || !sel.value) return;
+            var row = sel.closest('.bucket-row');
+            if (!row) return;
+            var fromKey = row.getAttribute('data-bucket-key');
+            moveSavingsBucket(fromKey, sel.value);
+            sel.selectedIndex = 0;
+        });
+    }
 }
 
 function applySavingsBucketDelta(bucketKey, dir) {
@@ -1429,7 +1455,7 @@ function applySavingsBucketDelta(bucketKey, dir) {
         applyTransaction({ type: 'adjust_surplus', delta: take });
     }
     saveState();
-    renderSavingsBuckets();
+    updateSavingsBucketRowAmount(bucketKey);
     updateGlobalUI();
 }
 
@@ -1443,7 +1469,7 @@ function transferSavingsBucketToSurplus(bucketKey) {
     adjustSavingsBucket(bucketKey, -take);
     applyTransaction({ type: 'adjust_surplus', delta: take });
     saveState();
-    renderSavingsBuckets();
+    updateSavingsBucketRowAmount(bucketKey);
     updateGlobalUI();
 }
 
@@ -1460,8 +1486,22 @@ function moveSavingsBucket(fromKey, toKey) {
     state.accounts.savingsBuckets[toKey] = (state.accounts.savingsBuckets[toKey] || 0) + take;
     syncSavingsTotal();
     saveState();
-    renderSavingsBuckets();
+    updateSavingsBucketRowAmount(fromKey);
+    updateSavingsBucketRowAmount(toKey);
     updateGlobalUI();
+}
+
+function updateSavingsBucketRowAmount(bucketKey) {
+    var list = document.getElementById('savings-buckets-list');
+    if (!list) return;
+    var rows = list.querySelectorAll('.bucket-row');
+    for (var i = 0; i < rows.length; i++) {
+        if (rows[i].getAttribute('data-bucket-key') === bucketKey) {
+            var el = rows[i].querySelector('.bucket-amount');
+            if (el) el.textContent = formatMoney(getSavingsBucketAmount(bucketKey)) + ' ' + getCurrencyLabel();
+            return;
+        }
+    }
 }
 
 function createSavingsBucket() {
@@ -1577,27 +1617,53 @@ function renderPayablesBuckets() {
         list.innerHTML = defaultSelect + '<div class="text-center text-[10px] text-slate-300 py-2">No buckets yet. Create one above.</div>';
         return;
     }
+    var esc = function (s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); };
     list.innerHTML = defaultSelect + entries.map(([key, amount]) => `
-        <div class="p-3 bg-amber-50 rounded-xl space-y-2">
+        <div class="bucket-row p-3 bg-amber-50 rounded-xl space-y-2" data-bucket-key="${esc(key)}">
             <div class="flex justify-between items-baseline">
-                <span class="text-sm font-bold text-slate-800">${key}</span>
-                <span class="text-[10px] text-slate-500">${formatMoney(amount)} ${getCurrencyLabel()}</span>
+                <span class="text-sm font-bold text-slate-800">${esc(key)}</span>
+                <span class="bucket-amount text-[10px] text-slate-500">${formatMoney(amount)} ${getCurrencyLabel()}</span>
             </div>
             <div class="flex flex-wrap gap-2">
-                <button onclick="applyPayablesBucketDelta('${key}', 1)" class="bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg text-[10px] font-bold">Add</button>
-                <button onclick="applyPayablesBucketDelta('${key}', -1)" class="bg-red-100 text-red-600 px-3 py-1.5 rounded-lg text-[10px] font-bold">Deduct</button>
-                <button onclick="transferPayablesBucketToSurplus('${key}')" class="bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-[10px] font-bold">To Extra</button>
-                <select onchange="movePayablesBucket('${key}', this.value); this.selectedIndex=0" class="bg-white border border-amber-200 px-2 py-1.5 rounded-lg text-[10px] font-bold">
+                <button type="button" data-action="add" class="bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg text-[10px] font-bold">Add</button>
+                <button type="button" data-action="deduct" class="bg-red-100 text-red-600 px-3 py-1.5 rounded-lg text-[10px] font-bold">Deduct</button>
+                <button type="button" data-action="to-extra" class="bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-[10px] font-bold">To Extra</button>
+                <select data-action="move" class="bg-white border border-amber-200 px-2 py-1.5 rounded-lg text-[10px] font-bold">
                     <option value="">Move to…</option>
-                    ${entries.filter(([target]) => target !== key).map(([target]) => `<option value="${target}">${target}</option>`).join('')}
+                    ${entries.filter(([target]) => target !== key).map(([target]) => `<option value="${esc(target)}">${esc(target)}</option>`).join('')}
                 </select>
             </div>
             <div class="flex gap-2 pt-0.5 border-t border-amber-200/60">
-                <button onclick="renamePayablesBucket('${key}')" class="text-[10px] font-bold text-slate-500 hover:text-slate-700">Rename</button>
-                <button onclick="deletePayablesBucket('${key}')" class="text-[10px] font-bold text-rose-600 hover:text-rose-700">Delete</button>
+                <button type="button" data-action="rename" class="text-[10px] font-bold text-slate-500 hover:text-slate-700">Rename</button>
+                <button type="button" data-action="delete" class="text-[10px] font-bold text-rose-600 hover:text-rose-700">Delete</button>
             </div>
         </div>
     `).join('');
+    if (!list._payablesDelegation) {
+        list._payablesDelegation = true;
+        list.addEventListener('click', function (e) {
+            var row = e.target.closest('.bucket-row');
+            if (!row) return;
+            var key = row.getAttribute('data-bucket-key');
+            var btn = e.target.closest('button[data-action]');
+            if (!btn || !key) return;
+            var action = btn.getAttribute('data-action');
+            if (action === 'add') applyPayablesBucketDelta(key, 1);
+            else if (action === 'deduct') applyPayablesBucketDelta(key, -1);
+            else if (action === 'to-extra') transferPayablesBucketToSurplus(key);
+            else if (action === 'rename') renamePayablesBucket(key);
+            else if (action === 'delete') deletePayablesBucket(key);
+        });
+        list.addEventListener('change', function (e) {
+            var sel = e.target;
+            if (sel.getAttribute('data-action') !== 'move' || !sel.value) return;
+            var row = sel.closest('.bucket-row');
+            if (!row) return;
+            var fromKey = row.getAttribute('data-bucket-key');
+            movePayablesBucket(fromKey, sel.value);
+            sel.selectedIndex = 0;
+        });
+    }
 }
 
 function applyPayablesBucketDelta(bucketKey, dir) {
@@ -1616,7 +1682,7 @@ function applyPayablesBucketDelta(bucketKey, dir) {
         applyTransaction({ type: 'adjust_surplus', delta: take });
     }
     saveState();
-    renderPayablesBuckets();
+    updatePayablesBucketRowAmount(bucketKey);
     updateGlobalUI();
 }
 
@@ -1630,7 +1696,7 @@ function transferPayablesBucketToSurplus(bucketKey) {
     adjustPayablesBucket(bucketKey, -take);
     applyTransaction({ type: 'adjust_surplus', delta: take });
     saveState();
-    renderPayablesBuckets();
+    updatePayablesBucketRowAmount(bucketKey);
     updateGlobalUI();
 }
 
@@ -1647,8 +1713,22 @@ function movePayablesBucket(fromKey, toKey) {
     state.accounts.payablesBuckets[toKey] = (state.accounts.payablesBuckets[toKey] || 0) + take;
     syncPayablesTotal();
     saveState();
-    renderPayablesBuckets();
+    updatePayablesBucketRowAmount(fromKey);
+    updatePayablesBucketRowAmount(toKey);
     updateGlobalUI();
+}
+
+function updatePayablesBucketRowAmount(bucketKey) {
+    var list = document.getElementById('payables-buckets-list');
+    if (!list) return;
+    var rows = list.querySelectorAll('.bucket-row');
+    for (var i = 0; i < rows.length; i++) {
+        if (rows[i].getAttribute('data-bucket-key') === bucketKey) {
+            var el = rows[i].querySelector('.bucket-amount');
+            if (el) el.textContent = formatMoney(getPayablesBucketAmount(bucketKey)) + ' ' + getCurrencyLabel();
+            return;
+        }
+    }
 }
 
 function createPayablesBucket() {
