@@ -701,59 +701,47 @@
                 <span class="text-[10px] font-bold uppercase tracking-widest text-indigo-500">Savings</span>
                 <button onclick="closeSavingsBuckets()" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
             </div>
-            <p class="text-xs text-slate-500 mb-4">Split savings into buckets. Move between them below, or move to/from Extra and Weekly Allowance.</p>
+            <p class="text-xs text-slate-500 mb-3">Split savings into buckets and move money between them or to/from Extra and Weekly.</p>
 
-            <div id="savings-move-between-card" class="bg-slate-50 p-4 rounded-xl mb-3 space-y-3">
-                <p class="text-[10px] font-bold uppercase text-slate-400">Move between buckets</p>
-                <div class="grid grid-cols-[1fr_1fr_auto] gap-2 items-end">
-                    <div>
-                        <label class="text-[9px] font-bold text-slate-400">From bucket</label>
-                        <select id="savings-move-from" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold outline-none mt-0.5"></select>
-                    </div>
-                    <div>
-                        <label class="text-[9px] font-bold text-slate-400">To bucket</label>
-                        <select id="savings-move-to" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold outline-none mt-0.5"></select>
-                    </div>
-                    <div class="flex flex-col gap-0.5">
-                        <label class="text-[9px] font-bold text-slate-400">Amount</label>
-                        <input type="number" id="savings-move-amount" placeholder="0" class="w-20 bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold outline-none" min="0" step="any">
-                    </div>
+            <div id="savings-move-between-card" class="border border-slate-200 rounded-xl p-3 mb-3 bg-white">
+                <p class="text-[9px] font-bold uppercase text-slate-400 mb-2">Between buckets</p>
+                <div class="flex flex-wrap gap-2 items-end">
+                    <select id="savings-move-from" class="flex-1 min-w-0 max-w-[120px] bg-slate-50 border border-slate-200 rounded-lg px-2 py-2 text-sm font-bold outline-none"></select>
+                    <span class="text-slate-300 text-sm">→</span>
+                    <select id="savings-move-to" class="flex-1 min-w-0 max-w-[120px] bg-slate-50 border border-slate-200 rounded-lg px-2 py-2 text-sm font-bold outline-none"></select>
+                    <input type="number" id="savings-move-amount" placeholder="0" class="w-16 bg-slate-50 border border-slate-200 rounded-lg px-2 py-2 text-sm font-bold outline-none" min="0" step="any">
+                    <button type="button" id="savings-move-btn" class="py-2 px-4 bg-indigo-600 text-white rounded-lg text-xs font-bold uppercase">Move</button>
                 </div>
-                <button type="button" id="savings-move-btn" class="w-full py-2.5 bg-indigo-600 text-white rounded-lg text-xs font-bold uppercase">Move</button>
             </div>
 
-            <div class="bg-indigo-50/60 p-4 rounded-xl mb-3 space-y-3 border border-indigo-100">
-                <p class="text-[10px] font-bold uppercase text-indigo-600">To / from outside buckets</p>
-                <p class="text-[9px] text-slate-500">Extra = unallocated. Weekly = your weekly allowance.</p>
-                <div class="flex flex-wrap gap-3 items-end">
-                    <div class="flex-1 min-w-0">
-                        <label class="text-[9px] font-bold text-indigo-600/80">Add to bucket from</label>
-                        <div class="flex gap-2 mt-0.5 flex-wrap">
-                            <select id="savings-add-source" class="w-28 bg-white border border-indigo-200 rounded-lg px-2 py-2 text-sm font-bold outline-none"></select>
-                            <select id="savings-add-extra-to" class="flex-1 min-w-0 bg-white border border-indigo-200 rounded-lg px-3 py-2 text-sm font-bold outline-none"></select>
-                            <input type="number" id="savings-add-extra-amount" placeholder="0" class="w-20 bg-white border border-indigo-200 rounded-lg px-2 py-2 text-sm font-bold outline-none" min="0" step="any">
-                            <button type="button" id="savings-add-extra-btn" class="py-2 px-3 bg-indigo-600 text-white rounded-lg text-[10px] font-bold uppercase whitespace-nowrap">Add</button>
-                        </div>
+            <div class="rounded-xl p-3 mb-3 bg-slate-50 border border-slate-200">
+                <p class="text-[9px] font-bold uppercase text-slate-500 mb-2">From or to Extra / Weekly</p>
+                <div class="space-y-2">
+                    <div class="flex flex-wrap gap-2 items-center">
+                        <select id="savings-add-source" class="w-24 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold outline-none"></select>
+                        <span class="text-slate-400 text-xs">→ bucket</span>
+                        <select id="savings-add-extra-to" class="flex-1 min-w-0 max-w-[100px] bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold outline-none"></select>
+                        <input type="number" id="savings-add-extra-amount" placeholder="0" class="w-14 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold outline-none" min="0" step="any">
+                        <button type="button" id="savings-add-extra-btn" class="py-1.5 px-3 bg-indigo-600 text-white rounded-lg text-[10px] font-bold uppercase">Add</button>
                     </div>
-                    <div class="flex-1 min-w-0">
-                        <label class="text-[9px] font-bold text-indigo-600/80">Send from bucket to</label>
-                        <div class="flex gap-2 mt-0.5 flex-wrap">
-                            <select id="savings-send-from" class="flex-1 min-w-0 bg-white border border-indigo-200 rounded-lg px-3 py-2 text-sm font-bold outline-none"></select>
-                            <input type="number" id="savings-send-extra-amount" placeholder="0" class="w-20 bg-white border border-indigo-200 rounded-lg px-2 py-2 text-sm font-bold outline-none" min="0" step="any">
-                            <select id="savings-send-dest" class="w-28 bg-white border border-indigo-200 rounded-lg px-2 py-2 text-sm font-bold outline-none"></select>
-                            <button type="button" id="savings-send-extra-btn" class="py-2 px-3 bg-slate-600 text-white rounded-lg text-[10px] font-bold uppercase whitespace-nowrap">Send</button>
-                        </div>
+                    <div class="flex flex-wrap gap-2 items-center">
+                        <span class="text-slate-400 text-xs">Bucket</span>
+                        <select id="savings-send-from" class="flex-1 min-w-0 max-w-[100px] bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold outline-none"></select>
+                        <span class="text-slate-400 text-xs">→</span>
+                        <select id="savings-send-dest" class="w-24 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold outline-none"></select>
+                        <input type="number" id="savings-send-extra-amount" placeholder="0" class="w-14 bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-xs font-bold outline-none" min="0" step="any">
+                        <button type="button" id="savings-send-extra-btn" class="py-1.5 px-3 bg-indigo-600 text-white rounded-lg text-[10px] font-bold uppercase">Send</button>
                     </div>
                 </div>
-                <p class="text-[9px] text-slate-500">When you add to Savings from elsewhere, new money goes to: <select id="savings-default-bucket" class="inline-block bg-transparent text-sm font-bold outline-none border-b border-slate-300 py-0.5"></select></p>
+                <p class="text-[9px] text-slate-400 mt-2">New money from elsewhere → <select id="savings-default-bucket" class="inline-block bg-transparent text-xs font-bold outline-none border-b border-slate-300 py-0.5"></select></p>
             </div>
 
-            <p class="text-[10px] font-bold uppercase text-slate-400 mb-1.5">Buckets</p>
-            <div id="savings-buckets-list" class="space-y-1.5 max-h-48 overflow-y-auto mb-4"></div>
+            <p class="text-[9px] font-bold uppercase text-slate-400 mb-1.5">Buckets</p>
+            <div id="savings-buckets-list" class="space-y-1 max-h-44 overflow-y-auto mb-3"></div>
 
-            <div class="pt-3 border-t border-slate-200 flex gap-2">
-                <input type="text" id="savings-bucket-name" placeholder="New bucket name" class="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold outline-none">
-                <button type="button" onclick="createSavingsBucket()" class="bg-slate-900 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase whitespace-nowrap">Create bucket</button>
+            <div class="flex gap-2 pt-2 border-t border-slate-100">
+                <input type="text" id="savings-bucket-name" placeholder="New bucket name" class="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium outline-none">
+                <button type="button" onclick="createSavingsBucket()" class="shrink-0 py-2 px-3 bg-slate-700 text-white rounded-lg text-xs font-bold uppercase">Create</button>
             </div>
         </div>
     </div>
@@ -765,59 +753,47 @@
                 <span class="text-[10px] font-bold uppercase tracking-widest text-amber-600">Payables</span>
                 <button onclick="closePayablesBuckets()" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
             </div>
-            <p class="text-xs text-slate-500 mb-4">Split payables into buckets. Move between them below, or move to/from Extra and Weekly Allowance.</p>
+            <p class="text-xs text-slate-500 mb-3">Split payables into buckets and move money between them or to/from Extra and Weekly.</p>
 
-            <div id="payables-move-between-card" class="bg-amber-50 p-4 rounded-xl mb-3 space-y-3">
-                <p class="text-[10px] font-bold uppercase text-amber-600">Move between buckets</p>
-                <div class="grid grid-cols-[1fr_1fr_auto] gap-2 items-end">
-                    <div>
-                        <label class="text-[9px] font-bold text-amber-600/80">From bucket</label>
-                        <select id="payables-move-from" class="w-full bg-white border border-amber-200 rounded-lg px-3 py-2 text-sm font-bold outline-none mt-0.5"></select>
-                    </div>
-                    <div>
-                        <label class="text-[9px] font-bold text-amber-600/80">To bucket</label>
-                        <select id="payables-move-to" class="w-full bg-white border border-amber-200 rounded-lg px-3 py-2 text-sm font-bold outline-none mt-0.5"></select>
-                    </div>
-                    <div class="flex flex-col gap-0.5">
-                        <label class="text-[9px] font-bold text-amber-600/80">Amount</label>
-                        <input type="number" id="payables-move-amount" placeholder="0" class="w-20 bg-white border border-amber-200 rounded-lg px-3 py-2 text-sm font-bold outline-none" min="0" step="any">
-                    </div>
+            <div id="payables-move-between-card" class="border border-amber-200 rounded-xl p-3 mb-3 bg-white">
+                <p class="text-[9px] font-bold uppercase text-amber-600 mb-2">Between buckets</p>
+                <div class="flex flex-wrap gap-2 items-end">
+                    <select id="payables-move-from" class="flex-1 min-w-0 max-w-[120px] bg-amber-50/50 border border-amber-200 rounded-lg px-2 py-2 text-sm font-bold outline-none"></select>
+                    <span class="text-amber-300 text-sm">→</span>
+                    <select id="payables-move-to" class="flex-1 min-w-0 max-w-[120px] bg-amber-50/50 border border-amber-200 rounded-lg px-2 py-2 text-sm font-bold outline-none"></select>
+                    <input type="number" id="payables-move-amount" placeholder="0" class="w-16 bg-amber-50/50 border border-amber-200 rounded-lg px-2 py-2 text-sm font-bold outline-none" min="0" step="any">
+                    <button type="button" id="payables-move-btn" class="py-2 px-4 bg-amber-600 text-white rounded-lg text-xs font-bold uppercase">Move</button>
                 </div>
-                <button type="button" id="payables-move-btn" class="w-full py-2.5 bg-amber-600 text-white rounded-lg text-xs font-bold uppercase">Move</button>
             </div>
 
-            <div class="bg-amber-100/60 p-4 rounded-xl mb-3 space-y-3 border border-amber-200">
-                <p class="text-[10px] font-bold uppercase text-amber-700">To / from outside buckets</p>
-                <p class="text-[9px] text-slate-600">Extra = unallocated. Weekly = your weekly allowance.</p>
-                <div class="flex flex-wrap gap-3 items-end">
-                    <div class="flex-1 min-w-0">
-                        <label class="text-[9px] font-bold text-amber-700/80">Add to bucket from</label>
-                        <div class="flex gap-2 mt-0.5 flex-wrap">
-                            <select id="payables-add-source" class="w-28 bg-white border border-amber-300 rounded-lg px-2 py-2 text-sm font-bold outline-none"></select>
-                            <select id="payables-add-extra-to" class="flex-1 min-w-0 bg-white border border-amber-300 rounded-lg px-3 py-2 text-sm font-bold outline-none"></select>
-                            <input type="number" id="payables-add-extra-amount" placeholder="0" class="w-20 bg-white border border-amber-300 rounded-lg px-2 py-2 text-sm font-bold outline-none" min="0" step="any">
-                            <button type="button" id="payables-add-extra-btn" class="py-2 px-3 bg-amber-600 text-white rounded-lg text-[10px] font-bold uppercase whitespace-nowrap">Add</button>
-                        </div>
+            <div class="rounded-xl p-3 mb-3 bg-amber-50/50 border border-amber-200">
+                <p class="text-[9px] font-bold uppercase text-amber-700 mb-2">From or to Extra / Weekly</p>
+                <div class="space-y-2">
+                    <div class="flex flex-wrap gap-2 items-center">
+                        <select id="payables-add-source" class="w-24 bg-white border border-amber-200 rounded-lg px-2 py-1.5 text-xs font-bold outline-none"></select>
+                        <span class="text-amber-700/70 text-xs">→ bucket</span>
+                        <select id="payables-add-extra-to" class="flex-1 min-w-0 max-w-[100px] bg-white border border-amber-200 rounded-lg px-2 py-1.5 text-xs font-bold outline-none"></select>
+                        <input type="number" id="payables-add-extra-amount" placeholder="0" class="w-14 bg-white border border-amber-200 rounded-lg px-2 py-1.5 text-xs font-bold outline-none" min="0" step="any">
+                        <button type="button" id="payables-add-extra-btn" class="py-1.5 px-3 bg-amber-600 text-white rounded-lg text-[10px] font-bold uppercase">Add</button>
                     </div>
-                    <div class="flex-1 min-w-0">
-                        <label class="text-[9px] font-bold text-amber-700/80">Send from bucket to</label>
-                        <div class="flex gap-2 mt-0.5 flex-wrap">
-                            <select id="payables-send-from" class="flex-1 min-w-0 bg-white border border-amber-300 rounded-lg px-3 py-2 text-sm font-bold outline-none"></select>
-                            <input type="number" id="payables-send-extra-amount" placeholder="0" class="w-20 bg-white border border-amber-300 rounded-lg px-2 py-2 text-sm font-bold outline-none" min="0" step="any">
-                            <select id="payables-send-dest" class="w-28 bg-white border border-amber-300 rounded-lg px-2 py-2 text-sm font-bold outline-none"></select>
-                            <button type="button" id="payables-send-extra-btn" class="py-2 px-3 bg-slate-600 text-white rounded-lg text-[10px] font-bold uppercase whitespace-nowrap">Send</button>
-                        </div>
+                    <div class="flex flex-wrap gap-2 items-center">
+                        <span class="text-amber-700/70 text-xs">Bucket</span>
+                        <select id="payables-send-from" class="flex-1 min-w-0 max-w-[100px] bg-white border border-amber-200 rounded-lg px-2 py-1.5 text-xs font-bold outline-none"></select>
+                        <span class="text-amber-300 text-sm">→</span>
+                        <select id="payables-send-dest" class="w-24 bg-white border border-amber-200 rounded-lg px-2 py-1.5 text-xs font-bold outline-none"></select>
+                        <input type="number" id="payables-send-extra-amount" placeholder="0" class="w-14 bg-white border border-amber-200 rounded-lg px-2 py-1.5 text-xs font-bold outline-none" min="0" step="any">
+                        <button type="button" id="payables-send-extra-btn" class="py-1.5 px-3 bg-amber-600 text-white rounded-lg text-[10px] font-bold uppercase">Send</button>
                     </div>
                 </div>
-                <p class="text-[9px] text-slate-600">When you add to Payables from elsewhere, new money goes to: <select id="payables-default-bucket" class="inline-block bg-transparent text-sm font-bold outline-none border-b border-amber-400 py-0.5"></select></p>
+                <p class="text-[9px] text-amber-700/80 mt-2">New money from elsewhere → <select id="payables-default-bucket" class="inline-block bg-transparent text-xs font-bold outline-none border-b border-amber-400 py-0.5"></select></p>
             </div>
 
-            <p class="text-[10px] font-bold uppercase text-amber-600 mb-1.5">Buckets</p>
-            <div id="payables-buckets-list" class="space-y-1.5 max-h-48 overflow-y-auto mb-4"></div>
+            <p class="text-[9px] font-bold uppercase text-amber-600 mb-1.5">Buckets</p>
+            <div id="payables-buckets-list" class="space-y-1 max-h-44 overflow-y-auto mb-3"></div>
 
-            <div class="pt-3 border-t border-amber-200 flex gap-2">
-                <input type="text" id="payables-bucket-name" placeholder="New bucket name" class="flex-1 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2 text-sm font-bold outline-none">
-                <button type="button" onclick="createPayablesBucket()" class="bg-amber-600 text-white px-4 py-2 rounded-xl text-xs font-bold uppercase whitespace-nowrap">Create bucket</button>
+            <div class="flex gap-2 pt-2 border-t border-amber-100">
+                <input type="text" id="payables-bucket-name" placeholder="New bucket name" class="flex-1 bg-amber-50/50 border border-amber-200 rounded-lg px-3 py-2 text-sm font-medium outline-none">
+                <button type="button" onclick="createPayablesBucket()" class="shrink-0 py-2 px-3 bg-amber-600 text-white rounded-lg text-xs font-bold uppercase">Create</button>
             </div>
         </div>
     </div>
