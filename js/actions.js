@@ -1458,11 +1458,12 @@ function renderSavingsBuckets() {
     list.innerHTML = entries.map(function (e) {
         var key = e[0], amount = e[1];
         return '<div class="bucket-row bucket-row-card" data-bucket-key="' + esc(key) + '">' +
-            '<div class="bucket-row-label-wrap">' +
+            '<div class="bucket-row-label-wrap" role="button" tabindex="0" title="Tap to rename">' +
             '<span class="bucket-row-label">' + esc(key) + '</span>' +
             '<span class="bucket-row-label-line" aria-hidden="true"></span>' +
             '</div>' +
             '<span class="bucket-row-balance bucket-amount">' + formatMoney(amount) + '</span>' +
+            '<div class="bucket-row-controls">' +
             '<input type="number" class="bucket-amount-input" placeholder="0" min="0" step="any" inputmode="decimal">' +
             '<div class="bucket-stepper">' +
             '<button type="button" class="bucket-stepper-plus" data-dir="1" aria-label="Add">+</button>' +
@@ -1473,7 +1474,7 @@ function renderSavingsBuckets() {
             '<div class="bucket-dropdown">' +
             '<button type="button" data-action="rename">Rename</button>' +
             '<button type="button" data-action="delete">Delete</button>' +
-            '</div></div></div>';
+            '</div></div></div></div>';
     }).join('');
 
     if (!list._savingsDelegation) {
@@ -1483,6 +1484,11 @@ function renderSavingsBuckets() {
             if (!row) return;
             var key = row.getAttribute('data-bucket-key');
             if (!key) return;
+
+            if (e.target.closest('.bucket-row-label-wrap')) {
+                renameSavingsBucket(key);
+                return;
+            }
 
             var stepperBtn = e.target.closest('.bucket-stepper-plus, .bucket-stepper-minus');
             if (stepperBtn) {
@@ -1787,11 +1793,12 @@ function renderPayablesBuckets() {
     list.innerHTML = entries.map(function (e) {
         var key = e[0], amount = e[1];
         return '<div class="bucket-row bucket-row-card" data-bucket-key="' + esc(key) + '">' +
-            '<div class="bucket-row-label-wrap">' +
+            '<div class="bucket-row-label-wrap" role="button" tabindex="0" title="Tap to rename">' +
             '<span class="bucket-row-label">' + esc(key) + '</span>' +
             '<span class="bucket-row-label-line" aria-hidden="true"></span>' +
             '</div>' +
             '<span class="bucket-row-balance bucket-amount">' + formatMoney(amount) + '</span>' +
+            '<div class="bucket-row-controls">' +
             '<input type="number" class="bucket-amount-input" placeholder="0" min="0" step="any" inputmode="decimal">' +
             '<div class="bucket-stepper">' +
             '<button type="button" class="bucket-stepper-plus" data-dir="1" aria-label="Add">+</button>' +
@@ -1802,7 +1809,7 @@ function renderPayablesBuckets() {
             '<div class="bucket-dropdown">' +
             '<button type="button" data-action="rename">Rename</button>' +
             '<button type="button" data-action="delete">Delete</button>' +
-            '</div></div></div>';
+            '</div></div></div></div>';
     }).join('');
 
     if (!list._payablesDelegation) {
@@ -1812,6 +1819,11 @@ function renderPayablesBuckets() {
             if (!row) return;
             var key = row.getAttribute('data-bucket-key');
             if (!key) return;
+
+            if (e.target.closest('.bucket-row-label-wrap')) {
+                renamePayablesBucket(key);
+                return;
+            }
 
             var stepperBtn = e.target.closest('.bucket-stepper-plus, .bucket-stepper-minus');
             if (stepperBtn) {
