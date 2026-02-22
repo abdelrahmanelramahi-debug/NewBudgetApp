@@ -1458,7 +1458,10 @@ function renderSavingsBuckets() {
     list.innerHTML = entries.map(function (e) {
         var key = e[0], amount = e[1];
         return '<div class="bucket-row bucket-row-card" data-bucket-key="' + esc(key) + '">' +
+            '<div class="bucket-row-label-wrap">' +
             '<span class="bucket-row-label">' + esc(key) + '</span>' +
+            '<span class="bucket-row-label-line" aria-hidden="true"></span>' +
+            '</div>' +
             '<span class="bucket-row-balance bucket-amount">' + formatMoney(amount) + '</span>' +
             '<input type="number" class="bucket-amount-input" placeholder="0" min="0" step="any" inputmode="decimal">' +
             '<div class="bucket-stepper">' +
@@ -1784,7 +1787,10 @@ function renderPayablesBuckets() {
     list.innerHTML = entries.map(function (e) {
         var key = e[0], amount = e[1];
         return '<div class="bucket-row bucket-row-card" data-bucket-key="' + esc(key) + '">' +
+            '<div class="bucket-row-label-wrap">' +
             '<span class="bucket-row-label">' + esc(key) + '</span>' +
+            '<span class="bucket-row-label-line" aria-hidden="true"></span>' +
+            '</div>' +
             '<span class="bucket-row-balance bucket-amount">' + formatMoney(amount) + '</span>' +
             '<input type="number" class="bucket-amount-input" placeholder="0" min="0" step="any" inputmode="decimal">' +
             '<div class="bucket-stepper">' +

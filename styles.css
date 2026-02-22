@@ -155,48 +155,70 @@ body.theme-dark .bank-balance-bar-wrap { background: #1e293b; }
 body.theme-dark .bank-balance-info-btn { border-color: #475569; color: #94a3b8; }
 body.theme-dark .bank-balance-info-btn:hover { background: #334155; color: #e2e8f0; }
 
-/* Savings/Payables bucket rows — category-style card with label, balance, input, +/- stepper, more menu */
+/* Savings/Payables bucket rows — match BORON COMPLEX style: label (with line) | balance | input | +/- | ... */
 .bucket-row-card {
     display: flex;
+    flex-wrap: nowrap;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
-    background: #f8fafc;
+    gap: 0.625rem 0.75rem;
+    padding: 0.625rem 0.875rem;
+    background: #fff;
     border: 1px solid #e2e8f0;
     border-radius: 12px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     margin-bottom: 0.5rem;
+    min-width: 0;
 }
 .bucket-row-card:last-child { margin-bottom: 0; }
+.bucket-row-label-wrap {
+    flex-shrink: 0;
+    min-width: 5rem;
+    max-width: 8rem;
+}
 .bucket-row-label {
+    display: block;
     font-size: 10px;
     font-weight: 800;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: #475569;
-    min-width: 0;
-    flex-shrink: 1;
+    letter-spacing: 0.06em;
+    color: #334155;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.bucket-row-label-line {
+    display: block;
+    height: 2px;
+    width: 100%;
+    max-width: 3rem;
+    margin-top: 4px;
+    background: #e2e8f0;
+    border-radius: 1px;
 }
 .bucket-row-balance {
     font-size: 1rem;
     font-weight: 800;
     color: #0f172a;
     flex-shrink: 0;
+    min-width: 3.5rem;
+    text-align: right;
 }
-.bucket-row-input {
-    width: 4rem;
-    padding: 0.4rem 0.5rem;
-    font-size: 0.875rem;
+.bucket-amount-input {
+    width: 3.25rem;
+    padding: 0.35rem 0.4rem;
+    font-size: 0.8125rem;
     font-weight: 700;
     text-align: center;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
     background: #fff;
     outline: none;
+    flex-shrink: 0;
 }
-.bucket-row-input:focus {
-    border-color: #6366f1;
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+.bucket-amount-input:focus {
+    border-color: #94a3b8;
+    box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.2);
 }
 .bucket-stepper {
     display: flex;
@@ -204,18 +226,19 @@ body.theme-dark .bank-balance-info-btn:hover { background: #334155; color: #e2e8
     border-radius: 8px;
     overflow: hidden;
     border: 1px solid #e2e8f0;
-    background: #fff;
+    background: #f8fafc;
+    flex-shrink: 0;
 }
 .bucket-stepper button {
     width: 2rem;
-    height: 1.5rem;
+    height: 1.375rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1rem;
+    font-size: 0.9375rem;
     font-weight: 700;
-    color: #475569;
-    background: #fff;
+    color: #64748b;
+    background: #f8fafc;
     border: none;
     border-bottom: 1px solid #e2e8f0;
     cursor: pointer;
@@ -224,16 +247,16 @@ body.theme-dark .bank-balance-info-btn:hover { background: #334155; color: #e2e8
 }
 .bucket-stepper button:last-child { border-bottom: none; }
 .bucket-stepper button:hover {
-    background: #f1f5f9;
+    background: #e2e8f0;
     color: #0f172a;
 }
 .bucket-more-btn {
-    width: 2.25rem;
-    height: 2.25rem;
+    width: 2rem;
+    height: 2rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.25rem;
+    font-size: 1.125rem;
     font-weight: 600;
     color: #64748b;
     background: #f1f5f9;
@@ -290,8 +313,9 @@ body.theme-dark .bucket-row-card {
     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 body.theme-dark .bucket-row-label { color: #94a3b8; }
+body.theme-dark .bucket-row-label-line { background: #475569; }
 body.theme-dark .bucket-row-balance { color: #f1f5f9; }
-body.theme-dark .bucket-row-input {
+body.theme-dark .bucket-amount-input {
     background: #0f172a;
     border-color: #475569;
     color: #e2e8f0;
