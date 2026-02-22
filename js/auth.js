@@ -237,15 +237,19 @@ async function loadStateFromCloud(retryCount) {
             // This ensures we don't overwrite cloud with stale state on page refresh
             var hasLocalChangesSinceLastSync = localModified > lastSyncedToCloud && lastSyncedToCloud > 0;
             var localIsNewerThanCloud = localModified > cloudTime;
-            
-            if (hasLocalChangesSinceLastSync && localIsNewerThanCloud) {
+            // 3. Or: local was modified very recently (e.g. user just deleted a bucket and switched tabs);
+            //    another tab may have pushed stale state. Prefer this tab's state so deletes stick.
+            var now = Date.now();
+            var localModifiedRecently = localModified > 0 && (now - localModified) < 90000; // 90 sec
+
+            if ((hasLocalChangesSinceLastSync && localIsNewerThanCloud) || (localModifiedRecently && hasMeaningfulData(state))) {
                 await saveStateToCloud();
                 if (typeof refreshUI === 'function') refreshUI();
                 updateSyncStatus('Synced (local was newer)', true);
                 if (cloudData.lastUpdated) lastSyncTime = cloudData.lastUpdated.toDate();
                 return;
             }
-            
+
             // If cloud is newer or we haven't made local changes since last sync, use cloud
             // This ensures phone changes aren't overwritten by stale desktop state
             
