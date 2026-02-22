@@ -1460,6 +1460,7 @@ function renderSavingsBuckets() {
         return '<div class="bucket-row bucket-row-card" data-bucket-key="' + esc(key) + '">' +
             '<div class="bucket-row-label-wrap" role="button" tabindex="0" title="Tap to rename">' +
             '<span class="bucket-row-label">' + esc(key) + '</span>' +
+            '<input type="text" class="bucket-row-name-edit" maxlength="80" aria-label="Rename bucket">' +
             '<span class="bucket-row-label-line" aria-hidden="true"></span>' +
             '</div>' +
             '<span class="bucket-row-balance bucket-amount">' + formatMoney(amount) + '</span>' +
@@ -1485,8 +1486,16 @@ function renderSavingsBuckets() {
             var key = row.getAttribute('data-bucket-key');
             if (!key) return;
 
-            if (e.target.closest('.bucket-row-label-wrap')) {
-                renameSavingsBucket(key);
+            var labelWrap = e.target.closest('.bucket-row-label-wrap');
+            if (labelWrap && !e.target.closest('.bucket-row-name-edit')) {
+                e.preventDefault();
+                var editInput = labelWrap.querySelector('.bucket-row-name-edit');
+                if (editInput) {
+                    labelWrap.classList.add('editing');
+                    editInput.value = key;
+                    editInput.focus();
+                    editInput.select();
+                }
                 return;
             }
 
@@ -1514,8 +1523,41 @@ function renderSavingsBuckets() {
             if (menuAction) {
                 var action = menuAction.getAttribute('data-action');
                 row.querySelectorAll('.bucket-dropdown').forEach(function (d) { d.classList.remove('open'); });
-                if (action === 'rename') renameSavingsBucket(key);
-                else if (action === 'delete') deleteSavingsBucket(key);
+                if (action === 'rename') {
+                    var lw = row.querySelector('.bucket-row-label-wrap');
+                    if (lw) { var ei = lw.querySelector('.bucket-row-name-edit'); if (ei) { lw.classList.add('editing'); ei.value = key; ei.focus(); ei.select(); } }
+                } else if (action === 'delete') deleteSavingsBucket(key);
+            }
+        });
+        list.addEventListener('blur', function (e) {
+            var editInput = e.target.closest && e.target.closest('.bucket-row-name-edit');
+            if (!editInput) return;
+            var row = editInput.closest('.bucket-row');
+            var wrap = editInput.closest('.bucket-row-label-wrap');
+            if (!row || !wrap) return;
+            var key = row.getAttribute('data-bucket-key');
+            var newName = editInput.value.trim();
+            wrap.classList.remove('editing');
+            if (newName && newName !== key) renameSavingsBucket(key, newName);
+        }, true);
+        list.addEventListener('keydown', function (e) {
+            var editInput = e.target.closest && e.target.closest('.bucket-row-name-edit');
+            if (!editInput) return;
+            var row = editInput.closest('.bucket-row');
+            var wrap = editInput.closest('.bucket-row-label-wrap');
+            if (!row || !wrap) return;
+            var key = row.getAttribute('data-bucket-key');
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                var newName = editInput.value.trim();
+                wrap.classList.remove('editing');
+                if (newName && newName !== key) renameSavingsBucket(key, newName);
+                editInput.blur();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                editInput.value = key;
+                wrap.classList.remove('editing');
+                editInput.blur();
             }
         });
         document.addEventListener('click', function closeSavingsDropdown() {
@@ -1638,9 +1680,9 @@ function updateSavingsDefaultBucket(value) {
     saveState();
 }
 
-function renameSavingsBucket(oldName) {
-    const newName = prompt('Rename bucket:', oldName);
-    if (!newName || newName.trim() === '' || newName === oldName) return;
+function renameSavingsBucket(oldName, newNameFromInline) {
+    const newName = newNameFromInline !== undefined ? String(newNameFromInline).trim() : prompt('Rename bucket:', oldName);
+    if (!newName || newName === oldName) return;
     ensureAccountsState();
     if (state.accounts.savingsBuckets[newName] !== undefined) {
         showAppAlert('Bucket already exists.');
@@ -1795,6 +1837,7 @@ function renderPayablesBuckets() {
         return '<div class="bucket-row bucket-row-card" data-bucket-key="' + esc(key) + '">' +
             '<div class="bucket-row-label-wrap" role="button" tabindex="0" title="Tap to rename">' +
             '<span class="bucket-row-label">' + esc(key) + '</span>' +
+            '<input type="text" class="bucket-row-name-edit" maxlength="80" aria-label="Rename bucket">' +
             '<span class="bucket-row-label-line" aria-hidden="true"></span>' +
             '</div>' +
             '<span class="bucket-row-balance bucket-amount">' + formatMoney(amount) + '</span>' +
@@ -1820,8 +1863,16 @@ function renderPayablesBuckets() {
             var key = row.getAttribute('data-bucket-key');
             if (!key) return;
 
-            if (e.target.closest('.bucket-row-label-wrap')) {
-                renamePayablesBucket(key);
+            var labelWrap = e.target.closest('.bucket-row-label-wrap');
+            if (labelWrap && !e.target.closest('.bucket-row-name-edit')) {
+                e.preventDefault();
+                var editInput = labelWrap.querySelector('.bucket-row-name-edit');
+                if (editInput) {
+                    labelWrap.classList.add('editing');
+                    editInput.value = key;
+                    editInput.focus();
+                    editInput.select();
+                }
                 return;
             }
 
@@ -1849,8 +1900,41 @@ function renderPayablesBuckets() {
             if (menuAction) {
                 var action = menuAction.getAttribute('data-action');
                 row.querySelectorAll('.bucket-dropdown').forEach(function (d) { d.classList.remove('open'); });
-                if (action === 'rename') renamePayablesBucket(key);
-                else if (action === 'delete') deletePayablesBucket(key);
+                if (action === 'rename') {
+                    var lw = row.querySelector('.bucket-row-label-wrap');
+                    if (lw) { var ei = lw.querySelector('.bucket-row-name-edit'); if (ei) { lw.classList.add('editing'); ei.value = key; ei.focus(); ei.select(); } }
+                } else if (action === 'delete') deletePayablesBucket(key);
+            }
+        });
+        list.addEventListener('blur', function (e) {
+            var editInput = e.target.closest && e.target.closest('.bucket-row-name-edit');
+            if (!editInput) return;
+            var row = editInput.closest('.bucket-row');
+            var wrap = editInput.closest('.bucket-row-label-wrap');
+            if (!row || !wrap) return;
+            var key = row.getAttribute('data-bucket-key');
+            var newName = editInput.value.trim();
+            wrap.classList.remove('editing');
+            if (newName && newName !== key) renamePayablesBucket(key, newName);
+        }, true);
+        list.addEventListener('keydown', function (e) {
+            var editInput = e.target.closest && e.target.closest('.bucket-row-name-edit');
+            if (!editInput) return;
+            var row = editInput.closest('.bucket-row');
+            var wrap = editInput.closest('.bucket-row-label-wrap');
+            if (!row || !wrap) return;
+            var key = row.getAttribute('data-bucket-key');
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                var newName = editInput.value.trim();
+                wrap.classList.remove('editing');
+                if (newName && newName !== key) renamePayablesBucket(key, newName);
+                editInput.blur();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                editInput.value = key;
+                wrap.classList.remove('editing');
+                editInput.blur();
             }
         });
         document.addEventListener('click', function closePayablesDropdown() {
@@ -1973,9 +2057,9 @@ function updatePayablesDefaultBucket(value) {
     saveState();
 }
 
-function renamePayablesBucket(oldName) {
-    const newName = prompt('Rename subcategory:', oldName);
-    if (!newName || newName.trim() === '' || newName === oldName) return;
+function renamePayablesBucket(oldName, newNameFromInline) {
+    const newName = newNameFromInline !== undefined ? String(newNameFromInline).trim() : prompt('Rename subcategory:', oldName);
+    if (!newName || newName === oldName) return;
     ensureAccountsState();
     if (state.accounts.payablesBuckets[newName] !== undefined) {
         showAppAlert('Subcategory already exists.');

@@ -210,6 +210,33 @@ body.theme-dark .bank-balance-info-btn:hover { background: #334155; color: #e2e8
     background: #e2e8f0;
     border-radius: 1px;
 }
+.bucket-row-name-edit {
+    display: none;
+    width: 100%;
+    max-width: 100%;
+    padding: 2px 4px;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #0f172a;
+    background: #fff;
+    border: 1px solid #6366f1;
+    border-radius: 6px;
+    outline: none;
+    box-sizing: border-box;
+}
+.bucket-row-name-edit:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.25);
+}
+.bucket-row-label-wrap.editing .bucket-row-label,
+.bucket-row-label-wrap.editing .bucket-row-label-line {
+    display: none !important;
+}
+.bucket-row-label-wrap.editing .bucket-row-name-edit {
+    display: block !important;
+}
 .bucket-row-balance {
     font-size: 1rem;
     font-weight: 800;
@@ -337,6 +364,11 @@ body.theme-dark .bucket-row-card {
 }
 body.theme-dark .bucket-row-label { color: #94a3b8; }
 body.theme-dark .bucket-row-label-line { background: #475569; }
+body.theme-dark .bucket-row-name-edit {
+    background: #0f172a;
+    border-color: #6366f1;
+    color: #e2e8f0;
+}
 body.theme-dark .bucket-row-balance { color: #f1f5f9; }
 body.theme-dark .bucket-amount-input {
     background: #0f172a;
