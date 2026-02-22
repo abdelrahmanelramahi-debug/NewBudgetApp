@@ -11,6 +11,16 @@ body {
     padding-bottom: calc(env(safe-area-inset-bottom) + 40px);
 }
 
+/* Mobile: extra bottom padding so content doesn’t sit under browser URL/nav bar */
+@media (max-width: 1023px) {
+    body {
+        padding-bottom: calc(env(safe-area-inset-bottom) + 88px);
+    }
+    #main-content {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+}
+
 /* Themes */
 body.theme-dark {
     background-color: #0f172a;
