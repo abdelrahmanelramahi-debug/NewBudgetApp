@@ -35,7 +35,7 @@ function initAuth() {
             currentUser = user;
             updateAuthUI();
             // Load local state FIRST, then sync from cloud (cloud will merge/overwrite if valid)
-            var stateKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.STATE : 'financeCmd_state';
+            var stateKey = STORAGE_KEYS.STATE;
             const localState = localStorage.getItem(stateKey);
             if (localState) {
                 try {
@@ -177,7 +177,7 @@ async function saveStateToCloud() {
         
         // Update lastSynced timestamp in localStorage
         try {
-            var syncKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.LAST_SYNCED : 'financeCmd_last_synced_to_cloud';
+            var syncKey = STORAGE_KEYS.LAST_SYNCED;
             localStorage.setItem(syncKey, String(savedTime));
         } catch (e) {}
         
@@ -223,8 +223,8 @@ async function loadStateFromCloud(retryCount) {
             var localModified = 0;
             var lastSyncedToCloud = 0;
             try {
-                var modKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.MODIFIED : 'financeCmd_state_modified';
-                var syncKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.LAST_SYNCED : 'financeCmd_last_synced_to_cloud';
+                var modKey = STORAGE_KEYS.MODIFIED;
+                var syncKey = STORAGE_KEYS.LAST_SYNCED;
                 var stored = localStorage.getItem(modKey);
                 var synced = localStorage.getItem(syncKey);
                 if (stored) localModified = parseInt(stored, 10) || 0;
@@ -265,9 +265,9 @@ async function loadStateFromCloud(retryCount) {
                     ensureSettings();
                     if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
 
-                    var stateKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.STATE : 'financeCmd_state';
-                    var modKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.MODIFIED : 'financeCmd_state_modified';
-                    var syncKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.LAST_SYNCED : 'financeCmd_last_synced_to_cloud';
+                    var stateKey = STORAGE_KEYS.STATE;
+                    var modKey = STORAGE_KEYS.MODIFIED;
+                    var syncKey = STORAGE_KEYS.LAST_SYNCED;
                     localStorage.setItem(stateKey, JSON.stringify(state));
                     if (cloudData.lastUpdated && typeof cloudData.lastUpdated.toMillis === 'function') {
                         var cloudMillis = cloudData.lastUpdated.toMillis();
@@ -313,7 +313,7 @@ async function loadStateFromCloud(retryCount) {
         // On error after retry: use local data for this device only. Do NOT call saveState() –
         // that would set MODIFIED and trigger saveStateToCloud, overwriting other devices' newer data.
         try {
-            var stateKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.STATE : 'financeCmd_state';
+            var stateKey = STORAGE_KEYS.STATE;
             var localBackupStr = localStorage.getItem(stateKey);
             if (localBackupStr) {
                 var localBackup = JSON.parse(localBackupStr);

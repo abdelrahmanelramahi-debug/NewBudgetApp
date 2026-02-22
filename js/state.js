@@ -1,7 +1,5 @@
-// DATA (uses ITEM_LABELS from constants.js when available)
-const ACCOUNT_LABELS = typeof ITEM_LABELS !== 'undefined'
-    ? [ITEM_LABELS.GENERAL_SAVINGS, ITEM_LABELS.PAYABLES, ITEM_LABELS.CAR_FUND, ITEM_LABELS.WEEKLY_MISC]
-    : ['General Savings', 'Payables', 'Car Fund', 'Weekly Misc'];
+// DATA: account labels for buckets (from constants.js)
+const ACCOUNT_LABELS = [ITEM_LABELS.GENERAL_SAVINGS, ITEM_LABELS.PAYABLES, ITEM_LABELS.CAR_FUND, ITEM_LABELS.WEEKLY_MISC];
 
 let state = {
     schemaVersion: 2,
@@ -126,8 +124,8 @@ function getExampleBudget() {
 
 // PERSISTENCE
 function saveState() {
-    var stateKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.STATE : 'financeCmd_state';
-    var modKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.MODIFIED : 'financeCmd_state_modified';
+    var stateKey = STORAGE_KEYS.STATE;
+    var modKey = STORAGE_KEYS.MODIFIED;
     localStorage.setItem(stateKey, JSON.stringify(state));
     try { localStorage.setItem(modKey, String(Date.now())); } catch (e) {}
     // Cloud sync will be handled by auth.js if user is logged in
@@ -135,7 +133,7 @@ function saveState() {
 window.saveState = saveState; // Make it globally accessible
 
 function loadState() {
-    var stateKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.STATE : 'financeCmd_state';
+    var stateKey = STORAGE_KEYS.STATE;
     const saved = localStorage.getItem(stateKey);
     if (saved) {
         try {
@@ -299,7 +297,7 @@ function ensureSystemSavings() {
 }
 
 function ensureCoreItems() {
-    var coreId = typeof SECTION_IDS !== 'undefined' ? SECTION_IDS.CORE_ESSENTIALS : 'core_essentials';
+    var coreId = SECTION_IDS.CORE_ESSENTIALS;
     let core = state.categories.find(s => s.id === coreId);
 
     if (!core) {
@@ -323,17 +321,17 @@ function ensureCoreItems() {
     state.categories.forEach(sec => {
         if (sec.id !== coreId) {
             sec.items = sec.items.filter(i =>
-                i.label !== (typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.WEEKLY_MISC : 'Weekly Misc') &&
-                i.label !== (typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.FOOD_BASE : 'Daily Food') &&
-                i.label !== (typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.CAR_FUND : 'Car Fund')
+                i.label !== ITEM_LABELS.WEEKLY_MISC &&
+                i.label !== ITEM_LABELS.FOOD_BASE &&
+                i.label !== ITEM_LABELS.CAR_FUND
             );
         }
     });
 }
 
 function getWeeklyConfigAmount() {
-    var cid = typeof SECTION_IDS !== 'undefined' ? SECTION_IDS.CORE_ESSENTIALS : 'core_essentials';
-    var wlabel = typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.WEEKLY_MISC : 'Weekly Misc';
+    var cid = SECTION_IDS.CORE_ESSENTIALS;
+    var wlabel = ITEM_LABELS.WEEKLY_MISC;
     const misc = state.categories.find(s=>s.id===cid)?.items.find(i=>i.label===wlabel);
     const fullAmt = misc ? misc.amount : 400;
     return fullAmt / 4;
@@ -386,9 +384,9 @@ function setWeeklyBalance(weekNum, value) {
 }
 
 function getFoodRemainderInfo() {
-    var cid = typeof SECTION_IDS !== 'undefined' ? SECTION_IDS.CORE_ESSENTIALS : 'core_essentials';
-    var fid = typeof SECTION_IDS !== 'undefined' ? SECTION_IDS.FOUNDATIONS : 'foundations';
-    var flabel = typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.FOOD_BASE : 'Daily Food';
+    var cid = SECTION_IDS.CORE_ESSENTIALS;
+    var fid = SECTION_IDS.FOUNDATIONS;
+    var flabel = ITEM_LABELS.FOOD_BASE;
     const fSec = state.categories.find(s=>s.id===cid) || state.categories.find(s=>s.id===fid);
     // Support both "Daily Food" and "Food Base" so we always find the food budget line
     const fItem = fSec ? fSec.items.find(i=>i.label===flabel || i.label==='Food Base') : null;

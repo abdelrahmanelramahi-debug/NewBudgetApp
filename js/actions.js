@@ -1,3 +1,9 @@
+/**
+ * User actions: income, state transactions (applyTransaction), deficit, tools/transfers,
+ * savings/payables buckets, weekly, food, settings, export/import, danger/delete, amortization, add item/category.
+ * Depends on: constants, state, logic, utils (format), ui.
+ */
+
 // --- INCOME LOGIC ---
 function updateIncome(val) {
     const num = parseFloat(val);
@@ -772,7 +778,7 @@ function renderTransferTargets(container) {
             container.innerHTML += `
                 <button onclick="executeTransfer('${id}')" class="w-full text-left p-2.5 rounded-lg border flex justify-between items-center bg-indigo-50 text-indigo-800 border-indigo-200 font-bold text-[11px] mb-1 hover:bg-indigo-100 transition">
                     <span>Week ${w}</span>
-                    <span class="opacity-70">${typeof formatMoney === 'function' ? formatMoney(bal) : bal} →</span>
+                    <span class="opacity-70">${formatMoney(bal)} →</span>
                 </button>
             `;
         }
@@ -909,15 +915,6 @@ function completeTask(label) {
 }
 
 // Food
-function setFoodViewWeek(weekIndexOrDelta) {
-    if (!state.food) state.food = { daysTotal: 28, daysUsed: 0, lockedAmount: 0, history: [], viewWeek: 0 };
-    var current = state.food.viewWeek || 0;
-    var next = (weekIndexOrDelta === -1 || weekIndexOrDelta === 1) ? current + weekIndexOrDelta : weekIndexOrDelta;
-    state.food.viewWeek = Math.max(0, Math.min(3, next));
-    saveState();
-    renderLedger();
-}
-
 function spendFoodDay() {
     if(state.food.daysUsed < state.food.daysTotal) {
         var info = typeof getFoodRemainderInfo === 'function' ? getFoodRemainderInfo() : null;
@@ -1009,26 +1006,6 @@ function releaseAllBuffer() {
         renderLedger();
         updateGlobalUI();
     }
-}
-function undoFood(idx) {
-    const h = state.food.history[idx];
-    pushToUndo();
-    if(h.type==='spend') {
-        if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
-        var list = state.food.consumedDays || [];
-        if (list.length > 0) {
-            var maxDay = Math.max.apply(null, list);
-            state.food.consumedDays = list.filter(function(d) { return d !== maxDay; });
-        }
-        state.food.daysUsed = (state.food.consumedDays || []).length;
-    } else {
-        state.food.lockedAmount -= h.amt;
-        state.accounts.surplus += h.amt;
-    }
-    state.food.history.splice(idx, 1);
-    saveState();
-    renderLedger();
-    updateGlobalUI();
 }
 
 // Weekly
@@ -1194,43 +1171,12 @@ function fastUpdateItemAmount(sid, idx, val) {
         }
     }
     var obStep = document.getElementById('onboarding-step-categories');
-    if (obStep && !obStep.classList.contains('hidden')) {
+    if (obStep && !obStep.classList.contains('hidden') && typeof updateAllocatedTotalUI === 'function') {
         var total = state.monthlyIncome || 0;
         var allocated = state.categories.reduce(function (sum, sec) {
             return sum + (sec.items || []).reduce(function (s, i) { return s + (i.amount || 0); }, 0);
         }, 0);
-        var totalEl = document.getElementById('onboarding-cat-total');
-        var totalValEl = document.getElementById('onboarding-cat-total-val');
-        var allocValEl = document.getElementById('onboarding-cat-allocated-val');
-        if (totalEl) totalEl.textContent = typeof formatMoney === 'function' ? formatMoney(total) : total;
-        if (totalValEl) totalValEl.textContent = typeof formatMoney === 'function' ? formatMoney(total) : total;
-        if (allocValEl) allocValEl.textContent = typeof formatMoney === 'function' ? formatMoney(allocated) : allocated;
-        var unallocAlert = document.getElementById('onboarding-cat-unallocated-alert');
-        var unallocAmount = document.getElementById('onboarding-cat-unallocated-amount');
-        var overAlert = document.getElementById('onboarding-cat-overallocated-alert');
-        var overAmount = document.getElementById('onboarding-cat-overallocated-amount');
-        if (unallocAlert && unallocAmount && total > 0) {
-            var unallocated = total - allocated;
-            if (unallocated > 0.001) {
-                unallocAmount.textContent = typeof formatMoney === 'function' ? formatMoney(unallocated) : unallocated.toFixed(2);
-                unallocAlert.classList.remove('hidden');
-            } else {
-                unallocAlert.classList.add('hidden');
-            }
-        } else if (unallocAlert) {
-            unallocAlert.classList.add('hidden');
-        }
-        if (overAlert && overAmount && total > 0) {
-            if (allocated > total + 0.001) {
-                var over = allocated - total;
-                overAmount.textContent = typeof formatMoney === 'function' ? formatMoney(over) : over.toFixed(2);
-                overAlert.classList.remove('hidden');
-            } else {
-                overAlert.classList.add('hidden');
-            }
-        } else if (overAlert) {
-            overAlert.classList.add('hidden');
-        }
+        updateAllocatedTotalUI({ total: total, allocated: allocated, prefix: 'onboarding-cat' });
     }
 }
 
@@ -1347,7 +1293,7 @@ function applyPaycheckDistribute() {
 // Savings Buckets (source/dest options for "outside" buckets)
 var SAVINGS_EXTRA = '__extra__';
 var SAVINGS_WEEKLY = '__weekly__';
-function getWeeklyLabel() { return (typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.WEEKLY_MISC : 'Weekly Misc'); }
+function getWeeklyLabel() { return ITEM_LABELS.WEEKLY_MISC; }
 
 function openSavingsBuckets() {
     renderSavingsBuckets();
@@ -1605,40 +1551,6 @@ function applySavingsBucketDelta(bucketKey, dir, amountEl) {
     }
     saveState();
     updateSavingsBucketRowAmount(bucketKey);
-    updateGlobalUI();
-}
-
-function transferSavingsBucketToSurplus(bucketKey) {
-    var el = document.getElementById('savings-bucket-amount');
-    var val = el ? parseFloat(el.value) : NaN;
-    if (!val || val <= 0) return;
-    pushToUndo();
-    const available = getSavingsBucketAmount(bucketKey);
-    const take = Math.min(val, available);
-    if (take <= 0) return;
-    adjustSavingsBucket(bucketKey, -take);
-    applyTransaction({ type: 'adjust_surplus', delta: take });
-    saveState();
-    updateSavingsBucketRowAmount(bucketKey);
-    updateGlobalUI();
-}
-
-function moveSavingsBucket(fromKey, toKey) {
-    if (!fromKey || !toKey || fromKey === toKey) return;
-    var el = document.getElementById('savings-bucket-amount');
-    var val = el ? parseFloat(el.value) : NaN;
-    if (!val || val <= 0) return;
-    ensureAccountsState();
-    const available = getSavingsBucketAmount(fromKey);
-    const take = Math.min(val, available);
-    if (take <= 0) return;
-    pushToUndo();
-    state.accounts.savingsBuckets[fromKey] = available - take;
-    state.accounts.savingsBuckets[toKey] = (state.accounts.savingsBuckets[toKey] || 0) + take;
-    syncSavingsTotal();
-    saveState();
-    updateSavingsBucketRowAmount(fromKey);
-    updateSavingsBucketRowAmount(toKey);
     updateGlobalUI();
 }
 
@@ -1985,40 +1897,6 @@ function applyPayablesBucketDelta(bucketKey, dir, amountEl) {
     updateGlobalUI();
 }
 
-function transferPayablesBucketToSurplus(bucketKey) {
-    var el = document.getElementById('payables-bucket-amount');
-    var val = el ? parseFloat(el.value) : NaN;
-    if (!val || val <= 0) return;
-    pushToUndo();
-    const available = getPayablesBucketAmount(bucketKey);
-    const take = Math.min(val, available);
-    if (take <= 0) return;
-    adjustPayablesBucket(bucketKey, -take);
-    applyTransaction({ type: 'adjust_surplus', delta: take });
-    saveState();
-    updatePayablesBucketRowAmount(bucketKey);
-    updateGlobalUI();
-}
-
-function movePayablesBucket(fromKey, toKey) {
-    if (!fromKey || !toKey || fromKey === toKey) return;
-    var el = document.getElementById('payables-bucket-amount');
-    var val = el ? parseFloat(el.value) : NaN;
-    if (!val || val <= 0) return;
-    ensureAccountsState();
-    const available = getPayablesBucketAmount(fromKey);
-    const take = Math.min(val, available);
-    if (take <= 0) return;
-    pushToUndo();
-    state.accounts.payablesBuckets[fromKey] = available - take;
-    state.accounts.payablesBuckets[toKey] = (state.accounts.payablesBuckets[toKey] || 0) + take;
-    syncPayablesTotal();
-    saveState();
-    updatePayablesBucketRowAmount(fromKey);
-    updatePayablesBucketRowAmount(toKey);
-    updateGlobalUI();
-}
-
 function updatePayablesBucketRowAmount(bucketKey) {
     var list = document.getElementById('payables-buckets-list');
     if (!list) return;
@@ -2204,7 +2082,7 @@ function importStateFile(file) {
 }
 
 function recoverLocalData() {
-    var stateKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.STATE : 'financeCmd_state';
+    var stateKey = STORAGE_KEYS.STATE;
     const localBackup = localStorage.getItem(stateKey);
     if (!localBackup) {
         showAppAlert('No local backup found in browser storage. Your data may have been cleared.');
@@ -2271,8 +2149,8 @@ function loadExampleBudget() {
 
 function resetAppData() {
     showAppConfirm('This will delete all local data and reload the app. Continue?', function () {
-        var stateKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.STATE : 'financeCmd_state';
-        var modKey = typeof STORAGE_KEYS !== 'undefined' ? STORAGE_KEYS.MODIFIED : 'financeCmd_state_modified';
+        var stateKey = STORAGE_KEYS.STATE;
+        var modKey = STORAGE_KEYS.MODIFIED;
         localStorage.removeItem(stateKey);
         try { localStorage.removeItem(modKey); } catch (e) {}
         location.reload();

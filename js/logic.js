@@ -1,21 +1,24 @@
-// --- LOGIC ---
-var _generalSavingsLabel = typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.GENERAL_SAVINGS : 'General Savings';
-var _payablesLabel = typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.PAYABLES : 'Payables';
-var _foodBaseLabel = typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.FOOD_BASE : 'Daily Food';
-var _weeklyMiscLabel = typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.WEEKLY_MISC : 'Weekly Misc';
+// --- LOGIC: balances and liquidity (depends on constants.js, state.js) ---
+var _generalSavingsLabel = ITEM_LABELS.GENERAL_SAVINGS;
+var _payablesLabel = ITEM_LABELS.PAYABLES;
+var _foodBaseLabel = ITEM_LABELS.FOOD_BASE;
+var _weeklyMiscLabel = ITEM_LABELS.WEEKLY_MISC;
 
+/** Total of all savings buckets (or legacy single bucket). */
 function getSavingsTotal() {
     const buckets = state.accounts?.savingsBuckets;
     if (!buckets) return state.accounts?.buckets?.[_generalSavingsLabel] ?? 0;
     return Object.values(buckets).reduce((sum, val) => sum + (val || 0), 0);
 }
 
+/** Total of all payables buckets (or legacy single bucket). */
 function getPayablesTotal() {
     const buckets = state.accounts?.payablesBuckets;
     if (!buckets) return state.accounts?.buckets?.[_payablesLabel] ?? 0;
     return Object.values(buckets).reduce((sum, val) => sum + (val || 0), 0);
 }
 
+/** Current balance for an item (savings/payables/buckets/ledger). */
 function getItemBalance(label, fallback = 0) {
     if (label === _generalSavingsLabel) {
         return getSavingsTotal();
@@ -29,6 +32,7 @@ function getItemBalance(label, fallback = 0) {
     return state.balances?.[label] !== undefined ? state.balances[label] : fallback;
 }
 
+/** Full liquidity breakdown: surplus, buckets, ledger, weekly, food remainder/buffer. Used for bank balance bar and current balance. */
 function getLiquidityBreakdown() {
     let totalLiquid = 0;
     const items = [];
@@ -90,6 +94,7 @@ function getLiquidityBreakdown() {
     return { totalLiquid, items };
 }
 
+/** Sum of all liquid balances (for header “reality” and bank bar total). */
 function getCurrentBalance() {
     return getLiquidityBreakdown().totalLiquid;
 }

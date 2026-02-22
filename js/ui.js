@@ -1,10 +1,7 @@
-// Cached DOM refs for header and frequent elements (avoids repeated getElementById)
-var _domCache = {};
-function getEl(id) {
-    if (!_domCache[id]) _domCache[id] = document.getElementById(id);
-    return _domCache[id];
-}
-function clearDomCache() { _domCache = {}; }
+/**
+ * UI layer: refresh, pages, budget plan, ledger, modals, bank balance bar, food calendar.
+ * Depends on: constants, state, logic, utils (format, dom, date). DOM cache and formatting from utils.
+ */
 
 /** Single entry point to refresh all UI after state change. Use instead of calling renderLedger + renderStrategy + updateGlobalUI + applySettings + renderSettings separately. */
 function refreshUI() {
@@ -90,23 +87,6 @@ function showAppConfirm(message, onConfirm, onCancel, options) {
     _showAppAlertModal(true);
 }
 
-function getCurrencyLabel() {
-    return state.settings?.currency || 'AED';
-}
-
-function formatMoney(value, decimalsOverride) {
-    const decimals = Number.isInteger(decimalsOverride)
-        ? decimalsOverride
-        : (typeof state.settings?.decimals === 'number' ? state.settings.decimals : 2);
-    const num = Number(value) || 0;
-    return num.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
-}
-
-function formatSignedMoney(value) {
-    const prefix = value >= 0 ? '+' : '';
-    return prefix + formatMoney(value);
-}
-
 function updateCurrencyLabels() {
     const label = getCurrencyLabel();
     document.querySelectorAll('[data-currency]').forEach(el => {
@@ -128,7 +108,7 @@ function applySettings() {
 
 function renderSettings() {
     const currencyInput = document.getElementById('settings-currency');
-    if (currencyInput) currencyInput.value = typeof getCurrencyLabel === 'function' ? getCurrencyLabel() : (state.settings?.currency || 'AED');
+    if (currencyInput) currencyInput.value = getCurrencyLabel();
     const decimalsSelect = document.getElementById('settings-decimals');
     if(decimalsSelect) decimalsSelect.value = String(state.settings?.decimals ?? 2);
     const confirmSurplus = document.getElementById('settings-confirm-surplus');
@@ -200,27 +180,29 @@ function openBudgetPlan() {
 function closeBudgetPlan() {
     switchPage('ledger');
 }
-function updateBudgetPlanAllocated() {
-    const total = typeof state.monthlyIncome === 'number' ? state.monthlyIncome : 0;
-    let allocated = 0;
-    if (state.categories && state.categories.length) {
-        state.categories.forEach(function (sec) {
-            sec.items.forEach(function (item) { allocated += (typeof item.amount === 'number' ? item.amount : 0); });
-        });
-    }
-    const allocEl = document.getElementById('budget-plan-allocated-val');
-    const totalEl = document.getElementById('budget-plan-total-val');
-    if (allocEl) allocEl.textContent = typeof formatMoney === 'function' ? formatMoney(allocated) : allocated.toFixed(0);
-    if (totalEl) totalEl.textContent = typeof formatMoney === 'function' ? formatMoney(total) : total.toFixed(0);
+/**
+ * Updates allocated/total and unallocated/overallocated alerts for a given container.
+ * opts: { total, allocated, prefix } where prefix is the element id prefix (e.g. 'budget-plan' or 'onboarding-cat').
+ */
+function updateAllocatedTotalUI(opts) {
+    var total = opts.total != null ? Number(opts.total) : 0;
+    var allocated = opts.allocated != null ? Number(opts.allocated) : 0;
+    var prefix = opts.prefix || 'budget-plan';
+    var totalDisplayEl = document.getElementById(prefix + '-total');
+    var allocEl = document.getElementById(prefix + '-allocated-val');
+    var totalValEl = document.getElementById(prefix + '-total-val');
+    if (totalDisplayEl) totalDisplayEl.textContent = formatMoney(total);
+    if (allocEl) allocEl.textContent = formatMoney(allocated);
+    if (totalValEl) totalValEl.textContent = formatMoney(total);
 
-    var alertEl = document.getElementById('budget-plan-unallocated-alert');
-    var amountEl = document.getElementById('budget-plan-unallocated-amount');
-    var overEl = document.getElementById('budget-plan-overallocated-alert');
-    var overAmountEl = document.getElementById('budget-plan-overallocated-amount');
+    var alertEl = document.getElementById(prefix + '-unallocated-alert');
+    var amountEl = document.getElementById(prefix + '-unallocated-amount');
+    var overEl = document.getElementById(prefix + '-overallocated-alert');
+    var overAmountEl = document.getElementById(prefix + '-overallocated-amount');
     if (alertEl && amountEl && total > 0) {
         var unallocated = total - allocated;
         if (unallocated > 0.001) {
-            amountEl.textContent = typeof formatMoney === 'function' ? formatMoney(unallocated) : unallocated.toFixed(2);
+            amountEl.textContent = formatMoney(unallocated);
             alertEl.classList.remove('hidden');
         } else {
             alertEl.classList.add('hidden');
@@ -230,8 +212,7 @@ function updateBudgetPlanAllocated() {
     }
     if (overEl && overAmountEl && total > 0) {
         if (allocated > total + 0.001) {
-            var over = allocated - total;
-            overAmountEl.textContent = typeof formatMoney === 'function' ? formatMoney(over) : over.toFixed(2);
+            overAmountEl.textContent = formatMoney(allocated - total);
             overEl.classList.remove('hidden');
         } else {
             overEl.classList.add('hidden');
@@ -240,9 +221,21 @@ function updateBudgetPlanAllocated() {
         overEl.classList.add('hidden');
     }
 }
+
+function updateBudgetPlanAllocated() {
+    var total = typeof state.monthlyIncome === 'number' ? state.monthlyIncome : 0;
+    var allocated = 0;
+    if (state.categories && state.categories.length) {
+        state.categories.forEach(function (sec) {
+            sec.items.forEach(function (item) { allocated += (typeof item.amount === 'number' ? item.amount : 0); });
+        });
+    }
+    updateAllocatedTotalUI({ total: total, allocated: allocated, prefix: 'budget-plan' });
+}
 window.openBudgetPlan = openBudgetPlan;
 window.closeBudgetPlan = closeBudgetPlan;
 window.updateBudgetPlanAllocated = updateBudgetPlanAllocated;
+window.updateAllocatedTotalUI = updateAllocatedTotalUI;
 
 function toggleSideMenu() {
     const el = document.getElementById('side-menu');
@@ -255,7 +248,7 @@ function closeSideMenu() {
 window.toggleSideMenu = toggleSideMenu;
 window.closeSideMenu = closeSideMenu;
 
-// --- STRATEGY RENDER ---
+// --- STRATEGY RENDER: budget plan cards (system + custom), sliders, allocated/total. Optional onboarding container. Calls clearDomCache. ---
 function renderStrategy(opts) {
     opts = opts || {};
     var containerId = opts.containerId || 'strategy-sections';
@@ -455,43 +448,13 @@ function renderStrategy(opts) {
     if(!systemHtml && !customHtml) {
          container.innerHTML = toolBarHtml + '<div class="text-center py-10 text-slate-300 font-bold uppercase tracking-widest">No Strategies Yet</div>';
     }
+    clearDomCache();
     if (forOnboarding) {
         var total = state.monthlyIncome || 0;
         var allocated = state.categories.reduce(function (sum, sec) {
             return sum + (sec.items || []).reduce(function (s, i) { return s + (i.amount || 0); }, 0);
         }, 0);
-        var totalEl = document.getElementById('onboarding-cat-total');
-        var totalValEl = document.getElementById('onboarding-cat-total-val');
-        var allocValEl = document.getElementById('onboarding-cat-allocated-val');
-        if (totalEl) totalEl.textContent = typeof formatMoney === 'function' ? formatMoney(total) : total;
-        if (totalValEl) totalValEl.textContent = typeof formatMoney === 'function' ? formatMoney(total) : total;
-        if (allocValEl) allocValEl.textContent = typeof formatMoney === 'function' ? formatMoney(allocated) : allocated;
-        var unallocAlert = document.getElementById('onboarding-cat-unallocated-alert');
-        var unallocAmount = document.getElementById('onboarding-cat-unallocated-amount');
-        var overAlert = document.getElementById('onboarding-cat-overallocated-alert');
-        var overAmount = document.getElementById('onboarding-cat-overallocated-amount');
-        if (unallocAlert && unallocAmount && total > 0) {
-            var unallocated = total - allocated;
-            if (unallocated > 0.001) {
-                unallocAmount.textContent = typeof formatMoney === 'function' ? formatMoney(unallocated) : unallocated.toFixed(2);
-                unallocAlert.classList.remove('hidden');
-            } else {
-                unallocAlert.classList.add('hidden');
-            }
-        } else if (unallocAlert) {
-            unallocAlert.classList.add('hidden');
-        }
-        if (overAlert && overAmount && total > 0) {
-            if (allocated > total + 0.001) {
-                var over = allocated - total;
-                overAmount.textContent = typeof formatMoney === 'function' ? formatMoney(over) : over.toFixed(2);
-                overAlert.classList.remove('hidden');
-            } else {
-                overAlert.classList.add('hidden');
-            }
-        } else if (overAlert) {
-            overAlert.classList.add('hidden');
-        }
+        updateAllocatedTotalUI({ total: total, allocated: allocated, prefix: 'onboarding-cat' });
     } else {
         calculateReality();
         if (typeof updateBudgetPlanAllocated === 'function') updateBudgetPlanAllocated();
@@ -502,7 +465,7 @@ function renderStrategy(opts) {
     }
 }
 
-// --- LEDGER RENDER ---
+// --- LEDGER RENDER: builds ledger-categories (weekly, major funds, category sections with bars). Calls updateFoodUI, updateGlobalUI, clearDomCache. ---
 function renderLedger() {
     const container = document.getElementById('ledger-categories');
     container.innerHTML = '';
@@ -674,8 +637,8 @@ function renderLedger() {
             let bal = getItemBalance(item.label, item.amount);
             const planned = typeof item.amount === 'number' && item.amount > 0 ? item.amount : 1;
             const pct = Math.min(100, Math.max(0, (bal / planned) * 100));
-            const safeLabel = String(item.label).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-            const safeLabelAttr = String(item.label).replace(/"/g, '&quot;');
+            const safeLabel = escapeAttr(item.label);
+            const safeLabelAttr = escapeAttr(item.label);
 
             let actionBtn = '';
             if (sec.isSingleAction && bal !== 0) {
@@ -725,6 +688,7 @@ function renderLedger() {
         container.innerHTML += sectionHtml;
     });
 
+    clearDomCache();
     updateFoodUI();
     updateGlobalUI();
 }
@@ -742,7 +706,7 @@ function toggleLedgerSection(id) {
 }
 
 function getFoodDayNames() {
-    const names = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const names = typeof DAY_NAMES !== 'undefined' ? DAY_NAMES : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const start = typeof state.settings?.firstDayOfWeek === 'number' ? state.settings.firstDayOfWeek % 7 : 3;
     const out = [];
     for (let i = 0; i < 7; i++) out.push(names[(start + i) % 7]);
@@ -778,7 +742,7 @@ function getPayCycleInfo() {
     var cycleStartLastDay = lastDayOfMonth(cycleStartYear, cycleStartMonth);
     var cycleStartDay = Math.min(payDate, cycleStartLastDay);
     var cycleStart = new Date(cycleStartYear, cycleStartMonth, cycleStartDay);
-    var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var monthNames = typeof MONTH_NAMES !== 'undefined' ? MONTH_NAMES : ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     var dates = [];
     for (var i = 0; i < 28; i++) {
         var d = new Date(cycleStartYear, cycleStartMonth, cycleStartDay + i);
@@ -816,14 +780,15 @@ function getMonthCalendarInfo() {
     var firstDow = new Date(year, month, 1).getDay();
     var start = typeof state.settings?.firstDayOfWeek === 'number' ? state.settings.firstDayOfWeek % 7 : 3;
     var pad = (firstDow - start + 7) % 7;
-    var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var monthNames = typeof MONTH_NAMES !== 'undefined' ? MONTH_NAMES : ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     return { year: year, month: month, lastDay: lastDay, pad: pad, monthName: monthNames[month], firstDow: firstDow, start: start };
 }
 
+// Updates food panel: daily rate, locked funds, days left, buffer source dropdown, pay-cycle calendar.
 function updateFoodUI() {
-    var cid = typeof SECTION_IDS !== 'undefined' ? SECTION_IDS.CORE_ESSENTIALS : 'core_essentials';
-    var fid = typeof SECTION_IDS !== 'undefined' ? SECTION_IDS.FOUNDATIONS : 'foundations';
-    var flabel = typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.FOOD_BASE : 'Daily Food';
+    var cid = SECTION_IDS.CORE_ESSENTIALS;
+    var fid = SECTION_IDS.FOUNDATIONS;
+    var flabel = ITEM_LABELS.FOOD_BASE;
     var fSec = state.categories.find(s=>s.id===cid) || state.categories.find(s=>s.id===fid);
     // Match same item as getFoodRemainderInfo (Daily Food or Food Base) so rate and remainder stay in sync
     var fItem = fSec ? fSec.items.find(i=>i.label===flabel || i.label==='Food Base') : null;
@@ -967,11 +932,11 @@ function getBankBalanceBarSegments() {
     var segments = [];
     var getBal = typeof getItemBalance === 'function' ? getItemBalance : function() { return 0; };
     var getSavings = typeof getSavingsTotal === 'function' ? getSavingsTotal() : (state.accounts?.buckets?.['General Savings'] ?? 0);
-    var gsLabel = typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.GENERAL_SAVINGS : 'General Savings';
-    var payLabel = typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.PAYABLES : 'Payables';
-    var carLabel = typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.CAR_FUND : 'Car Fund';
-    var foodLabel = typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.FOOD_BASE : 'Daily Food';
-    var weeklyLabel = typeof ITEM_LABELS !== 'undefined' ? ITEM_LABELS.WEEKLY_MISC : 'Weekly Misc';
+    var gsLabel = ITEM_LABELS.GENERAL_SAVINGS;
+    var payLabel = ITEM_LABELS.PAYABLES;
+    var carLabel = ITEM_LABELS.CAR_FUND;
+    var foodLabel = ITEM_LABELS.FOOD_BASE;
+    var weeklyLabel = ITEM_LABELS.WEEKLY_MISC;
 
     var surplus = (state.accounts && state.accounts.surplus !== undefined) ? state.accounts.surplus : 0;
     if (surplus > 0) segments.push({ label: 'Extra (Unallocated)', amount: surplus });
@@ -1051,16 +1016,15 @@ function renderBankBalanceCard() {
     }
     var totalAmount = segments.reduce(function (sum, s) { return sum + s.amount; }, 0);
     if (totalAmount <= 0) totalAmount = total;
-    var currency = typeof getCurrencyLabel === 'function' ? getCurrencyLabel() : 'AED';
-    var escapeAttr = function (s) { return (s || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); };
+    var currency = getCurrencyLabel();
     var html = segments.map(function (item) {
         var pct = Math.max(0, (item.amount / totalAmount) * 100);
         var width = pct < 0.5 ? '0.5' : pct.toFixed(1);
         var color = getBankBalanceSegmentColor(item.label);
         var labelEsc = escapeAttr(item.label);
         var metaEsc = escapeAttr(item.meta || '');
-        var amountStr = typeof formatMoney === 'function' ? formatMoney(item.amount) : item.amount.toFixed(2);
-        return '<div class="bank-balance-segment ' + color + ' transition-all duration-200 hover:opacity-90 cursor-pointer" style="width:' + width + '%" data-label="' + labelEsc + '" data-meta="' + metaEsc + '" data-amount="' + amountStr + '" data-segment-currency="' + escapeAttr(currency) + '" role="button" tabindex="0"> </div>';
+        var amountStr = formatMoney(item.amount);
+        return '<div class="bank-balance-segment ' + color + ' transition-all duration-200 hover:opacity-90 cursor-pointer" style="width:' + width + '%" data-label="' + labelEsc + '" data-meta="' + metaEsc + '" data-amount="' + amountStr + '" data-segment-currency="' + escapeAttr(getCurrencyLabel()) + '" role="button" tabindex="0"> </div>';
     }).join('');
     barEl.innerHTML = html || '<div class="flex-1 rounded-lg bg-slate-200" title="No balance"></div>';
 
@@ -1133,15 +1097,17 @@ function renderBankBalanceCard() {
     }
 }
 
+// Writes current balance to reality elements (if present) and refreshes bank balance bar.
 function calculateReality() {
     var total = getCurrentBalance();
     var realityTotal = getEl('reality-total');
     var headerReality = getEl('header-reality');
-    if (realityTotal) realityTotal.innerText = typeof formatMoney === 'function' ? formatMoney(total) : total.toFixed(2);
-    if (headerReality) headerReality.innerText = typeof formatMoney === 'function' ? formatMoney(total) : total.toFixed(2);
+    if (realityTotal) realityTotal.innerText = formatMoney(total);
+    if (headerReality) headerReality.innerText = formatMoney(total);
     if (typeof renderBankBalanceCard === 'function') renderBankBalanceCard();
 }
 
+// Updates surplus display, deficit trigger visibility, and calls calculateReality.
 function updateGlobalUI() {
     var surplus = (state.accounts && state.accounts.surplus !== undefined) ? state.accounts.surplus : 0;
     var surpEl = getEl('global-surplus');
@@ -1170,8 +1136,7 @@ function renderCategoryHistory() {
     // FIX: Use global 'activeCat'
     const data = state.histories[activeCat] || [];
     document.getElementById('category-history-log').innerHTML = data.map(i => {
-        const esc = (s) => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-        const noteHtml = (i.note && i.note.trim()) ? `<div class="text-slate-500 text-[9px] mt-0.5 truncate" title="${esc(i.note)}">${esc(i.note)}</div>` : '';
+        const noteHtml = (i.note && i.note.trim()) ? '<div class="text-slate-500 text-[9px] mt-0.5 truncate" title="' + escapeAttr(i.note) + '">' + escapeHtml(i.note) + '</div>' : '';
         return `
         <div class="py-2 border-b border-slate-50 last:border-0 text-[10px]">
             <div class="flex justify-between items-center">
