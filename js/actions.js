@@ -1438,53 +1438,30 @@ function doSavingsSendToWeekly(fromBucketKey, amount) {
 function renderSavingsBuckets() {
     ensureAccountsState();
     var entries = Object.entries(state.accounts.savingsBuckets);
-    var defaultBucket = state.accounts.savingsDefaultBucket || 'Main';
     var esc = function (s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); };
     var bucketOpts = entries.map(function (e) { return '<option value="' + esc(e[0]) + '">' + esc(e[0]) + '</option>'; }).join('');
+    var fromToOpts = '<option value="' + SAVINGS_EXTRA + '">Extra</option><option value="' + SAVINGS_WEEKLY + '">Weekly Allowance</option>' + bucketOpts;
 
-    var moveCard = document.getElementById('savings-move-between-card');
     var moveFrom = document.getElementById('savings-move-from');
     var moveTo = document.getElementById('savings-move-to');
-    if (moveCard && moveFrom && moveTo) {
-        if (entries.length < 2) {
-            moveCard.style.display = 'none';
-        } else {
-            moveCard.style.display = '';
-            moveFrom.innerHTML = bucketOpts;
-            moveTo.innerHTML = bucketOpts;
-        }
-    }
-
-    var addSource = document.getElementById('savings-add-source');
-    var sendDest = document.getElementById('savings-send-dest');
-    var outsideOpts = '<option value="' + SAVINGS_EXTRA + '">Extra</option><option value="' + SAVINGS_WEEKLY + '">Weekly Allowance</option>';
-    if (addSource) addSource.innerHTML = outsideOpts;
-    if (sendDest) sendDest.innerHTML = outsideOpts;
-
-    var addExtraTo = document.getElementById('savings-add-extra-to');
-    var sendExtraFrom = document.getElementById('savings-send-from');
-    if (addExtraTo) addExtraTo.innerHTML = bucketOpts;
-    if (sendExtraFrom) sendExtraFrom.innerHTML = bucketOpts;
-
-    var defaultSel = document.getElementById('savings-default-bucket');
-    if (defaultSel) {
-        defaultSel.innerHTML = entries.map(function (e) { return '<option value="' + esc(e[0]) + '"' + (e[0] === defaultBucket ? ' selected' : '') + '>' + esc(e[0]) + '</option>'; }).join('');
-        defaultSel.onchange = function () { updateSavingsDefaultBucket(this.value); };
-    }
+    if (moveFrom) moveFrom.innerHTML = fromToOpts;
+    if (moveTo) moveTo.innerHTML = fromToOpts;
 
     var list = document.getElementById('savings-buckets-list');
     if (!list) return;
     if (!entries.length) {
-        list.innerHTML = '<div class="text-center text-[10px] text-slate-300 py-2">No buckets yet. Create one below.</div>';
+        list.innerHTML = '<div class="text-center text-[10px] text-slate-400 py-4">No buckets yet. Create one below.</div>';
         return;
     }
     list.innerHTML = entries.map(function (e) {
         var key = e[0], amount = e[1];
-        return '<div class="bucket-row flex justify-between items-center p-2.5 bg-slate-50 rounded-xl" data-bucket-key="' + esc(key) + '">' +
-            '<div class="flex items-baseline gap-2"><span class="text-sm font-bold text-slate-800">' + esc(key) + '</span>' +
-            '<span class="bucket-amount text-[10px] text-slate-500">' + formatMoney(amount) + ' ' + getCurrencyLabel() + '</span></div>' +
-            '<div class="flex gap-2"><button type="button" data-action="rename" class="text-[10px] font-bold text-slate-500 hover:text-slate-700">Rename</button>' +
-            '<button type="button" data-action="delete" class="text-[10px] font-bold text-rose-600 hover:text-rose-700">Delete</button></div></div>';
+        return '<div class="bucket-row flex justify-between items-center py-3 border-b border-slate-50 last:border-0" data-bucket-key="' + esc(key) + '">' +
+            '<div class="flex items-center gap-3"><span class="text-xs font-bold text-slate-600">' + esc(key) + '</span></div>' +
+            '<div class="flex items-center gap-2">' +
+            '<span class="bucket-amount text-[10px] font-bold text-slate-500">' + formatMoney(amount) + ' ' + getCurrencyLabel() + '</span>' +
+            '<button type="button" data-action="rename" class="p-1.5 text-indigo-400 hover:bg-indigo-50 rounded" title="Rename">✎</button>' +
+            '<button type="button" data-action="delete" class="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded" title="Delete">×</button>' +
+            '</div></div>';
     }).join('');
 
     if (!list._savingsDelegation) {
@@ -1505,36 +1482,20 @@ function renderSavingsBuckets() {
     if (moveBtn && !moveBtn._wired) {
         moveBtn._wired = true;
         moveBtn.addEventListener('click', function () {
-            var from = document.getElementById('savings-move-from');
-            var to = document.getElementById('savings-move-to');
+            var fromEl = document.getElementById('savings-move-from');
+            var toEl = document.getElementById('savings-move-to');
             var amountEl = document.getElementById('savings-move-amount');
-            if (from && to && amountEl) doSavingsTransfer(from.value, to.value, amountEl.value);
-        });
-    }
-    var addExtraBtn = document.getElementById('savings-add-extra-btn');
-    if (addExtraBtn && !addExtraBtn._wired) {
-        addExtraBtn._wired = true;
-        addExtraBtn.addEventListener('click', function () {
-            var source = document.getElementById('savings-add-source');
-            var to = document.getElementById('savings-add-extra-to');
-            var amountEl = document.getElementById('savings-add-extra-amount');
-            if (!to || !amountEl) return;
-            var src = source ? source.value : SAVINGS_EXTRA;
-            if (src === SAVINGS_WEEKLY) doSavingsAddFromWeekly(to.value, amountEl.value);
-            else doSavingsTransfer(SAVINGS_EXTRA, to.value, amountEl.value);
-        });
-    }
-    var sendExtraBtn = document.getElementById('savings-send-extra-btn');
-    if (sendExtraBtn && !sendExtraBtn._wired) {
-        sendExtraBtn._wired = true;
-        sendExtraBtn.addEventListener('click', function () {
-            var from = document.getElementById('savings-send-from');
-            var amountEl = document.getElementById('savings-send-extra-amount');
-            var dest = document.getElementById('savings-send-dest');
-            if (!from || !amountEl) return;
-            var d = dest ? dest.value : SAVINGS_EXTRA;
-            if (d === SAVINGS_WEEKLY) doSavingsSendToWeekly(from.value, amountEl.value);
-            else doSavingsTransfer(from.value, SAVINGS_EXTRA, amountEl.value);
+            if (!fromEl || !toEl || !amountEl) return;
+            var from = fromEl.value, to = toEl.value, amount = amountEl.value;
+            if (from === to) return;
+            if (from === SAVINGS_WEEKLY && to !== SAVINGS_EXTRA && to !== SAVINGS_WEEKLY) {
+                doSavingsAddFromWeekly(to, amount);
+            } else if (to === SAVINGS_WEEKLY && from !== SAVINGS_EXTRA && from !== SAVINGS_WEEKLY) {
+                doSavingsSendToWeekly(from, amount);
+            } else {
+                doSavingsTransfer(from, to, amount);
+            }
+            amountEl.value = '';
         });
     }
 }
@@ -1767,53 +1728,30 @@ function doPayablesSendToWeekly(fromBucketKey, amount) {
 function renderPayablesBuckets() {
     ensureAccountsState();
     var entries = Object.entries(state.accounts.payablesBuckets);
-    var defaultBucket = state.accounts.payablesDefaultBucket || 'Main';
     var esc = function (s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); };
     var bucketOpts = entries.map(function (e) { return '<option value="' + esc(e[0]) + '">' + esc(e[0]) + '</option>'; }).join('');
+    var fromToOpts = '<option value="' + PAYABLES_EXTRA + '">Extra</option><option value="' + PAYABLES_WEEKLY + '">Weekly Allowance</option>' + bucketOpts;
 
-    var moveCard = document.getElementById('payables-move-between-card');
     var moveFrom = document.getElementById('payables-move-from');
     var moveTo = document.getElementById('payables-move-to');
-    if (moveCard && moveFrom && moveTo) {
-        if (entries.length < 2) {
-            moveCard.style.display = 'none';
-        } else {
-            moveCard.style.display = '';
-            moveFrom.innerHTML = bucketOpts;
-            moveTo.innerHTML = bucketOpts;
-        }
-    }
-
-    var addSource = document.getElementById('payables-add-source');
-    var sendDest = document.getElementById('payables-send-dest');
-    var outsideOpts = '<option value="' + PAYABLES_EXTRA + '">Extra</option><option value="' + PAYABLES_WEEKLY + '">Weekly Allowance</option>';
-    if (addSource) addSource.innerHTML = outsideOpts;
-    if (sendDest) sendDest.innerHTML = outsideOpts;
-
-    var addExtraTo = document.getElementById('payables-add-extra-to');
-    var sendExtraFrom = document.getElementById('payables-send-from');
-    if (addExtraTo) addExtraTo.innerHTML = bucketOpts;
-    if (sendExtraFrom) sendExtraFrom.innerHTML = bucketOpts;
-
-    var defaultSel = document.getElementById('payables-default-bucket');
-    if (defaultSel) {
-        defaultSel.innerHTML = entries.map(function (e) { return '<option value="' + esc(e[0]) + '"' + (e[0] === defaultBucket ? ' selected' : '') + '>' + esc(e[0]) + '</option>'; }).join('');
-        defaultSel.onchange = function () { updatePayablesDefaultBucket(this.value); };
-    }
+    if (moveFrom) moveFrom.innerHTML = fromToOpts;
+    if (moveTo) moveTo.innerHTML = fromToOpts;
 
     var list = document.getElementById('payables-buckets-list');
     if (!list) return;
     if (!entries.length) {
-        list.innerHTML = '<div class="text-center text-[10px] text-slate-300 py-2">No buckets yet. Create one below.</div>';
+        list.innerHTML = '<div class="text-center text-[10px] text-slate-400 py-4">No buckets yet. Create one below.</div>';
         return;
     }
     list.innerHTML = entries.map(function (e) {
         var key = e[0], amount = e[1];
-        return '<div class="bucket-row flex justify-between items-center p-2.5 bg-amber-50 rounded-xl" data-bucket-key="' + esc(key) + '">' +
-            '<div class="flex items-baseline gap-2"><span class="text-sm font-bold text-slate-800">' + esc(key) + '</span>' +
-            '<span class="bucket-amount text-[10px] text-slate-500">' + formatMoney(amount) + ' ' + getCurrencyLabel() + '</span></div>' +
-            '<div class="flex gap-2"><button type="button" data-action="rename" class="text-[10px] font-bold text-slate-500 hover:text-slate-700">Rename</button>' +
-            '<button type="button" data-action="delete" class="text-[10px] font-bold text-rose-600 hover:text-rose-700">Delete</button></div></div>';
+        return '<div class="bucket-row flex justify-between items-center py-3 border-b border-amber-50 last:border-0" data-bucket-key="' + esc(key) + '">' +
+            '<div class="flex items-center gap-3"><span class="text-xs font-bold text-slate-600">' + esc(key) + '</span></div>' +
+            '<div class="flex items-center gap-2">' +
+            '<span class="bucket-amount text-[10px] font-bold text-slate-500">' + formatMoney(amount) + ' ' + getCurrencyLabel() + '</span>' +
+            '<button type="button" data-action="rename" class="p-1.5 text-amber-500 hover:bg-amber-50 rounded" title="Rename">✎</button>' +
+            '<button type="button" data-action="delete" class="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded" title="Delete">×</button>' +
+            '</div></div>';
     }).join('');
 
     if (!list._payablesDelegation) {
@@ -1834,36 +1772,20 @@ function renderPayablesBuckets() {
     if (moveBtn && !moveBtn._wired) {
         moveBtn._wired = true;
         moveBtn.addEventListener('click', function () {
-            var from = document.getElementById('payables-move-from');
-            var to = document.getElementById('payables-move-to');
+            var fromEl = document.getElementById('payables-move-from');
+            var toEl = document.getElementById('payables-move-to');
             var amountEl = document.getElementById('payables-move-amount');
-            if (from && to && amountEl) doPayablesTransfer(from.value, to.value, amountEl.value);
-        });
-    }
-    var addExtraBtn = document.getElementById('payables-add-extra-btn');
-    if (addExtraBtn && !addExtraBtn._wired) {
-        addExtraBtn._wired = true;
-        addExtraBtn.addEventListener('click', function () {
-            var source = document.getElementById('payables-add-source');
-            var to = document.getElementById('payables-add-extra-to');
-            var amountEl = document.getElementById('payables-add-extra-amount');
-            if (!to || !amountEl) return;
-            var src = source ? source.value : PAYABLES_EXTRA;
-            if (src === PAYABLES_WEEKLY) doPayablesAddFromWeekly(to.value, amountEl.value);
-            else doPayablesTransfer(PAYABLES_EXTRA, to.value, amountEl.value);
-        });
-    }
-    var sendExtraBtn = document.getElementById('payables-send-extra-btn');
-    if (sendExtraBtn && !sendExtraBtn._wired) {
-        sendExtraBtn._wired = true;
-        sendExtraBtn.addEventListener('click', function () {
-            var from = document.getElementById('payables-send-from');
-            var amountEl = document.getElementById('payables-send-extra-amount');
-            var dest = document.getElementById('payables-send-dest');
-            if (!from || !amountEl) return;
-            var d = dest ? dest.value : PAYABLES_EXTRA;
-            if (d === PAYABLES_WEEKLY) doPayablesSendToWeekly(from.value, amountEl.value);
-            else doPayablesTransfer(from.value, PAYABLES_EXTRA, amountEl.value);
+            if (!fromEl || !toEl || !amountEl) return;
+            var from = fromEl.value, to = toEl.value, amount = amountEl.value;
+            if (from === to) return;
+            if (from === PAYABLES_WEEKLY && to !== PAYABLES_EXTRA && to !== PAYABLES_WEEKLY) {
+                doPayablesAddFromWeekly(to, amount);
+            } else if (to === PAYABLES_WEEKLY && from !== PAYABLES_EXTRA && from !== PAYABLES_WEEKLY) {
+                doPayablesSendToWeekly(from, amount);
+            } else {
+                doPayablesTransfer(from, to, amount);
+            }
+            amountEl.value = '';
         });
     }
 }

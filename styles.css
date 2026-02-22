@@ -69,22 +69,41 @@ body.theme-dark #bank-balance-info-btn { border-color: #64748b; color: #94a3b8; 
 body.theme-dark #bank-balance-info-btn:hover { background: #334155; }
 
 /* Bank Balance card (above Weekly Allowance) */
-.bank-balance-card .bank-balance-bar-wrap { min-height: 2rem; }
+.bank-balance-card {
+    overflow: hidden;
+}
+.bank-balance-card .bank-balance-bar-wrap {
+    min-height: 2rem;
+    display: flex;
+    flex-wrap: nowrap;
+    min-width: 0;
+    overflow: hidden;
+}
 .bank-balance-segment {
     min-width: 4px;
-    border-radius: 0;
     flex-shrink: 0;
+    border-radius: 0;
 }
 .bank-balance-segment:first-of-type { border-radius: 6px 0 0 6px; }
 .bank-balance-segment:last-of-type { border-radius: 0 6px 6px 0; }
 .bank-balance-segment:only-child { border-radius: 6px; }
 
-/* Legend: single line on iOS/desktop, scroll if needed instead of wrapping */
+/* Legend: single line only, scroll horizontally if needed — never wrap to second row */
 .bank-balance-legend {
+    display: flex;
+    flex-wrap: nowrap;
+    min-width: 0;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
 }
 .bank-balance-legend::-webkit-scrollbar { display: none; }
+.bank-balance-legend > span {
+    white-space: nowrap;
+    flex-shrink: 0;
+}
 
 /* Custom segment tooltip (replaces native title) */
 .bank-balance-tooltip {
@@ -180,6 +199,13 @@ textarea,
 
     .premium-card .flex {
         flex-wrap: wrap;
+    }
+
+    /* Bank balance: keep header, bar, and legend on one row — do not wrap to second row */
+    .bank-balance-card > .flex:first-of-type,
+    .bank-balance-card .bank-balance-bar-wrap,
+    .bank-balance-card .bank-balance-legend {
+        flex-wrap: nowrap;
     }
 
     .premium-card .flex > button,
