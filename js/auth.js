@@ -221,28 +221,16 @@ async function loadStateFromCloud(retryCount) {
                 cloudTime = cloudData.lastUpdated.toMillis();
             }
             var localModified = 0;
-            var lastSyncedToCloud = 0;
             try {
                 var modKey = STORAGE_KEYS.MODIFIED;
-                var syncKey = STORAGE_KEYS.LAST_SYNCED;
                 var stored = localStorage.getItem(modKey);
-                var synced = localStorage.getItem(syncKey);
                 if (stored) localModified = parseInt(stored, 10) || 0;
-                if (synced) lastSyncedToCloud = parseInt(synced, 10) || 0;
             } catch (e) {}
             
-            // Only use local if:
-            // 1. Local was modified AFTER we last synced to cloud (meaning we made changes on this device)
-            // 2. AND local is newer than cloud (or cloud is missing)
-            // This ensures we don't overwrite cloud with stale state on page refresh
-            var hasLocalChangesSinceLastSync = localModified > lastSyncedToCloud && lastSyncedToCloud > 0;
-            var localIsNewerThanCloud = localModified > cloudTime;
-            // 3. Or: local was modified very recently (e.g. user just deleted a bucket and switched tabs);
-            //    another tab may have pushed stale state. Prefer this tab's state so deletes stick.
-            var now = Date.now();
-            var localModifiedRecently = localModified > 0 && (now - localModified) < 90000; // 90 sec
-
-            if ((hasLocalChangesSinceLastSync && localIsNewerThanCloud) || (localModifiedRecently && hasMeaningfulData(state))) {
+            // Last-write-wins: only overwrite local with cloud when cloud is STRICTLY newer.
+            // If local is newer or equal (localModified >= cloudTime), keep local and push — so deletes (e.g. "S") stick.
+            // If cloud is strictly newer (another device/tab pushed), use cloud — so two-way sync works.
+            if (localModified >= cloudTime && localModified > 0 && hasMeaningfulData(state)) {
                 await saveStateToCloud();
                 if (typeof refreshUI === 'function') refreshUI();
                 updateSyncStatus('Synced (local was newer)', true);
@@ -250,18 +238,7 @@ async function loadStateFromCloud(retryCount) {
                 return;
             }
 
-            // Same-tab safeguard: when you return to this tab, if we had edits in the last 5 min,
-            // prefer local and push to cloud. Backgrounded tabs often don't finish the cloud save,
-            // so without this, loading from cloud would overwrite local and bring back deleted buckets.
-            var preferLocalWindowMs = 300000; // 5 minutes
-            if (localModified > 0 && (now - localModified) < preferLocalWindowMs && hasMeaningfulData(state)) {
-                await saveStateToCloud();
-                if (typeof refreshUI === 'function') refreshUI();
-                updateSyncStatus('Synced (local kept)', true);
-                return;
-            }
-
-            // If cloud is newer or we haven't made local changes since last sync, use cloud
+            // Cloud is strictly newer: use cloud so other device's changes show
             // This ensures phone changes aren't overwritten by stale desktop state
             
             if (cloudData.data && typeof cloudData.data === 'object') {
@@ -396,18 +373,13 @@ function flushCloudSave() {
         saveStateToCloud();
     }
 }
-// When user returns to the tab we do NOT auto-pull from cloud — that was overwriting local
-// and bringing back deleted buckets (e.g. payables "S"). We only push on hide so your
-// deletes stick. Use manual sync / refresh if you need to pull from another device.
 function pullFromCloudWhenVisible() {
-    // Disabled: was overwriting local state when returning to tab, making deleted buckets reappear.
-    // if (currentUser && document.visibilityState === 'visible' && !syncInProgress) loadStateFromCloud();
+    if (currentUser && document.visibilityState === 'visible' && !syncInProgress) loadStateFromCloud();
 }
 if (typeof document !== 'undefined') {
     document.addEventListener('visibilitychange', function() {
         if (document.visibilityState === 'hidden') flushCloudSave();
-        // Don't pull when visible — keeps local edits (e.g. deleted "S") from being overwritten
-        // if (document.visibilityState === 'visible') pullFromCloudWhenVisible();
+        if (document.visibilityState === 'visible') pullFromCloudWhenVisible();
     });
     window.addEventListener('pagehide', flushCloudSave);
 }
