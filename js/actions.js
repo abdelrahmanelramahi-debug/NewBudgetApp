@@ -1344,7 +1344,9 @@ function applyPaycheckDistribute() {
     updateGlobalUI();
 }
 
-// Savings Buckets
+// Savings Buckets (Extra option value in From/To dropdowns)
+var SAVINGS_EXTRA = '__extra__';
+
 function openSavingsBuckets() {
     renderSavingsBuckets();
     toggleModal('savings-buckets-modal', true);
@@ -1371,47 +1373,72 @@ function getSavingsBucketAmount(bucketKey) {
     return state.accounts.savingsBuckets[bucketKey] || 0;
 }
 
+function doSavingsTransfer(fromKey, toKey, amount) {
+    if (!fromKey || !toKey || fromKey === toKey) return;
+    var val = parseFloat(amount);
+    if (!val || val <= 0) return;
+    ensureAccountsState();
+    if (fromKey === SAVINGS_EXTRA && toKey !== SAVINGS_EXTRA) {
+        if (!canApplySurplusDelta(-val)) return;
+        pushToUndo();
+        adjustSavingsBucket(toKey, val);
+        applyTransaction({ type: 'adjust_surplus', delta: -val });
+    } else if (fromKey !== SAVINGS_EXTRA && toKey === SAVINGS_EXTRA) {
+        var available = getSavingsBucketAmount(fromKey);
+        var take = Math.min(val, available);
+        if (take <= 0) return;
+        pushToUndo();
+        adjustSavingsBucket(fromKey, -take);
+        applyTransaction({ type: 'adjust_surplus', delta: take });
+    } else {
+        var available = getSavingsBucketAmount(fromKey);
+        var take = Math.min(val, available);
+        if (take <= 0) return;
+        pushToUndo();
+        state.accounts.savingsBuckets[fromKey] = available - take;
+        state.accounts.savingsBuckets[toKey] = (state.accounts.savingsBuckets[toKey] || 0) + take;
+        syncSavingsTotal();
+    }
+    saveState();
+    renderSavingsBuckets();
+    updateGlobalUI();
+}
+
 function renderSavingsBuckets() {
     ensureAccountsState();
-    const list = document.getElementById('savings-buckets-list');
-    if (!list) return;
-    const entries = Object.entries(state.accounts.savingsBuckets);
-    const defaultBucket = state.accounts.savingsDefaultBucket || 'Main';
+    var entries = Object.entries(state.accounts.savingsBuckets);
+    var defaultBucket = state.accounts.savingsDefaultBucket || 'Main';
+    var esc = function (s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); };
 
-    const defaultSelect = `
-        <div class="bg-slate-50 p-3 rounded-xl mb-3">
-            <label class="text-[9px] font-bold uppercase text-slate-400">New money from Extra goes to</label>
-            <select id="savings-default-bucket" class="w-full bg-transparent text-sm font-black outline-none mt-1" onchange="updateSavingsDefaultBucket(this.value)">
-                ${entries.map(([key]) => `<option value="${key}" ${key === defaultBucket ? 'selected' : ''}>${key}</option>`).join('')}
-            </select>
-        </div>
-    `;
+    var fromSel = document.getElementById('savings-transfer-from');
+    var toSel = document.getElementById('savings-transfer-to');
+    if (fromSel && toSel) {
+        var opts = '<option value="' + SAVINGS_EXTRA + '">Extra</option>' + entries.map(function (e) { return '<option value="' + esc(e[0]) + '">' + esc(e[0]) + '</option>'; }).join('');
+        fromSel.innerHTML = opts;
+        toSel.innerHTML = opts;
+    }
+
+    var defaultSel = document.getElementById('savings-default-bucket');
+    if (defaultSel) {
+        defaultSel.innerHTML = entries.map(function (e) { return '<option value="' + esc(e[0]) + '"' + (e[0] === defaultBucket ? ' selected' : '') + '>' + esc(e[0]) + '</option>'; }).join('');
+        defaultSel.onchange = function () { updateSavingsDefaultBucket(this.value); };
+    }
+
+    var list = document.getElementById('savings-buckets-list');
+    if (!list) return;
     if (!entries.length) {
-        list.innerHTML = defaultSelect + '<div class="text-center text-[10px] text-slate-300 py-2">No buckets yet. Create one above.</div>';
+        list.innerHTML = '<div class="text-center text-[10px] text-slate-300 py-2">No buckets yet. Create one above.</div>';
         return;
     }
-    var esc = function (s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); };
-    list.innerHTML = defaultSelect + entries.map(([key, amount]) => `
-        <div class="bucket-row p-3 bg-slate-50 rounded-xl space-y-2" data-bucket-key="${esc(key)}">
-            <div class="flex justify-between items-baseline">
-                <span class="text-sm font-bold text-slate-800">${esc(key)}</span>
-                <span class="bucket-amount text-[10px] text-slate-500">${formatMoney(amount)} ${getCurrencyLabel()}</span>
-            </div>
-            <div class="flex flex-wrap gap-2">
-                <button type="button" data-action="add" class="bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg text-[10px] font-bold">Add</button>
-                <button type="button" data-action="deduct" class="bg-red-100 text-red-600 px-3 py-1.5 rounded-lg text-[10px] font-bold">Deduct</button>
-                <button type="button" data-action="to-extra" class="bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-[10px] font-bold">To Extra</button>
-                <select data-action="move" class="bg-white border border-slate-200 px-2 py-1.5 rounded-lg text-[10px] font-bold">
-                    <option value="">Move to…</option>
-                    ${entries.filter(([target]) => target !== key).map(([target]) => `<option value="${esc(target)}">${esc(target)}</option>`).join('')}
-                </select>
-            </div>
-            <div class="flex gap-2 pt-0.5 border-t border-slate-200/60">
-                <button type="button" data-action="rename" class="text-[10px] font-bold text-slate-500 hover:text-slate-700">Rename</button>
-                <button type="button" data-action="delete" class="text-[10px] font-bold text-rose-600 hover:text-rose-700">Delete</button>
-            </div>
-        </div>
-    `).join('');
+    list.innerHTML = entries.map(function (e) {
+        var key = e[0], amount = e[1];
+        return '<div class="bucket-row flex justify-between items-center p-2.5 bg-slate-50 rounded-xl" data-bucket-key="' + esc(key) + '">' +
+            '<div class="flex items-baseline gap-2"><span class="text-sm font-bold text-slate-800">' + esc(key) + '</span>' +
+            '<span class="bucket-amount text-[10px] text-slate-500">' + formatMoney(amount) + ' ' + getCurrencyLabel() + '</span></div>' +
+            '<div class="flex gap-2"><button type="button" data-action="rename" class="text-[10px] font-bold text-slate-500 hover:text-slate-700">Rename</button>' +
+            '<button type="button" data-action="delete" class="text-[10px] font-bold text-rose-600 hover:text-rose-700">Delete</button></div></div>';
+    }).join('');
+
     if (!list._savingsDelegation) {
         list._savingsDelegation = true;
         list.addEventListener('click', function (e) {
@@ -1421,26 +1448,26 @@ function renderSavingsBuckets() {
             var btn = e.target.closest('button[data-action]');
             if (!btn || !key) return;
             var action = btn.getAttribute('data-action');
-            if (action === 'add') applySavingsBucketDelta(key, 1);
-            else if (action === 'deduct') applySavingsBucketDelta(key, -1);
-            else if (action === 'to-extra') transferSavingsBucketToSurplus(key);
-            else if (action === 'rename') renameSavingsBucket(key);
+            if (action === 'rename') renameSavingsBucket(key);
             else if (action === 'delete') deleteSavingsBucket(key);
         });
-        list.addEventListener('change', function (e) {
-            var sel = e.target;
-            if (sel.getAttribute('data-action') !== 'move' || !sel.value) return;
-            var row = sel.closest('.bucket-row');
-            if (!row) return;
-            var fromKey = row.getAttribute('data-bucket-key');
-            moveSavingsBucket(fromKey, sel.value);
-            sel.selectedIndex = 0;
+    }
+
+    var transferBtn = document.getElementById('savings-transfer-btn');
+    if (transferBtn && !transferBtn._savingsTransferWired) {
+        transferBtn._savingsTransferWired = true;
+        transferBtn.addEventListener('click', function () {
+            var from = document.getElementById('savings-transfer-from');
+            var to = document.getElementById('savings-transfer-to');
+            var amountEl = document.getElementById('savings-transfer-amount');
+            if (from && to && amountEl) doSavingsTransfer(from.value, to.value, amountEl.value);
         });
     }
 }
 
 function applySavingsBucketDelta(bucketKey, dir) {
-    const val = parseFloat(document.getElementById('savings-bucket-amount').value);
+    var el = document.getElementById('savings-bucket-amount');
+    var val = el ? parseFloat(el.value) : NaN;
     if (!val || val <= 0) return;
     pushToUndo();
     if (dir > 0) {
@@ -1460,7 +1487,8 @@ function applySavingsBucketDelta(bucketKey, dir) {
 }
 
 function transferSavingsBucketToSurplus(bucketKey) {
-    const val = parseFloat(document.getElementById('savings-bucket-amount').value);
+    var el = document.getElementById('savings-bucket-amount');
+    var val = el ? parseFloat(el.value) : NaN;
     if (!val || val <= 0) return;
     pushToUndo();
     const available = getSavingsBucketAmount(bucketKey);
@@ -1475,7 +1503,8 @@ function transferSavingsBucketToSurplus(bucketKey) {
 
 function moveSavingsBucket(fromKey, toKey) {
     if (!fromKey || !toKey || fromKey === toKey) return;
-    const val = parseFloat(document.getElementById('savings-bucket-amount').value);
+    var el = document.getElementById('savings-bucket-amount');
+    var val = el ? parseFloat(el.value) : NaN;
     if (!val || val <= 0) return;
     ensureAccountsState();
     const available = getSavingsBucketAmount(fromKey);
@@ -1571,7 +1600,9 @@ function deleteSavingsBucket(name) {
     }, null, { confirmLabel: 'Delete' });
 }
 
-// Payables Buckets (subcategories like Savings)
+// Payables Buckets (subcategories like Savings; Extra option in From/To)
+var PAYABLES_EXTRA = '__extra__';
+
 function openPayablesBuckets() {
     renderPayablesBuckets();
     toggleModal('payables-buckets-modal', true);
@@ -1598,47 +1629,72 @@ function getPayablesBucketAmount(bucketKey) {
     return state.accounts.payablesBuckets[bucketKey] || 0;
 }
 
+function doPayablesTransfer(fromKey, toKey, amount) {
+    if (!fromKey || !toKey || fromKey === toKey) return;
+    var val = parseFloat(amount);
+    if (!val || val <= 0) return;
+    ensureAccountsState();
+    if (fromKey === PAYABLES_EXTRA && toKey !== PAYABLES_EXTRA) {
+        if (!canApplySurplusDelta(-val)) return;
+        pushToUndo();
+        adjustPayablesBucket(toKey, val);
+        applyTransaction({ type: 'adjust_surplus', delta: -val });
+    } else if (fromKey !== PAYABLES_EXTRA && toKey === PAYABLES_EXTRA) {
+        var available = getPayablesBucketAmount(fromKey);
+        var take = Math.min(val, available);
+        if (take <= 0) return;
+        pushToUndo();
+        adjustPayablesBucket(fromKey, -take);
+        applyTransaction({ type: 'adjust_surplus', delta: take });
+    } else {
+        var available = getPayablesBucketAmount(fromKey);
+        var take = Math.min(val, available);
+        if (take <= 0) return;
+        pushToUndo();
+        state.accounts.payablesBuckets[fromKey] = available - take;
+        state.accounts.payablesBuckets[toKey] = (state.accounts.payablesBuckets[toKey] || 0) + take;
+        syncPayablesTotal();
+    }
+    saveState();
+    renderPayablesBuckets();
+    updateGlobalUI();
+}
+
 function renderPayablesBuckets() {
     ensureAccountsState();
-    const list = document.getElementById('payables-buckets-list');
-    if (!list) return;
-    const entries = Object.entries(state.accounts.payablesBuckets);
-    const defaultBucket = state.accounts.payablesDefaultBucket || 'Main';
+    var entries = Object.entries(state.accounts.payablesBuckets);
+    var defaultBucket = state.accounts.payablesDefaultBucket || 'Main';
+    var esc = function (s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); };
 
-    const defaultSelect = `
-        <div class="bg-amber-50 p-3 rounded-xl mb-3">
-            <label class="text-[9px] font-bold uppercase text-amber-600">New money from Extra goes to</label>
-            <select id="payables-default-bucket" class="w-full bg-transparent text-sm font-black outline-none mt-1" onchange="updatePayablesDefaultBucket(this.value)">
-                ${entries.map(([key]) => `<option value="${key}" ${key === defaultBucket ? 'selected' : ''}>${key}</option>`).join('')}
-            </select>
-        </div>
-    `;
+    var fromSel = document.getElementById('payables-transfer-from');
+    var toSel = document.getElementById('payables-transfer-to');
+    if (fromSel && toSel) {
+        var opts = '<option value="' + PAYABLES_EXTRA + '">Extra</option>' + entries.map(function (e) { return '<option value="' + esc(e[0]) + '">' + esc(e[0]) + '</option>'; }).join('');
+        fromSel.innerHTML = opts;
+        toSel.innerHTML = opts;
+    }
+
+    var defaultSel = document.getElementById('payables-default-bucket');
+    if (defaultSel) {
+        defaultSel.innerHTML = entries.map(function (e) { return '<option value="' + esc(e[0]) + '"' + (e[0] === defaultBucket ? ' selected' : '') + '>' + esc(e[0]) + '</option>'; }).join('');
+        defaultSel.onchange = function () { updatePayablesDefaultBucket(this.value); };
+    }
+
+    var list = document.getElementById('payables-buckets-list');
+    if (!list) return;
     if (!entries.length) {
-        list.innerHTML = defaultSelect + '<div class="text-center text-[10px] text-slate-300 py-2">No buckets yet. Create one above.</div>';
+        list.innerHTML = '<div class="text-center text-[10px] text-slate-300 py-2">No buckets yet. Create one above.</div>';
         return;
     }
-    var esc = function (s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); };
-    list.innerHTML = defaultSelect + entries.map(([key, amount]) => `
-        <div class="bucket-row p-3 bg-amber-50 rounded-xl space-y-2" data-bucket-key="${esc(key)}">
-            <div class="flex justify-between items-baseline">
-                <span class="text-sm font-bold text-slate-800">${esc(key)}</span>
-                <span class="bucket-amount text-[10px] text-slate-500">${formatMoney(amount)} ${getCurrencyLabel()}</span>
-            </div>
-            <div class="flex flex-wrap gap-2">
-                <button type="button" data-action="add" class="bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg text-[10px] font-bold">Add</button>
-                <button type="button" data-action="deduct" class="bg-red-100 text-red-600 px-3 py-1.5 rounded-lg text-[10px] font-bold">Deduct</button>
-                <button type="button" data-action="to-extra" class="bg-slate-200 text-slate-700 px-3 py-1.5 rounded-lg text-[10px] font-bold">To Extra</button>
-                <select data-action="move" class="bg-white border border-amber-200 px-2 py-1.5 rounded-lg text-[10px] font-bold">
-                    <option value="">Move to…</option>
-                    ${entries.filter(([target]) => target !== key).map(([target]) => `<option value="${esc(target)}">${esc(target)}</option>`).join('')}
-                </select>
-            </div>
-            <div class="flex gap-2 pt-0.5 border-t border-amber-200/60">
-                <button type="button" data-action="rename" class="text-[10px] font-bold text-slate-500 hover:text-slate-700">Rename</button>
-                <button type="button" data-action="delete" class="text-[10px] font-bold text-rose-600 hover:text-rose-700">Delete</button>
-            </div>
-        </div>
-    `).join('');
+    list.innerHTML = entries.map(function (e) {
+        var key = e[0], amount = e[1];
+        return '<div class="bucket-row flex justify-between items-center p-2.5 bg-amber-50 rounded-xl" data-bucket-key="' + esc(key) + '">' +
+            '<div class="flex items-baseline gap-2"><span class="text-sm font-bold text-slate-800">' + esc(key) + '</span>' +
+            '<span class="bucket-amount text-[10px] text-slate-500">' + formatMoney(amount) + ' ' + getCurrencyLabel() + '</span></div>' +
+            '<div class="flex gap-2"><button type="button" data-action="rename" class="text-[10px] font-bold text-slate-500 hover:text-slate-700">Rename</button>' +
+            '<button type="button" data-action="delete" class="text-[10px] font-bold text-rose-600 hover:text-rose-700">Delete</button></div></div>';
+    }).join('');
+
     if (!list._payablesDelegation) {
         list._payablesDelegation = true;
         list.addEventListener('click', function (e) {
@@ -1648,26 +1704,26 @@ function renderPayablesBuckets() {
             var btn = e.target.closest('button[data-action]');
             if (!btn || !key) return;
             var action = btn.getAttribute('data-action');
-            if (action === 'add') applyPayablesBucketDelta(key, 1);
-            else if (action === 'deduct') applyPayablesBucketDelta(key, -1);
-            else if (action === 'to-extra') transferPayablesBucketToSurplus(key);
-            else if (action === 'rename') renamePayablesBucket(key);
+            if (action === 'rename') renamePayablesBucket(key);
             else if (action === 'delete') deletePayablesBucket(key);
         });
-        list.addEventListener('change', function (e) {
-            var sel = e.target;
-            if (sel.getAttribute('data-action') !== 'move' || !sel.value) return;
-            var row = sel.closest('.bucket-row');
-            if (!row) return;
-            var fromKey = row.getAttribute('data-bucket-key');
-            movePayablesBucket(fromKey, sel.value);
-            sel.selectedIndex = 0;
+    }
+
+    var transferBtn = document.getElementById('payables-transfer-btn');
+    if (transferBtn && !transferBtn._payablesTransferWired) {
+        transferBtn._payablesTransferWired = true;
+        transferBtn.addEventListener('click', function () {
+            var from = document.getElementById('payables-transfer-from');
+            var to = document.getElementById('payables-transfer-to');
+            var amountEl = document.getElementById('payables-transfer-amount');
+            if (from && to && amountEl) doPayablesTransfer(from.value, to.value, amountEl.value);
         });
     }
 }
 
 function applyPayablesBucketDelta(bucketKey, dir) {
-    const val = parseFloat(document.getElementById('payables-bucket-amount').value);
+    var el = document.getElementById('payables-bucket-amount');
+    var val = el ? parseFloat(el.value) : NaN;
     if (!val || val <= 0) return;
     pushToUndo();
     if (dir > 0) {
@@ -1687,7 +1743,8 @@ function applyPayablesBucketDelta(bucketKey, dir) {
 }
 
 function transferPayablesBucketToSurplus(bucketKey) {
-    const val = parseFloat(document.getElementById('payables-bucket-amount').value);
+    var el = document.getElementById('payables-bucket-amount');
+    var val = el ? parseFloat(el.value) : NaN;
     if (!val || val <= 0) return;
     pushToUndo();
     const available = getPayablesBucketAmount(bucketKey);
@@ -1702,7 +1759,8 @@ function transferPayablesBucketToSurplus(bucketKey) {
 
 function movePayablesBucket(fromKey, toKey) {
     if (!fromKey || !toKey || fromKey === toKey) return;
-    const val = parseFloat(document.getElementById('payables-bucket-amount').value);
+    var el = document.getElementById('payables-bucket-amount');
+    var val = el ? parseFloat(el.value) : NaN;
     if (!val || val <= 0) return;
     ensureAccountsState();
     const available = getPayablesBucketAmount(fromKey);
