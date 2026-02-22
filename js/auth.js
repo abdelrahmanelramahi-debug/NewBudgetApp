@@ -250,6 +250,17 @@ async function loadStateFromCloud(retryCount) {
                 return;
             }
 
+            // Same-tab safeguard: when you return to this tab, if we had edits in the last 5 min,
+            // prefer local and push to cloud. Backgrounded tabs often don't finish the cloud save,
+            // so without this, loading from cloud would overwrite local and bring back deleted buckets.
+            var preferLocalWindowMs = 300000; // 5 minutes
+            if (localModified > 0 && (now - localModified) < preferLocalWindowMs && hasMeaningfulData(state)) {
+                await saveStateToCloud();
+                if (typeof refreshUI === 'function') refreshUI();
+                updateSyncStatus('Synced (local kept)', true);
+                return;
+            }
+
             // If cloud is newer or we haven't made local changes since last sync, use cloud
             // This ensures phone changes aren't overwritten by stale desktop state
             
