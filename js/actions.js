@@ -1472,7 +1472,6 @@ function renderSavingsBuckets() {
             '<button type="button" data-action="delete">Delete</button>' +
             '</div></div></div>';
     }).join('');
-    }).join('');
 
     if (!list._savingsDelegation) {
         list._savingsDelegation = true;
