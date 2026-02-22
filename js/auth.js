@@ -221,24 +221,35 @@ async function loadStateFromCloud(retryCount) {
                 cloudTime = cloudData.lastUpdated.toMillis();
             }
             var localModified = 0;
+            var lastSyncedToCloud = 0;
             try {
                 var modKey = STORAGE_KEYS.MODIFIED;
+                var syncKey = STORAGE_KEYS.LAST_SYNCED;
                 var stored = localStorage.getItem(modKey);
+                var synced = localStorage.getItem(syncKey);
                 if (stored) localModified = parseInt(stored, 10) || 0;
+                if (synced) lastSyncedToCloud = parseInt(synced, 10) || 0;
             } catch (e) {}
             
-            // Last-write-wins: only overwrite local with cloud when cloud is STRICTLY newer.
-            // If local is newer or equal (localModified >= cloudTime), keep local and push — so deletes (e.g. "S") stick.
-            // If cloud is strictly newer (another device/tab pushed), use cloud — so two-way sync works.
-            if (localModified >= cloudTime && localModified > 0 && hasMeaningfulData(state)) {
+            // This device has local changes we haven't synced (or we synced but another tab/device overwrote cloud).
+            // Never overwrite local with cloud in that case — push our state so deletes (e.g. "S") stick.
+            // Fixes: "S" spawning back when another tab had stale state and pushed, or when visibility triggers pull.
+            if (localModified > lastSyncedToCloud && hasMeaningfulData(state)) {
                 await saveStateToCloud();
                 if (typeof refreshUI === 'function') refreshUI();
                 updateSyncStatus('Synced (local was newer)', true);
                 if (cloudData.lastUpdated) lastSyncTime = cloudData.lastUpdated.toDate();
                 return;
             }
+            // Cloud is newer than our last sync and we have no unsynced local changes: use cloud (other device's changes).
+            if (cloudTime <= localModified || !hasMeaningfulData(cloudData.data)) {
+                await saveStateToCloud();
+                if (typeof refreshUI === 'function') refreshUI();
+                updateSyncStatus('Synced', true);
+                return;
+            }
 
-            // Cloud is strictly newer: use cloud so other device's changes show
+            // Cloud is strictly newer and we have no unsynced changes: use cloud
             // This ensures phone changes aren't overwritten by stale desktop state
             
             if (cloudData.data && typeof cloudData.data === 'object') {
