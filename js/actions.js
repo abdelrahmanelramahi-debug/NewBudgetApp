@@ -1483,6 +1483,7 @@ function renderSavingsBuckets() {
             var row = editInput.closest('.bucket-row');
             var wrap = editInput.closest('.bucket-row-label-wrap');
             if (!row || !wrap) return;
+            if (!list.contains(row)) return; // Row was removed by re-render (e.g. after delete) — don't run rename with stale data
             var key = row.getAttribute('data-bucket-key');
             var newName = editInput.value.trim();
             wrap.classList.remove('editing');
@@ -1494,6 +1495,7 @@ function renderSavingsBuckets() {
             var row = editInput.closest('.bucket-row');
             var wrap = editInput.closest('.bucket-row-label-wrap');
             if (!row || !wrap) return;
+            if (!list.contains(row)) return; // Row was removed by re-render — don't run rename with stale data
             var key = row.getAttribute('data-bucket-key');
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -1826,6 +1828,7 @@ function renderPayablesBuckets() {
             var row = editInput.closest('.bucket-row');
             var wrap = editInput.closest('.bucket-row-label-wrap');
             if (!row || !wrap) return;
+            if (!list.contains(row)) return; // Row was removed by re-render (e.g. after delete) — don't run rename with stale data
             var key = row.getAttribute('data-bucket-key');
             var newName = editInput.value.trim();
             wrap.classList.remove('editing');
@@ -1837,6 +1840,7 @@ function renderPayablesBuckets() {
             var row = editInput.closest('.bucket-row');
             var wrap = editInput.closest('.bucket-row-label-wrap');
             if (!row || !wrap) return;
+            if (!list.contains(row)) return; // Row was removed by re-render — don't run rename with stale data
             var key = row.getAttribute('data-bucket-key');
             if (e.key === 'Enter') {
                 e.preventDefault();
