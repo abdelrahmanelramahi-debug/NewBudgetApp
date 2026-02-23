@@ -1732,7 +1732,12 @@ function doPayablesSendToWeekly(fromBucketKey, amount) {
 
 function renderPayablesBuckets() {
     ensureAccountsState();
-    var entries = Object.entries(state.accounts.payablesBuckets);
+    var entries = Object.entries(state.accounts.payablesBuckets || {});
+    // Hard filter: never show buckets the user has explicitly deleted, even if some stale source
+    // (cloud, backup, old tab) tried to re-insert them.
+    if (Array.isArray(state._deletedPayablesBuckets) && state._deletedPayablesBuckets.length) {
+        entries = entries.filter(function (e) { return state._deletedPayablesBuckets.indexOf(e[0]) === -1; });
+    }
     var esc = function (s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); };
     var bucketOpts = entries.map(function (e) { return '<option value="' + esc(e[0]) + '">' + esc(e[0]) + '</option>'; }).join('');
     var fromToOpts = '<option value="' + PAYABLES_EXTRA + '">Extra</option><option value="' + PAYABLES_WEEKLY + '">Weekly Allowance</option>' + bucketOpts;
@@ -1971,6 +1976,7 @@ function deletePayablesBucket(name) {
     showAppConfirm('Delete "' + name + '" and move its funds to Extra?', function () {
         const amount = state.accounts.payablesBuckets[name] || 0;
         pushToUndo();
+        if (typeof markPayablesBucketDeleted === 'function') markPayablesBucketDeleted(name);
         delete state.accounts.payablesBuckets[name];
         if (state.accounts.payablesDefaultBucket === name) {
             state.accounts.payablesDefaultBucket = Object.keys(state.accounts.payablesBuckets)[0];

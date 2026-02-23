@@ -84,6 +84,23 @@ const WEEKLY_MAX_WEEKS = 4;
 let pendingDangerAction = null;
 let requiredDangerPhrase = "";
 
+// Hard-suppression helpers for payables buckets that must never resurrect once deleted
+function markPayablesBucketDeleted(name) {
+    if (!name) return;
+    if (!Array.isArray(state._deletedPayablesBuckets)) state._deletedPayablesBuckets = [];
+    if (!state._deletedPayablesBuckets.includes(name)) state._deletedPayablesBuckets.push(name);
+}
+
+function purgeDeletedPayablesBuckets() {
+    if (!state.accounts || !state.accounts.payablesBuckets) return;
+    if (!Array.isArray(state._deletedPayablesBuckets) || !state._deletedPayablesBuckets.length) return;
+    state._deletedPayablesBuckets.forEach(function (name) {
+        if (name && state.accounts.payablesBuckets[name] !== undefined) {
+            delete state.accounts.payablesBuckets[name];
+        }
+    });
+}
+
 /** Returns a fresh example budget (generic defaults, not personal). Use for "Load example budget" in Settings. */
 function getExampleBudget() {
     return {
@@ -185,6 +202,10 @@ function migrateState() {
             }
         });
         if (!state.balances) state.balances = {};
+
+        // Initialize deleted-bucket trackers used to hard-suppress resurrected buckets from
+        // any stale source (cloud, local backup, or old tabs).
+        if (!Array.isArray(state._deletedPayablesBuckets)) state._deletedPayablesBuckets = [];
         ACCOUNT_LABELS.forEach(label => {
             if (state.balances[label] !== undefined) delete state.balances[label];
         });
@@ -231,6 +252,7 @@ function migrateState() {
         food: state.food || { daysTotal: 28, daysUsed: 0, lockedAmount: 0, history: [], viewWeek: 0 },
         histories: state.histories || {}
     };
+    if (!Array.isArray(state._deletedPayablesBuckets)) state._deletedPayablesBuckets = [];
 }
 
 function isAccountLabel(label) {
@@ -415,6 +437,9 @@ function initSurplusFromOpening() {
     if (!state.accounts.payablesDefaultBucket) {
         state.accounts.payablesDefaultBucket = 'Main';
     }
+
+    // After any ensure/migration, force-remove buckets the user has explicitly deleted.
+    purgeDeletedPayablesBuckets();
 
     state.categories.forEach(sec => {
         sec.items.forEach(item => {
