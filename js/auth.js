@@ -254,15 +254,37 @@ async function loadStateFromCloud(retryCount) {
             
             if (cloudData.data && typeof cloudData.data === 'object') {
                 if (hasMeaningfulData(cloudData.data)) {
-                    // Apply cloud state as-is (last-write-wins). Do NOT "restore" surplus or run
-                    // recalculateSurplusFromReality here — that overwrites correct cloud data with
-                    // device-specific values and causes wrong Extra/Weekly across devices.
+                    // Preserve any locally-tracked deleted payables buckets when merging cloud state,
+                    // so buckets the user explicitly deleted (e.g. "S", "Sibling") cannot resurrect
+                    // just because cloud has an older copy.
+                    var localDeletedBuckets = Array.isArray(state._deletedPayablesBuckets) ? state._deletedPayablesBuckets.slice() : [];
+
+                    // Apply cloud state as-is (last-write-wins) on top of local
                     state = { ...state, ...cloudData.data };
+
+                    // Merge tombstones: union of local + cloud tombstones
+                    var cloudDeletedBuckets = Array.isArray(cloudData.data._deletedPayablesBuckets) ? cloudData.data._deletedPayablesBuckets : [];
+                    var mergedDeleted = localDeletedBuckets.concat(cloudDeletedBuckets);
+                    if (mergedDeleted.length) {
+                        var seen = {};
+                        state._deletedPayablesBuckets = mergedDeleted.filter(function (n) {
+                            if (!n) return false;
+                            if (seen[n]) return false;
+                            seen[n] = true;
+                            return true;
+                        });
+                    }
+
                     migrateState();
                     ensureSystemSavings();
                     ensureCoreItems();
                     ensureSettings();
                     if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
+
+                    // After migrations/ensure, hard-purge any deleted payables buckets from accounts
+                    if (typeof purgeDeletedPayablesBuckets === 'function') {
+                        purgeDeletedPayablesBuckets();
+                    }
 
                     var stateKey = STORAGE_KEYS.STATE;
                     var modKey = STORAGE_KEYS.MODIFIED;
