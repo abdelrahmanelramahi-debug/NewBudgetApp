@@ -910,7 +910,8 @@ function updateFoodUI() {
                     var idx = br * 7 + c;
                     if (idx < bufferDates.length) {
                         var b = bufferDates[idx];
-                        bufRow += '<div class="food-overview-cell rounded-md flex items-center justify-center text-[10px] font-black min-h-[2rem] bg-emerald-500 text-white border border-emerald-600" title="' + b.monthName + ' ' + b.date + '">' + b.date + '</div>';
+                        // Clicking a buffer day releases one buffer day (partial release) back to Extra.
+                        bufRow += '<div onclick="releaseBufferDays(1)" role="button" class="food-overview-cell rounded-md flex items-center justify-center text-[10px] font-black min-h-[2rem] bg-emerald-500 text-white border border-emerald-600 cursor-pointer hover:bg-emerald-600" title="Click to use 1 buffer day · ' + b.monthName + ' ' + b.date + '">' + b.date + '</div>';
                     } else {
                         bufRow += '<div class="food-overview-cell rounded-md min-h-[2rem] bg-transparent"></div>';
                     }

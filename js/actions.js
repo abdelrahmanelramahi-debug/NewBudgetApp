@@ -1008,6 +1008,41 @@ function buyFoodDay() {
     updateGlobalUI();
 }
 
+// Release a specific number of buffer days (partial release) back to Extra.
+function releaseBufferDays(days) {
+    var n = Math.floor(Number(days) || 0);
+    if (n <= 0) return;
+    if (!state.food) return;
+    var info = typeof getFoodRemainderInfo === 'function' ? getFoodRemainderInfo() : null;
+    var dailyRate = (info && info.dailyRate > 0) ? info.dailyRate : (600 / 28);
+    var locked = state.food.lockedAmount || 0;
+    if (dailyRate <= 0 || locked <= 0) return;
+    var maxDays = Math.floor(locked / dailyRate);
+    if (maxDays <= 0) return;
+    if (n > maxDays) n = maxDays;
+    var amount = dailyRate * n;
+    if (!amount || amount <= 0) return;
+    pushToUndo();
+    applyTransaction({ type: 'food_release_partial', amount: amount, days: n });
+    saveState();
+    renderLedger();
+    updateGlobalUI();
+}
+
+// Release handler for the UI button: if a day count is entered, release that many days;
+// otherwise fall back to releasing the entire buffer.
+function handleBufferRelease() {
+    var input = document.getElementById('food-lock-val');
+    var raw = input ? input.value : '';
+    var n = Math.floor(parseFloat(raw) || 0);
+    if (n > 0) {
+        releaseBufferDays(n);
+        if (input) input.value = '';
+    } else {
+        releaseAllBuffer();
+    }
+}
+
 function releaseAllBuffer() {
     if(state.food.lockedAmount > 0) {
         pushToUndo();

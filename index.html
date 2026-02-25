@@ -411,7 +411,7 @@
                     <div class="flex flex-wrap gap-2 min-w-0">
                         <input type="number" id="food-lock-val" placeholder="Days to add..." class="flex-1 min-w-0 bg-white border border-emerald-200 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-300" min="1">
                         <button type="button" onclick="buyFoodDay()" class="bg-emerald-500 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase hover:bg-emerald-600 transition shrink-0">Extend</button>
-                        <button type="button" onclick="releaseAllBuffer()" class="px-4 py-2 rounded-lg text-[10px] font-black uppercase bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition shrink-0" title="Release buffer to Extra">Release</button>
+                        <button type="button" onclick="handleBufferRelease()" class="px-4 py-2 rounded-lg text-[10px] font-black uppercase bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition shrink-0" title="Release buffer days back to Extra">Release</button>
                     </div>
                 </div>
             </div>
