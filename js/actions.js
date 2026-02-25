@@ -319,6 +319,16 @@ function applyTransaction(tx) {
             state.accounts.surplus += state.food.lockedAmount;
             state.food.lockedAmount = 0;
             break;
+        case 'food_release_partial':
+            // Return a portion of locked food buffer back to Extra without touching consumed days.
+            // Amount is precomputed by caller based on daily rate * daysToRelease.
+            if (tx.amount > 0 && state.food.lockedAmount > 0) {
+                var releaseAmt = Math.min(state.food.lockedAmount, tx.amount);
+                state.accounts.surplus += releaseAmt;
+                state.food.lockedAmount -= releaseAmt;
+                state.food.history.unshift({ type: 'release', amt: releaseAmt, days: tx.days || 0 });
+            }
+            break;
         case 'food_deficit_raid':
             state.accounts.surplus += tx.amount;
             state.food.history.unshift({type:'deficit', amt: tx.amount});
