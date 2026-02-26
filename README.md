@@ -1,4 +1,4 @@
-# Finance Command Pro (NewBudgetApp)
+# Budgetation (NewBudgetApp)
 
 A budget and ledger app: track monthly income, categories, weekly allowance, food days, savings/payables buckets, and current balance. Data is stored locally (localStorage) and can sync to Firebase when signed in.
 

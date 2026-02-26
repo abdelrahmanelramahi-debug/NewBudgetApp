@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>Finance Command Pro</title>
+    <title>Budgetation</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="styles.css">
@@ -34,11 +34,12 @@
     <div id="onboarding" class="fixed inset-0 z-50 bg-slate-50 overflow-y-auto hidden">
         <div class="max-w-lg mx-auto px-6 py-12">
             <div id="onboarding-step-welcome" class="onboarding-step">
-                <h2 class="text-2xl font-black text-slate-900 mb-2">Welcome to Finance Command</h2>
+                <h2 class="text-2xl font-black text-slate-900 mb-2">Welcome to Budgetation</h2>
                 <p class="text-sm text-slate-600 mb-2">Track spending, weekly allowance, and bank balance in one place.</p>
                 <p class="text-sm text-slate-600 mb-8">Set up your budget in a few steps. You can change anything later in Settings.</p>
                 <div class="flex flex-col gap-3">
                     <button type="button" onclick="onboardingNext()" class="w-full py-3 px-6 bg-indigo-600 text-white rounded-xl text-sm font-black uppercase tracking-wider">Get started</button>
+                    <button type="button" onclick="onboardingSignInAndSkip()" class="w-full py-3 px-6 bg-slate-900 text-white rounded-xl text-sm font-black uppercase tracking-wider">Sign In / Sync</button>
                 </div>
             </div>
             <div id="onboarding-step-currency" class="onboarding-step hidden">
@@ -184,7 +185,7 @@
         <!-- Desktop sidebar (visible from lg up) -->
         <aside id="desktop-sidebar" class="desktop-sidebar hidden lg:flex flex-col w-56 flex-shrink-0 border-r border-slate-200 bg-white/95 backdrop-blur">
             <div class="p-4 border-b border-slate-100">
-                <h1 class="text-sm font-black text-slate-900 tracking-tight">Finance Command</h1>
+                <h1 class="text-sm font-black text-slate-900 tracking-tight">Budgetation</h1>
             </div>
             <nav class="p-2 flex-1 flex flex-col gap-0.5">
                 <button type="button" class="desktop-nav-item nav-ledger-pill tab-btn tab-active w-full text-left py-2 px-3 rounded-md text-sm font-semibold text-slate-700 hover:bg-slate-100 transition" onclick="switchPage('ledger'); closeSideMenu();">Home</button>
