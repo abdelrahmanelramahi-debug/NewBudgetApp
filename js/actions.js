@@ -1008,7 +1008,24 @@ function buyFoodDay() {
     updateGlobalUI();
 }
 
-// Release a specific number of buffer days (partial release) back to Extra.
+// Consume a single buffer day: reduce locked buffer by one daily-rate chunk (no money back to Extra).
+function consumeBufferDay() {
+    if (!state.food) return;
+    var info = typeof getFoodRemainderInfo === 'function' ? getFoodRemainderInfo() : null;
+    var dailyRate = (info && info.dailyRate > 0) ? info.dailyRate : (600 / 28);
+    var locked = state.food.lockedAmount || 0;
+    if (dailyRate <= 0 || locked <= 0) return;
+    if (locked < dailyRate - 0.001) return; // not enough to fund one full buffer day
+    pushToUndo();
+    state.food.lockedAmount = locked - dailyRate;
+    if (!state.food.history) state.food.history = [];
+    state.food.history.unshift({ type: 'buffer_spend', amt: dailyRate });
+    saveState();
+    renderLedger();
+    updateGlobalUI();
+}
+
+// Release a specific number of buffer days (partial release) back to Extra (refund unused buffer).
 function releaseBufferDays(days) {
     var n = Math.floor(Number(days) || 0);
     if (n <= 0) return;

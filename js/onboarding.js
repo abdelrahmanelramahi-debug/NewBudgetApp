@@ -391,6 +391,20 @@ function finishOnboarding() {
     }
 }
 
+// Allow user to sign in and skip the remainder of onboarding in one action.
+function onboardingSignInAndSkip() {
+    if (typeof state !== 'undefined') {
+        state.onboardingComplete = true;
+        if (typeof saveState === 'function') saveState();
+    }
+    hideOnboarding();
+    if (onboardingCompleteCallback) {
+        onboardingCompleteCallback();
+        onboardingCompleteCallback = null;
+    }
+    if (typeof openAuthModal === 'function') openAuthModal();
+}
+
 window.showOnboarding = showOnboarding;
 window.hideOnboarding = hideOnboarding;
 window.onboardingNext = onboardingNext;
