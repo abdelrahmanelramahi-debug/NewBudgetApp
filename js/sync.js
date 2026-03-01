@@ -189,11 +189,15 @@
             } catch (e) {}
 
             if (localModified > lastSyncedToCloud && hasMeaningfulData(state)) {
-                return saveStateToCloud().then(function () {
-                    if (typeof refreshUI === 'function') refreshUI();
-                    updateSyncStatus('Synced (local was newer)', true, false);
-                    if (cloudData.lastUpdated) lastSyncTime = cloudData.lastUpdated.toDate ? cloudData.lastUpdated.toDate() : new Date();
-                });
+                // Only push if cloud is not newer than our local changes (another device may have saved)
+                if (cloudTime <= localModified) {
+                    return saveStateToCloud().then(function () {
+                        if (typeof refreshUI === 'function') refreshUI();
+                        updateSyncStatus('Synced (local was newer)', true, false);
+                        if (cloudData.lastUpdated) lastSyncTime = cloudData.lastUpdated.toDate ? cloudData.lastUpdated.toDate() : new Date();
+                    });
+                }
+                /* else: cloud is newer (e.g. phone saved while this tab was idle), fall through and pull */
             }
             if (cloudTime <= localModified || !hasMeaningfulData(cloudData.data)) {
                 return saveStateToCloud().then(function () {
