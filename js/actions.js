@@ -1150,10 +1150,14 @@ function nextWeek() {
     renderLedger();
 }
 
-// Start new month: set weekly allowance to Week 1 only. Does not reset food cycle (that would show
-// a full "food allowance" before you're paid; reset food cycle after you distribute if you want).
+// Start new month: reset food cycle (clean calendar) and set weekly to Week 1.
+// Food remainder is capped by actual Daily Food balance, so it won't show "money" until you distribute.
 function startNewMonth() {
     pushToUndo();
+    if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
+    state.food.consumedDays = [];
+    state.food.daysUsed = 0;
+    state.food.history = [];
     if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
     state.accounts.weekly.week = 1;
     state.accounts.weekly.balance = getWeeklyBalance(1);
@@ -1165,7 +1169,7 @@ function startNewMonth() {
 window.startNewMonth = startNewMonth;
 
 function openNewMonthConfirm() {
-    showAppConfirm('Set weekly allowance to Week 1? Your budget plan, balances, and food cycle are unchanged.', function () {
+    showAppConfirm('Reset food cycle (clear consumed days) and set weekly allowance to Week 1? Remainder will only show what you\'ve actually funded until you distribute.', function () {
         startNewMonth();
     }, null, { confirmLabel: 'New Month' });
 }

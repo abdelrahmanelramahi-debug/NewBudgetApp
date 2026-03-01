@@ -415,7 +415,11 @@ function getFoodRemainderInfo() {
     const foodBase = fItem ? fItem.amount : 0;
     const daysLeft = state.food.daysTotal - state.food.daysUsed;
     const dailyRate = state.food.daysTotal > 0 ? (foodBase / state.food.daysTotal) : 0;
-    const remainder = daysLeft * dailyRate;
+    const theoreticalRemainder = daysLeft * dailyRate;
+    // Cap by actual Daily Food balance so we don't show "money" until salary has been distributed
+    var foodBalance = (state.balances && state.balances['Daily Food'] !== undefined) ? Number(state.balances['Daily Food']) : 0;
+    if (foodBalance < 0) foodBalance = 0;
+    const remainder = Math.min(theoreticalRemainder, foodBalance);
     return { fItem, foodBase, daysLeft, dailyRate, remainder };
 }
 
