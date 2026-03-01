@@ -85,6 +85,12 @@ window.onload = function() {
         setTimeout(function() {
             if (state && !state._sawHomePageTour && typeof startHomeTour === 'function') startHomeTour();
         }, 600);
+        // Reformat header surplus on resize (compact vs full)
+        var resizeTid;
+        window.addEventListener('resize', function() {
+            clearTimeout(resizeTid);
+            resizeTid = setTimeout(function() { if (typeof updateGlobalUI === 'function') updateGlobalUI(); }, 100);
+        });
     }
 
     if (!state.onboardingComplete && typeof showOnboarding === 'function') {

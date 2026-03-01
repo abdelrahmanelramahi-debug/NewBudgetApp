@@ -1235,7 +1235,8 @@ function updateGlobalUI() {
     var surpEl = getEl('global-surplus');
     var dTrigger = getEl('deficit-trigger');
     if (surpEl) {
-        surpEl.innerText = formatSignedMoney(surplus);
+        var isNarrow = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 640px)').matches;
+        surpEl.innerText = isNarrow && typeof formatCompactSignedMoney === 'function' ? formatCompactSignedMoney(surplus) : formatSignedMoney(surplus);
         surpEl.title = formatSignedMoney(surplus) + ' ' + (typeof getCurrencyLabel === 'function' ? getCurrencyLabel() : '');
     }
 

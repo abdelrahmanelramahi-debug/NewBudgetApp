@@ -16,6 +16,16 @@ function formatSignedMoney(value) {
     return prefix + formatMoney(value);
 }
 
+/** Compact format for tight spaces (e.g. header): "+1.2K", "-500", "0" */
+function formatCompactSignedMoney(value) {
+    var num = Number(value) || 0;
+    var prefix = num >= 0 ? '+' : '';
+    var abs = Math.abs(num);
+    if (abs >= 1000000) return prefix + (abs / 1000000).toFixed(1).replace(/\.0$/, '') + 'M';
+    if (abs >= 1000) return prefix + (abs / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+    return prefix + formatMoney(num);
+}
+
 function getCurrencyLabel() {
     return (typeof state !== 'undefined' && state.settings && state.settings.currency) ? state.settings.currency : 'AED';
 }
@@ -23,5 +33,6 @@ function getCurrencyLabel() {
 if (typeof window !== 'undefined') {
     window.formatMoney = formatMoney;
     window.formatSignedMoney = formatSignedMoney;
+    window.formatCompactSignedMoney = formatCompactSignedMoney;
     window.getCurrencyLabel = getCurrencyLabel;
 }
