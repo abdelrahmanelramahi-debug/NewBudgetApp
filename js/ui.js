@@ -109,7 +109,22 @@ function applySettings() {
     body.classList.toggle('theme-dark', theme === 'dark');
     body.classList.toggle('compact', !!state.settings?.compact);
     updateCurrencyLabels();
+    var hideEmpty = document.getElementById('ledger-hide-empty');
+    if (hideEmpty) hideEmpty.checked = !!state.settings?.hideEmptyCategories;
+    var sortSelect = document.getElementById('ledger-sort');
+    if (sortSelect) sortSelect.value = state.settings?.categorySort || 'default';
 }
+
+function setLedgerViewOptions() {
+    var hideEl = document.getElementById('ledger-hide-empty');
+    var sortEl = document.getElementById('ledger-sort');
+    if (!state.settings) state.settings = {};
+    if (hideEl) state.settings.hideEmptyCategories = hideEl.checked;
+    if (sortEl) state.settings.categorySort = sortEl.value || 'default';
+    if (typeof saveState === 'function') saveState();
+    if (typeof renderLedger === 'function') renderLedger();
+}
+if (typeof window !== 'undefined') window.setLedgerViewOptions = setLedgerViewOptions;
 
 function renderSettings() {
     const currencyInput = document.getElementById('settings-currency');
@@ -406,7 +421,7 @@ function renderStrategy(opts) {
                         <span class="text-xs font-bold text-slate-600">${item.label} ${amortLabel}</span>
                     </div>
                     <div class="flex items-center gap-2 no-drag" onmousedown="event.stopPropagation()">
-                        <input type="number" value="${displayAmount}" class="input-pill text-slate-900" ${inputAttr}>
+                        <input type="number" value="${displayAmount}" class="input-pill text-slate-900" autocomplete="off" ${inputAttr}>
                         ${actions}
                     </div>
                 </div>
@@ -621,24 +636,42 @@ function renderLedger() {
     container.innerHTML += majorHtml;
 
     // Create categorical dropdowns matching the strategy structure
-    state.categories.forEach(sec => {
-// Filter items to skip Major Funds (Daily Food / Food Base lives in Food Cycle; others have their own cards)
     var majorLabels = typeof MAJOR_FUND_LABELS !== 'undefined' ? MAJOR_FUND_LABELS : ['Weekly Misc', 'Daily Food', 'General Savings', 'Car Fund', 'Payables'];
     var skipLabels = majorLabels.concat(['Food Base']);
+    var hideEmpty = !!state.settings?.hideEmptyCategories;
+    var sortBy = state.settings?.categorySort || 'default';
+
+    state.categories.forEach(sec => {
         const relevantItems = sec.items.filter(item => !skipLabels.includes(item.label));
 
-        if (relevantItems.length === 0) return;
+        let items = relevantItems.slice();
+        if (hideEmpty) {
+            items = items.filter(item => getItemBalance(item.label, item.amount) !== 0);
+        }
+        if (sortBy !== 'default') {
+            items = items.slice().sort(function (a, b) {
+                var balA = getItemBalance(a.label, a.amount);
+                var balB = getItemBalance(b.label, b.amount);
+                if (sortBy === 'balanceDesc') return balB - balA;
+                if (sortBy === 'balanceAsc') return balA - balB;
+                if (sortBy === 'nameAsc') return String(a.label).localeCompare(b.label);
+                if (sortBy === 'nameDesc') return String(b.label).localeCompare(a.label);
+                return 0;
+            });
+        }
+
+        if (items.length === 0) return;
 
         const secId = `ledger-sec-${sec.id}`;
         let sumLeft = 0;
         let sumAllocated = 0;
-        relevantItems.forEach(item => {
+        items.forEach(item => {
             sumLeft += getItemBalance(item.label, item.amount);
             sumAllocated += (typeof item.amount === 'number' ? item.amount : 0);
         });
 
         let barsHtml = '';
-        relevantItems.forEach(item => {
+        items.forEach(item => {
             let bal = getItemBalance(item.label, item.amount);
             const planned = typeof item.amount === 'number' && item.amount > 0 ? item.amount : 1;
             const pct = Math.min(100, Math.max(0, (bal / planned) * 100));
@@ -663,7 +696,7 @@ function renderLedger() {
                         <p class="text-[9px] font-bold text-slate-400 uppercase hidden sm:block">${getCurrencyLabel()} left</p>
                     </div>
                     <div class="ledger-bar-actions flex items-center gap-1.5 flex-shrink-0" onclick="event.stopPropagation()">
-                        <input type="number" class="ledger-bar-amount w-14 sm:w-16 h-8 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-200" placeholder="0" min="0" step="any">
+                        <input type="number" class="ledger-bar-amount w-14 sm:w-16 h-8 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-200" placeholder="0" min="0" step="any" autocomplete="off">
                         <div class="flex flex-col gap-0 rounded-lg border border-slate-200 overflow-hidden bg-slate-50/80">
                             <button type="button" onclick="var b=this.closest('.ledger-bar'); var v=b.querySelector('.ledger-bar-amount').value; applyItemAdjustment('${safeLabel}', v, 'add'); b.querySelector('.ledger-bar-amount').value='';" class="w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none">+</button>
                             <button type="button" onclick="var b=this.closest('.ledger-bar'); var v=b.querySelector('.ledger-bar-amount').value; applyItemAdjustment('${safeLabel}', v, 'deduct'); b.querySelector('.ledger-bar-amount').value='';" class="w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none border-t border-slate-200">−</button>

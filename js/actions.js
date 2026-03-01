@@ -1709,7 +1709,7 @@ function renderSavingsBuckets() {
             '<div class="flex-1 min-w-0 flex flex-col gap-0.5">' +
             '<div class="bucket-row-label-wrap" role="button" tabindex="0" title="Tap to rename">' +
             '<span class="bucket-row-label text-[11px] font-bold uppercase tracking-wider text-slate-500 truncate">' + esc(key) + '</span>' +
-            '<input type="text" class="bucket-row-name-edit" maxlength="80" aria-label="Rename bucket">' +
+            '<input type="text" class="bucket-row-name-edit" maxlength="80" aria-label="Rename bucket" autocomplete="off">' +
             '<span class="bucket-row-label-line" aria-hidden="true"></span>' +
             '</div>' +
             '<div class="h-1.5 w-full max-w-[100px] rounded-full bg-slate-100 overflow-hidden"><div class="ledger-bar-fill h-full rounded-full bg-indigo-400 transition-all" style="width:100%"></div></div>' +
@@ -1717,8 +1717,8 @@ function renderSavingsBuckets() {
             '<div class="flex items-center gap-1.5 flex-shrink-0 text-right">' +
             '<p class="bucket-row-balance bucket-amount text-base sm:text-lg font-black text-slate-800">' + formatMoney(amount) + '</p>' +
             '</div>' +
-            '<div class="ledger-bar-actions bucket-row-controls flex items-center gap-1.5 flex-shrink-0" onclick="event.stopPropagation()">' +
-            '<input type="number" class="bucket-amount-input ledger-bar-amount w-14 sm:w-16 h-8 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-200" placeholder="0" min="0" step="any" inputmode="decimal">' +
+            ''<div class="ledger-bar-actions bucket-row-controls flex items-center gap-1.5 flex-shrink-0">' +
+            '<input type="number" class="bucket-amount-input ledger-bar-amount w-14 sm:w-16 h-8 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-200" placeholder="0" min="0" step="any" inputmode="decimal" autocomplete="off">' +
             '<div class="flex flex-col gap-0 rounded-lg border border-slate-200 overflow-hidden bg-slate-50/80">' +
             '<button type="button" class="bucket-stepper-plus w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none" data-dir="1" aria-label="Add">+</button>' +
             '<button type="button" class="bucket-stepper-minus w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none border-t border-slate-200" data-dir="-1" aria-label="Subtract">−</button>' +
@@ -2133,7 +2133,7 @@ function renderPayablesBuckets() {
             '<div class="flex-1 min-w-0 flex flex-col gap-0.5">' +
             '<div class="bucket-row-label-wrap" role="button" tabindex="0" title="Tap to rename">' +
             '<span class="bucket-row-label text-[11px] font-bold uppercase tracking-wider text-slate-500 truncate">' + esc(key) + '</span>' +
-            '<input type="text" class="bucket-row-name-edit" maxlength="80" aria-label="Rename bucket">' +
+            '<input type="text" class="bucket-row-name-edit" maxlength="80" aria-label="Rename bucket" autocomplete="off">' +
             '<span class="bucket-row-label-line" aria-hidden="true"></span>' +
             '</div>' +
             '<div class="h-1.5 w-full max-w-[100px] rounded-full bg-slate-100 overflow-hidden"><div class="ledger-bar-fill h-full rounded-full bg-amber-400 transition-all" style="width:100%"></div></div>' +
@@ -2141,8 +2141,8 @@ function renderPayablesBuckets() {
             '<div class="flex items-center gap-1.5 flex-shrink-0 text-right">' +
             '<p class="bucket-row-balance bucket-amount text-base sm:text-lg font-black text-slate-800">' + formatMoney(amount) + '</p>' +
             '</div>' +
-            '<div class="ledger-bar-actions bucket-row-controls flex items-center gap-1.5 flex-shrink-0" onclick="event.stopPropagation()">' +
-            '<input type="number" class="bucket-amount-input ledger-bar-amount w-14 sm:w-16 h-8 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-amber-200" placeholder="0" min="0" step="any" inputmode="decimal">' +
+            ''<div class="ledger-bar-actions bucket-row-controls flex items-center gap-1.5 flex-shrink-0">' +
+            '<input type="number" class="bucket-amount-input ledger-bar-amount w-14 sm:w-16 h-8 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-amber-200" placeholder="0" min="0" step="any" inputmode="decimal" autocomplete="off">' +
             '<div class="flex flex-col gap-0 rounded-lg border border-slate-200 overflow-hidden bg-slate-50/80">' +
             '<button type="button" class="bucket-stepper-plus w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none" data-dir="1" aria-label="Add">+</button>' +
             '<button type="button" class="bucket-stepper-minus w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none border-t border-slate-200" data-dir="-1" aria-label="Subtract">−</button>' +

@@ -268,7 +268,9 @@ function ensureSettings() {
         theme: 'light',
         compact: false,
         firstDayOfWeek: 3,
-        payDate: 28
+        payDate: 28,
+        hideEmptyCategories: false,
+        categorySort: 'default'
     };
     if(!state.settings) state.settings = { ...defaults };
     state.settings = { ...defaults, ...state.settings };
