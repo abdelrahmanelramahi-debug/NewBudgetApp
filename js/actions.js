@@ -739,7 +739,7 @@ function confirmDelete() {
 }
 
 // Ledger Actions
-function openTool(label, displayTitle, autoTransfer = false) {
+function openTool(label, displayTitle, autoTransfer = false, prefillAmount) {
     activeCat = label;
     document.getElementById('tool-title').innerText = displayTitle || label;
 
@@ -751,6 +751,8 @@ function openTool(label, displayTitle, autoTransfer = false) {
         } else {
             amountInput.value = '';
         }
+    } else if (prefillAmount !== undefined && prefillAmount !== null && String(prefillAmount).trim() !== '') {
+        amountInput.value = String(prefillAmount).trim();
     } else {
         amountInput.value = '';
     }
@@ -1017,10 +1019,58 @@ function getFoodDayTransferTargets() {
     return targets;
 }
 
+// Release one buffer day's value to a destination (used by buffer-day transfer popover).
+function transferBufferDayTo(targetId) {
+    if (!state.food) return;
+    var info = typeof getFoodRemainderInfo === 'function' ? getFoodRemainderInfo() : null;
+    var dailyRate = (info && info.dailyRate > 0) ? info.dailyRate : (600 / 28);
+    var locked = state.food.lockedAmount || 0;
+    if (dailyRate <= 0 || locked < dailyRate) {
+        if (typeof showAppAlert === 'function') showAppAlert('No buffer day to transfer.');
+        return;
+    }
+    pushToUndo();
+    state.food.lockedAmount = locked - dailyRate;
+    state.accounts.surplus += dailyRate;
+    if (targetId !== 'Surplus') {
+        applyTransaction({ type: 'transfer', from: 'Surplus', to: targetId, amount: dailyRate });
+    }
+    if (typeof logHistory === 'function') logHistory('Buffer', -dailyRate, 'Released to ' + targetId);
+    saveState();
+    if (typeof renderLedger === 'function') renderLedger();
+    if (typeof updateGlobalUI === 'function') updateGlobalUI();
+    closeFoodDayTransferPopover();
+}
+window.transferBufferDayTo = transferBufferDayTo;
+
+function openBufferDayTransferPopover(anchorEl) {
+    var pop = document.getElementById('food-day-transfer-popover');
+    var container = document.getElementById('food-day-transfer-targets');
+    if (!pop || !container) return;
+    pop.removeAttribute('data-cycle-day');
+    pop.setAttribute('data-buffer', 'true');
+    if (anchorEl && anchorEl.closest) {
+        var anchor = anchorEl.closest('.food-overview-cell-wrapper');
+        if (anchor && anchor.getBoundingClientRect) {
+            var rect = anchor.getBoundingClientRect();
+            pop.style.left = rect.left + 'px';
+            pop.style.top = (rect.bottom + 4) + 'px';
+        }
+    }
+    var targets = getFoodDayTransferTargets();
+    container.innerHTML = targets.map(function(t) {
+        var safeLabel = String(t.label).replace(/</g, '&lt;').replace(/"/g, '&quot;');
+        return '<button type="button" class="food-day-transfer-target-btn block w-full text-left px-2 py-1.5 text-[10px] font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 rounded-sm truncate transition-colors" data-target-id="' + String(t.id).replace(/"/g, '&quot;') + '">' + safeLabel + '</button>';
+    }).join('');
+    pop.classList.remove('hidden');
+}
+window.openBufferDayTransferPopover = openBufferDayTransferPopover;
+
 function openFoodDayTransferPopover(cycleDay, anchorEl) {
     var pop = document.getElementById('food-day-transfer-popover');
     var container = document.getElementById('food-day-transfer-targets');
     if (!pop || !container) return;
+    if (pop) pop.removeAttribute('data-buffer');
     var anchor = anchorEl && anchorEl.closest ? anchorEl.closest('.food-overview-cell-wrapper') : anchorEl;
     if (anchor && anchor.getBoundingClientRect) {
         var rect = anchor.getBoundingClientRect();
@@ -1049,9 +1099,14 @@ window.closeFoodDayTransferPopover = closeFoodDayTransferPopover;
         if (btn) {
             var pop = document.getElementById('food-day-transfer-popover');
             if (!pop || pop.classList.contains('hidden')) return;
-            var cycleDay = parseInt(pop.getAttribute('data-cycle-day'), 10);
             var targetId = btn.getAttribute('data-target-id');
-            if (cycleDay && targetId) transferFoodDayTo(cycleDay, targetId);
+            if (!targetId) return;
+            if (pop.getAttribute('data-buffer') === 'true') {
+                transferBufferDayTo(targetId);
+            } else {
+                var cycleDay = parseInt(pop.getAttribute('data-cycle-day'), 10);
+                if (cycleDay) transferFoodDayTo(cycleDay, targetId);
+            }
             return;
         }
         if (!e.target.closest('#food-day-transfer-popover')) closeFoodDayTransferPopover();
@@ -1294,15 +1349,15 @@ function startNewMonth() {
 window.startNewMonth = startNewMonth;
 
 function openNewMonthConfirm() {
-    var msg = 'Start new month? Food cycle and weekly allowance reset to Week 1. Week 4 leftover is moved to Week 1; unconsumed food days become buffer.';
+    var msg = 'Reset food cycle and weekly to Week 1?';
     var foodBal = typeof getItemBalance === 'function' ? getItemBalance('Daily Food', 0) : 0;
     var plannedFood = typeof getPlanAmount === 'function' ? getPlanAmount('Daily Food') : 0;
     if (foodBal <= 0 && plannedFood > 0) {
-        msg += ' Daily Food has no funds—distribute salary from Home to fund the food cycle after starting.';
+        msg += ' Fund food from Home after.';
     }
     showAppConfirm(msg, function () {
         startNewMonth();
-    }, null, { confirmLabel: 'New Month' });
+    }, null, { confirmLabel: 'New month', hideIcon: true });
 }
 window.openNewMonthConfirm = openNewMonthConfirm;
 
@@ -1650,25 +1705,33 @@ function renderSavingsBuckets() {
     }
     list.innerHTML = entries.map(function (e) {
         var key = e[0], amount = e[1];
-        return '<div class="bucket-row bucket-row-card" data-bucket-key="' + esc(key) + '">' +
+        return '<div class="bucket-row bucket-row-card ledger-bar flex items-center gap-2 sm:gap-3 w-full py-2.5 px-3 sm:px-4 rounded-xl border border-slate-100 bg-white hover:border-slate-200 transition-all" data-bucket-key="' + esc(key) + '" data-context="savings">' +
+            '<div class="flex-1 min-w-0 flex flex-col gap-0.5">' +
             '<div class="bucket-row-label-wrap" role="button" tabindex="0" title="Tap to rename">' +
-            '<span class="bucket-row-label">' + esc(key) + '</span>' +
+            '<span class="bucket-row-label text-[11px] font-bold uppercase tracking-wider text-slate-500 truncate">' + esc(key) + '</span>' +
             '<input type="text" class="bucket-row-name-edit" maxlength="80" aria-label="Rename bucket">' +
             '<span class="bucket-row-label-line" aria-hidden="true"></span>' +
             '</div>' +
-            '<span class="bucket-row-balance bucket-amount">' + formatMoney(amount) + '</span>' +
-            '<div class="bucket-row-controls">' +
-            '<input type="number" class="bucket-amount-input" placeholder="0" min="0" step="any" inputmode="decimal">' +
-            '<div class="bucket-stepper">' +
-            '<button type="button" class="bucket-stepper-plus" data-dir="1" aria-label="Add">+</button>' +
-            '<button type="button" class="bucket-stepper-minus" data-dir="-1" aria-label="Subtract">−</button>' +
+            '<div class="h-1.5 w-full max-w-[100px] rounded-full bg-slate-100 overflow-hidden"><div class="ledger-bar-fill h-full rounded-full bg-indigo-400 transition-all" style="width:100%"></div></div>' +
             '</div>' +
-            '<div class="bucket-more-wrap">' +
-            '<button type="button" class="bucket-more-btn" aria-label="More options">⋯</button>' +
-            '<div class="bucket-dropdown">' +
-            '<button type="button" data-action="rename">Rename</button>' +
-            '<button type="button" data-action="delete">Delete</button>' +
-            '</div></div></div></div>';
+            '<div class="flex items-center gap-1.5 flex-shrink-0 text-right">' +
+            '<p class="bucket-row-balance bucket-amount text-base sm:text-lg font-black text-slate-800">' + formatMoney(amount) + '</p>' +
+            '</div>' +
+            '<div class="ledger-bar-actions bucket-row-controls flex items-center gap-1.5 flex-shrink-0" onclick="event.stopPropagation()">' +
+            '<input type="number" class="bucket-amount-input ledger-bar-amount w-14 sm:w-16 h-8 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-200" placeholder="0" min="0" step="any" inputmode="decimal">' +
+            '<div class="flex flex-col gap-0 rounded-lg border border-slate-200 overflow-hidden bg-slate-50/80">' +
+            '<button type="button" class="bucket-stepper-plus w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none" data-dir="1" aria-label="Add">+</button>' +
+            '<button type="button" class="bucket-stepper-minus w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none border-t border-slate-200" data-dir="-1" aria-label="Subtract">−</button>' +
+            '</div>' +
+            '<div class="bucket-more-wrap relative">' +
+            '<button type="button" class="bucket-more-btn h-8 w-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-sm font-bold transition" aria-label="More options">⋯</button>' +
+            '<div class="bucket-dropdown absolute right-0 top-full mt-1 py-1 bg-white border border-slate-200 rounded-lg shadow-lg z-10 min-w-[120px]">' +
+            '<button type="button" class="block w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100" data-action="rename">Rename</button>' +
+            '<button type="button" class="block w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100" data-action="transfer">Transfer</button>' +
+            '<button type="button" class="block w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100" data-action="delete">Delete</button>' +
+            '</div></div>' +
+            '<button type="button" class="bucket-row-apply ledger-bar-complete flex-shrink-0 w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center text-sm font-bold hover:bg-emerald-600 transition shadow-sm" title="Apply amount">✓</button>' +
+            '</div></div>';
     }).join('');
 
     if (!list._savingsDelegation) {
@@ -1720,6 +1783,17 @@ function renderSavingsBuckets() {
                     var lw = row.querySelector('.bucket-row-label-wrap');
                     if (lw) { var ei = lw.querySelector('.bucket-row-name-edit'); if (ei) { lw.classList.add('editing'); ei.value = key; ei.focus(); ei.select(); } }
                 } else if (action === 'delete') deleteSavingsBucket(key);
+                else if (action === 'transfer') {
+                    var amtEl = row.querySelector('.bucket-amount-input');
+                    openBucketTransferModal('savings', key, amtEl ? amtEl.value : '');
+                }
+            }
+
+            var applyBtn = e.target.closest('.bucket-row-apply');
+            if (applyBtn) {
+                var input = row.querySelector('.bucket-amount-input');
+                if (input) applySavingsBucketDelta(key, 1, input);
+                return;
             }
         });
         list.addEventListener('blur', function (e) {
@@ -1898,6 +1972,61 @@ function closePayablesBuckets() {
 }
 window.closePayablesBuckets = closePayablesBuckets;
 
+function openBucketTransferModal(context, bucketKey, prefillAmount) {
+    ensureAccountsState();
+    var modal = document.getElementById('bucket-transfer-modal');
+    var titleEl = document.getElementById('bucket-transfer-title');
+    var toSelect = document.getElementById('bucket-transfer-to');
+    var amountInput = document.getElementById('bucket-transfer-amount');
+    if (!modal || !toSelect || !amountInput) return;
+    var esc = function (s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); };
+    modal.setAttribute('data-context', context);
+    modal.setAttribute('data-bucket-key', bucketKey);
+    if (titleEl) titleEl.textContent = 'Transfer from ' + bucketKey;
+    amountInput.value = (prefillAmount !== undefined && prefillAmount !== null && String(prefillAmount).trim() !== '') ? String(prefillAmount).trim() : '';
+    var toOpts = '';
+    if (context === 'savings') {
+        toOpts = '<option value="' + SAVINGS_EXTRA + '">Extra</option><option value="' + SAVINGS_WEEKLY + '">Weekly Allowance</option>';
+        (Object.keys(state.accounts.savingsBuckets || {})).forEach(function (k) {
+            if (k !== bucketKey) toOpts += '<option value="' + esc(k) + '">' + esc(k) + '</option>';
+        });
+    } else {
+        toOpts = '<option value="' + PAYABLES_EXTRA + '">Extra</option><option value="' + PAYABLES_WEEKLY + '">Weekly Allowance</option>';
+        (Object.keys(state.accounts.payablesBuckets || {})).forEach(function (k) {
+            if (k !== bucketKey) toOpts += '<option value="' + esc(k) + '">' + esc(k) + '</option>';
+        });
+    }
+    toSelect.innerHTML = toOpts;
+    toggleModal('bucket-transfer-modal', true);
+    var btn = document.getElementById('bucket-transfer-btn');
+    if (btn && !modal._transferWired) {
+        modal._transferWired = true;
+        btn.addEventListener('click', function () {
+            var ctx = modal.getAttribute('data-context');
+            var fromKey = modal.getAttribute('data-bucket-key');
+            var toKey = toSelect.value;
+            var amount = amountInput.value;
+            if (!fromKey || !toKey || fromKey === toKey) return;
+            if (ctx === 'savings') {
+                doSavingsTransfer(fromKey, toKey, amount);
+                renderSavingsBuckets();
+            } else {
+                doPayablesTransfer(fromKey, toKey, amount);
+                renderPayablesBuckets();
+            }
+            amountInput.value = '';
+            closeBucketTransferModal();
+            if (typeof updateGlobalUI === 'function') updateGlobalUI();
+        });
+    }
+}
+window.openBucketTransferModal = openBucketTransferModal;
+
+function closeBucketTransferModal() {
+    toggleModal('bucket-transfer-modal', false);
+}
+window.closeBucketTransferModal = closeBucketTransferModal;
+
 function adjustPayablesBucket(bucketKey, delta) {
     ensureAccountsState();
     if (state.accounts.payablesBuckets[bucketKey] === undefined) {
@@ -2000,25 +2129,33 @@ function renderPayablesBuckets() {
     }
     list.innerHTML = entries.map(function (e) {
         var key = e[0], amount = e[1];
-        return '<div class="bucket-row bucket-row-card" data-bucket-key="' + esc(key) + '">' +
+        return '<div class="bucket-row bucket-row-card ledger-bar flex items-center gap-2 sm:gap-3 w-full py-2.5 px-3 sm:px-4 rounded-xl border border-slate-100 bg-white hover:border-slate-200 transition-all" data-bucket-key="' + esc(key) + '" data-context="payables">' +
+            '<div class="flex-1 min-w-0 flex flex-col gap-0.5">' +
             '<div class="bucket-row-label-wrap" role="button" tabindex="0" title="Tap to rename">' +
-            '<span class="bucket-row-label">' + esc(key) + '</span>' +
+            '<span class="bucket-row-label text-[11px] font-bold uppercase tracking-wider text-slate-500 truncate">' + esc(key) + '</span>' +
             '<input type="text" class="bucket-row-name-edit" maxlength="80" aria-label="Rename bucket">' +
             '<span class="bucket-row-label-line" aria-hidden="true"></span>' +
             '</div>' +
-            '<span class="bucket-row-balance bucket-amount">' + formatMoney(amount) + '</span>' +
-            '<div class="bucket-row-controls">' +
-            '<input type="number" class="bucket-amount-input" placeholder="0" min="0" step="any" inputmode="decimal">' +
-            '<div class="bucket-stepper">' +
-            '<button type="button" class="bucket-stepper-plus" data-dir="1" aria-label="Add">+</button>' +
-            '<button type="button" class="bucket-stepper-minus" data-dir="-1" aria-label="Subtract">−</button>' +
+            '<div class="h-1.5 w-full max-w-[100px] rounded-full bg-slate-100 overflow-hidden"><div class="ledger-bar-fill h-full rounded-full bg-amber-400 transition-all" style="width:100%"></div></div>' +
             '</div>' +
-            '<div class="bucket-more-wrap">' +
-            '<button type="button" class="bucket-more-btn" aria-label="More options">⋯</button>' +
-            '<div class="bucket-dropdown">' +
-            '<button type="button" data-action="rename">Rename</button>' +
-            '<button type="button" data-action="delete">Delete</button>' +
-            '</div></div></div></div>';
+            '<div class="flex items-center gap-1.5 flex-shrink-0 text-right">' +
+            '<p class="bucket-row-balance bucket-amount text-base sm:text-lg font-black text-slate-800">' + formatMoney(amount) + '</p>' +
+            '</div>' +
+            '<div class="ledger-bar-actions bucket-row-controls flex items-center gap-1.5 flex-shrink-0" onclick="event.stopPropagation()">' +
+            '<input type="number" class="bucket-amount-input ledger-bar-amount w-14 sm:w-16 h-8 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-amber-200" placeholder="0" min="0" step="any" inputmode="decimal">' +
+            '<div class="flex flex-col gap-0 rounded-lg border border-slate-200 overflow-hidden bg-slate-50/80">' +
+            '<button type="button" class="bucket-stepper-plus w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none" data-dir="1" aria-label="Add">+</button>' +
+            '<button type="button" class="bucket-stepper-minus w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none border-t border-slate-200" data-dir="-1" aria-label="Subtract">−</button>' +
+            '</div>' +
+            '<div class="bucket-more-wrap relative">' +
+            '<button type="button" class="bucket-more-btn h-8 w-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-sm font-bold transition" aria-label="More options">⋯</button>' +
+            '<div class="bucket-dropdown absolute right-0 top-full mt-1 py-1 bg-white border border-slate-200 rounded-lg shadow-lg z-10 min-w-[120px]">' +
+            '<button type="button" class="block w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100" data-action="rename">Rename</button>' +
+            '<button type="button" class="block w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100" data-action="transfer">Transfer</button>' +
+            '<button type="button" class="block w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100" data-action="delete">Delete</button>' +
+            '</div></div>' +
+            '<button type="button" class="bucket-row-apply ledger-bar-complete flex-shrink-0 w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center text-sm font-bold hover:bg-emerald-600 transition shadow-sm" title="Apply amount">✓</button>' +
+            '</div></div>';
     }).join('');
 
     if (!list._payablesDelegation) {
@@ -2070,6 +2207,17 @@ function renderPayablesBuckets() {
                     var lw = row.querySelector('.bucket-row-label-wrap');
                     if (lw) { var ei = lw.querySelector('.bucket-row-name-edit'); if (ei) { lw.classList.add('editing'); ei.value = key; ei.focus(); ei.select(); } }
                 } else if (action === 'delete') deletePayablesBucket(key);
+                else if (action === 'transfer') {
+                    var amtEl = row.querySelector('.bucket-amount-input');
+                    openBucketTransferModal('payables', key, amtEl ? amtEl.value : '');
+                }
+            }
+
+            var applyBtn = e.target.closest('.bucket-row-apply');
+            if (applyBtn) {
+                var input = row.querySelector('.bucket-amount-input');
+                if (input) applyPayablesBucketDelta(key, 1, input);
+                return;
             }
         });
         list.addEventListener('blur', function (e) {

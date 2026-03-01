@@ -60,11 +60,16 @@ function showAppConfirm(message, onConfirm, onCancel, options) {
     options = options || {};
     var title = options.title;
     var confirmLabel = options.confirmLabel || 'Continue';
+    var hideIcon = options.hideIcon === true;
     var titleEl = getEl('app-alert-title');
     var messageEl = getEl('app-alert-message');
+    var iconWrap = getEl('app-alert-icon');
     var okBtn = getEl('app-alert-ok');
     var cancelBtn = getEl('app-alert-cancel');
     if (!messageEl || !okBtn) return;
+    if (iconWrap) iconWrap.classList.toggle('hidden', hideIcon);
+    var modalEl = getEl('app-alert-modal');
+    if (modalEl) modalEl.classList.toggle('app-confirm-compact', hideIcon);
     if (titleEl) {
         titleEl.textContent = title || '';
         titleEl.classList.toggle('hidden', !title);
@@ -663,7 +668,7 @@ function renderLedger() {
                             <button type="button" onclick="var b=this.closest('.ledger-bar'); var v=b.querySelector('.ledger-bar-amount').value; applyItemAdjustment('${safeLabel}', v, 'add'); b.querySelector('.ledger-bar-amount').value='';" class="w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none">+</button>
                             <button type="button" onclick="var b=this.closest('.ledger-bar'); var v=b.querySelector('.ledger-bar-amount').value; applyItemAdjustment('${safeLabel}', v, 'deduct'); b.querySelector('.ledger-bar-amount').value='';" class="w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none border-t border-slate-200">−</button>
                         </div>
-                        <button type="button" onclick="openTool('${safeLabel}')" class="h-8 w-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-sm font-bold transition" title="Transfer">⋯</button>
+                        <button type="button" onclick="var b=this.closest('.ledger-bar'); var v=b&&b.querySelector('.ledger-bar-amount')?b.querySelector('.ledger-bar-amount').value:''; openTool('${safeLabel}', undefined, false, v);" class="h-8 w-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-sm font-bold transition" title="Transfer">⋯</button>
                         ${actionBtn}
                     </div>
                 </div>
@@ -926,8 +931,15 @@ function updateFoodUI() {
                     var idx = br * 7 + c;
                     if (idx < bufferDates.length) {
                         var b = bufferDates[idx];
-                        // Clicking a buffer day CONSUMES one buffer day (spends from buffer at the daily rate).
-                        bufRow += '<div onclick="consumeBufferDay()" role="button" class="food-overview-cell rounded-md flex items-center justify-center text-[10px] font-black min-h-[2rem] bg-emerald-500 text-white border border-emerald-600 cursor-pointer hover:bg-emerald-600" title="Click to use 1 buffer day · ' + b.monthName + ' ' + b.date + '">' + b.date + '</div>';
+                        var bufCellCls = 'food-overview-cell rounded-md flex items-center justify-center text-[10px] font-black min-h-[2rem] bg-emerald-500 text-white border border-emerald-600 cursor-pointer transition';
+                        var bufCellContent = '<div class="' + bufCellCls + '" data-date="' + b.date + '" title="' + b.monthName + ' ' + b.date + '">' + b.date + '</div>';
+                        var bufHover = '<div class="food-day-hover-actions absolute inset-0 flex rounded-md overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">' +
+                            '<span class="pointer-events-auto flex-1 flex items-center justify-center min-w-0 food-day-consume-panel" title="Consume" onclick="event.stopPropagation(); consumeBufferDay()" role="button" aria-label="Consume">' +
+                            '<span class="text-white text-[10px] font-black">✓</span></span>' +
+                            '<span class="pointer-events-auto flex-1 flex items-center justify-center min-w-0 food-day-transfer-panel" title="Transfer day to..." onclick="event.stopPropagation(); openBufferDayTransferPopover(this)" role="button" aria-label="Transfer">' +
+                            '<span class="text-white text-[10px] font-black">↗</span></span>' +
+                            '</div>';
+                        bufRow += '<div class="food-overview-cell-wrapper group relative overflow-hidden">' + bufCellContent + bufHover + '</div>';
                     } else {
                         bufRow += '<div class="food-overview-cell rounded-md min-h-[2rem] bg-transparent"></div>';
                     }
@@ -943,6 +955,15 @@ function updateFoodUI() {
     var markBtn = document.getElementById('food-mark-day-btn');
     if (markBtn) markBtn.disabled = daysUsed >= daysTotal;
 }
+
+function toggleBufferDropdown() {
+    var body = document.getElementById('food-buffer-dropdown-body');
+    var chevron = document.getElementById('food-buffer-chevron');
+    if (!body) return;
+    body.classList.toggle('hidden');
+    if (chevron) chevron.classList.toggle('rotate-180', !body.classList.contains('hidden'));
+}
+window.toggleBufferDropdown = toggleBufferDropdown;
 
 // High-level segments for the bank balance bar: overarching categories + standalone major funds (no micro items, no "Other").
 function getBankBalanceBarSegments() {

@@ -64,6 +64,11 @@ body.theme-dark #app-alert-modal .modal-content #app-alert-message { color: #e2e
 body.theme-dark #app-alert-modal .modal-content #app-alert-icon { background: rgba(99, 102, 241, 0.2); color: #818cf8; }
 body.theme-dark #app-alert-modal .modal-content #app-alert-cancel { background: #1e293b; color: #94a3b8; }
 body.theme-dark #app-alert-modal .modal-content #app-alert-cancel:hover { background: #334155; }
+
+#app-alert-modal.app-confirm-compact .modal-content { padding-top: 1rem; }
+#app-alert-modal.app-confirm-compact #app-alert-message { margin-bottom: 1rem; }
+#app-alert-modal.app-confirm-compact #app-alert-ok,
+#app-alert-modal.app-confirm-compact #app-alert-cancel { padding-top: 0.5rem; padding-bottom: 0.5rem; }
 body.theme-dark #bank-balance-info { color: #94a3b8; }
 body.theme-dark #bank-balance-info-btn { border-color: #64748b; color: #94a3b8; }
 body.theme-dark #bank-balance-info-btn:hover { background: #334155; }
