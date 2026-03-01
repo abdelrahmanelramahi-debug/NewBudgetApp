@@ -310,6 +310,8 @@ function applyTransaction(tx) {
             }
             state.food.daysUsed = (state.food.consumedDays || []).length;
             state.food.history.unshift({type:'spend', amt: tx.amount});
+            // Deduct one day's amount from Daily Food so consume actually reduces balance
+            adjustItemBalance('Daily Food', -tx.amount);
             break;
         case 'food_lock':
             state.food.lockedAmount += tx.amount;
@@ -948,8 +950,14 @@ function setFoodDayFromCalendar(cycleDay, action) {
     pushToUndo();
     if (action === 'unmark') {
         state.food.consumedDays = list.filter(function(d) { return d !== day; });
+        var infoUnmark = typeof getFoodRemainderInfo === 'function' ? getFoodRemainderInfo() : null;
+        var dailyRateUnmark = (infoUnmark && infoUnmark.dailyRate > 0) ? infoUnmark.dailyRate : (600 / 28);
+        adjustItemBalance('Daily Food', dailyRateUnmark);
     } else {
         state.food.consumedDays = list.concat([day]).sort(function(a, b) { return a - b; });
+        var info = typeof getFoodRemainderInfo === 'function' ? getFoodRemainderInfo() : null;
+        var dailyRate = (info && info.dailyRate > 0) ? info.dailyRate : (600 / 28);
+        adjustItemBalance('Daily Food', -dailyRate);
     }
     state.food.daysUsed = state.food.consumedDays.length;
     saveState();
@@ -1451,12 +1459,16 @@ function applyPaycheckDistribute() {
 
     if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
 
+    const foodLabelCanonical = 'Daily Food'; // getFoodRemainderInfo() always reads state.balances['Daily Food']
     const items = getAllocatableItems().map(item => {
         let current;
+        const isFood = item.label === foodLabelCanonical || item.label === 'Food Base';
         if (item.label === 'Weekly Misc') {
             current = (state.accounts.weekly.balances && state.accounts.weekly.balances.length >= 4)
                 ? (state.accounts.weekly.balances[0] || 0) + (state.accounts.weekly.balances[1] || 0) + (state.accounts.weekly.balances[2] || 0) + (state.accounts.weekly.balances[3] || 0)
                 : 0;
+        } else if (isFood) {
+            current = getItemBalance(foodLabelCanonical, 0);
         } else {
             current = getItemBalance(item.label, 0);
         }
@@ -1479,6 +1491,8 @@ function applyPaycheckDistribute() {
 
     items.forEach(item => {
         if (item.deficit > 0) {
+            const isFood = item.label === foodLabelCanonical || item.label === 'Food Base';
+            const transferTo = isFood ? foodLabelCanonical : item.label;
             if (item.label === 'Weekly Misc') {
                 // Spread across all 4 weeks so it doesn't all land in the current week
                 ensureWeeklyState();
@@ -1491,8 +1505,8 @@ function applyPaycheckDistribute() {
                 if (state.accounts.buckets) state.accounts.buckets['Weekly Misc'] = sumWeeks;
                 logHistory(item.label, item.deficit, 'Distribute');
             } else {
-                applyTransaction({ type: 'transfer', from: 'Surplus', to: item.label, amount: item.deficit });
-                logHistory(item.label, item.deficit, 'Distribute');
+                applyTransaction({ type: 'transfer', from: 'Surplus', to: transferTo, amount: item.deficit });
+                logHistory(transferTo, item.deficit, 'Distribute');
             }
         }
     });

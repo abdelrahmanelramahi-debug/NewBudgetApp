@@ -937,7 +937,10 @@ body.theme-dark .desktop-nav-item:hover {
     min-height: 2rem;
 }
 .food-day-hover-actions {
-    background: rgba(0, 0, 0, 0.08);
+    background: rgba(0, 0, 0, 0.15);
+}
+.food-day-hover-actions span[role="button"]:hover {
+    background: rgba(79, 70, 229, 0.85);
 }
 .food-day-action-btn {
     transition: background-color 0.15s, color 0.15s;

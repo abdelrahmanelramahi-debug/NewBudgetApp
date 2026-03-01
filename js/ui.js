@@ -886,11 +886,14 @@ function updateFoodUI() {
                 if (futureInCycle || consumed) {
                     var tickTitle = consumed ? 'Unmark' : 'Mark consumed';
                     var transferTitle = 'Transfer day to...';
-                    hoverActions = '<div class="food-day-hover-actions absolute inset-0 flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity rounded-md pointer-events-none"><span class="pointer-events-auto" title="' + tickTitle + '">' +
-                        '<button type="button" onclick="event.stopPropagation(); setFoodDayFromCalendar(' + cycleDay + ', \'' + action + '\')" class="food-day-action-btn flex items-center justify-center w-6 h-6 rounded bg-white/95 shadow text-slate-700 hover:bg-indigo-500 hover:text-white" aria-label="' + tickTitle + '">✓</button></span>';
+                    hoverActions = '<div class="food-day-hover-actions absolute inset-0 flex rounded-md opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">' +
+                        '<span class="pointer-events-auto flex-1 flex items-center justify-center min-w-0 bg-black/20 hover:bg-indigo-500/90 rounded-l-md" title="' + tickTitle + '" onclick="event.stopPropagation(); setFoodDayFromCalendar(' + cycleDay + ', \'' + action + '\')" role="button" aria-label="' + tickTitle + '">' +
+                        '<span class="text-white text-[10px] font-black">✓</span></span>';
                     if (!consumed) {
-                        hoverActions += '<span class="pointer-events-auto" title="' + transferTitle + '">' +
-                            '<button type="button" onclick="event.stopPropagation(); openFoodDayTransferPopover(' + cycleDay + ', this)" class="food-day-action-btn flex items-center justify-center w-6 h-6 rounded bg-white/95 shadow text-slate-700 hover:bg-indigo-500 hover:text-white" aria-label="' + transferTitle + '">↗</button></span>';
+                        hoverActions += '<span class="pointer-events-auto flex-1 flex items-center justify-center min-w-0 bg-black/20 hover:bg-indigo-500/90 rounded-r-md border-l border-white/30" title="' + transferTitle + '" onclick="event.stopPropagation(); openFoodDayTransferPopover(' + cycleDay + ', this)" role="button" aria-label="' + transferTitle + '">' +
+                            '<span class="text-white text-[10px] font-black">↗</span></span>';
+                    } else {
+                        hoverActions += '<span class="flex-1 rounded-r-md"></span>';
                     }
                     hoverActions += '</div>';
                 }
