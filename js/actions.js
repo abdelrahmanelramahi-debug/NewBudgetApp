@@ -742,7 +742,18 @@ function confirmDelete() {
 function openTool(label, displayTitle, autoTransfer = false) {
     activeCat = label;
     document.getElementById('tool-title').innerText = displayTitle || label;
-    document.getElementById('tool-value').value = '';
+
+    var amountInput = document.getElementById('tool-value');
+    if (label === 'Surplus' && autoTransfer) {
+        var headerVal = document.getElementById('surplus-adjust-val');
+        if (headerVal && headerVal.value && String(headerVal.value).trim() !== '') {
+            amountInput.value = String(headerVal.value).trim();
+        } else {
+            amountInput.value = '';
+        }
+    } else {
+        amountInput.value = '';
+    }
 
     // Reset UI state
     const std = document.getElementById('tool-actions-standard');
@@ -1020,7 +1031,7 @@ function openFoodDayTransferPopover(cycleDay, anchorEl) {
     var targets = getFoodDayTransferTargets();
     container.innerHTML = targets.map(function(t) {
         var safeLabel = String(t.label).replace(/</g, '&lt;').replace(/"/g, '&quot;');
-        return '<button type="button" class="food-day-transfer-target-btn w-full text-left px-2.5 py-1.5 rounded text-[10px] font-bold hover:bg-indigo-100 border-0" data-target-id="' + String(t.id).replace(/"/g, '&quot;') + '">' + safeLabel + '</button>';
+        return '<button type="button" class="food-day-transfer-target-btn block w-full text-left px-2 py-1.5 text-[10px] font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 rounded-sm truncate transition-colors" data-target-id="' + String(t.id).replace(/"/g, '&quot;') + '">' + safeLabel + '</button>';
     }).join('');
     pop.classList.remove('hidden');
 }

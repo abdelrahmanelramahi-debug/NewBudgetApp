@@ -56,11 +56,13 @@ function initAuth() {
                         requestAnimationFrame(updateGlobalUI);
                     } else if (typeof updateGlobalUI === 'function') updateGlobalUI();
                     startAutoSync();
+                    if (typeof startRealtimeSync === 'function') startRealtimeSync();
                 }).finally(runAuthReadyCallbacks);
             }).catch(function() {
                 loadStateFromCloud().then(function() {
                     if (typeof updateGlobalUI === 'function') updateGlobalUI();
                     startAutoSync();
+                    if (typeof startRealtimeSync === 'function') startRealtimeSync();
                 }).finally(runAuthReadyCallbacks);
             });
         } else {
@@ -163,10 +165,21 @@ window.saveState = function() {
 };
 
 // flushCloudSave, pullFromCloudWhenVisible: from sync.js (throttled pull, debounced push)
+var _lastHiddenAt = 0;
 if (typeof document !== 'undefined') {
     document.addEventListener('visibilitychange', function() {
-        if (document.visibilityState === 'hidden') flushCloudSave();
-        if (document.visibilityState === 'visible') pullFromCloudWhenVisible();
+        if (document.visibilityState === 'hidden') {
+            _lastHiddenAt = Date.now();
+            flushCloudSave();
+        }
+        if (document.visibilityState === 'visible') {
+            var hiddenDuration = _lastHiddenAt ? (Date.now() - _lastHiddenAt) : 0;
+            if (hiddenDuration >= 10000 && typeof loadStateFromCloud === 'function') {
+                loadStateFromCloud(0);
+            } else {
+                pullFromCloudWhenVisible();
+            }
+        }
     });
     window.addEventListener('pagehide', flushCloudSave);
 }

@@ -7,8 +7,8 @@
     'use strict';
 
     var SYNC_PROTOCOL_VERSION = 2;
-    var PUSH_DEBOUNCE_MS = 2000;
-    var PULL_THROTTLE_MS = 45000;
+    var PUSH_DEBOUNCE_MS = 1000;
+    var PULL_THROTTLE_MS = 8000;
     var AUTO_SYNC_INTERVAL_MS = 45000;
     var MIN_SAVED_AGO_MS = 20000;
     var RETRY_DELAYS_MS = [2000, 4000, 8000];
@@ -23,6 +23,8 @@
     var autoSyncInterval = null;
     var saveRetryCount = 0;
     var loadRetryCount = 0;
+    var realtimeUnsubscribe = null;
+    var realtimePullTimeoutId = null;
 
     function getCurrentUser() {
         return global.currentUser || null;
@@ -293,17 +295,6 @@
         }, AUTO_SYNC_INTERVAL_MS);
     }
 
-    function stopAutoSync() {
-        if (autoSyncInterval) {
-            clearInterval(autoSyncInterval);
-            autoSyncInterval = null;
-        }
-        if (pushTimeoutId) {
-            clearTimeout(pushTimeoutId);
-            pushTimeoutId = null;
-        }
-    }
-
     function flushCloudSave() {
         if (pushTimeoutId) {
             clearTimeout(pushTimeoutId);
@@ -319,6 +310,44 @@
         loadStateFromCloud(0);
     }
 
+    function startRealtimeSync() {
+        var user = getCurrentUser();
+        if (!user || !global.firebaseDb) return;
+        if (realtimeUnsubscribe) return;
+        var userDocRef = global.firebaseDb.collection('users').doc(user.uid);
+        realtimeUnsubscribe = userDocRef.onSnapshot(function (snapshot) {
+            if (syncInProgress) return;
+            if (realtimePullTimeoutId) clearTimeout(realtimePullTimeoutId);
+            realtimePullTimeoutId = setTimeout(function () {
+                realtimePullTimeoutId = null;
+                loadStateFromCloud(0);
+            }, 1200);
+        });
+    }
+
+    function stopRealtimeSync() {
+        if (realtimeUnsubscribe) {
+            try { realtimeUnsubscribe(); } catch (e) {}
+            realtimeUnsubscribe = null;
+        }
+        if (realtimePullTimeoutId) {
+            clearTimeout(realtimePullTimeoutId);
+            realtimePullTimeoutId = null;
+        }
+    }
+
+    function stopAutoSync() {
+        if (autoSyncInterval) {
+            clearInterval(autoSyncInterval);
+            autoSyncInterval = null;
+        }
+        if (pushTimeoutId) {
+            clearTimeout(pushTimeoutId);
+            pushTimeoutId = null;
+        }
+        stopRealtimeSync();
+    }
+
     global.saveStateToCloud = saveStateToCloud;
     global.loadStateFromCloud = loadStateFromCloud;
     global.updateSyncStatus = updateSyncStatus;
@@ -327,5 +356,7 @@
     global.flushCloudSave = flushCloudSave;
     global.pullFromCloudWhenVisible = pullFromCloudWhenVisible;
     global.scheduleSyncPush = schedulePush;
+    global.startRealtimeSync = startRealtimeSync;
+    global.stopRealtimeSync = stopRealtimeSync;
 
 })(typeof window !== 'undefined' ? window : this);
