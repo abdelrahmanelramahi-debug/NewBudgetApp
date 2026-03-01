@@ -1150,13 +1150,10 @@ function nextWeek() {
     renderLedger();
 }
 
-// Start new month: reset food cycle (0 days used) and set weekly allowance to Week 1
+// Start new month: set weekly allowance to Week 1 only. Does not reset food cycle (that would show
+// a full "food allowance" before you're paid; reset food cycle after you distribute if you want).
 function startNewMonth() {
     pushToUndo();
-    if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
-    state.food.consumedDays = [];
-    state.food.daysUsed = 0;
-    state.food.history = [];
     if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
     state.accounts.weekly.week = 1;
     state.accounts.weekly.balance = getWeeklyBalance(1);
@@ -1168,7 +1165,7 @@ function startNewMonth() {
 window.startNewMonth = startNewMonth;
 
 function openNewMonthConfirm() {
-    showAppConfirm('Reset food cycle to 0 days used and set weekly allowance to Week 1? Your budget plan and balances are unchanged.', function () {
+    showAppConfirm('Set weekly allowance to Week 1? Your budget plan, balances, and food cycle are unchanged.', function () {
         startNewMonth();
     }, null, { confirmLabel: 'New Month' });
 }
@@ -1337,8 +1334,17 @@ function applyPaycheckDistribute() {
     const val = parseFloat(document.getElementById('paycheck-amount').value);
     if(!val || val <= 0) return;
 
+    if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
+
     const items = getAllocatableItems().map(item => {
-        const current = getItemBalance(item.label, 0);
+        let current;
+        if (item.label === 'Weekly Misc') {
+            current = (state.accounts.weekly.balances && state.accounts.weekly.balances.length >= 4)
+                ? (state.accounts.weekly.balances[0] || 0) + (state.accounts.weekly.balances[1] || 0) + (state.accounts.weekly.balances[2] || 0) + (state.accounts.weekly.balances[3] || 0)
+                : 0;
+        } else {
+            current = getItemBalance(item.label, 0);
+        }
         const deficit = Math.max(0, item.amount - current);
         return { ...item, deficit };
     }).filter(item => item.deficit > 0);
@@ -1366,7 +1372,8 @@ function applyPaycheckDistribute() {
                     setWeeklyBalance(w, getWeeklyBalance(w) + perWeek);
                 }
                 state.accounts.surplus -= item.deficit;
-                if (state.accounts.buckets) state.accounts.buckets['Weekly Misc'] = (state.accounts.buckets['Weekly Misc'] || 0) + item.deficit;
+                var sumWeeks = (state.accounts.weekly.balances[0] || 0) + (state.accounts.weekly.balances[1] || 0) + (state.accounts.weekly.balances[2] || 0) + (state.accounts.weekly.balances[3] || 0);
+                if (state.accounts.buckets) state.accounts.buckets['Weekly Misc'] = sumWeeks;
                 logHistory(item.label, item.deficit, 'Distribute');
             } else {
                 applyTransaction({ type: 'transfer', from: 'Surplus', to: item.label, amount: item.deficit });
