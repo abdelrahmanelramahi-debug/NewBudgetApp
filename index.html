@@ -204,7 +204,7 @@
     <!-- Home header: sticky only on Home (ledger) page -->
     <nav id="app-header" class="nav-header home-header w-full">
         <div class="home-header-inner">
-            <div class="home-header-row flex flex-nowrap items-center justify-between gap-2 min-w-0 overflow-hidden">
+            <div class="home-header-row flex flex-nowrap items-center justify-between gap-2 min-w-0 overflow-x-hidden">
                 <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 min-w-0">
                     <button type="button" onclick="toggleSideMenu()" class="home-header-icon-btn lg:hidden" aria-label="Open menu">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
@@ -220,9 +220,9 @@
                         <button onclick="globalUndo()" id="global-undo-btn" class="home-header-icon-btn opacity-40 pointer-events-none" title="Undo"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg></button>
                         <button onclick="globalRedo()" id="global-redo-btn" class="home-header-icon-btn opacity-40 pointer-events-none" title="Redo"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg></button>
                     </div>
-                    <div class="home-header-extra flex items-center gap-1 sm:gap-1.5 min-w-0 overflow-hidden">
+                    <div class="home-header-extra flex items-center gap-1 sm:gap-1.5 min-w-0 overflow-hidden shrink">
                         <span class="home-header-label shrink-0">Extra</span>
-                        <span class="home-header-extra-amount text-emerald-600 tabular-nums whitespace-nowrap" id="global-surplus">0.00</span>
+                        <span class="home-header-extra-amount text-emerald-600 tabular-nums whitespace-nowrap overflow-hidden min-w-0" id="global-surplus">0.00</span>
                     </div>
                     <div id="deficit-trigger" class="hidden shrink-0">
                         <button onclick="openDeficitModal()" class="home-header-resolve-btn">Resolve</button>

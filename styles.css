@@ -697,9 +697,11 @@ body.theme-dark .desktop-nav-item:hover {
     box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.06), 0 2px 8px -2px rgba(0, 0, 0, 0.04);
     padding: 0;
     padding-top: max(0.75rem, env(safe-area-inset-top));
+    overflow-x: hidden;
 }
 .home-header-inner {
     padding: 1rem 0.75rem 1.25rem;
+    overflow-x: hidden;
 }
 .home-header-label {
     display: block;
