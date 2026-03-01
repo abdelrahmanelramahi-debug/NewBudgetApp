@@ -1150,6 +1150,30 @@ function nextWeek() {
     renderLedger();
 }
 
+// Start new month: reset food cycle (0 days used) and set weekly allowance to Week 1
+function startNewMonth() {
+    pushToUndo();
+    if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
+    state.food.consumedDays = [];
+    state.food.daysUsed = 0;
+    state.food.history = [];
+    if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
+    state.accounts.weekly.week = 1;
+    state.accounts.weekly.balance = getWeeklyBalance(1);
+    saveState();
+    if (typeof renderLedger === 'function') renderLedger();
+    if (typeof refreshUI === 'function') refreshUI();
+    if (typeof updateGlobalUI === 'function') updateGlobalUI();
+}
+window.startNewMonth = startNewMonth;
+
+function openNewMonthConfirm() {
+    showAppConfirm('Reset food cycle to 0 days used and set weekly allowance to Week 1? Your budget plan and balances are unchanged.', function () {
+        startNewMonth();
+    }, null, { confirmLabel: 'New Month' });
+}
+window.openNewMonthConfirm = openNewMonthConfirm;
+
 function prevWeek() {
     ensureWeeklyState();
     if (state.accounts.weekly.week <= 1) return;
@@ -1334,8 +1358,20 @@ function applyPaycheckDistribute() {
 
     items.forEach(item => {
         if (item.deficit > 0) {
-            applyTransaction({ type: 'transfer', from: 'Surplus', to: item.label, amount: item.deficit });
-            logHistory(item.label, item.deficit, 'Distribute');
+            if (item.label === 'Weekly Misc') {
+                // Spread across all 4 weeks so it doesn't all land in the current week
+                ensureWeeklyState();
+                var perWeek = item.deficit / 4;
+                for (var w = 1; w <= WEEKLY_MAX_WEEKS; w++) {
+                    setWeeklyBalance(w, getWeeklyBalance(w) + perWeek);
+                }
+                state.accounts.surplus -= item.deficit;
+                if (state.accounts.buckets) state.accounts.buckets['Weekly Misc'] = (state.accounts.buckets['Weekly Misc'] || 0) + item.deficit;
+                logHistory(item.label, item.deficit, 'Distribute');
+            } else {
+                applyTransaction({ type: 'transfer', from: 'Surplus', to: item.label, amount: item.deficit });
+                logHistory(item.label, item.deficit, 'Distribute');
+            }
         }
     });
 

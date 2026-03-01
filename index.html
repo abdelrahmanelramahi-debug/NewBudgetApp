@@ -210,6 +210,10 @@
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
                     </button>
                 </div>
+                <div id="header-date-newmonth" class="flex items-center gap-2 flex-shrink-0 order-1">
+                    <span id="header-today-date" class="text-[10px] font-bold text-slate-500 uppercase tracking-wider tabular-nums">—</span>
+                    <button type="button" onclick="openNewMonthConfirm()" class="text-[10px] font-black uppercase tracking-wider text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 px-2 py-1 rounded-lg transition" title="Reset food cycle and weekly to Week 1">New Month</button>
+                </div>
                 <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0 order-2 ml-auto">
                     <div class="home-header-actions">
                         <button onclick="globalUndo()" id="global-undo-btn" class="home-header-icon-btn opacity-40 pointer-events-none" title="Undo"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg></button>

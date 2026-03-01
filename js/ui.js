@@ -1131,6 +1131,13 @@ function updateGlobalUI() {
     var headerRealityEl = getEl('header-reality');
     if (headerRealityEl) void headerRealityEl.offsetHeight;
     if (surpEl) void surpEl.offsetHeight;
+
+    var headerDateEl = getEl('header-today-date');
+    if (headerDateEl) {
+        var d = new Date();
+        var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        headerDateEl.textContent = monthNames[d.getMonth()] + ' ' + d.getDate();
+    }
 }
 
 function renderCategoryHistory() {
