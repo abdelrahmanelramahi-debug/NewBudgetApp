@@ -1743,13 +1743,7 @@ function renderSavingsBuckets() {
             '<button type="button" class="bucket-stepper-plus w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none" data-dir="1" aria-label="Add">+</button>' +
             '<button type="button" class="bucket-stepper-minus w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none border-t border-slate-200" data-dir="-1" aria-label="Subtract">−</button>' +
             '</div>' +
-            '<div class="bucket-more-wrap relative">' +
-            '<button type="button" class="bucket-more-btn h-8 w-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-sm font-bold transition" aria-label="More options">⋯</button>' +
-            '<div class="bucket-dropdown absolute right-0 top-full mt-1 py-1 bg-white border border-slate-200 rounded-lg shadow-lg z-10 min-w-[120px]">' +
-            '<button type="button" class="block w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100" data-action="rename">Rename</button>' +
-            '<button type="button" class="block w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100" data-action="transfer">Transfer</button>' +
-            '<button type="button" class="block w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100" data-action="delete">Delete</button>' +
-            '</div></div>' +
+            '<button type="button" onclick="var b=this.closest(\'.bucket-row\'); var k=b.getAttribute(\'data-bucket-key\'); var v=b.querySelector(\'.bucket-amount-input\'); openBucketTransferModal(\'savings\', k, v?v.value:\'\');" class="h-8 w-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-sm font-bold transition" title="Transfer">⋯</button>' +
             '<button type="button" class="bucket-row-apply ledger-bar-complete flex-shrink-0 w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center text-sm font-bold hover:bg-emerald-600 transition shadow-sm" title="Apply amount">✓</button>' +
             '</div></div>';
     }).join('');
@@ -1781,32 +1775,6 @@ function renderSavingsBuckets() {
                 var input = row.querySelector('.bucket-amount-input');
                 if (dir && input) applySavingsBucketDelta(key, dir, input);
                 return;
-            }
-
-            var moreBtn = e.target.closest('.bucket-more-btn');
-            if (moreBtn) {
-                e.stopPropagation();
-                var wrap = row.querySelector('.bucket-more-wrap');
-                var drop = wrap && wrap.querySelector('.bucket-dropdown');
-                list.querySelectorAll('.bucket-dropdown.open').forEach(function (d) {
-                    if (d !== drop) d.classList.remove('open');
-                });
-                if (drop) drop.classList.toggle('open');
-                return;
-            }
-
-            var menuAction = e.target.closest('.bucket-dropdown button[data-action]');
-            if (menuAction) {
-                var action = menuAction.getAttribute('data-action');
-                row.querySelectorAll('.bucket-dropdown').forEach(function (d) { d.classList.remove('open'); });
-                if (action === 'rename') {
-                    var lw = row.querySelector('.bucket-row-label-wrap');
-                    if (lw) { var ei = lw.querySelector('.bucket-row-name-edit'); if (ei) { lw.classList.add('editing'); ei.value = key; ei.focus(); ei.select(); } }
-                } else if (action === 'delete') deleteSavingsBucket(key);
-                else if (action === 'transfer') {
-                    var amtEl = row.querySelector('.bucket-amount-input');
-                    openBucketTransferModal('savings', key, amtEl ? amtEl.value : '');
-                }
             }
 
             var applyBtn = e.target.closest('.bucket-row-apply');
@@ -1848,9 +1816,6 @@ function renderSavingsBuckets() {
                 wrap.classList.remove('editing');
                 editInput.blur();
             }
-        });
-        document.addEventListener('click', function closeSavingsDropdown() {
-            list.querySelectorAll('.bucket-dropdown.open').forEach(function (d) { d.classList.remove('open'); });
         });
     }
 
@@ -2047,6 +2012,18 @@ function closeBucketTransferModal() {
 }
 window.closeBucketTransferModal = closeBucketTransferModal;
 
+function deleteBucketFromTransferModal() {
+    var modal = document.getElementById('bucket-transfer-modal');
+    if (!modal) return;
+    var ctx = modal.getAttribute('data-context');
+    var key = modal.getAttribute('data-bucket-key');
+    if (!key) return;
+    closeBucketTransferModal();
+    if (ctx === 'savings') deleteSavingsBucket(key);
+    else if (ctx === 'payables') deletePayablesBucket(key);
+}
+window.deleteBucketFromTransferModal = deleteBucketFromTransferModal;
+
 function adjustPayablesBucket(bucketKey, delta) {
     ensureAccountsState();
     if (state.accounts.payablesBuckets[bucketKey] === undefined) {
@@ -2167,13 +2144,7 @@ function renderPayablesBuckets() {
             '<button type="button" class="bucket-stepper-plus w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none" data-dir="1" aria-label="Add">+</button>' +
             '<button type="button" class="bucket-stepper-minus w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none border-t border-slate-200" data-dir="-1" aria-label="Subtract">−</button>' +
             '</div>' +
-            '<div class="bucket-more-wrap relative">' +
-            '<button type="button" class="bucket-more-btn h-8 w-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-sm font-bold transition" aria-label="More options">⋯</button>' +
-            '<div class="bucket-dropdown absolute right-0 top-full mt-1 py-1 bg-white border border-slate-200 rounded-lg shadow-lg z-10 min-w-[120px]">' +
-            '<button type="button" class="block w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100" data-action="rename">Rename</button>' +
-            '<button type="button" class="block w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100" data-action="transfer">Transfer</button>' +
-            '<button type="button" class="block w-full text-left px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100" data-action="delete">Delete</button>' +
-            '</div></div>' +
+            '<button type="button" onclick="var b=this.closest(\'.bucket-row\'); var k=b.getAttribute(\'data-bucket-key\'); var v=b.querySelector(\'.bucket-amount-input\'); openBucketTransferModal(\'payables\', k, v?v.value:\'\');" class="h-8 w-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-sm font-bold transition" title="Transfer">⋯</button>' +
             '<button type="button" class="bucket-row-apply ledger-bar-complete flex-shrink-0 w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center text-sm font-bold hover:bg-emerald-600 transition shadow-sm" title="Apply amount">✓</button>' +
             '</div></div>';
     }).join('');
@@ -2205,32 +2176,6 @@ function renderPayablesBuckets() {
                 var input = row.querySelector('.bucket-amount-input');
                 if (dir && input) applyPayablesBucketDelta(key, dir, input);
                 return;
-            }
-
-            var moreBtn = e.target.closest('.bucket-more-btn');
-            if (moreBtn) {
-                e.stopPropagation();
-                var wrap = row.querySelector('.bucket-more-wrap');
-                var drop = wrap && wrap.querySelector('.bucket-dropdown');
-                list.querySelectorAll('.bucket-dropdown.open').forEach(function (d) {
-                    if (d !== drop) d.classList.remove('open');
-                });
-                if (drop) drop.classList.toggle('open');
-                return;
-            }
-
-            var menuAction = e.target.closest('.bucket-dropdown button[data-action]');
-            if (menuAction) {
-                var action = menuAction.getAttribute('data-action');
-                row.querySelectorAll('.bucket-dropdown').forEach(function (d) { d.classList.remove('open'); });
-                if (action === 'rename') {
-                    var lw = row.querySelector('.bucket-row-label-wrap');
-                    if (lw) { var ei = lw.querySelector('.bucket-row-name-edit'); if (ei) { lw.classList.add('editing'); ei.value = key; ei.focus(); ei.select(); } }
-                } else if (action === 'delete') deletePayablesBucket(key);
-                else if (action === 'transfer') {
-                    var amtEl = row.querySelector('.bucket-amount-input');
-                    openBucketTransferModal('payables', key, amtEl ? amtEl.value : '');
-                }
             }
 
             var applyBtn = e.target.closest('.bucket-row-apply');
@@ -2272,9 +2217,6 @@ function renderPayablesBuckets() {
                 wrap.classList.remove('editing');
                 editInput.blur();
             }
-        });
-        document.addEventListener('click', function closePayablesDropdown() {
-            list.querySelectorAll('.bucket-dropdown.open').forEach(function (d) { d.classList.remove('open'); });
         });
     }
 
