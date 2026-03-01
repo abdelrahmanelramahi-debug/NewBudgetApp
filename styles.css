@@ -710,14 +710,12 @@ body.theme-dark .desktop-nav-item:hover {
     color: #94a3b8;
 }
 @media (max-width: 640px) {
-    .home-header-extra {
-        display: flex;
-        align-items: baseline;
-        gap: 0.35rem;
-    }
-    .home-header-label {
-        display: inline;
-    }
+    .home-header-inner { padding: 0.5rem 0.5rem 0.75rem; }
+    .home-header-row { gap: 0.5rem; }
+    .home-header-icon-btn { width: 32px; height: 32px; border-radius: 8px; }
+    .home-header-extra { display: flex; align-items: baseline; gap: 0.25rem; }
+    .home-header-extra-amount { font-size: 0.8125rem; }
+    .home-header-label { display: inline; }
 }
 .home-header-balance {
     display: inline-flex;

@@ -1234,7 +1234,10 @@ function updateGlobalUI() {
     var surplus = (state.accounts && state.accounts.surplus !== undefined) ? state.accounts.surplus : 0;
     var surpEl = getEl('global-surplus');
     var dTrigger = getEl('deficit-trigger');
-    if (surpEl) surpEl.innerText = formatSignedMoney(surplus);
+    if (surpEl) {
+        surpEl.innerText = formatSignedMoney(surplus);
+        surpEl.title = formatSignedMoney(surplus) + ' ' + (typeof getCurrencyLabel === 'function' ? getCurrencyLabel() : '');
+    }
 
     if (dTrigger && surpEl) {
         if (surplus < 0) {

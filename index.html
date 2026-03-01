@@ -204,31 +204,31 @@
     <!-- Home header: sticky only on Home (ledger) page -->
     <nav id="app-header" class="nav-header home-header w-full">
         <div class="home-header-inner">
-            <div class="flex flex-wrap items-center gap-x-2 sm:gap-x-4 gap-y-1 sm:gap-y-0 justify-between">
-                <div class="flex items-center gap-2 flex-shrink-0 lg:hidden">
-                    <button type="button" onclick="toggleSideMenu()" class="home-header-icon-btn" aria-label="Open menu">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            <div class="home-header-row flex flex-nowrap items-center justify-between gap-2 min-w-0 overflow-hidden">
+                <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 min-w-0">
+                    <button type="button" onclick="toggleSideMenu()" class="home-header-icon-btn lg:hidden" aria-label="Open menu">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
                     </button>
-                </div>
-                <div id="header-date-newmonth" class="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
-                    <span id="header-today-date" class="text-[10px] font-bold text-slate-500 uppercase tracking-wider tabular-nums whitespace-nowrap">—</span>
-                    <span class="text-slate-300 text-[10px]" aria-hidden="true">·</span>
-                    <button type="button" onclick="openNewMonthConfirm()" class="text-[10px] font-semibold tracking-wider text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-lg transition whitespace-nowrap" title="Week 4 leftover moves to Week 1; weeks 2–4 reset; food calendar clears. Bank balance stays the same.">New month</button>
-                </div>
-                <div class="flex items-center gap-1.5 sm:gap-3 flex-1 min-w-0 max-sm:basis-full sm:justify-end">
-                    <div class="home-header-actions flex-shrink-0">
-                        <button onclick="globalUndo()" id="global-undo-btn" class="home-header-icon-btn opacity-40 pointer-events-none" title="Undo"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg></button>
-                        <button onclick="globalRedo()" id="global-redo-btn" class="home-header-icon-btn opacity-40 pointer-events-none" title="Redo"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg></button>
+                    <div id="header-date-newmonth" class="flex items-center gap-1 sm:gap-1.5">
+                        <span id="header-today-date" class="text-[10px] font-bold text-slate-500 uppercase tracking-wider tabular-nums whitespace-nowrap">—</span>
+                        <span class="text-slate-300 text-[10px]" aria-hidden="true">·</span>
+                        <button type="button" onclick="openNewMonthConfirm()" class="text-[10px] font-semibold tracking-wider text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-lg transition whitespace-nowrap" title="Week 4 leftover moves to Week 1; weeks 2–4 reset; food calendar clears. Bank balance stays the same.">New month</button>
                     </div>
-                    <div class="home-header-extra flex items-center gap-1.5 sm:gap-2">
+                </div>
+                <div class="flex items-center gap-1 sm:gap-2 min-w-0 overflow-hidden justify-end">
+                    <div class="home-header-actions flex-shrink-0">
+                        <button onclick="globalUndo()" id="global-undo-btn" class="home-header-icon-btn opacity-40 pointer-events-none" title="Undo"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg></button>
+                        <button onclick="globalRedo()" id="global-redo-btn" class="home-header-icon-btn opacity-40 pointer-events-none" title="Redo"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg></button>
+                    </div>
+                    <div class="home-header-extra flex items-center gap-1 sm:gap-1.5 min-w-0 overflow-hidden">
                         <span class="home-header-label shrink-0">Extra</span>
-                        <span class="home-header-extra-amount text-emerald-600 tabular-nums" id="global-surplus">0.00</span>
+                        <span class="home-header-extra-amount text-emerald-600 tabular-nums min-w-0 overflow-hidden text-ellipsis whitespace-nowrap" id="global-surplus">0.00</span>
                     </div>
                     <div id="deficit-trigger" class="hidden shrink-0">
                         <button onclick="openDeficitModal()" class="home-header-resolve-btn">Resolve</button>
                     </div>
                     <button onclick="toggleSurplusControls()" class="home-header-icon-btn shrink-0" aria-label="Extra options">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
                     </button>
                 </div>
             </div>
