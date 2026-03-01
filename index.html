@@ -505,7 +505,7 @@
                     <div class="bg-slate-50 p-3 rounded-xl">
                         <span class="text-[9px] font-bold uppercase text-slate-400">Signed in as</span>
                         <p id="user-info" class="text-sm font-black text-slate-800 mt-1"></p>
-                        <p id="sync-status" class="text-[10px] text-emerald-600 mt-1">Synced</p>
+                        <span id="sync-status-wrap" class="flex items-center flex-wrap gap-0.5 mt-1"><p id="sync-status" class="text-[10px] text-emerald-600">Synced</p></span>
                     </div>
                     <button id="sign-out-btn" onclick="signOut()" class="w-full py-3 bg-red-50 text-red-500 rounded-xl text-[10px] font-black uppercase tracking-widest">Sign Out</button>
                 </div>
@@ -963,6 +963,7 @@
     <script src="js/ui.js"></script>
     <script src="js/actions.js"></script>
     <script src="js/onboarding.js"></script>
+    <script src="js/sync.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/main.js"></script>
 </body>

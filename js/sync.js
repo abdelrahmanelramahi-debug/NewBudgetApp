@@ -1,0 +1,331 @@
+/**
+ * Sync v2: non-blocking, throttled pull, debounced push, retry with backoff.
+ * Keeps same Firestore doc shape (data, lastUpdated, version) for existing users.
+ */
+
+(function (global) {
+    'use strict';
+
+    var SYNC_PROTOCOL_VERSION = 2;
+    var PUSH_DEBOUNCE_MS = 2000;
+    var PULL_THROTTLE_MS = 45000;
+    var AUTO_SYNC_INTERVAL_MS = 45000;
+    var MIN_SAVED_AGO_MS = 20000;
+    var RETRY_DELAYS_MS = [2000, 4000, 8000];
+    var MAX_RETRIES = 3;
+
+    var syncInProgress = false;
+    var lastSyncTime = null;
+    var lastPullTime = 0;
+    var lastSuccessfulSaveTime = 0;
+    var pendingPush = false;
+    var pushTimeoutId = null;
+    var autoSyncInterval = null;
+    var saveRetryCount = 0;
+    var loadRetryCount = 0;
+
+    function getCurrentUser() {
+        return global.currentUser || null;
+    }
+
+    function hasMeaningfulData(data) {
+        if (!data || typeof data !== 'object') return false;
+        var hasCategories = data.categories && Array.isArray(data.categories) && data.categories.length > 0;
+        var hasAccounts = data.accounts && typeof data.accounts === 'object';
+        var hasBalances = data.balances && Object.keys(data.balances || {}).length > 0;
+        return hasCategories || hasAccounts || hasBalances;
+    }
+
+    function updateSyncStatus(message, isSuccess, showRetry) {
+        var statusEl = document.getElementById('sync-status');
+        if (!statusEl) return;
+        statusEl.textContent = message;
+        statusEl.className = isSuccess ? 'text-emerald-600 text-[10px]' : 'text-red-500 text-[10px]';
+        var wrap = document.getElementById('sync-status-wrap');
+        if (wrap) {
+            var retryBtn = document.getElementById('sync-retry-btn');
+            if (showRetry) {
+                if (!retryBtn) {
+                    retryBtn = document.createElement('button');
+                    retryBtn.id = 'sync-retry-btn';
+                    retryBtn.className = 'text-[10px] font-bold text-indigo-600 hover:text-indigo-700 ml-1';
+                    retryBtn.textContent = 'Retry';
+                    retryBtn.type = 'button';
+                    retryBtn.onclick = function () {
+                        if (typeof loadStateFromCloud === 'function') loadStateFromCloud();
+                        if (typeof saveStateToCloud === 'function') saveStateToCloud();
+                    };
+                    wrap.appendChild(retryBtn);
+                }
+                retryBtn.classList.remove('hidden');
+            } else if (retryBtn) {
+                retryBtn.classList.add('hidden');
+            }
+        }
+    }
+
+    function formatSyncTime(date) {
+        if (!date || !date.getHours) return '';
+        var h = date.getHours();
+        var m = date.getMinutes();
+        var am = h < 12;
+        h = h % 12 || 12;
+        return h + ':' + (m < 10 ? '0' : '') + m + (am ? 'a' : 'p');
+    }
+
+    // --- SAVE TO CLOUD ---
+    function saveStateToCloud() {
+        var user = getCurrentUser();
+        if (!user) return;
+        if (syncInProgress) {
+            pendingPush = true;
+            return;
+        }
+
+        try {
+            syncInProgress = true;
+            pendingPush = false;
+            updateSyncStatus('Syncing…', true, false);
+        } catch (e) {}
+
+        var userDocRef = global.firebaseDb && global.firebaseDb.collection('users').doc(user.uid);
+        if (!userDocRef) {
+            syncInProgress = false;
+            updateSyncStatus('Sync failed', false, true);
+            return;
+        }
+
+        var serverTimestamp = global.firebase && global.firebase.firestore && global.firebase.firestore.FieldValue && global.firebase.firestore.FieldValue.serverTimestamp();
+        if (!serverTimestamp) {
+            syncInProgress = false;
+            updateSyncStatus('Sync failed', false, true);
+            return;
+        }
+
+        return userDocRef.set({
+            data: state,
+            lastUpdated: serverTimestamp,
+            version: state.schemaVersion || 2,
+            syncProtocolVersion: SYNC_PROTOCOL_VERSION
+        }, { merge: true }).then(function () {
+            return userDocRef.get({ source: 'server' });
+        }).then(function (docSnap) {
+            var savedTime = Date.now();
+            if (docSnap && docSnap.exists && docSnap.data().lastUpdated) {
+                var lastUpdated = docSnap.data().lastUpdated;
+                if (typeof lastUpdated.toMillis === 'function') savedTime = lastUpdated.toMillis();
+            }
+            try {
+                var syncKey = STORAGE_KEYS.LAST_SYNCED;
+                global.localStorage.setItem(syncKey, String(savedTime));
+            } catch (e) {}
+            lastSyncTime = savedTime ? new Date(savedTime) : new Date();
+            lastSuccessfulSaveTime = Date.now();
+            saveRetryCount = 0;
+            updateSyncStatus('Saved ' + formatSyncTime(lastSyncTime), true, false);
+            if (typeof refreshUI === 'function') refreshUI();
+        }).catch(function (error) {
+            console.error('Save to cloud error:', error);
+            saveRetryCount = (saveRetryCount || 0) + 1;
+            if (saveRetryCount <= MAX_RETRIES && RETRY_DELAYS_MS[saveRetryCount - 1]) {
+                var delay = RETRY_DELAYS_MS[saveRetryCount - 1];
+                updateSyncStatus('Sync failed, retrying in ' + (delay / 1000) + 's…', false, false);
+                setTimeout(function () { saveStateToCloud(); }, delay);
+            } else {
+                updateSyncStatus('Sync failed', false, true);
+            }
+        }).finally(function () {
+            syncInProgress = false;
+            if (pendingPush) {
+                pendingPush = false;
+                setTimeout(saveStateToCloud, 400);
+            }
+        });
+    }
+
+    // --- LOAD FROM CLOUD ---
+    function loadStateFromCloud(retryCount) {
+        var user = getCurrentUser();
+        if (!user) return Promise.resolve();
+        if (syncInProgress) return Promise.resolve();
+
+        retryCount = retryCount || 0;
+        try {
+            syncInProgress = true;
+            updateSyncStatus('Syncing…', true, false);
+        } catch (e) {}
+
+        var userDocRef = global.firebaseDb && global.firebaseDb.collection('users').doc(user.uid);
+        if (!userDocRef) {
+            syncInProgress = false;
+            updateSyncStatus('Sync failed', false, true);
+            return Promise.resolve();
+        }
+
+        return userDocRef.get({ source: 'server' }).then(function (docSnap) {
+            if (!docSnap.exists) {
+                return saveStateToCloud().then(function () {
+                    updateSyncStatus('Synced', true, false);
+                    if (typeof updateGlobalUI === 'function') updateGlobalUI();
+                });
+            }
+
+            var cloudData = docSnap.data();
+            var cloudTime = 0;
+            if (cloudData.lastUpdated && typeof cloudData.lastUpdated.toMillis === 'function') {
+                cloudTime = cloudData.lastUpdated.toMillis();
+            }
+            var localModified = 0;
+            var lastSyncedToCloud = 0;
+            try {
+                var modKey = STORAGE_KEYS.MODIFIED;
+                var syncKey = STORAGE_KEYS.LAST_SYNCED;
+                var stored = global.localStorage.getItem(modKey);
+                var synced = global.localStorage.getItem(syncKey);
+                if (stored) localModified = parseInt(stored, 10) || 0;
+                if (synced) lastSyncedToCloud = parseInt(synced, 10) || 0;
+            } catch (e) {}
+
+            if (localModified > lastSyncedToCloud && hasMeaningfulData(state)) {
+                return saveStateToCloud().then(function () {
+                    if (typeof refreshUI === 'function') refreshUI();
+                    updateSyncStatus('Synced (local was newer)', true, false);
+                    if (cloudData.lastUpdated) lastSyncTime = cloudData.lastUpdated.toDate ? cloudData.lastUpdated.toDate() : new Date();
+                });
+            }
+            if (cloudTime <= localModified || !hasMeaningfulData(cloudData.data)) {
+                return saveStateToCloud().then(function () {
+                    if (typeof refreshUI === 'function') refreshUI();
+                    updateSyncStatus('Synced', true, false);
+                });
+            }
+
+            if (cloudData.data && typeof cloudData.data === 'object' && hasMeaningfulData(cloudData.data)) {
+                var localDeletedBuckets = Array.isArray(state._deletedPayablesBuckets) ? state._deletedPayablesBuckets.slice() : [];
+                state = { ...state, ...cloudData.data };
+                var cloudDeletedBuckets = Array.isArray(cloudData.data._deletedPayablesBuckets) ? cloudData.data._deletedPayablesBuckets : [];
+                var mergedDeleted = localDeletedBuckets.concat(cloudDeletedBuckets);
+                if (mergedDeleted.length) {
+                    var seen = {};
+                    state._deletedPayablesBuckets = mergedDeleted.filter(function (n) {
+                        if (!n) return false;
+                        if (seen[n]) return false;
+                        seen[n] = true;
+                        return true;
+                    });
+                }
+                if (typeof migrateState === 'function') migrateState();
+                if (typeof ensureSystemSavings === 'function') ensureSystemSavings();
+                if (typeof ensureCoreItems === 'function') ensureCoreItems();
+                if (typeof ensureSettings === 'function') ensureSettings();
+                if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
+                if (typeof purgeDeletedPayablesBuckets === 'function') purgeDeletedPayablesBuckets();
+                var stateKey = STORAGE_KEYS.STATE;
+                var modKey = STORAGE_KEYS.MODIFIED;
+                var syncKey = STORAGE_KEYS.LAST_SYNCED;
+                global.localStorage.setItem(stateKey, JSON.stringify(state));
+                if (cloudData.lastUpdated && typeof cloudData.lastUpdated.toMillis === 'function') {
+                    var cloudMillis = cloudData.lastUpdated.toMillis();
+                    try {
+                        global.localStorage.setItem(modKey, String(cloudMillis));
+                        global.localStorage.setItem(syncKey, String(cloudMillis));
+                    } catch (e) {}
+                }
+                if (typeof refreshUI === 'function') refreshUI();
+                updateSyncStatus('Synced', true, false);
+                lastSyncTime = cloudData.lastUpdated && cloudData.lastUpdated.toDate ? cloudData.lastUpdated.toDate() : new Date();
+            } else {
+                updateSyncStatus('Cloud empty, using local', true, false);
+                if (typeof updateGlobalUI === 'function') updateGlobalUI();
+            }
+            loadRetryCount = 0;
+        }).catch(function (error) {
+            console.error('Load from cloud error:', error);
+            loadRetryCount = (loadRetryCount || 0) + 1;
+            if (retryCount < MAX_RETRIES && RETRY_DELAYS_MS[retryCount]) {
+                var delay = RETRY_DELAYS_MS[retryCount];
+                updateSyncStatus('Load failed, retrying…', false, false);
+                setTimeout(function () { loadStateFromCloud(retryCount + 1); }, delay);
+                return;
+            }
+            try {
+                var stateKey = STORAGE_KEYS.STATE;
+                var localBackupStr = global.localStorage.getItem(stateKey);
+                if (localBackupStr) {
+                    var localBackup = JSON.parse(localBackupStr);
+                    state = { ...state, ...localBackup };
+                    if (typeof migrateState === 'function') migrateState();
+                    if (typeof ensureSystemSavings === 'function') ensureSystemSavings();
+                    if (typeof ensureCoreItems === 'function') ensureCoreItems();
+                    if (typeof ensureSettings === 'function') ensureSettings();
+                    if (state.accounts && state.accounts.surplus === 0 && hasMeaningfulData(state) && typeof recalculateSurplusFromReality === 'function') {
+                        recalculateSurplusFromReality();
+                    }
+                    global.localStorage.setItem(stateKey, JSON.stringify(state));
+                    if (typeof refreshUI === 'function') refreshUI();
+                }
+            } catch (e) {
+                console.error('Failed to restore local backup:', e);
+            }
+            updateSyncStatus('Load failed – using local', false, true);
+        }).finally(function () {
+            syncInProgress = false;
+            lastPullTime = Date.now();
+        });
+    }
+
+    function schedulePush() {
+        if (!getCurrentUser()) return;
+        if (pushTimeoutId) clearTimeout(pushTimeoutId);
+        pushTimeoutId = setTimeout(function () {
+            pushTimeoutId = null;
+            saveStateToCloud();
+        }, PUSH_DEBOUNCE_MS);
+    }
+
+    function startAutoSync() {
+        if (autoSyncInterval) return;
+        autoSyncInterval = setInterval(function () {
+            if (!getCurrentUser() || syncInProgress) return;
+            var now = Date.now();
+            if (lastSuccessfulSaveTime && (now - lastSuccessfulSaveTime) < MIN_SAVED_AGO_MS) return;
+            saveStateToCloud();
+        }, AUTO_SYNC_INTERVAL_MS);
+    }
+
+    function stopAutoSync() {
+        if (autoSyncInterval) {
+            clearInterval(autoSyncInterval);
+            autoSyncInterval = null;
+        }
+        if (pushTimeoutId) {
+            clearTimeout(pushTimeoutId);
+            pushTimeoutId = null;
+        }
+    }
+
+    function flushCloudSave() {
+        if (pushTimeoutId) {
+            clearTimeout(pushTimeoutId);
+            pushTimeoutId = null;
+        }
+        if (getCurrentUser()) saveStateToCloud();
+    }
+
+    function pullFromCloudWhenVisible() {
+        if (!getCurrentUser() || syncInProgress) return;
+        var now = Date.now();
+        if ((now - lastPullTime) < PULL_THROTTLE_MS) return;
+        loadStateFromCloud(0);
+    }
+
+    global.saveStateToCloud = saveStateToCloud;
+    global.loadStateFromCloud = loadStateFromCloud;
+    global.updateSyncStatus = updateSyncStatus;
+    global.startAutoSync = startAutoSync;
+    global.stopAutoSync = stopAutoSync;
+    global.flushCloudSave = flushCloudSave;
+    global.pullFromCloudWhenVisible = pullFromCloudWhenVisible;
+    global.scheduleSyncPush = schedulePush;
+
+})(typeof window !== 'undefined' ? window : this);

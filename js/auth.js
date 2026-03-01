@@ -1,8 +1,6 @@
 // AUTHENTICATION & CLOUD SYNC
 
 let currentUser = null;
-let syncInProgress = false;
-let lastSyncTime = null;
 var authReady = false;
 var authReadyCallbacks = [];
 
@@ -33,6 +31,7 @@ function initAuth() {
     window.firebaseAuth.onAuthStateChanged((user) => {
         if (user) {
             currentUser = user;
+            window.currentUser = user;
             updateAuthUI();
             // Load local state FIRST, then sync from cloud (cloud will merge/overwrite if valid)
             var stateKey = STORAGE_KEYS.STATE;
@@ -66,6 +65,7 @@ function initAuth() {
             });
         } else {
             currentUser = null;
+            window.currentUser = null;
             updateAuthUI();
             stopAutoSync();
             runAuthReadyCallbacks();
@@ -150,265 +150,19 @@ async function signOut() {
     }
 }
 
-// Save state to Firebase Firestore
-async function saveStateToCloud() {
-    if (!currentUser || syncInProgress) return;
-    
-    try {
-        syncInProgress = true;
-        const userDocRef = window.firebaseDb.collection('users').doc(currentUser.uid);
-        
-        var serverTimestamp = firebase.firestore.FieldValue.serverTimestamp();
-        await userDocRef.set({
-            data: state,
-            lastUpdated: serverTimestamp,
-            version: state.schemaVersion || 2
-        }, { merge: true });
-        
-        // Get the actual timestamp after save
-        var docSnap = await userDocRef.get({ source: 'server' });
-        var savedTime = Date.now();
-        if (docSnap.exists && docSnap.data().lastUpdated) {
-            var lastUpdated = docSnap.data().lastUpdated;
-            if (typeof lastUpdated.toMillis === 'function') {
-                savedTime = lastUpdated.toMillis();
-            }
-        }
-        
-        // Update lastSynced timestamp in localStorage
-        try {
-            var syncKey = STORAGE_KEYS.LAST_SYNCED;
-            localStorage.setItem(syncKey, String(savedTime));
-        } catch (e) {}
-        
-        lastSyncTime = new Date(savedTime);
-        updateSyncStatus('Synced', true);
-    } catch (error) {
-        console.error('Save to cloud error:', error);
-        updateSyncStatus('Sync failed', false);
-    } finally {
-        syncInProgress = false;
-    }
-}
+// Save state to Firebase Firestore — implemented in sync.js (v2)
+// loadStateFromCloud, saveStateToCloud, updateSyncStatus, startAutoSync, stopAutoSync, flushCloudSave, pullFromCloudWhenVisible
 
-/** Returns true if payload has categories, accounts, or balances worth merging. */
-function hasMeaningfulData(data) {
-    if (!data || typeof data !== 'object') return false;
-    var hasCategories = data.categories && Array.isArray(data.categories) && data.categories.length > 0;
-    var hasAccounts = data.accounts && typeof data.accounts === 'object';
-    var hasBalances = data.balances && Object.keys(data.balances || {}).length > 0;
-    return hasCategories || hasAccounts || hasBalances;
-}
-
-// Load state from Firebase Firestore (with retry for timing/auth)
-async function loadStateFromCloud(retryCount) {
-    if (!currentUser) return;
-    retryCount = retryCount || 0;
-    
-    try {
-        var userDocRef = window.firebaseDb.collection('users').doc(currentUser.uid);
-        // Force server read so we get the latest data (e.g. from phone), not stale cache that would overwrite other devices
-        var docSnap = await userDocRef.get({ source: 'server' });
-        
-        if (docSnap.exists) {
-            const cloudData = docSnap.data();
-            
-            // Last-write-wins: use whichever is newer (cloud or this device's local)
-            // IMPORTANT: Only trust local if we've made changes SINCE last syncing to cloud
-            // This prevents stale local state from overwriting cloud on page refresh
-            var cloudTime = 0;
-            if (cloudData.lastUpdated && typeof cloudData.lastUpdated.toMillis === 'function') {
-                cloudTime = cloudData.lastUpdated.toMillis();
-            }
-            var localModified = 0;
-            var lastSyncedToCloud = 0;
-            try {
-                var modKey = STORAGE_KEYS.MODIFIED;
-                var syncKey = STORAGE_KEYS.LAST_SYNCED;
-                var stored = localStorage.getItem(modKey);
-                var synced = localStorage.getItem(syncKey);
-                if (stored) localModified = parseInt(stored, 10) || 0;
-                if (synced) lastSyncedToCloud = parseInt(synced, 10) || 0;
-            } catch (e) {}
-            
-            // This device has local changes we haven't synced (or we synced but another tab/device overwrote cloud).
-            // Never overwrite local with cloud in that case — push our state so deletes (e.g. "S") stick.
-            // Fixes: "S" spawning back when another tab had stale state and pushed, or when visibility triggers pull.
-            if (localModified > lastSyncedToCloud && hasMeaningfulData(state)) {
-                await saveStateToCloud();
-                if (typeof refreshUI === 'function') refreshUI();
-                updateSyncStatus('Synced (local was newer)', true);
-                if (cloudData.lastUpdated) lastSyncTime = cloudData.lastUpdated.toDate();
-                return;
-            }
-            // Cloud is newer than our last sync and we have no unsynced local changes: use cloud (other device's changes).
-            if (cloudTime <= localModified || !hasMeaningfulData(cloudData.data)) {
-                await saveStateToCloud();
-                if (typeof refreshUI === 'function') refreshUI();
-                updateSyncStatus('Synced', true);
-                return;
-            }
-
-            // Cloud is strictly newer and we have no unsynced changes: use cloud
-            // This ensures phone changes aren't overwritten by stale desktop state
-            
-            if (cloudData.data && typeof cloudData.data === 'object') {
-                if (hasMeaningfulData(cloudData.data)) {
-                    // Preserve any locally-tracked deleted payables buckets when merging cloud state,
-                    // so buckets the user explicitly deleted (e.g. "S", "Sibling") cannot resurrect
-                    // just because cloud has an older copy.
-                    var localDeletedBuckets = Array.isArray(state._deletedPayablesBuckets) ? state._deletedPayablesBuckets.slice() : [];
-
-                    // Apply cloud state as-is (last-write-wins) on top of local
-                    state = { ...state, ...cloudData.data };
-
-                    // Merge tombstones: union of local + cloud tombstones
-                    var cloudDeletedBuckets = Array.isArray(cloudData.data._deletedPayablesBuckets) ? cloudData.data._deletedPayablesBuckets : [];
-                    var mergedDeleted = localDeletedBuckets.concat(cloudDeletedBuckets);
-                    if (mergedDeleted.length) {
-                        var seen = {};
-                        state._deletedPayablesBuckets = mergedDeleted.filter(function (n) {
-                            if (!n) return false;
-                            if (seen[n]) return false;
-                            seen[n] = true;
-                            return true;
-                        });
-                    }
-
-                    migrateState();
-                    ensureSystemSavings();
-                    ensureCoreItems();
-                    ensureSettings();
-                    if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
-
-                    // After migrations/ensure, hard-purge any deleted payables buckets from accounts
-                    if (typeof purgeDeletedPayablesBuckets === 'function') {
-                        purgeDeletedPayablesBuckets();
-                    }
-
-                    var stateKey = STORAGE_KEYS.STATE;
-                    var modKey = STORAGE_KEYS.MODIFIED;
-                    var syncKey = STORAGE_KEYS.LAST_SYNCED;
-                    localStorage.setItem(stateKey, JSON.stringify(state));
-                    if (cloudData.lastUpdated && typeof cloudData.lastUpdated.toMillis === 'function') {
-                        var cloudMillis = cloudData.lastUpdated.toMillis();
-                        try { 
-                            localStorage.setItem(modKey, String(cloudMillis)); 
-                            localStorage.setItem(syncKey, String(cloudMillis)); // Update lastSynced to match cloud
-                        } catch (e) {}
-                    }
-                    if (typeof refreshUI === 'function') refreshUI();
-                    updateSyncStatus('Synced', true);
-                } else {
-                    console.warn('Cloud data is empty/invalid, keeping local state');
-                    updateSyncStatus('Cloud empty, using local', true);
-                    if (typeof updateGlobalUI === 'function') updateGlobalUI();
-                }
-            } else {
-                console.warn('No valid cloud data found, keeping local state');
-                updateSyncStatus('No cloud data, using local', true);
-                if (typeof updateGlobalUI === 'function') updateGlobalUI();
-            }
-            
-            if (cloudData.lastUpdated) {
-                lastSyncTime = cloudData.lastUpdated.toDate();
-            } else {
-                lastSyncTime = new Date();
-            }
-        } else {
-            await saveStateToCloud();
-            updateSyncStatus('Synced', true);
-            if (typeof updateGlobalUI === 'function') updateGlobalUI();
-        }
-    } catch (error) {
-        console.error('Load from cloud error:', error);
-        
-        // Retry once after a short delay (fixes auth-token-not-ready)
-        if (retryCount < 1) {
-            setTimeout(function() {
-                loadStateFromCloud(1);
-            }, 1500);
-            return;
-        }
-        
-        // On error after retry: use local data for this device only. Do NOT call saveState() –
-        // that would set MODIFIED and trigger saveStateToCloud, overwriting other devices' newer data.
-        try {
-            var stateKey = STORAGE_KEYS.STATE;
-            var localBackupStr = localStorage.getItem(stateKey);
-            if (localBackupStr) {
-                var localBackup = JSON.parse(localBackupStr);
-                state = { ...state, ...localBackup };
-                migrateState();
-                ensureSystemSavings();
-                ensureCoreItems();
-                ensureSettings();
-                if (state.accounts && state.accounts.surplus === 0 && hasMeaningfulData(state) && typeof recalculateSurplusFromReality === 'function') {
-                    recalculateSurplusFromReality();
-                }
-                localStorage.setItem(stateKey, JSON.stringify(state));
-                if (typeof refreshUI === 'function') refreshUI();
-            }
-        } catch (e) {
-            console.error('Failed to restore local backup:', e);
-        }
-        updateSyncStatus('Load failed – using local data', false);
-    }
-}
-
-// Auto-sync every 30 seconds when user is logged in
-let autoSyncInterval = null;
-
-function startAutoSync() {
-    if (autoSyncInterval) return;
-    
-    autoSyncInterval = setInterval(() => {
-        if (currentUser && !syncInProgress) {
-            saveStateToCloud();
-        }
-    }, 30000); // 30 seconds
-}
-
-function stopAutoSync() {
-    if (autoSyncInterval) {
-        clearInterval(autoSyncInterval);
-        autoSyncInterval = null;
-    }
-}
-
-// Update sync status in UI
-function updateSyncStatus(message, isSuccess) {
-    const statusEl = document.getElementById('sync-status');
-    if (statusEl) {
-        statusEl.textContent = message;
-        statusEl.className = isSuccess ? 'text-emerald-600 text-[10px]' : 'text-red-500 text-[10px]';
-    }
-}
-
-// Modify saveState to also save to cloud
+/** Call when app is ready to show (after cloud load if logged in). Use so first paint has correct state and no surplus flash. */
 const originalSaveState = window.saveState;
 window.saveState = function() {
     originalSaveState();
-    if (currentUser) {
-        // Debounce cloud saves to avoid too many requests
-        if (window.saveStateTimeout) clearTimeout(window.saveStateTimeout);
-        window.saveStateTimeout = setTimeout(() => {
-            saveStateToCloud();
-        }, 1000);
+    if (currentUser && typeof scheduleSyncPush === 'function') {
+        scheduleSyncPush();
     }
 };
 
-// When user leaves the app (switch tab, minimize, lock phone), push to cloud immediately so iOS/other device gets latest
-function flushCloudSave() {
-    if (currentUser && window.saveStateTimeout) {
-        clearTimeout(window.saveStateTimeout);
-        window.saveStateTimeout = null;
-        saveStateToCloud();
-    }
-}
-function pullFromCloudWhenVisible() {
-    if (currentUser && document.visibilityState === 'visible' && !syncInProgress) loadStateFromCloud();
-}
+// flushCloudSave, pullFromCloudWhenVisible: from sync.js (throttled pull, debounced push)
 if (typeof document !== 'undefined') {
     document.addEventListener('visibilitychange', function() {
         if (document.visibilityState === 'hidden') flushCloudSave();
