@@ -932,6 +932,20 @@ body.theme-dark .desktop-nav-item:hover {
     transform: scale(0.96);
 }
 
+.food-overview-cell-wrapper {
+    position: relative;
+    min-height: 2rem;
+}
+.food-day-hover-actions {
+    background: rgba(0, 0, 0, 0.08);
+}
+.food-day-action-btn {
+    transition: background-color 0.15s, color 0.15s;
+}
+.food-day-transfer-popover.fixed {
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+
 /* Budget calendar: 28-day core vs buffer section */
 .food-calendar-core {
     /* Standard 4-week salary cycle */

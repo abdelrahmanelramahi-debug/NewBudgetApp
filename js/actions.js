@@ -957,6 +957,88 @@ function setFoodDayFromCalendar(cycleDay, action) {
     updateGlobalUI();
 }
 
+// Transfer one day's worth from Daily Food to another category and mark day consumed. Used by food-cycle day popover.
+function transferFoodDayTo(cycleDay, targetId) {
+    var day = Math.max(1, Math.min(28, Math.floor(cycleDay)));
+    if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
+    var list = state.food.consumedDays || [];
+    if (list.indexOf(day) !== -1) return; // already consumed
+    var info = typeof getFoodRemainderInfo === 'function' ? getFoodRemainderInfo() : null;
+    var dailyRate = (info && info.dailyRate > 0) ? info.dailyRate : (600 / 28);
+    var foodBal = (state.balances && state.balances['Daily Food'] !== undefined) ? Number(state.balances['Daily Food']) : 0;
+    var amount = Math.min(dailyRate, Math.max(0, foodBal));
+    if (amount <= 0) {
+        if (typeof showAppAlert === 'function') showAppAlert('No Daily Food balance to transfer.');
+        return;
+    }
+    pushToUndo();
+    applyTransaction({ type: 'transfer', from: 'Daily Food', to: targetId, amount: amount });
+    state.food.consumedDays = list.concat([day]).sort(function(a, b) { return a - b; });
+    state.food.daysUsed = state.food.consumedDays.length;
+    if (typeof logHistory === 'function') logHistory('Daily Food', -amount, 'Day transfer to ' + targetId);
+    saveState();
+    if (typeof renderLedger === 'function') renderLedger();
+    if (typeof updateGlobalUI === 'function') updateGlobalUI();
+    if (typeof closeFoodDayTransferPopover === 'function') closeFoodDayTransferPopover();
+}
+window.transferFoodDayTo = transferFoodDayTo;
+
+function getFoodDayTransferTargets() {
+    var targets = [
+        { id: 'Surplus', label: 'Extra' },
+        { id: 'General Savings', label: 'General Savings' },
+        { id: 'Weekly Misc', label: 'Weekly Allowance' }
+    ];
+    (state.categories || []).forEach(function(sec) {
+        (sec.items || []).forEach(function(item) {
+            if (item.label === 'Daily Food' || item.label === 'Weekly Misc' || item.label === 'General Savings') return;
+            targets.push({ id: item.label, label: item.label });
+        });
+    });
+    return targets;
+}
+
+function openFoodDayTransferPopover(cycleDay, anchorEl) {
+    var pop = document.getElementById('food-day-transfer-popover');
+    var container = document.getElementById('food-day-transfer-targets');
+    if (!pop || !container) return;
+    var anchor = anchorEl && anchorEl.closest ? anchorEl.closest('.food-overview-cell-wrapper') : anchorEl;
+    if (anchor && anchor.getBoundingClientRect) {
+        var rect = anchor.getBoundingClientRect();
+        pop.style.left = rect.left + 'px';
+        pop.style.top = (rect.bottom + 4) + 'px';
+    }
+    pop.setAttribute('data-cycle-day', cycleDay);
+    var targets = getFoodDayTransferTargets();
+    container.innerHTML = targets.map(function(t) {
+        var safeLabel = String(t.label).replace(/</g, '&lt;').replace(/"/g, '&quot;');
+        return '<button type="button" class="food-day-transfer-target-btn w-full text-left px-2.5 py-1.5 rounded text-[10px] font-bold hover:bg-indigo-100 border-0" data-target-id="' + String(t.id).replace(/"/g, '&quot;') + '">' + safeLabel + '</button>';
+    }).join('');
+    pop.classList.remove('hidden');
+}
+window.openFoodDayTransferPopover = openFoodDayTransferPopover;
+
+function closeFoodDayTransferPopover() {
+    var pop = document.getElementById('food-day-transfer-popover');
+    if (pop) pop.classList.add('hidden');
+}
+window.closeFoodDayTransferPopover = closeFoodDayTransferPopover;
+
+(function initFoodDayTransferPopover() {
+    document.addEventListener('click', function(e) {
+        var btn = e.target.closest('.food-day-transfer-target-btn');
+        if (btn) {
+            var pop = document.getElementById('food-day-transfer-popover');
+            if (!pop || pop.classList.contains('hidden')) return;
+            var cycleDay = parseInt(pop.getAttribute('data-cycle-day'), 10);
+            var targetId = btn.getAttribute('data-target-id');
+            if (cycleDay && targetId) transferFoodDayTo(cycleDay, targetId);
+            return;
+        }
+        if (!e.target.closest('#food-day-transfer-popover')) closeFoodDayTransferPopover();
+    });
+})();
+
 function getBufferSourceBalance(sourceId) {
     if (sourceId === 'surplus') return (state.accounts && typeof state.accounts.surplus === 'number') ? state.accounts.surplus : 0;
     if (sourceId === 'savings') return getSavingsTotal();
@@ -1150,15 +1232,33 @@ function nextWeek() {
     renderLedger();
 }
 
-// Start new month: reset food cycle (clean calendar) and set weekly to Week 1.
-// Food remainder is capped by actual Daily Food balance, so it won't show "money" until you distribute.
+// Start new month: roll week 4 into week 1, convert unconsumed food days to buffer, reset food cycle and weekly to Week 1.
 function startNewMonth() {
     pushToUndo();
+    if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
+    // Policy: roll week 4 leftover into week 1, then zero weeks 2–4 for a fresh cycle
+    var week4Bal = typeof getWeeklyBalance === 'function' ? getWeeklyBalance(4) : 0;
+    if (week4Bal > 0) {
+        setWeeklyBalance(1, getWeeklyBalance(1) + week4Bal);
+        setWeeklyBalance(4, 0);
+    }
+    setWeeklyBalance(2, 0);
+    setWeeklyBalance(3, 0);
+
     if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
+    // Policy: unconsumed days become buffer (add their value to lockedAmount)
+    var daysUsed = state.food.daysUsed || 0;
+    var daysTotal = state.food.daysTotal || 28;
+    var unconsumed = Math.max(0, daysTotal - daysUsed);
+    if (unconsumed > 0) {
+        var info = typeof getFoodRemainderInfo === 'function' ? getFoodRemainderInfo() : null;
+        var dailyRate = (info && info.dailyRate > 0) ? info.dailyRate : (600 / 28);
+        var addToBuffer = unconsumed * dailyRate;
+        state.food.lockedAmount = (state.food.lockedAmount || 0) + addToBuffer;
+    }
     state.food.consumedDays = [];
     state.food.daysUsed = 0;
     state.food.history = [];
-    if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
     state.accounts.weekly.week = 1;
     state.accounts.weekly.balance = getWeeklyBalance(1);
     saveState();
@@ -1169,7 +1269,13 @@ function startNewMonth() {
 window.startNewMonth = startNewMonth;
 
 function openNewMonthConfirm() {
-    showAppConfirm('Reset food cycle (clear consumed days) and set weekly allowance to Week 1? Remainder will only show what you\'ve actually funded until you distribute.', function () {
+    var msg = 'Start new month? Food cycle and weekly allowance reset to Week 1. Week 4 leftover is moved to Week 1; unconsumed food days become buffer.';
+    var foodBal = typeof getItemBalance === 'function' ? getItemBalance('Daily Food', 0) : 0;
+    var plannedFood = typeof getPlanAmount === 'function' ? getPlanAmount('Daily Food') : 0;
+    if (foodBal <= 0 && plannedFood > 0) {
+        msg += ' Daily Food has no funds—distribute salary from Home to fund the food cycle after starting.';
+    }
+    showAppConfirm(msg, function () {
         startNewMonth();
     }, null, { confirmLabel: 'New Month' });
 }
@@ -1313,7 +1419,6 @@ function getAllocatableItems() {
     const items = [];
     state.categories.forEach(sec => {
         sec.items.forEach(item => {
-            if (item.label === 'Daily Food') return;
             if (item.amount > 0) {
                 items.push({ label: item.label, amount: item.amount });
             }

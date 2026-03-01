@@ -874,14 +874,27 @@ function updateFoodUI() {
                 var isToday = p.date === todayDate && p.month === todayMonth && p.year === todayYear;
                 var futureInCycle = !consumed && cycleDay <= 28;
                 var action = consumed ? 'unmark' : 'mark';
-                var clickAttr = ' onclick="setFoodDayFromCalendar(' + cycleDay + ', \'' + action + '\')" role="button"';
                 var cls = 'food-overview-cell rounded-md flex items-center justify-center text-[10px] font-black min-h-[2rem] transition cursor-pointer ';
                 if (consumed) cls += 'bg-slate-200 text-slate-500 hover:bg-slate-300';
                 else if (isToday) cls += 'bg-indigo-500 text-white shadow-md hover:bg-indigo-600';
                 else if (futureInCycle) cls += 'bg-slate-100 text-slate-400 border border-slate-200 hover:bg-slate-200';
                 else cls += 'bg-white text-slate-400 border border-slate-200';
                 var label = consumed ? '✓' : p.date;
-                rowHtml += '<div' + clickAttr + ' class="' + cls + '" data-cycle-day="' + cycleDay + '" data-date="' + p.date + '" title="' + (consumed ? 'Click to unmark' : 'Click to mark consumed') + ' · ' + p.monthName + ' ' + p.date + '">' + label + '</div>';
+                var clickAttr = ' onclick="event.stopPropagation(); setFoodDayFromCalendar(' + cycleDay + ', \'' + action + '\')" role="button"';
+                var cellContent = '<div' + clickAttr + ' class="' + cls + '" data-cycle-day="' + cycleDay + '" data-date="' + p.date + '" title="' + (consumed ? 'Click to unmark' : 'Click to mark consumed') + ' · ' + p.monthName + ' ' + p.date + '">' + label + '</div>';
+                var hoverActions = '';
+                if (futureInCycle || consumed) {
+                    var tickTitle = consumed ? 'Unmark' : 'Mark consumed';
+                    var transferTitle = 'Transfer day to...';
+                    hoverActions = '<div class="food-day-hover-actions absolute inset-0 flex items-center justify-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity rounded-md pointer-events-none"><span class="pointer-events-auto" title="' + tickTitle + '">' +
+                        '<button type="button" onclick="event.stopPropagation(); setFoodDayFromCalendar(' + cycleDay + ', \'' + action + '\')" class="food-day-action-btn flex items-center justify-center w-6 h-6 rounded bg-white/95 shadow text-slate-700 hover:bg-indigo-500 hover:text-white" aria-label="' + tickTitle + '">✓</button></span>';
+                    if (!consumed) {
+                        hoverActions += '<span class="pointer-events-auto" title="' + transferTitle + '">' +
+                            '<button type="button" onclick="event.stopPropagation(); openFoodDayTransferPopover(' + cycleDay + ', this)" class="food-day-action-btn flex items-center justify-center w-6 h-6 rounded bg-white/95 shadow text-slate-700 hover:bg-indigo-500 hover:text-white" aria-label="' + transferTitle + '">↗</button></span>';
+                    }
+                    hoverActions += '</div>';
+                }
+                rowHtml += '<div class="food-overview-cell-wrapper group relative">' + cellContent + hoverActions + '</div>';
             }
             rowHtml += '</div></div>';
             coreHtml += rowHtml;
