@@ -43,6 +43,14 @@ window.onload = function() {
     }
 
     function runAppInit() {
+        if (typeof initHistoryRouting === 'function') initHistoryRouting();
+        var page = (typeof getPageFromHash === 'function') ? getPageFromHash() : 'ledger';
+        if (page !== 'ledger' && typeof switchPage === 'function') switchPage(page, { skipHistory: true });
+        if (typeof history !== 'undefined' && history.replaceState) {
+            var hash = (page === 'ledger') ? '' : '#' + page;
+            var url = (window.location.pathname || '/') + (window.location.search || '') + hash;
+            history.replaceState({ page: page }, '', url);
+        }
         renderLedger();
         renderStrategy();
         updateUndoButtonUI();

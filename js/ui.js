@@ -145,7 +145,8 @@ function renderSettings() {
     if(payDateSelect) payDateSelect.value = String(state.settings?.payDate ?? 28);
 }
 
-function switchPage(page) {
+function switchPage(page, options) {
+    options = options || {};
     if(page === 'strategy') page = 'budget';
     const pages = {
         ledger: document.getElementById('page-ledger'),
@@ -191,6 +192,30 @@ function switchPage(page) {
     }
     if(page === 'profile' && typeof updateAuthUI === 'function') updateAuthUI();
     if(page === 'settings') renderSettings();
+
+    if (!options.skipHistory && typeof history !== 'undefined' && history.pushState) {
+        var hash = (page === 'ledger') ? '' : '#' + page;
+        var url = (window.location.pathname || '/') + (window.location.search || '') + hash;
+        history.pushState({ page: page }, '', url);
+    }
+}
+
+function getPageFromHash() {
+    var hash = (typeof location !== 'undefined' && location.hash) ? location.hash.slice(1).toLowerCase() : '';
+    if (hash === 'budget' || hash === 'profile' || hash === 'settings') return hash;
+    if (hash === 'ledger' || hash === '') return 'ledger';
+    return 'ledger';
+}
+
+var _historyRoutingInitialized = false;
+function initHistoryRouting() {
+    if (_historyRoutingInitialized) return;
+    _historyRoutingInitialized = true;
+    if (typeof window === 'undefined') return;
+    window.addEventListener('popstate', function () {
+        var page = getPageFromHash();
+        if (typeof switchPage === 'function') switchPage(page, { skipHistory: true });
+    });
 }
 
 // --- BUDGET PLAN (page) ---
