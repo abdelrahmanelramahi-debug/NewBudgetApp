@@ -452,8 +452,11 @@ function initSurplusFromOpening() {
                 if (state.accounts.buckets[item.label] === undefined) {
                     state.accounts.buckets[item.label] = item.amount;
                 }
-            } else if(state.balances[item.label] === undefined) {
-                state.balances[item.label] = item.amount;
+            } else if (state.balances[item.label] === undefined) {
+                // Do not pre-fill Daily Food: it is funded by Distribute, so start at 0 until user distributes.
+                if (item.label !== ITEM_LABELS.FOOD_BASE && item.label !== 'Daily Food') {
+                    state.balances[item.label] = item.amount;
+                }
             }
         });
     });

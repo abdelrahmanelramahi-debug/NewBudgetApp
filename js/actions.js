@@ -1246,15 +1246,21 @@ function startNewMonth() {
     setWeeklyBalance(3, 0);
 
     if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
-    // Policy: unconsumed days become buffer (add their value to lockedAmount)
+    // Policy: unconsumed days become buffer — move their value from Daily Food to buffer (do not create money).
     var daysUsed = state.food.daysUsed || 0;
     var daysTotal = state.food.daysTotal || 28;
     var unconsumed = Math.max(0, daysTotal - daysUsed);
     if (unconsumed > 0) {
         var info = typeof getFoodRemainderInfo === 'function' ? getFoodRemainderInfo() : null;
         var dailyRate = (info && info.dailyRate > 0) ? info.dailyRate : (600 / 28);
-        var addToBuffer = unconsumed * dailyRate;
-        state.food.lockedAmount = (state.food.lockedAmount || 0) + addToBuffer;
+        var valueToMove = unconsumed * dailyRate;
+        var foodBal = (state.balances && state.balances['Daily Food'] !== undefined) ? Number(state.balances['Daily Food']) : 0;
+        var takeFromFood = Math.min(valueToMove, Math.max(0, foodBal));
+        if (takeFromFood > 0) {
+            state.balances['Daily Food'] = (state.balances['Daily Food'] || 0) - takeFromFood;
+            if (state.balances['Daily Food'] <= 0) delete state.balances['Daily Food'];
+            state.food.lockedAmount = (state.food.lockedAmount || 0) + takeFromFood;
+        }
     }
     state.food.consumedDays = [];
     state.food.daysUsed = 0;
@@ -2259,7 +2265,9 @@ function rebuildTotals() {
                     state.accounts.buckets[item.label] = item.amount;
                 }
             } else if (state.balances[item.label] === undefined) {
-                state.balances[item.label] = item.amount;
+                if (item.label !== ITEM_LABELS.FOOD_BASE && item.label !== 'Daily Food') {
+                    state.balances[item.label] = item.amount;
+                }
             }
         });
     });
