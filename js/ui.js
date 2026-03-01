@@ -272,7 +272,10 @@ function updateBudgetPlanAllocated() {
     var allocated = 0;
     if (state.categories && state.categories.length) {
         state.categories.forEach(function (sec) {
-            sec.items.forEach(function (item) { allocated += (typeof item.amount === 'number' ? item.amount : 0); });
+            sec.items.forEach(function (item) {
+                if (item.label === 'Payables') return;
+                allocated += (typeof item.amount === 'number' ? item.amount : 0);
+            });
         });
     }
     updateAllocatedTotalUI({ total: total, allocated: allocated, prefix: 'budget-plan' });
@@ -315,7 +318,8 @@ function renderStrategy(opts) {
     let customHtml = '';
 
     state.categories.forEach((sec, secIdx) => {
-        const secTotal = sec.items.reduce((a, b) => a + b.amount, 0);
+        const budgetPlanItems = sec.items.filter(i => i.label !== 'Payables');
+        const secTotal = budgetPlanItems.reduce((a, b) => a + b.amount, 0);
         const perc = state.monthlyIncome > 0 ? Math.round((secTotal/state.monthlyIncome)*100) : 0;
 
         let controls;
@@ -338,6 +342,7 @@ function renderStrategy(opts) {
 
         let rowsHtml = '';
         sec.items.forEach((item, idx) => {
+            if (item.label === 'Payables') return;
             let amortLabel = item.amortData ? `<span class="text-[9px] bg-indigo-50 text-indigo-600 px-1 rounded font-bold ml-2">${item.amortData.total}/${item.amortData.months}mo</span>` : '';
             const isFoodBase = item.label === 'Daily Food' || item.label === 'Food Base';
 
@@ -369,7 +374,7 @@ function renderStrategy(opts) {
             const displayAmount = item.amount.toFixed(0);
             const dailyRateVal = state.food.daysTotal > 0 ? (item.amount / state.food.daysTotal) : 0;
             const dailyRateDisplay = dailyRateVal.toFixed(0);
-            const dailyRateMax = Math.max(100, Math.ceil(dailyRateVal));
+            const dailyRateMax = Math.max(2000, Math.ceil(dailyRateVal), Math.ceil((state.monthlyIncome || 10000) / 28 * 1.5));
             const foodSliderHtml = isFoodBase ? `
                 <div class="px-6 pb-3">
                     <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mb-1">
@@ -385,7 +390,7 @@ function renderStrategy(opts) {
             ` : '';
             const isWeeklyMisc = item.label === 'Weekly Misc';
             const WEEKLY_SLIDER_STEP = 20;
-            const weeklyAmountMax = Math.max(400, Math.ceil((item.amount || 400) / WEEKLY_SLIDER_STEP) * WEEKLY_SLIDER_STEP + WEEKLY_SLIDER_STEP);
+            const weeklyAmountMax = Math.max(20000, Math.ceil((item.amount || 0) / WEEKLY_SLIDER_STEP) * WEEKLY_SLIDER_STEP + WEEKLY_SLIDER_STEP, Math.ceil((state.monthlyIncome || 10000) / WEEKLY_SLIDER_STEP) * WEEKLY_SLIDER_STEP);
             const weeklySnapped = Math.round((item.amount || 0) / WEEKLY_SLIDER_STEP) * WEEKLY_SLIDER_STEP;
             const weeklySliderHtml = isWeeklyMisc ? `
                 <div class="px-6 pb-3">
@@ -402,7 +407,7 @@ function renderStrategy(opts) {
             ` : '';
             const isGeneralSavings = item.label === 'General Savings';
             const SAVINGS_SLIDER_STEP = 50;
-            const savingsMax = Math.max(2000, Math.ceil((state.monthlyIncome || 5000) * 0.6 / SAVINGS_SLIDER_STEP) * SAVINGS_SLIDER_STEP);
+            const savingsMax = Math.max(100000, Math.ceil((state.monthlyIncome || 10000) * 1.2 / SAVINGS_SLIDER_STEP) * SAVINGS_SLIDER_STEP, Math.ceil((item.amount || 0) / SAVINGS_SLIDER_STEP) * SAVINGS_SLIDER_STEP + SAVINGS_SLIDER_STEP * 10);
             const savingsSnapped = Math.round((item.amount || 0) / SAVINGS_SLIDER_STEP) * SAVINGS_SLIDER_STEP;
             const generalSavingsSliderHtml = isGeneralSavings ? `
                 <div class="px-6 pb-3">
@@ -419,7 +424,7 @@ function renderStrategy(opts) {
             ` : '';
             const isCarFund = item.label === 'Car Fund';
             const CAR_SLIDER_STEP = 20;
-            const carMax = Math.max(400, Math.ceil((item.amount || 300) / CAR_SLIDER_STEP) * CAR_SLIDER_STEP + CAR_SLIDER_STEP);
+            const carMax = Math.max(20000, Math.ceil((item.amount || 0) / CAR_SLIDER_STEP) * CAR_SLIDER_STEP + CAR_SLIDER_STEP, Math.ceil((state.monthlyIncome || 10000) / CAR_SLIDER_STEP) * CAR_SLIDER_STEP);
             const carSnapped = Math.round((item.amount || 0) / CAR_SLIDER_STEP) * CAR_SLIDER_STEP;
             const carFundSliderHtml = isCarFund ? `
                 <div class="px-6 pb-3">
@@ -659,6 +664,27 @@ function renderLedger() {
         </div>
     `;
     container.innerHTML += majorHtml;
+
+    // Category view options (above creatable categories, below General Savings / Car Fund / Payables)
+    var optionsBarHtml = `
+        <div id="ledger-options-bar" class="flex flex-wrap items-center gap-3 py-2 px-1 mb-1">
+            <label class="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" id="ledger-hide-empty" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" onchange="setLedgerViewOptions()">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Hide empty</span>
+            </label>
+            <div class="flex items-center gap-2">
+                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Sort:</span>
+                <select id="ledger-sort" class="rounded-lg border border-slate-200 px-2 py-1.5 text-xs font-bold text-slate-800 bg-white outline-none focus:ring-2 focus:ring-indigo-200" onchange="setLedgerViewOptions()">
+                    <option value="default">Default</option>
+                    <option value="balanceDesc">Highest first</option>
+                    <option value="balanceAsc">Lowest first</option>
+                    <option value="nameAsc">A–Z</option>
+                    <option value="nameDesc">Z–A</option>
+                </select>
+            </div>
+        </div>
+    `;
+    container.innerHTML += optionsBarHtml;
 
     // Create categorical dropdowns matching the strategy structure
     var majorLabels = typeof MAJOR_FUND_LABELS !== 'undefined' ? MAJOR_FUND_LABELS : ['Weekly Misc', 'Daily Food', 'General Savings', 'Car Fund', 'Payables'];

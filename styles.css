@@ -709,6 +709,16 @@ body.theme-dark .desktop-nav-item:hover {
     text-transform: uppercase;
     color: #94a3b8;
 }
+@media (max-width: 640px) {
+    .home-header-extra {
+        display: flex;
+        align-items: baseline;
+        gap: 0.35rem;
+    }
+    .home-header-label {
+        display: inline;
+    }
+}
 .home-header-balance {
     display: inline-flex;
     align-items: baseline;

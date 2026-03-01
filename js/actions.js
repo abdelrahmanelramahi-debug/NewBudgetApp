@@ -1306,11 +1306,12 @@ function nextWeek() {
     renderLedger();
 }
 
-// Start new month: roll week 4 into week 1, convert unconsumed food days to buffer, reset food cycle and weekly to Week 1.
+// Start new month: roll Week 4 leftover into Week 1, zero weeks 2–4, reset food tracking, switch view to Week 1. No new money — bank balance stays the same.
 function startNewMonth() {
     pushToUndo();
     if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
-    // Policy: roll week 4 leftover into week 1, then zero weeks 2–4 for a fresh cycle
+
+    // Roll Week 4 leftover into Week 1 (move only; total weekly goes down by week 2 + week 3)
     var week4Bal = typeof getWeeklyBalance === 'function' ? getWeeklyBalance(4) : 0;
     if (week4Bal > 0) {
         setWeeklyBalance(1, getWeeklyBalance(1) + week4Bal);
@@ -1318,6 +1319,7 @@ function startNewMonth() {
     }
     setWeeklyBalance(2, 0);
     setWeeklyBalance(3, 0);
+    if (state.accounts.weekly) state.accounts.weekly._zeroFixed = true;
 
     if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
     // Policy: unconsumed days become buffer — move their value from Daily Food to buffer (do not create money).
@@ -1349,7 +1351,7 @@ function startNewMonth() {
 window.startNewMonth = startNewMonth;
 
 function openNewMonthConfirm() {
-    var msg = 'Reset food cycle and weekly to Week 1?';
+    var msg = 'Week 4 leftover moves to Week 1. Weeks 2–4 reset to zero. Your food calendar clears. Your bank balance does not change.';
     var foodBal = typeof getItemBalance === 'function' ? getItemBalance('Daily Food', 0) : 0;
     var plannedFood = typeof getPlanAmount === 'function' ? getPlanAmount('Daily Food') : 0;
     if (foodBal <= 0 && plannedFood > 0) {
@@ -1357,7 +1359,7 @@ function openNewMonthConfirm() {
     }
     showAppConfirm(msg, function () {
         startNewMonth();
-    }, null, { confirmLabel: 'New month', hideIcon: true });
+    }, null, { confirmLabel: 'Start new month', hideIcon: true });
 }
 window.openNewMonthConfirm = openNewMonthConfirm;
 
@@ -1443,6 +1445,24 @@ function fastUpdateItemAmount(sid, idx, val) {
         if(badge) {
             const dailyRate = state.food.daysTotal > 0 ? (num / state.food.daysTotal) : 0;
             badge.innerText = `${formatMoney(dailyRate)}/day`;
+        }
+    } else if(item.label === 'Weekly Misc') {
+        const slider = document.getElementById('weekly-amount-slider');
+        if(slider) {
+            const snapped = Math.round(num / WEEKLY_SLIDER_STEP) * WEEKLY_SLIDER_STEP;
+            if(slider.value !== String(snapped)) slider.value = String(snapped);
+        }
+    } else if(item.label === 'General Savings') {
+        const slider = document.getElementById('general-savings-slider');
+        if(slider) {
+            const snapped = Math.round(num / SAVINGS_SLIDER_STEP) * SAVINGS_SLIDER_STEP;
+            if(slider.value !== String(snapped)) slider.value = String(snapped);
+        }
+    } else if(item.label === 'Car Fund') {
+        const slider = document.getElementById('car-fund-slider');
+        if(slider) {
+            const snapped = Math.round(num / CAR_SLIDER_STEP) * CAR_SLIDER_STEP;
+            if(slider.value !== String(snapped)) slider.value = String(snapped);
         }
     }
     var obStep = document.getElementById('onboarding-step-categories');

@@ -204,18 +204,18 @@
     <!-- Home header: sticky only on Home (ledger) page -->
     <nav id="app-header" class="nav-header home-header w-full">
         <div class="home-header-inner">
-            <div class="flex flex-wrap items-center gap-x-4 gap-y-3 sm:gap-x-6 justify-between">
-                <div class="flex items-center gap-2 flex-shrink-0 order-first lg:hidden">
+            <div class="flex flex-nowrap items-center gap-x-2 sm:gap-x-4 justify-start min-w-0">
+                <div class="flex items-center gap-2 flex-shrink-0 lg:hidden">
                     <button type="button" onclick="toggleSideMenu()" class="home-header-icon-btn" aria-label="Open menu">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
                     </button>
                 </div>
-                <div id="header-date-newmonth" class="flex items-center gap-1.5 flex-shrink-0 order-1">
-                    <span id="header-today-date" class="text-[10px] font-bold text-slate-500 uppercase tracking-wider tabular-nums">—</span>
+                <div id="header-date-newmonth" class="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
+                    <span id="header-today-date" class="text-[10px] font-bold text-slate-500 uppercase tracking-wider tabular-nums whitespace-nowrap">—</span>
                     <span class="text-slate-300 text-[10px]" aria-hidden="true">·</span>
-                    <button type="button" onclick="openNewMonthConfirm()" class="text-[10px] font-semibold tracking-wider text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 px-2 py-1 rounded-lg transition" title="Start new cycle (food calendar + weekly allowance reset)">New month</button>
+                    <button type="button" onclick="openNewMonthConfirm()" class="text-[10px] font-semibold tracking-wider text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-lg transition whitespace-nowrap" title="Week 4 leftover moves to Week 1; weeks 2–4 reset; food calendar clears. Bank balance stays the same.">New month</button>
                 </div>
-                <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0 order-2 ml-auto">
+                <div class="flex items-center gap-1.5 sm:gap-3 flex-shrink-0 ml-auto">
                     <div class="home-header-actions">
                         <button onclick="globalUndo()" id="global-undo-btn" class="home-header-icon-btn opacity-40 pointer-events-none" title="Undo"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg></button>
                         <button onclick="globalRedo()" id="global-redo-btn" class="home-header-icon-btn opacity-40 pointer-events-none" title="Redo"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg></button>
@@ -446,24 +446,6 @@
                 </div>
             </div>
             </div><!-- /ledger-top-grid -->
-
-            <!-- Category view options -->
-            <div id="ledger-options-bar" class="flex flex-wrap items-center gap-3 py-2 px-1 mb-1">
-                <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" id="ledger-hide-empty" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" onchange="setLedgerViewOptions()">
-                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Hide empty</span>
-                </label>
-                <div class="flex items-center gap-2">
-                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Sort:</span>
-                    <select id="ledger-sort" class="rounded-lg border border-slate-200 px-2 py-1.5 text-xs font-bold text-slate-800 bg-white outline-none focus:ring-2 focus:ring-indigo-200" onchange="setLedgerViewOptions()">
-                        <option value="default">Default</option>
-                        <option value="balanceDesc">Highest first</option>
-                        <option value="balanceAsc">Lowest first</option>
-                        <option value="nameAsc">A–Z</option>
-                        <option value="nameDesc">Z–A</option>
-                    </select>
-                </div>
-            </div>
 
             <!-- Ledger Grid / Container -->
             <div id="ledger-categories" class="space-y-6 ledger-categories-grid"></div>
