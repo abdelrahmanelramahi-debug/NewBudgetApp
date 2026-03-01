@@ -361,10 +361,13 @@
                             <input
                                 type="text"
                                 id="weekly-inline-note"
+                                name="x-weekly-note"
                                 placeholder="Add note..."
                                 maxlength="80"
+                                readonly
+                                onfocus="this.removeAttribute('readonly')"
                                 class="w-full min-w-0 bg-transparent border-none px-2 py-2 text-white placeholder-indigo-300/90 text-xs outline-none focus:placeholder-indigo-200"
-                                autocomplete="off"
+                                autocomplete="nope"
                             >
                         </div>
                     </div>
