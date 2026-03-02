@@ -718,6 +718,7 @@ body.theme-dark .desktop-nav-item:hover {
     .home-header-extra { display: flex; align-items: baseline; gap: 0.25rem; }
     .home-header-extra-amount { font-size: 0.8125rem; }
     .home-header-label { display: inline; }
+    #header-extra-label { display: none; }
 }
 .home-header-balance {
     display: inline-flex;
