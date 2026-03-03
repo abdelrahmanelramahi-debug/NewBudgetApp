@@ -75,7 +75,8 @@ body.theme-dark #bank-balance-info-btn:hover { background: #334155; }
 
 /* Bank Balance card (above Weekly Allowance) */
 .bank-balance-card {
-    overflow: hidden;
+    /* Allow small dropdowns/tooltips to extend without clipping */
+    overflow: visible;
 }
 .bank-balance-card .bank-balance-bar-wrap {
     min-height: 2rem;

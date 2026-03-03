@@ -766,10 +766,10 @@ function renderLedger() {
                     <span class="text-[11px] font-black text-slate-800 uppercase tracking-widest">${sec.label}</span>
                     <span class="flex items-center gap-2">
                         <span class="text-[10px] font-bold text-slate-500">${formatMoney(sumLeft)} / ${formatMoney(sumAllocated)} <span class="text-slate-400">${getCurrencyLabel()}</span></span>
-                        <svg id="icon-${secId}" class="w-4 h-4 text-slate-400 transform transition-transform group-hover:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        <svg id="icon-${secId}" class="w-4 h-4 text-slate-400 transform -rotate-90 transition-transform group-hover:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </span>
                 </button>
-                <div id="${secId}" class="space-y-1.5 mt-1 transition-all">
+                <div id="${secId}" class="space-y-1.5 mt-1 transition-all hidden">
                     ${barsHtml}
                 </div>
             </div>
@@ -1292,7 +1292,7 @@ function calculateReality() {
     var headerBank = getEl('header-bank-balance');
     if (realityTotal) realityTotal.innerText = formatMoney(total);
     if (headerReality) headerReality.innerText = formatMoney(total);
-    if (headerBank) headerBank.innerText = formatMoney(total);
+    if (headerBank) headerBank.innerText = 'Bank ' + formatMoney(total);
     if (typeof renderBankBalanceCard === 'function') renderBankBalanceCard();
 }
 
