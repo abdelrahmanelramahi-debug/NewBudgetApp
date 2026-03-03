@@ -149,8 +149,8 @@ function positionBudgetPlanTipCard(targetEl) {
     finalTop = Math.min(Math.max(finalTop, minTop), maxTop);
 
     // Convert from viewport coordinates to step-relative coordinates
-    var relativeTop = finalTop - stepRect.top + step.scrollTop;
-    var relativeLeft = finalLeft - stepRect.left + step.scrollLeft;
+    var relativeTop = finalTop - stepRect.top;
+    var relativeLeft = finalLeft - stepRect.left;
 
     card.style.top = relativeTop + 'px';
     card.style.left = relativeLeft + 'px';
@@ -192,9 +192,17 @@ function showBudgetPlanTip(index) {
             targetEl.scrollIntoView(true);
         }
 
-        // After scroll settles, position the tip card near the target
+        // After scroll settles, position the tip card near the target and ensure it is visible
         window.requestAnimationFrame(function () {
             positionBudgetPlanTipCard(targetEl);
+            var card = document.getElementById('onboarding-tip-card');
+            if (card) {
+                try {
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } catch (e) {
+                    card.scrollIntoView(true);
+                }
+            }
         });
     } else {
         // If we don't have a specific target, fall back to centering the card
