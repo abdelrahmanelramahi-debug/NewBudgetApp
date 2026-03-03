@@ -13,6 +13,11 @@ var onboardingBudgetTipIndex = 0;
 
 var ONBOARDING_BUDGET_TIPS = [
     {
+        title: 'Watch your total',
+        body: 'This box shows how much of your monthly income is allocated. We’ll flag it if you go under or over your total so you can adjust before you finish. You can change these amounts any time in Budget Plan.',
+        target: '#onboarding-cat-header'
+    },
+    {
         title: 'Set your amounts',
         body: 'Use the amount fields and sliders under each row to decide how much you want to spend or save in each section. Start with the main sections first—you can fine-tune later in Budget Plan.',
         target: '#onboarding-strategy-sections'
@@ -21,11 +26,6 @@ var ONBOARDING_BUDGET_TIPS = [
         title: 'Add categories that fit your life',
         body: 'Use the + Health and + Groceries buttons and Add Category to create sections that match your life. Inside each category, use the + button and amount fields to add items. It’s fine to leave anything at 0 for now.',
         target: '#onboarding-suggestions-row'
-    },
-    {
-        title: 'Watch your total',
-        body: 'This box shows how much of your monthly income is allocated. We’ll flag it if you go under or over your total so you can adjust before you finish. You can change these amounts any time in Budget Plan.',
-        target: '#onboarding-cat-total-card'
     }
 ];
 

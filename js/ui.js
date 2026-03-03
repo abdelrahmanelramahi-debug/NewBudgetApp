@@ -1114,6 +1114,62 @@ var _bankBalanceColorFallbacks = ['bg-lime-400', 'bg-pink-400', 'bg-rose-300', '
 var _bankBalanceColorFallbackIndex = 0;
 var _bankBalanceHiddenGroups = _bankBalanceHiddenGroups || {};
 
+function syncBankBalanceFilterUI() {
+    var groups = ['extra', 'savings', 'payables', 'car', 'weekly', 'food', 'categories'];
+    if (!_bankBalanceHiddenGroups || typeof _bankBalanceHiddenGroups !== 'object') {
+        _bankBalanceHiddenGroups = {};
+    }
+    groups.forEach(function (group) {
+        var cb = document.getElementById('bb-filter-' + group);
+        if (!cb) return;
+        cb.checked = !_bankBalanceHiddenGroups[group];
+    });
+}
+
+function onBankBalanceFilterChanged(group, isChecked) {
+    if (!_bankBalanceHiddenGroups || typeof _bankBalanceHiddenGroups !== 'object') {
+        _bankBalanceHiddenGroups = {};
+    }
+    if (isChecked) {
+        delete _bankBalanceHiddenGroups[group];
+    } else {
+        _bankBalanceHiddenGroups[group] = true;
+    }
+    renderBankBalanceCard();
+    syncBankBalanceFilterUI();
+}
+
+function bankBalanceFilterSelectAll() {
+    _bankBalanceHiddenGroups = {};
+    renderBankBalanceCard();
+    syncBankBalanceFilterUI();
+}
+
+function toggleBankBalanceFilterDropdown() {
+    var dropdown = document.getElementById('bank-balance-filter-dropdown');
+    var btn = document.getElementById('bank-balance-filter-btn');
+    if (!dropdown || !btn) return;
+    var isHidden = dropdown.classList.contains('hidden');
+    if (isHidden) {
+        syncBankBalanceFilterUI();
+        dropdown.classList.remove('hidden');
+        if (!window._bankBalanceFilterDocClick) {
+            window._bankBalanceFilterDocClick = function (e) {
+                if (e.target.closest && (e.target.closest('#bank-balance-filter-dropdown') || e.target.closest('#bank-balance-filter-btn'))) return;
+                var dd = document.getElementById('bank-balance-filter-dropdown');
+                if (!dd) return;
+                dd.classList.add('hidden');
+            };
+            document.addEventListener('click', window._bankBalanceFilterDocClick);
+        }
+    } else {
+        dropdown.classList.add('hidden');
+    }
+}
+window.toggleBankBalanceFilterDropdown = toggleBankBalanceFilterDropdown;
+window.bankBalanceFilterSelectAll = bankBalanceFilterSelectAll;
+window.onBankBalanceFilterChanged = onBankBalanceFilterChanged;
+
 function getBankBalanceSegmentColor(label) {
     if (!label) return _bankBalanceColorFallbacks[0];
     var key = (label || '').toLowerCase().trim();
@@ -1225,29 +1281,7 @@ function renderBankBalanceCard() {
         };
         document.addEventListener('click', window._bankBalanceTooltipDocClick);
     }
-
-    // Lightweight legend filters: tap labels under the bar to hide/show groups
-    var legend = document.querySelector('.bank-balance-legend');
-    if (legend && !legend._bbFilterInitialized) {
-        legend._bbFilterInitialized = true;
-        legend.addEventListener('click', function (e) {
-            var target = e.target.closest && e.target.closest('[data-bb-group]');
-            if (!target) return;
-            var group = target.getAttribute('data-bb-group');
-            if (!group) return;
-            if (!_bankBalanceHiddenGroups || typeof _bankBalanceHiddenGroups !== 'object') {
-                _bankBalanceHiddenGroups = {};
-            }
-            if (_bankBalanceHiddenGroups[group]) {
-                delete _bankBalanceHiddenGroups[group];
-                target.classList.remove('bank-balance-legend-filter-off');
-            } else {
-                _bankBalanceHiddenGroups[group] = true;
-                target.classList.add('bank-balance-legend-filter-off');
-            }
-            renderBankBalanceCard();
-        });
-    }
+    syncBankBalanceFilterUI();
 }
 
 // Writes current balance to reality elements (if present) and refreshes bank balance bar.
@@ -1255,8 +1289,10 @@ function calculateReality() {
     var total = getCurrentBalance();
     var realityTotal = getEl('reality-total');
     var headerReality = getEl('header-reality');
+    var headerBank = getEl('header-bank-balance');
     if (realityTotal) realityTotal.innerText = formatMoney(total);
     if (headerReality) headerReality.innerText = formatMoney(total);
+    if (headerBank) headerBank.innerText = formatMoney(total);
     if (typeof renderBankBalanceCard === 'function') renderBankBalanceCard();
 }
 
