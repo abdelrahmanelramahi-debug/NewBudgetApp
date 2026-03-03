@@ -280,7 +280,7 @@
                         <span class="text-[11px] text-slate-400">Sign out</span>
                     </button>
                     <div class="flex items-center justify-between px-3 py-2 rounded-2xl bg-slate-50 text-[12px] font-semibold text-slate-600">
-                        <span class="flex items-center gap-2">
+                        <span class="flex items-center gap-1.5">
                             <span class="inline-flex items-center justify-center w-6 h-6 rounded-xl bg-white text-slate-500">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <circle cx="12" cy="12" r="5"></circle>
@@ -290,12 +290,11 @@
                                     <path d="M19 12h2"></path>
                                 </svg>
                             </span>
-                            <span>Theme</span>
                         </span>
-                        <div class="inline-flex rounded-full bg-slate-100 p-0.5 text-[11px] font-semibold">
-                            <button type="button" id="theme-chip-light" onclick="setThemeFromSidebar('light')" class="px-2 py-1 rounded-full text-slate-600 bg-slate-100">Light</button>
-                            <button type="button" id="theme-chip-dark" onclick="setThemeFromSidebar('dark')" class="px-2 py-1 rounded-full text-slate-600 bg-slate-100">Dark</button>
-                            <button type="button" id="theme-chip-sepia" onclick="setThemeFromSidebar('sepia')" class="px-2 py-1 rounded-full text-slate-600 bg-slate-100">Sepia</button>
+                        <div class="inline-flex rounded-full bg-slate-100 p-0.5 text-[10px] font-semibold whitespace-nowrap">
+                            <button type="button" id="theme-chip-light" onclick="setThemeFromSidebar('light')" class="px-2 py-0.5 rounded-full text-slate-600 bg-slate-100">Light</button>
+                            <button type="button" id="theme-chip-dark" onclick="setThemeFromSidebar('dark')" class="px-2 py-0.5 rounded-full text-slate-600 bg-slate-100">Dark</button>
+                            <button type="button" id="theme-chip-sepia" onclick="setThemeFromSidebar('sepia')" class="px-2 py-0.5 rounded-full text-slate-600 bg-slate-100">Sepia</button>
                         </div>
                     </div>
                 </div>
@@ -305,17 +304,17 @@
     <!-- Home header: sticky only on Home (ledger) page -->
     <nav id="app-header" class="nav-header home-header w-full sticky top-0 z-40 bg-white/95 backdrop-blur">
         <div class="home-header-inner">
-            <div class="home-header-row flex flex-col gap-2 sm:flex-row sm:flex-nowrap sm:items-center sm:justify-between min-w-0 overflow-x-hidden">
-                <div class="flex items-center justify-between gap-2 sm:justify-start sm:gap-2 flex-shrink-0 min-w-0">
+            <div class="home-header-row flex flex-nowrap items-center justify-between gap-2 min-w-0 overflow-x-hidden">
+                <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 min-w-0">
                     <button type="button" onclick="toggleSideMenu()" class="home-header-icon-btn lg:hidden" aria-label="Open menu">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
                     </button>
                     <div class="flex flex-col leading-tight min-w-0">
-                        <span id="header-bank-balance" class="text-xs sm:text-sm font-bold text-slate-900 tracking-wider tabular-nums truncate">Balance: <span class="font-normal text-slate-700">0.00 AED</span></span>
-                        <span id="header-today-date" class="text-[10px] font-bold text-slate-500 uppercase tracking-wider tabular-nums whitespace-nowrap">—</span>
+                        <span id="header-bank-balance" class="text-[11px] sm:text-sm font-bold text-slate-900 tracking-wider tabular-nums truncate">Balance: <span class="font-normal text-slate-700">0.00 AED</span></span>
+                        <span id="header-today-date" class="text-[9px] font-bold text-slate-500 uppercase tracking-wider tabular-nums whitespace-nowrap">—</span>
                     </div>
                 </div>
-                <div class="flex items-center justify-between gap-2 sm:justify-end min-w-0 overflow-hidden">
+                <div class="flex items-center gap-1 sm:gap-2 min-w-0 overflow-hidden justify-end">
                     <div class="home-header-actions flex-shrink-0 hidden xs:flex sm:flex">
                         <button onclick="globalUndo()" id="global-undo-btn" class="home-header-icon-btn opacity-40 pointer-events-none" title="Undo"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg></button>
                         <button onclick="globalRedo()" id="global-redo-btn" class="home-header-icon-btn opacity-40 pointer-events-none" title="Redo"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg></button>
@@ -443,7 +442,7 @@
                         <span class="text-[11px] text-slate-400">Soon</span>
                     </button>
                     <div class="flex items-center justify-between px-3 py-2 rounded-2xl bg-slate-50 text-[12px] font-semibold text-slate-600">
-                        <span class="flex items-center gap-2">
+                        <span class="flex items-center gap-1.5">
                             <span class="inline-flex items-center justify-center w-6 h-6 rounded-xl bg-white text-slate-500">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <circle cx="12" cy="12" r="5"></circle>
@@ -453,12 +452,11 @@
                                     <path d="M19 12h2"></path>
                                 </svg>
                             </span>
-                            <span>Theme</span>
                         </span>
-                        <div class="inline-flex rounded-full bg-slate-100 p-0.5 text-[11px] font-semibold">
-                            <button type="button" onclick="setThemeFromSidebar('light')" class="px-2 py-1 rounded-full text-slate-600 bg-slate-100">Light</button>
-                            <button type="button" onclick="setThemeFromSidebar('dark')" class="px-2 py-1 rounded-full text-slate-600 bg-slate-100">Dark</button>
-                            <button type="button" onclick="setThemeFromSidebar('sepia')" class="px-2 py-1 rounded-full text-slate-600 bg-slate-100">Sepia</button>
+                        <div class="inline-flex rounded-full bg-slate-100 p-0.5 text-[10px] font-semibold whitespace-nowrap">
+                            <button type="button" onclick="setThemeFromSidebar('light')" class="px-2 py-0.5 rounded-full text-slate-600 bg-slate-100">Light</button>
+                            <button type="button" onclick="setThemeFromSidebar('dark')" class="px-2 py-0.5 rounded-full text-slate-600 bg-slate-100">Dark</button>
+                            <button type="button" onclick="setThemeFromSidebar('sepia')" class="px-2 py-0.5 rounded-full text-slate-600 bg-slate-100">Sepia</button>
                         </div>
                     </div>
                 </div>
@@ -542,34 +540,34 @@
                         <button type="button" onclick="bankBalanceFilterSelectAll()" class="text-[10px] font-bold text-indigo-600 hover:text-indigo-700">Select all</button>
                     </div>
                     <div class="py-2 max-h-56 overflow-y-auto">
-                        <label class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" onclick="toggleBankBalanceGroup('extra')">
-                            <input type="checkbox" id="bb-filter-extra" onchange="onBankBalanceFilterChanged('extra', this.checked)" class="w-4 h-4 accent-emerald-500">
+                        <div class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" onclick="toggleBankBalanceGroup('extra')">
+                            <input type="checkbox" id="bb-filter-extra" class="w-4 h-4 accent-emerald-500">
                             <span class="text-[11px] text-slate-700">Extra (Unallocated)</span>
-                        </label>
-                        <label class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" onclick="toggleBankBalanceGroup('savings')">
-                            <input type="checkbox" id="bb-filter-savings" onchange="onBankBalanceFilterChanged('savings', this.checked)" class="w-4 h-4 accent-sky-500">
+                        </div>
+                        <div class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" onclick="toggleBankBalanceGroup('savings')">
+                            <input type="checkbox" id="bb-filter-savings" class="w-4 h-4 accent-sky-500">
                             <span class="text-[11px] text-slate-700">Savings</span>
-                        </label>
-                        <label class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" onclick="toggleBankBalanceGroup('payables')">
-                            <input type="checkbox" id="bb-filter-payables" onchange="onBankBalanceFilterChanged('payables', this.checked)" class="w-4 h-4 accent-rose-500">
+                        </div>
+                        <div class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" onclick="toggleBankBalanceGroup('payables')">
+                            <input type="checkbox" id="bb-filter-payables" class="w-4 h-4 accent-rose-500">
                             <span class="text-[11px] text-slate-700">Payables</span>
-                        </label>
-                        <label class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" onclick="toggleBankBalanceGroup('car')">
-                            <input type="checkbox" id="bb-filter-car" onchange="onBankBalanceFilterChanged('car', this.checked)" class="w-4 h-4 accent-violet-500">
+                        </div>
+                        <div class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" onclick="toggleBankBalanceGroup('car')">
+                            <input type="checkbox" id="bb-filter-car" class="w-4 h-4 accent-violet-500">
                             <span class="text-[11px] text-slate-700">Car</span>
-                        </label>
-                        <label class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" onclick="toggleBankBalanceGroup('weekly')">
-                            <input type="checkbox" id="bb-filter-weekly" onchange="onBankBalanceFilterChanged('weekly', this.checked)" class="w-4 h-4 accent-indigo-500">
+                        </div>
+                        <div class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" onclick="toggleBankBalanceGroup('weekly')">
+                            <input type="checkbox" id="bb-filter-weekly" class="w-4 h-4 accent-indigo-500">
                             <span class="text-[11px] text-slate-700">Weekly allowance</span>
-                        </label>
-                        <label class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" onclick="toggleBankBalanceGroup('food')">
-                            <input type="checkbox" id="bb-filter-food" onchange="onBankBalanceFilterChanged('food', this.checked)" class="w-4 h-4 accent-amber-500">
+                        </div>
+                        <div class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" onclick="toggleBankBalanceGroup('food')">
+                            <input type="checkbox" id="bb-filter-food" class="w-4 h-4 accent-amber-500">
                             <span class="text-[11px] text-slate-700">Food & buffer</span>
-                        </label>
-                        <label class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" onclick="toggleBankBalanceGroup('categories')">
-                            <input type="checkbox" id="bb-filter-categories" onchange="onBankBalanceFilterChanged('categories', this.checked)" class="w-4 h-4 accent-teal-500">
+                        </div>
+                        <div class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" onclick="toggleBankBalanceGroup('categories')">
+                            <input type="checkbox" id="bb-filter-categories" class="w-4 h-4 accent-teal-500">
                             <span class="text-[11px] text-slate-700">Categories</span>
-                        </label>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -138,6 +138,34 @@ body.theme-sepia .bank-balance-card {
 body.theme-sepia #bank-balance-total { color: #1f2933; }
 body.theme-sepia .bank-balance-legend span { color: #7c2d12; }
 
+/* Weekly allowance card in sepia: keep strong contrast */
+body.theme-sepia .weekly-hero {
+    background: linear-gradient(135deg, #f8efe0 0%, #f2dfc1 100%) !important;
+    border-color: #e2c9aa;
+    color: #1f2933;
+}
+body.theme-sepia .weekly-hero h2,
+body.theme-sepia .weekly-hero h3,
+body.theme-sepia .weekly-hero .text-indigo-200,
+body.theme-sepia .weekly-hero .text-indigo-300 {
+    color: #1f2933 !important;
+}
+body.theme-sepia .weekly-hero .weekly-inline-controls {
+    background: rgba(31, 41, 51, 0.05);
+    border-color: rgba(31, 41, 51, 0.12);
+}
+body.theme-sepia .weekly-hero .weekly-inline-controls input::placeholder {
+    color: rgba(55, 65, 81, 0.6);
+}
+body.theme-sepia .weekly-hero .weekly-inline-controls button {
+    background-color: #ffffff;
+    color: #1f2933;
+}
+body.theme-sepia .weekly-hero .weekly-inline-controls button:last-child {
+    background-color: #6366f1;
+    color: #ffffff;
+}
+
 /* Bank Balance card (above Weekly Allowance) */
 .bank-balance-card {
     /* Allow small dropdowns/tooltips to extend without clipping */
