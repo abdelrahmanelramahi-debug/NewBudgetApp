@@ -110,6 +110,15 @@ body.theme-dark #bank-balance-info-btn:hover { background: #334155; }
     flex-shrink: 0;
 }
 
+.bank-balance-legend [data-bb-group] {
+    cursor: pointer;
+}
+.bank-balance-legend-filter-off {
+    opacity: 0.35;
+    text-decoration: line-through;
+    text-decoration-thickness: 1px;
+}
+
 /* Custom segment tooltip (replaces native title) */
 .bank-balance-tooltip {
     position: fixed;

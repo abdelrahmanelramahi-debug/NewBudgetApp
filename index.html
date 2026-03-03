@@ -195,11 +195,6 @@
             </nav>
         </aside>
         <div id="app-main" class="flex-1 flex flex-col min-h-0 min-w-0 w-full max-w-xl lg:max-w-none mx-auto px-4 lg:px-6">
-    <!-- First-action prompt (shown once after onboarding; existing users never see this) -->
-    <div id="first-action-prompt" class="hidden mb-4 p-4 rounded-xl bg-indigo-50 border border-indigo-200 flex items-center justify-between gap-3">
-        <p class="text-sm font-bold text-indigo-900">Add your first spend from Weekly Allowance, or open Budget Plan to see your categories.</p>
-        <button type="button" id="first-action-dismiss" class="shrink-0 py-2 px-3 rounded-lg bg-indigo-200 text-indigo-800 text-xs font-bold uppercase hover:bg-indigo-300 transition">Dismiss</button>
-    </div>
     <!-- Home header: sticky only on Home (ledger) page -->
     <nav id="app-header" class="nav-header home-header w-full">
         <div class="home-header-inner">
@@ -306,13 +301,13 @@
                 <div class="bank-balance-bar-wrap relative rounded-xl overflow-hidden bg-slate-100 h-8 flex" id="bank-balance-bar" role="img" aria-label="Bank balance breakdown by source"></div>
                 <div id="bank-balance-tooltip" class="bank-balance-tooltip hidden" aria-hidden="true"></div>
                 <p class="bank-balance-legend text-[9px] text-slate-400 mt-2 flex items-center gap-x-2.5 gap-y-0 flex-nowrap overflow-x-auto overflow-y-hidden pb-0.5 min-h-[1.25rem]">
-                    <span class="inline-flex items-center gap-1 shrink-0"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> Extra</span>
-                    <span class="inline-flex items-center gap-1 shrink-0"><span class="w-2 h-2 rounded-full bg-sky-400"></span> Savings</span>
-                    <span class="inline-flex items-center gap-1 shrink-0"><span class="w-2 h-2 rounded-full bg-rose-400"></span> Payables</span>
-                    <span class="inline-flex items-center gap-1 shrink-0"><span class="w-2 h-2 rounded-full bg-violet-400"></span> Car</span>
-                    <span class="inline-flex items-center gap-1 shrink-0"><span class="w-2 h-2 rounded-full bg-indigo-400"></span> Weekly</span>
-                    <span class="inline-flex items-center gap-1 shrink-0"><span class="w-2 h-2 rounded-full bg-amber-400"></span> Food</span>
-                    <span class="inline-flex items-center gap-1 shrink-0"><span class="w-2 h-2 rounded-full bg-teal-400"></span> Categories</span>
+                    <span class="inline-flex items-center gap-1 shrink-0" data-bb-group="extra"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> Extra</span>
+                    <span class="inline-flex items-center gap-1 shrink-0" data-bb-group="savings"><span class="w-2 h-2 rounded-full bg-sky-400"></span> Savings</span>
+                    <span class="inline-flex items-center gap-1 shrink-0" data-bb-group="payables"><span class="w-2 h-2 rounded-full bg-rose-400"></span> Payables</span>
+                    <span class="inline-flex items-center gap-1 shrink-0" data-bb-group="car"><span class="w-2 h-2 rounded-full bg-violet-400"></span> Car</span>
+                    <span class="inline-flex items-center gap-1 shrink-0" data-bb-group="weekly"><span class="w-2 h-2 rounded-full bg-indigo-400"></span> Weekly</span>
+                    <span class="inline-flex items-center gap-1 shrink-0" data-bb-group="food"><span class="w-2 h-2 rounded-full bg-amber-400"></span> Food</span>
+                    <span class="inline-flex items-center gap-1 shrink-0" data-bb-group="categories"><span class="w-2 h-2 rounded-full bg-teal-400"></span> Categories</span>
                 </p>
             </div>
             <!-- Weekly Hero (compact on desktop) -->

@@ -1061,11 +1061,11 @@ function getBankBalanceBarSegments() {
     var weeklyLabel = ITEM_LABELS.WEEKLY_MISC;
 
     var surplus = (state.accounts && state.accounts.surplus !== undefined) ? state.accounts.surplus : 0;
-    if (surplus > 0) segments.push({ label: 'Extra (Unallocated)', amount: surplus });
+    if (surplus > 0) segments.push({ label: 'Extra (Unallocated)', amount: surplus, group: 'extra' });
 
-    if (getSavings > 0) segments.push({ label: gsLabel, amount: getSavings });
-    if (getBal(payLabel, 0) > 0) segments.push({ label: payLabel, amount: getBal(payLabel, 0) });
-    if (getBal(carLabel, 0) > 0) segments.push({ label: carLabel, amount: getBal(carLabel, 0) });
+    if (getSavings > 0) segments.push({ label: gsLabel, amount: getSavings, group: 'savings' });
+    if (getBal(payLabel, 0) > 0) segments.push({ label: payLabel, amount: getBal(payLabel, 0), group: 'payables' });
+    if (getBal(carLabel, 0) > 0) segments.push({ label: carLabel, amount: getBal(carLabel, 0), group: 'car' });
 
     if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
     var w1 = Math.max(0, (state.accounts.weekly.balances && state.accounts.weekly.balances[0]) || 0);
@@ -1073,14 +1073,14 @@ function getBankBalanceBarSegments() {
     var w3 = Math.max(0, (state.accounts.weekly.balances && state.accounts.weekly.balances[2]) || 0);
     var w4 = Math.max(0, (state.accounts.weekly.balances && state.accounts.weekly.balances[3]) || 0);
     var totalWeekly = w1 + w2 + w3 + w4;
-    if (totalWeekly > 0) segments.push({ label: 'Weekly Allowance', amount: totalWeekly, meta: 'Week 1–4' });
+    if (totalWeekly > 0) segments.push({ label: 'Weekly Allowance', amount: totalWeekly, meta: 'Week 1–4', group: 'weekly' });
 
     if (typeof getFoodRemainderInfo === 'function') {
         var foodInfo = getFoodRemainderInfo();
-        if (foodInfo.remainder > 0) segments.push({ label: 'Food Remainder', amount: foodInfo.remainder, meta: foodInfo.daysLeft + ' days' });
+        if (foodInfo.remainder > 0) segments.push({ label: 'Food Remainder', amount: foodInfo.remainder, meta: foodInfo.daysLeft + ' days', group: 'food' });
     }
     var locked = state.food?.lockedAmount || 0;
-    if (locked > 0) segments.push({ label: 'Food Buffer', amount: locked, meta: 'Locked' });
+    if (locked > 0) segments.push({ label: 'Food Buffer', amount: locked, meta: 'Locked', group: 'food' });
 
     // One segment per category section (Health, Groceries, Misc, Subscriptions, etc.) – not per item.
     var skipLabels = [foodLabel, 'Food Base', weeklyLabel, gsLabel, payLabel, carLabel];
@@ -1091,7 +1091,7 @@ function getBankBalanceBarSegments() {
             if (skipLabels.indexOf(item.label) !== -1) return;
             sectionSum += getBal(item.label, 0);
         });
-        if (sectionSum > 0) segments.push({ label: sec.label, amount: sectionSum });
+        if (sectionSum > 0) segments.push({ label: sec.label, amount: sectionSum, group: 'categories' });
     });
 
     return segments;
@@ -1112,6 +1112,7 @@ var _bankBalanceColorMap = {
 };
 var _bankBalanceColorFallbacks = ['bg-lime-400', 'bg-pink-400', 'bg-rose-300', 'bg-violet-300', 'bg-teal-300'];
 var _bankBalanceColorFallbackIndex = 0;
+var _bankBalanceHiddenGroups = _bankBalanceHiddenGroups || {};
 
 function getBankBalanceSegmentColor(label) {
     if (!label) return _bankBalanceColorFallbacks[0];
@@ -1131,6 +1132,13 @@ function renderBankBalanceCard() {
 
     _bankBalanceColorFallbackIndex = 0;
     var segments = typeof getBankBalanceBarSegments === 'function' ? getBankBalanceBarSegments() : [];
+    // Apply group-level filters (treat unset as "all selected")
+    if (_bankBalanceHiddenGroups && typeof _bankBalanceHiddenGroups === 'object') {
+        segments = segments.filter(function (s) {
+            if (!s.group) return true;
+            return !_bankBalanceHiddenGroups[s.group];
+        });
+    }
     segments = segments.filter(function (s) { return s.amount > 0; });
     if (segments.length === 0 || total <= 0) {
         barEl.innerHTML = '<div class="flex-1 rounded-lg bg-slate-200" title="No balance"></div>';
@@ -1216,6 +1224,29 @@ function renderBankBalanceCard() {
             tooltip.setAttribute('aria-hidden', 'true');
         };
         document.addEventListener('click', window._bankBalanceTooltipDocClick);
+    }
+
+    // Lightweight legend filters: tap labels under the bar to hide/show groups
+    var legend = document.querySelector('.bank-balance-legend');
+    if (legend && !legend._bbFilterInitialized) {
+        legend._bbFilterInitialized = true;
+        legend.addEventListener('click', function (e) {
+            var target = e.target.closest && e.target.closest('[data-bb-group]');
+            if (!target) return;
+            var group = target.getAttribute('data-bb-group');
+            if (!group) return;
+            if (!_bankBalanceHiddenGroups || typeof _bankBalanceHiddenGroups !== 'object') {
+                _bankBalanceHiddenGroups = {};
+            }
+            if (_bankBalanceHiddenGroups[group]) {
+                delete _bankBalanceHiddenGroups[group];
+                target.classList.remove('bank-balance-legend-filter-off');
+            } else {
+                _bankBalanceHiddenGroups[group] = true;
+                target.classList.add('bank-balance-legend-filter-off');
+            }
+            renderBankBalanceCard();
+        });
     }
 }
 
