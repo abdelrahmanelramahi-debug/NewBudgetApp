@@ -1087,7 +1087,7 @@ function getBankBalanceBarSegments() {
     var weeklyLabel = ITEM_LABELS.WEEKLY_MISC;
 
     var surplus = (state.accounts && state.accounts.surplus !== undefined) ? state.accounts.surplus : 0;
-    if (surplus > 0) segments.push({ label: 'Extra (Unallocated)', amount: surplus, group: 'extra' });
+    if (surplus !== 0) segments.push({ label: 'Extra (Unallocated)', amount: surplus, group: 'extra' });
 
     if (getSavings > 0) segments.push({ label: gsLabel, amount: getSavings, group: 'savings' });
     if (getBal(payLabel, 0) > 0) segments.push({ label: payLabel, amount: getBal(payLabel, 0), group: 'payables' });
@@ -1165,6 +1165,14 @@ function onBankBalanceFilterChanged(group, isChecked) {
     syncBankBalanceFilterUI();
 }
 
+function toggleBankBalanceGroup(group) {
+    if (!_bankBalanceHiddenGroups || typeof _bankBalanceHiddenGroups !== 'object') {
+        _bankBalanceHiddenGroups = {};
+    }
+    var isCurrentlyVisible = !_bankBalanceHiddenGroups[group];
+    onBankBalanceFilterChanged(group, !isCurrentlyVisible);
+}
+
 function bankBalanceFilterSelectAll() {
     _bankBalanceHiddenGroups = {};
     renderBankBalanceCard();
@@ -1195,6 +1203,7 @@ function toggleBankBalanceFilterDropdown() {
 window.toggleBankBalanceFilterDropdown = toggleBankBalanceFilterDropdown;
 window.bankBalanceFilterSelectAll = bankBalanceFilterSelectAll;
 window.onBankBalanceFilterChanged = onBankBalanceFilterChanged;
+window.toggleBankBalanceGroup = toggleBankBalanceGroup;
 
 function getBankBalanceSegmentColor(label) {
     if (!label) return _bankBalanceColorFallbacks[0];

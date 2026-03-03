@@ -136,6 +136,20 @@ function positionBudgetPlanTipCard(targetEl) {
     var viewportWidth = window.innerWidth || document.documentElement.clientWidth || stepRect.width;
     var viewportHeight = window.innerHeight || document.documentElement.clientHeight || stepRect.height;
 
+    // On small screens, treat the tip as a bottom sheet so it doesn't sit on top of
+    // the referenced content. We still scroll the target into view separately.
+    if (viewportWidth <= 640) {
+        var mobileWidth = Math.min(stepRect.width - padding * 2, 480);
+        var mobileLeft = stepRect.left + (stepRect.width / 2) - (mobileWidth / 2);
+        var mobileTop = stepRect.bottom - stepRect.top - (cardRect.height || 0) - padding;
+        if (mobileTop < padding) mobileTop = padding;
+
+        card.style.maxWidth = mobileWidth + 'px';
+        card.style.left = (mobileLeft - stepRect.left) + 'px';
+        card.style.top = mobileTop + 'px';
+        return;
+    }
+
     var cardWidth = cardRect.width || Math.min(360, stepRect.width - padding * 2);
     var cardHeight = cardRect.height || 0;
 
