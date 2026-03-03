@@ -136,25 +136,16 @@ function positionBudgetPlanTipCard(targetEl) {
     var viewportWidth = window.innerWidth || document.documentElement.clientWidth || stepRect.width;
     var viewportHeight = window.innerHeight || document.documentElement.clientHeight || stepRect.height;
 
-    // On small screens, treat the tip as a bottom sheet so it doesn't sit on top of
-    // the referenced content. We still scroll the target into view separately.
-    if (viewportWidth <= 640) {
-        var mobileWidth = Math.min(stepRect.width - padding * 2, 480);
-        var mobileLeft = stepRect.left + (stepRect.width / 2) - (mobileWidth / 2);
-        var mobileTop = stepRect.bottom - stepRect.top - (cardRect.height || 0) - padding;
-        if (mobileTop < padding) mobileTop = padding;
-
-        card.style.maxWidth = mobileWidth + 'px';
-        card.style.left = (mobileLeft - stepRect.left) + 'px';
-        card.style.top = mobileTop + 'px';
-        return;
-    }
-
+    var isMobile = viewportWidth <= 640;
     var cardWidth = cardRect.width || Math.min(360, stepRect.width - padding * 2);
+    if (isMobile) {
+        cardWidth = Math.min(stepRect.width - padding * 2, 480);
+    }
     var cardHeight = cardRect.height || 0;
 
-    // Preferred position: below the target, centered horizontally
-    var preferredTop = targetRect.bottom + 12;
+    // Preferred position: below the target on desktop, above on mobile to keep
+    // both the card and target visible without pushing the card too far down.
+    var preferredTop = isMobile ? (targetRect.top - cardHeight - 12) : (targetRect.bottom + 12);
     var preferredLeft = targetRect.left + (targetRect.width / 2) - (cardWidth / 2);
 
     // Clamp horizontally within viewport and within the onboarding step
@@ -168,8 +159,8 @@ function positionBudgetPlanTipCard(targetEl) {
 
     var finalTop = preferredTop;
     if (finalTop + cardHeight > maxTop) {
-        // Try placing above the target instead
-        finalTop = targetRect.top - cardHeight - 12;
+        // Try the opposite side of the target
+        finalTop = isMobile ? (targetRect.bottom + 12) : (targetRect.top - cardHeight - 12);
     }
     finalTop = Math.min(Math.max(finalTop, minTop), maxTop);
 
@@ -210,9 +201,11 @@ function showBudgetPlanTip(index) {
     if (targetEl) {
         targetEl.classList.add('onboarding-tip-highlight');
 
-        // Smooth scroll so the target is near the center of the screen
+        // Smooth scroll so the target is clearly visible (mobile: nearer top, desktop: center)
         try {
-            targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            var vw = window.innerWidth || document.documentElement.clientWidth || 0;
+            var blockMode = vw <= 640 ? 'start' : 'center';
+            targetEl.scrollIntoView({ behavior: 'smooth', block: blockMode });
         } catch (e) {
             targetEl.scrollIntoView(true);
         }
@@ -221,7 +214,10 @@ function showBudgetPlanTip(index) {
         window.requestAnimationFrame(function () {
             positionBudgetPlanTipCard(targetEl);
             var card = document.getElementById('onboarding-tip-card');
-            if (card) {
+            // On small screens we treat the tip as a bottom sheet and avoid extra scrolling,
+            // since the target has already been scrolled into view above.
+            var viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+            if (card && viewportWidth > 640) {
                 try {
                     card.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 } catch (e) {

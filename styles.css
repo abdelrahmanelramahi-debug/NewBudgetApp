@@ -50,6 +50,15 @@ body.theme-dark .home-header-surplus-input {
     border-color: rgba(52, 211, 153, 0.35);
     color: #e2e8f0;
 }
+body.theme-dark #header-bank-balance {
+    color: #e5e7eb;
+}
+body.theme-dark #header-bank-balance span {
+    color: #cbd5f5;
+}
+body.theme-dark #header-today-date {
+    color: #9ca3af;
+}
 body.theme-dark .nav-pill { background: #1f2937; }
 body.theme-dark .tab-inactive { color: #cbd5f5; }
 body.theme-dark .tab-active { background: #f8fafc; color: #0f172a; }
@@ -79,6 +88,29 @@ body.theme-dark .bank-balance-card {
 }
 body.theme-dark #bank-balance-total { color: #f9fafb; }
 body.theme-dark .bank-balance-legend span { color: #cbd5f5; }
+
+/* Food tracker card in dark mode: increase contrast */
+body.theme-dark #food-tracker-card {
+    background-color: #020617;
+    border-color: #111827;
+}
+body.theme-dark #food-tracker-card .bg-slate-50 {
+    background-color: #020617;
+    border-color: #1e293b;
+}
+body.theme-dark #food-days-count {
+    color: #f9fafb;
+}
+body.theme-dark #food-macro-used {
+    color: #cbd5f5;
+}
+body.theme-dark #food-week-day-label {
+    color: #a5b4fc;
+}
+body.theme-dark #food-overview-header .grid,
+body.theme-dark #food-overview-rows {
+    color: #cbd5f5;
+}
 body.theme-dark .modal-content { background: #111827; }
 body.theme-dark #app-alert-modal .modal-content #app-alert-title,
 body.theme-dark #app-alert-modal .modal-content #app-alert-message { color: #e2e8f0; }
@@ -126,6 +158,9 @@ body.theme-sepia .text-slate-600 { color: #3b2f2a; }
 body.theme-sepia .text-slate-500 { color: #4b3b33; }
 body.theme-sepia .text-slate-400 { color: #7c5a3c; }
 body.theme-sepia .text-slate-300 { color: #a4744a; }
+body.theme-sepia .text-indigo-200,
+body.theme-sepia .text-indigo-300 { color: #3b2f2a; }
+body.theme-sepia .text-amber-100 { color: #3b2f2a; }
 body.theme-sepia input,
 body.theme-sepia select,
 body.theme-sepia textarea {
@@ -137,6 +172,15 @@ body.theme-sepia .bank-balance-card {
 }
 body.theme-sepia #bank-balance-total { color: #1f2933; }
 body.theme-sepia .bank-balance-legend span { color: #7c2d12; }
+
+/* Major funds cards in sepia: stronger contrast for headings and amounts */
+body.theme-sepia .major-funds .major-fund-bar {
+    border-color: rgba(59, 47, 42, 0.15);
+}
+body.theme-sepia .major-funds .major-fund-bar span,
+body.theme-sepia .major-funds .major-fund-bar div {
+    color: #1f2933;
+}
 
 /* Weekly allowance card in sepia: keep strong contrast */
 body.theme-sepia .weekly-hero {
@@ -1208,9 +1252,9 @@ body.theme-dark .desktop-nav-item:hover {
 .home-tour-highlight {
     position: relative;
     z-index: 30;
-    box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.9),
-                0 18px 40px rgba(15, 23, 42, 0.25);
-    border-radius: 18px;
-    background-color: rgba(255, 255, 255, 0.96);
-    padding: 4px 2px;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+    border-radius: 16px;
+    outline: 2px solid rgba(129, 140, 248, 0.9);
+    outline-offset: -2px;
+    background-color: rgba(129, 140, 248, 0.04);
 }
