@@ -280,6 +280,51 @@ var HOME_TOUR_STEPS = [
     }
 ];
 var homeTourStepIndex = 0;
+
+function positionHomeTourCard(targetEl) {
+    var page = document.getElementById('page-ledger');
+    var card = document.getElementById('home-tour-card');
+    if (!page || !card || !targetEl) return;
+
+    if (card.classList.contains('hidden')) {
+        card.classList.remove('hidden');
+    }
+
+    var pageRect = page.getBoundingClientRect();
+    var targetRect = targetEl.getBoundingClientRect();
+    var cardRect = card.getBoundingClientRect();
+
+    var padding = 16;
+    var viewportWidth = window.innerWidth || document.documentElement.clientWidth || pageRect.width;
+    var viewportHeight = window.innerHeight || document.documentElement.clientHeight || pageRect.height;
+
+    var cardWidth = cardRect.width || Math.min(360, pageRect.width - padding * 2);
+    var cardHeight = cardRect.height || 0;
+
+    var preferredTop = targetRect.bottom + 12;
+    var preferredLeft = targetRect.left + (targetRect.width / 2) - (cardWidth / 2);
+
+    var minLeft = Math.max(padding, pageRect.left + padding);
+    var maxLeft = Math.min(viewportWidth - padding - cardWidth, pageRect.right - padding - cardWidth);
+    var finalLeft = Math.min(Math.max(preferredLeft, minLeft), maxLeft);
+
+    var minTop = Math.max(padding, pageRect.top + padding);
+    var maxTop = Math.min(viewportHeight - padding - cardHeight, pageRect.bottom - padding - cardHeight);
+
+    var finalTop = preferredTop;
+    if (finalTop + cardHeight > maxTop) {
+        finalTop = targetRect.top - cardHeight - 12;
+    }
+    finalTop = Math.min(Math.max(finalTop, minTop), maxTop);
+
+    var relativeTop = finalTop - pageRect.top;
+    var relativeLeft = finalLeft - pageRect.left;
+
+    card.style.top = relativeTop + 'px';
+    card.style.left = relativeLeft + 'px';
+    card.style.maxWidth = cardWidth + 'px';
+}
+
 function startHomeTour() {
     // Disable home tour on mobile – desktop only
     if (isMobileDevice()) {
@@ -292,9 +337,11 @@ function startHomeTour() {
     if (typeof state !== 'undefined' && state._sawHomePageTour) return;
     homeTourStepIndex = 0;
     var overlay = document.getElementById('home-tour-overlay');
-    if (!overlay) return;
+    var card = document.getElementById('home-tour-card');
+    if (!overlay || !card) return;
     showHomeTourStep(0);
     overlay.classList.remove('hidden');
+    card.classList.remove('hidden');
 }
 function showHomeTourStep(index) {
     var stepNum = document.getElementById('home-tour-step-num');
@@ -327,6 +374,18 @@ function showHomeTourStep(index) {
         } catch (e) {
             targetEl.scrollIntoView(true);
         }
+
+        window.requestAnimationFrame(function () {
+            positionHomeTourCard(targetEl);
+            var card = document.getElementById('home-tour-card');
+            if (card) {
+                try {
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } catch (e) {
+                    card.scrollIntoView(true);
+                }
+            }
+        });
     }
 }
 function nextHomeTourStep() {
@@ -342,7 +401,13 @@ function skipHomeTour() {
 }
 function finishHomeTour() {
     var overlay = document.getElementById('home-tour-overlay');
+    var card = document.getElementById('home-tour-card');
     if (overlay) overlay.classList.add('hidden');
+    if (card) {
+        card.classList.add('hidden');
+        card.style.top = '';
+        card.style.left = '';
+    }
     if (typeof state !== 'undefined') {
         state._sawHomePageTour = true;
         if (typeof saveState === 'function') saveState();

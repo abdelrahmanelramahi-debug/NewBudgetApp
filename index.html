@@ -264,15 +264,14 @@
 
         <!-- LEDGER PAGE -->
         <div id="page-ledger" class="space-y-6 relative">
-            <div id="home-tour-overlay" class="hidden absolute inset-0 z-30 flex items-center justify-center p-4 bg-black/40">
-                <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 border-2 border-indigo-200">
-                    <p id="home-tour-step" class="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-2">Step <span id="home-tour-step-num">1</span> of 4</p>
-                    <p id="home-tour-title" class="text-sm font-black text-slate-900 mb-2"></p>
-                    <p id="home-tour-body" class="text-xs text-slate-600 mb-6 leading-relaxed"></p>
-                    <div class="flex gap-2">
-                        <button type="button" onclick="skipHomeTour()" class="py-2.5 px-4 text-slate-500 text-xs font-bold hover:text-slate-700">Skip tour</button>
-                        <button type="button" id="home-tour-next-btn" onclick="nextHomeTourStep()" class="flex-1 py-2.5 px-4 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase">Next</button>
-                    </div>
+            <div id="home-tour-overlay" class="hidden absolute inset-0 z-30 bg-black/40"></div>
+            <div id="home-tour-card" class="hidden absolute z-40 max-w-sm w-full p-6 bg-white rounded-2xl shadow-xl border-2 border-indigo-200">
+                <p id="home-tour-step" class="text-[10px] font-black text-indigo-600 uppercase tracking-widest mb-2">Step <span id="home-tour-step-num">1</span> of 4</p>
+                <p id="home-tour-title" class="text-sm font-black text-slate-900 mb-2"></p>
+                <p id="home-tour-body" class="text-xs text-slate-600 mb-6 leading-relaxed"></p>
+                <div class="flex gap-2">
+                    <button type="button" onclick="skipHomeTour()" class="py-2.5 px-4 text-slate-500 text-xs font-bold hover:text-slate-700">Skip tour</button>
+                    <button type="button" id="home-tour-next-btn" onclick="nextHomeTourStep()" class="flex-1 py-2.5 px-4 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase">Next</button>
                 </div>
             </div>
             <div class="ledger-top-grid grid grid-cols-1 lg:grid-cols-1 gap-4">

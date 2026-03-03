@@ -1097,6 +1097,14 @@ body.theme-dark .desktop-nav-item:hover {
     pointer-events: auto;
 }
 
+#home-tour-overlay {
+    pointer-events: auto;
+}
+
+#home-tour-card {
+    pointer-events: auto;
+}
+
 /* Soft highlight for tips & home tour (works on desktop + mobile) */
 .onboarding-tip-highlight,
 .home-tour-highlight {
