@@ -13,19 +13,19 @@ var onboardingBudgetTipIndex = 0;
 
 var ONBOARDING_BUDGET_TIPS = [
     {
-        title: 'Watch the total',
-        body: 'This box shows how much of your monthly income is allocated. We’ll flag it if you go under or over your total. You can change these amounts any time in Budget Plan.',
-        target: '#onboarding-cat-total-card'
-    },
-    {
         title: 'Set your amounts',
-        body: 'Use the number or the slider under each row to choose how much you want to spend or save in that section. Start with these core sections first.',
+        body: 'Use the amount fields and sliders under each row to decide how much you want to spend or save in each section. Start with the main sections first—you can fine-tune later in Budget Plan.',
         target: '#onboarding-strategy-sections'
     },
     {
-        title: 'Add and fill categories',
-        body: 'Use + Health, + Groceries, and Add Category to create sections that match your life. Inside each category, use the + button and amount fields to add items. It’s fine to leave anything at 0 for now.',
+        title: 'Add categories that fit your life',
+        body: 'Use the + Health and + Groceries buttons and Add Category to create sections that match your life. Inside each category, use the + button and amount fields to add items. It’s fine to leave anything at 0 for now.',
         target: '#onboarding-suggestions-row'
+    },
+    {
+        title: 'Watch your total',
+        body: 'This box shows how much of your monthly income is allocated. We’ll flag it if you go under or over your total so you can adjust before you finish. You can change these amounts any time in Budget Plan.',
+        target: '#onboarding-cat-total-card'
     }
 ];
 
@@ -259,24 +259,24 @@ window.skipBudgetPlanTips = skipBudgetPlanTips;
 
 var HOME_TOUR_STEPS = [
     {
+        title: 'Bank balance',
+        body: 'See what your bank account should read if everything matches your plan. The bar shows how your money is split across Extra, Weekly, Food, and categories.',
+        target: '.bank-balance-card'
+    },
+    {
         title: 'Weekly allowance',
-        body: 'This shows what you can spend this week. Enter an amount and tap Spend to record it, or Top Up to add more from Extra.',
+        body: 'This is your safe-to-spend amount for this week. Use Spend to record purchases, or Top Up to move money in from Extra.',
         target: '.weekly-hero'
     },
     {
         title: 'Food tracker',
-        body: 'Use \"Mark Day Consumed\" and the calendar to track food spending by day. Buffer days let you stretch the month when you need to.',
-        target: '#page-ledger .premium-card:nth-of-type(2)'
+        body: 'Use \"Mark Day Consumed\" and this calendar to track food spending by day. Buffer days help you stretch the month when you need to.',
+        target: '#food-tracker-card'
     },
     {
         title: 'Categories',
-        body: 'Each category (like Health or Groceries) is a mini budget. Tap a category to spend from it or move money between categories.',
+        body: 'Each category (like Health or Groceries) is its own mini budget. Tap a category to spend from it or move money between categories.',
         target: '#ledger-categories'
-    },
-    {
-        title: 'Bank balance',
-        body: 'This is what your bank account should read if everything matches the plan. The colored bar shows how it’s split across Extra, Weekly, Food, and categories.',
-        target: '.bank-balance-card'
     }
 ];
 var homeTourStepIndex = 0;
