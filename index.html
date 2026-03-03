@@ -481,7 +481,7 @@
             <div class="paycheck-home-card premium-card p-4 flex flex-col sm:flex-row sm:items-center gap-3 border border-slate-200 rounded-xl bg-slate-50/50">
                 <div class="flex-1 min-w-0">
                     <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Paycheck</span>
-                    <p class="text-[10px] text-slate-400 mt-0.5">Distribute your paycheck across planned budgets (incl. food cycle).</p>
+                    <p class="text-[10px] text-slate-400 mt-0.5">Distribute your paycheck across planned budgets.</p>
                 </div>
                 <div class="flex flex-wrap gap-2 sm:flex-shrink-0">
                     <input type="number" id="paycheck-amount" placeholder="Amount..." class="flex-1 min-w-[100px] max-w-[140px] bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-300" autocomplete="off">
@@ -525,31 +525,31 @@
                     </div>
                     <div class="py-2 max-h-56 overflow-y-auto">
                         <label class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" onclick="toggleBankBalanceGroup('extra')">
-                            <input type="checkbox" id="bb-filter-extra" class="w-3.5 h-3.5 accent-emerald-500 pointer-events-none">
+                            <input type="checkbox" id="bb-filter-extra" onchange="onBankBalanceFilterChanged('extra', this.checked)" class="w-4 h-4 accent-emerald-500">
                             <span class="text-[11px] text-slate-700">Extra (Unallocated)</span>
                         </label>
                         <label class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" onclick="toggleBankBalanceGroup('savings')">
-                            <input type="checkbox" id="bb-filter-savings" class="w-3.5 h-3.5 accent-sky-500 pointer-events-none">
+                            <input type="checkbox" id="bb-filter-savings" onchange="onBankBalanceFilterChanged('savings', this.checked)" class="w-4 h-4 accent-sky-500">
                             <span class="text-[11px] text-slate-700">Savings</span>
                         </label>
                         <label class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" onclick="toggleBankBalanceGroup('payables')">
-                            <input type="checkbox" id="bb-filter-payables" class="w-3.5 h-3.5 accent-rose-500 pointer-events-none">
+                            <input type="checkbox" id="bb-filter-payables" onchange="onBankBalanceFilterChanged('payables', this.checked)" class="w-4 h-4 accent-rose-500">
                             <span class="text-[11px] text-slate-700">Payables</span>
                         </label>
                         <label class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" onclick="toggleBankBalanceGroup('car')">
-                            <input type="checkbox" id="bb-filter-car" class="w-3.5 h-3.5 accent-violet-500 pointer-events-none">
+                            <input type="checkbox" id="bb-filter-car" onchange="onBankBalanceFilterChanged('car', this.checked)" class="w-4 h-4 accent-violet-500">
                             <span class="text-[11px] text-slate-700">Car</span>
                         </label>
                         <label class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" onclick="toggleBankBalanceGroup('weekly')">
-                            <input type="checkbox" id="bb-filter-weekly" class="w-3.5 h-3.5 accent-indigo-500 pointer-events-none">
+                            <input type="checkbox" id="bb-filter-weekly" onchange="onBankBalanceFilterChanged('weekly', this.checked)" class="w-4 h-4 accent-indigo-500">
                             <span class="text-[11px] text-slate-700">Weekly allowance</span>
                         </label>
                         <label class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" onclick="toggleBankBalanceGroup('food')">
-                            <input type="checkbox" id="bb-filter-food" class="w-3.5 h-3.5 accent-amber-500 pointer-events-none">
+                            <input type="checkbox" id="bb-filter-food" onchange="onBankBalanceFilterChanged('food', this.checked)" class="w-4 h-4 accent-amber-500">
                             <span class="text-[11px] text-slate-700">Food & buffer</span>
                         </label>
                         <label class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" onclick="toggleBankBalanceGroup('categories')">
-                            <input type="checkbox" id="bb-filter-categories" class="w-3.5 h-3.5 accent-teal-500 pointer-events-none">
+                            <input type="checkbox" id="bb-filter-categories" onchange="onBankBalanceFilterChanged('categories', this.checked)" class="w-4 h-4 accent-teal-500">
                             <span class="text-[11px] text-slate-700">Categories</span>
                         </label>
                     </div>
@@ -879,6 +879,7 @@
                         <select id="settings-theme" class="w-full bg-transparent text-lg font-black outline-none mt-1" onchange="saveSettingsFromUI()">
                             <option value="light">Light</option>
                             <option value="dark">Dark</option>
+                            <option value="sepia">Sepia</option>
                         </select>
                     </div>
                     <label class="flex items-center gap-3 bg-slate-50 p-3 rounded-xl">

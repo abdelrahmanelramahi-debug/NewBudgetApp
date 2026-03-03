@@ -23,15 +23,15 @@ body {
 
 /* Themes */
 body.theme-dark {
-    background-color: #0f172a;
-    color: #e2e8f0;
+    background-color: #020617;
+    color: #e5e7eb;
 }
 body.theme-dark .nav-header {
-    border-bottom-color: #1f2937;
+    border-bottom-color: #1e293b;
 }
 body.theme-dark .home-header {
-    background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.98) 100%);
-    border-bottom-color: rgba(51, 65, 85, 0.8);
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.98) 0%, rgba(30, 64, 175, 0.9) 100%);
+    border-bottom-color: rgba(30, 64, 175, 0.8);
     box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.3);
 }
 body.theme-dark .home-header-label { color: #94a3b8; }
@@ -54,10 +54,26 @@ body.theme-dark .nav-pill { background: #1f2937; }
 body.theme-dark .tab-inactive { color: #cbd5f5; }
 body.theme-dark .tab-active { background: #f8fafc; color: #0f172a; }
 body.theme-dark .premium-card {
-    background-color: #111827;
-    border-color: #1f2937;
+    background-color: #020617;
+    border-color: #111827;
     box-shadow: none;
 }
+body.theme-dark .premium-card h2,
+body.theme-dark .premium-card h3,
+body.theme-dark .premium-card .text-slate-800 {
+    color: #e5e7eb;
+}
+body.theme-dark input,
+body.theme-dark select,
+body.theme-dark textarea {
+    color: #e5e7eb;
+}
+body.theme-dark .bank-balance-card {
+    background-color: #020617;
+    border-color: #1e293b;
+}
+body.theme-dark #bank-balance-total { color: #f9fafb; }
+body.theme-dark .bank-balance-legend span { color: #cbd5f5; }
 body.theme-dark .modal-content { background: #111827; }
 body.theme-dark #app-alert-modal .modal-content #app-alert-title,
 body.theme-dark #app-alert-modal .modal-content #app-alert-message { color: #e2e8f0; }
@@ -72,6 +88,45 @@ body.theme-dark #app-alert-modal .modal-content #app-alert-cancel:hover { backgr
 body.theme-dark #bank-balance-info { color: #94a3b8; }
 body.theme-dark #bank-balance-info-btn { border-color: #64748b; color: #94a3b8; }
 body.theme-dark #bank-balance-info-btn:hover { background: #334155; }
+
+/* Sepia theme */
+body.theme-sepia {
+    background-color: #f3e8d5;
+    color: #3b2f2a;
+}
+body.theme-sepia .nav-header {
+    border-bottom-color: #e2c9aa;
+}
+body.theme-sepia .home-header {
+    background: linear-gradient(135deg, #fdf4e3 0%, #f1ddbf 100%);
+    border-bottom-color: #e2c9aa;
+    box-shadow: 0 4px 24px -4px rgba(146, 64, 14, 0.25);
+}
+body.theme-sepia .home-header-label { color: #8b5e34; }
+body.theme-sepia .home-header-amount { color: #3b2f2a; }
+body.theme-sepia .home-header-icon-btn { background: rgba(250, 240, 230, 0.9); color: #7c2d12; }
+body.theme-sepia .home-header-icon-btn:hover { background: #fde68a; color: #7c2d12; }
+body.theme-sepia .premium-card {
+    background-color: #fff7ec;
+    border-color: #f3e2c6;
+    box-shadow: 0 10px 30px rgba(146, 64, 14, 0.08);
+}
+body.theme-sepia .premium-card h2,
+body.theme-sepia .premium-card h3,
+body.theme-sepia .premium-card .text-slate-800 {
+    color: #3b2f2a;
+}
+body.theme-sepia input,
+body.theme-sepia select,
+body.theme-sepia textarea {
+    color: #3b2f2a;
+}
+body.theme-sepia .bank-balance-card {
+    background-color: #fff7ec;
+    border-color: #f3e2c6;
+}
+body.theme-sepia #bank-balance-total { color: #1f2933; }
+body.theme-sepia .bank-balance-legend span { color: #7c2d12; }
 
 /* Bank Balance card (above Weekly Allowance) */
 .bank-balance-card {

@@ -107,6 +107,7 @@ function applySettings() {
     if(!body) return;
     const theme = state.settings?.theme || 'light';
     body.classList.toggle('theme-dark', theme === 'dark');
+    body.classList.toggle('theme-sepia', theme === 'sepia');
     body.classList.toggle('compact', !!state.settings?.compact);
     updateCurrencyLabels();
     var hideEmpty = document.getElementById('ledger-hide-empty');
@@ -142,7 +143,8 @@ function toggleThemeFromSidebar() {
     if (typeof state === 'undefined') return;
     if (!state.settings) state.settings = {};
     var current = state.settings.theme || 'light';
-    var next = current === 'dark' ? 'light' : 'dark';
+    // Cycle through light → dark → sepia → light
+    var next = current === 'light' ? 'dark' : current === 'dark' ? 'sepia' : 'light';
     state.settings.theme = next;
     try {
         window.localStorage && localStorage.setItem('bubudget_theme', next);
@@ -400,7 +402,11 @@ function renderStrategy(opts) {
             const displayAmount = item.amount.toFixed(0);
             const dailyRateVal = state.food.daysTotal > 0 ? (item.amount / state.food.daysTotal) : 0;
             const dailyRateDisplay = dailyRateVal.toFixed(0);
-            const dailyRateMax = Math.max(2000, Math.ceil(dailyRateVal), Math.ceil((state.monthlyIncome || 10000) / 28 * 1.5));
+            var totalBudget = state.monthlyIncome || 0;
+            const dailyBudgetCap = (totalBudget > 0 && state.food.daysTotal > 0)
+                ? Math.ceil(totalBudget / state.food.daysTotal)
+                : Math.ceil((state.monthlyIncome || 10000) / 28 * 1.5);
+            const dailyRateMax = Math.max(Math.ceil(dailyRateVal), dailyBudgetCap);
             const foodSliderHtml = isFoodBase ? `
                 <div class="px-6 pb-3">
                     <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mb-1">
@@ -416,7 +422,14 @@ function renderStrategy(opts) {
             ` : '';
             const isWeeklyMisc = item.label === 'Weekly Misc';
             const WEEKLY_SLIDER_STEP = 20;
-            const weeklyAmountMax = Math.max(20000, Math.ceil((item.amount || 0) / WEEKLY_SLIDER_STEP) * WEEKLY_SLIDER_STEP + WEEKLY_SLIDER_STEP, Math.ceil((state.monthlyIncome || 10000) / WEEKLY_SLIDER_STEP) * WEEKLY_SLIDER_STEP);
+            const weeklyBudgetCap = totalBudget > 0
+                ? Math.ceil(totalBudget / WEEKLY_SLIDER_STEP) * WEEKLY_SLIDER_STEP
+                : Math.ceil((state.monthlyIncome || 10000) / WEEKLY_SLIDER_STEP) * WEEKLY_SLIDER_STEP;
+            const weeklyAmountMax = Math.max(
+                WEEKLY_SLIDER_STEP,
+                Math.ceil((item.amount || 0) / WEEKLY_SLIDER_STEP) * WEEKLY_SLIDER_STEP + WEEKLY_SLIDER_STEP,
+                weeklyBudgetCap
+            );
             const weeklySnapped = Math.round((item.amount || 0) / WEEKLY_SLIDER_STEP) * WEEKLY_SLIDER_STEP;
             const weeklySliderHtml = isWeeklyMisc ? `
                 <div class="px-6 pb-3">
@@ -433,7 +446,14 @@ function renderStrategy(opts) {
             ` : '';
             const isGeneralSavings = item.label === 'General Savings';
             const SAVINGS_SLIDER_STEP = 50;
-            const savingsMax = Math.max(100000, Math.ceil((state.monthlyIncome || 10000) * 1.2 / SAVINGS_SLIDER_STEP) * SAVINGS_SLIDER_STEP, Math.ceil((item.amount || 0) / SAVINGS_SLIDER_STEP) * SAVINGS_SLIDER_STEP + SAVINGS_SLIDER_STEP * 10);
+            const savingsBudgetCap = totalBudget > 0
+                ? Math.ceil(totalBudget / SAVINGS_SLIDER_STEP) * SAVINGS_SLIDER_STEP
+                : Math.ceil((state.monthlyIncome || 10000) * 1.2 / SAVINGS_SLIDER_STEP) * SAVINGS_SLIDER_STEP;
+            const savingsMax = Math.max(
+                SAVINGS_SLIDER_STEP,
+                Math.ceil((item.amount || 0) / SAVINGS_SLIDER_STEP) * SAVINGS_SLIDER_STEP + SAVINGS_SLIDER_STEP * 2,
+                savingsBudgetCap
+            );
             const savingsSnapped = Math.round((item.amount || 0) / SAVINGS_SLIDER_STEP) * SAVINGS_SLIDER_STEP;
             const generalSavingsSliderHtml = isGeneralSavings ? `
                 <div class="px-6 pb-3">
@@ -450,7 +470,14 @@ function renderStrategy(opts) {
             ` : '';
             const isCarFund = item.label === 'Car Fund';
             const CAR_SLIDER_STEP = 20;
-            const carMax = Math.max(20000, Math.ceil((item.amount || 0) / CAR_SLIDER_STEP) * CAR_SLIDER_STEP + CAR_SLIDER_STEP, Math.ceil((state.monthlyIncome || 10000) / CAR_SLIDER_STEP) * CAR_SLIDER_STEP);
+            const carBudgetCap = totalBudget > 0
+                ? Math.ceil(totalBudget / CAR_SLIDER_STEP) * CAR_SLIDER_STEP
+                : Math.ceil((state.monthlyIncome || 10000) / CAR_SLIDER_STEP) * CAR_SLIDER_STEP;
+            const carMax = Math.max(
+                CAR_SLIDER_STEP,
+                Math.ceil((item.amount || 0) / CAR_SLIDER_STEP) * CAR_SLIDER_STEP + CAR_SLIDER_STEP,
+                carBudgetCap
+            );
             const carSnapped = Math.round((item.amount || 0) / CAR_SLIDER_STEP) * CAR_SLIDER_STEP;
             const carFundSliderHtml = isCarFund ? `
                 <div class="px-6 pb-3">
@@ -1087,7 +1114,10 @@ function getBankBalanceBarSegments() {
     var weeklyLabel = ITEM_LABELS.WEEKLY_MISC;
 
     var surplus = (state.accounts && state.accounts.surplus !== undefined) ? state.accounts.surplus : 0;
-    if (surplus !== 0) segments.push({ label: 'Extra (Unallocated)', amount: surplus, group: 'extra' });
+    if (surplus !== 0) {
+        var extraColor = surplus > 0 ? 'bg-emerald-400' : 'bg-red-700';
+        segments.push({ label: 'Extra (Unallocated)', amount: surplus, group: 'extra', colorClass: extraColor });
+    }
 
     if (getSavings > 0) segments.push({ label: gsLabel, amount: getSavings, group: 'savings' });
     if (getBal(payLabel, 0) > 0) segments.push({ label: payLabel, amount: getBal(payLabel, 0), group: 'payables' });
@@ -1251,7 +1281,7 @@ function renderBankBalanceCard() {
     var html = segments.map(function (item) {
         var pct = Math.max(0, (Math.abs(item.amount) / totalAmount) * 100);
         var width = pct < 0.5 ? '0.5' : pct.toFixed(1);
-        var color = getBankBalanceSegmentColor(item.label);
+        var color = item.colorClass || getBankBalanceSegmentColor(item.label);
         var labelEsc = escapeAttr(item.label);
         var metaEsc = escapeAttr(item.meta || '');
         var amountStr = formatMoney(item.amount);
