@@ -63,6 +63,11 @@ body.theme-dark .premium-card h3,
 body.theme-dark .premium-card .text-slate-800 {
     color: #e5e7eb;
 }
+/* Lift muted greys in dark mode so text stays readable */
+body.theme-dark .text-slate-600 { color: #e5e7eb; }
+body.theme-dark .text-slate-500 { color: #e5e7eb; }
+body.theme-dark .text-slate-400 { color: #cbd5f5; }
+body.theme-dark .text-slate-300 { color: #94a3b8; }
 body.theme-dark input,
 body.theme-dark select,
 body.theme-dark textarea {
@@ -116,6 +121,11 @@ body.theme-sepia .premium-card h3,
 body.theme-sepia .premium-card .text-slate-800 {
     color: #3b2f2a;
 }
+/* Nudge greys in sepia so labels/rows stay readable on the warm background */
+body.theme-sepia .text-slate-600 { color: #3b2f2a; }
+body.theme-sepia .text-slate-500 { color: #4b3b33; }
+body.theme-sepia .text-slate-400 { color: #7c5a3c; }
+body.theme-sepia .text-slate-300 { color: #a4744a; }
 body.theme-sepia input,
 body.theme-sepia select,
 body.theme-sepia textarea {

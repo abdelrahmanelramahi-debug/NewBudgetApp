@@ -290,11 +290,13 @@
                                     <path d="M19 12h2"></path>
                                 </svg>
                             </span>
-                            <span>Dark mode</span>
+                            <span>Theme</span>
                         </span>
-                        <button type="button" onclick="toggleThemeFromSidebar()" class="relative inline-flex h-5 w-9 items-center rounded-full bg-slate-200">
-                            <span class="inline-block h-4 w-4 translate-x-1 rounded-full bg-white shadow transition-transform" id="sidebar-theme-thumb"></span>
-                        </button>
+                        <div class="inline-flex rounded-full bg-slate-100 p-0.5 text-[11px] font-semibold">
+                            <button type="button" id="theme-chip-light" onclick="setThemeFromSidebar('light')" class="px-2 py-1 rounded-full text-slate-600 bg-slate-100">Light</button>
+                            <button type="button" id="theme-chip-dark" onclick="setThemeFromSidebar('dark')" class="px-2 py-1 rounded-full text-slate-600 bg-slate-100">Dark</button>
+                            <button type="button" id="theme-chip-sepia" onclick="setThemeFromSidebar('sepia')" class="px-2 py-1 rounded-full text-slate-600 bg-slate-100">Sepia</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -451,11 +453,13 @@
                                     <path d="M19 12h2"></path>
                                 </svg>
                             </span>
-                            <span>Dark mode</span>
+                            <span>Theme</span>
                         </span>
-                        <button type="button" onclick="toggleThemeFromSidebar()" class="relative inline-flex h-5 w-9 items-center rounded-full bg-slate-200">
-                            <span class="inline-block h-4 w-4 translate-x-1 rounded-full bg-white shadow transition-transform" id="mobile-sidebar-theme-thumb"></span>
-                        </button>
+                        <div class="inline-flex rounded-full bg-slate-100 p-0.5 text-[11px] font-semibold">
+                            <button type="button" onclick="setThemeFromSidebar('light')" class="px-2 py-1 rounded-full text-slate-600 bg-slate-100">Light</button>
+                            <button type="button" onclick="setThemeFromSidebar('dark')" class="px-2 py-1 rounded-full text-slate-600 bg-slate-100">Dark</button>
+                            <button type="button" onclick="setThemeFromSidebar('sepia')" class="px-2 py-1 rounded-full text-slate-600 bg-slate-100">Sepia</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -510,13 +514,27 @@
                 <div class="bank-balance-bar-wrap relative rounded-xl overflow-hidden bg-slate-100 h-8 flex" id="bank-balance-bar" role="img" aria-label="Bank balance breakdown by source"></div>
                 <div id="bank-balance-tooltip" class="bank-balance-tooltip hidden" aria-hidden="true"></div>
                 <p class="bank-balance-legend text-[9px] text-slate-400 mt-2 flex items-center gap-x-2.5 gap-y-0 flex-nowrap overflow-x-auto overflow-y-hidden pb-0.5 min-h-[1.25rem]">
-                    <span class="inline-flex items-center gap-1 shrink-0" data-bb-group="extra"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> Extra</span>
-                    <span class="inline-flex items-center gap-1 shrink-0" data-bb-group="savings"><span class="w-2 h-2 rounded-full bg-sky-400"></span> Savings</span>
-                    <span class="inline-flex items-center gap-1 shrink-0" data-bb-group="payables"><span class="w-2 h-2 rounded-full bg-rose-400"></span> Payables</span>
-                    <span class="inline-flex items-center gap-1 shrink-0" data-bb-group="car"><span class="w-2 h-2 rounded-full bg-violet-400"></span> Car</span>
-                    <span class="inline-flex items-center gap-1 shrink-0" data-bb-group="weekly"><span class="w-2 h-2 rounded-full bg-indigo-400"></span> Weekly</span>
-                    <span class="inline-flex items-center gap-1 shrink-0" data-bb-group="food"><span class="w-2 h-2 rounded-full bg-amber-400"></span> Food</span>
-                    <span class="inline-flex items-center gap-1 shrink-0" data-bb-group="categories"><span class="w-2 h-2 rounded-full bg-teal-400"></span> Categories</span>
+                    <span class="inline-flex items-center gap-1 shrink-0 cursor-pointer" data-bb-group="extra" onclick="toggleBankBalanceGroup('extra')" role="button">
+                        <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Extra
+                    </span>
+                    <span class="inline-flex items-center gap-1 shrink-0 cursor-pointer" data-bb-group="savings" onclick="toggleBankBalanceGroup('savings')" role="button">
+                        <span class="w-2 h-2 rounded-full bg-sky-400"></span> Savings
+                    </span>
+                    <span class="inline-flex items-center gap-1 shrink-0 cursor-pointer" data-bb-group="payables" onclick="toggleBankBalanceGroup('payables')" role="button">
+                        <span class="w-2 h-2 rounded-full bg-rose-400"></span> Payables
+                    </span>
+                    <span class="inline-flex items-center gap-1 shrink-0 cursor-pointer" data-bb-group="car" onclick="toggleBankBalanceGroup('car')" role="button">
+                        <span class="w-2 h-2 rounded-full bg-violet-400"></span> Car
+                    </span>
+                    <span class="inline-flex items-center gap-1 shrink-0 cursor-pointer" data-bb-group="weekly" onclick="toggleBankBalanceGroup('weekly')" role="button">
+                        <span class="w-2 h-2 rounded-full bg-indigo-400"></span> Weekly
+                    </span>
+                    <span class="inline-flex items-center gap-1 shrink-0 cursor-pointer" data-bb-group="food" onclick="toggleBankBalanceGroup('food')" role="button">
+                        <span class="w-2 h-2 rounded-full bg-amber-400"></span> Food
+                    </span>
+                    <span class="inline-flex items-center gap-1 shrink-0 cursor-pointer" data-bb-group="categories" onclick="toggleBankBalanceGroup('categories')" role="button">
+                        <span class="w-2 h-2 rounded-full bg-teal-400"></span> Categories
+                    </span>
                 </p>
                 <div id="bank-balance-filter-dropdown" class="hidden absolute right-4 top-10 z-40 w-56 max-w-[80vw] bg-white border border-slate-200 rounded-xl shadow-xl shadow-slate-200/70 text-xs">
                     <div class="flex items-center justify-between px-3 py-2 border-b border-slate-100">

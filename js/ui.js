@@ -119,13 +119,20 @@ function applySettings() {
     var thumb = document.getElementById('sidebar-theme-thumb');
     var thumbMobile = document.getElementById('mobile-sidebar-theme-thumb');
     var isDark = theme === 'dark';
-    var translateClassOn = 'translate-x-4';
-    var translateClassOff = 'translate-x-1';
-    [thumb, thumbMobile].forEach(function(t) {
-        if (!t) return;
-        t.classList.remove(translateClassOn, translateClassOff);
-        t.classList.add(isDark ? translateClassOn : translateClassOff);
+    // Update sidebar theme chips (desktop + mobile)
+    var chipLight = document.getElementById('theme-chip-light');
+    var chipDark = document.getElementById('theme-chip-dark');
+    var chipSepia = document.getElementById('theme-chip-sepia');
+    [chipLight, chipDark, chipSepia].forEach(function (chip) {
+        if (!chip) return;
+        chip.classList.remove('bg-slate-200', 'bg-indigo-600', 'bg-amber-500', 'text-white', 'text-slate-600');
+        chip.classList.add('text-slate-600', 'bg-slate-100');
     });
+    var activeChip = theme === 'dark' ? chipDark : theme === 'sepia' ? chipSepia : chipLight;
+    if (activeChip) {
+        activeChip.classList.remove('bg-slate-100', 'text-slate-600');
+        activeChip.classList.add(theme === 'sepia' ? 'bg-amber-500' : 'bg-indigo-600', 'text-white');
+    }
 }
 
 function setLedgerViewOptions() {
@@ -139,20 +146,18 @@ function setLedgerViewOptions() {
 }
 if (typeof window !== 'undefined') window.setLedgerViewOptions = setLedgerViewOptions;
 
-function toggleThemeFromSidebar() {
+function setThemeFromSidebar(theme) {
     if (typeof state === 'undefined') return;
     if (!state.settings) state.settings = {};
-    var current = state.settings.theme || 'light';
-    // Cycle through light → dark → sepia → light
-    var next = current === 'light' ? 'dark' : current === 'dark' ? 'sepia' : 'light';
-    state.settings.theme = next;
+    if (state.settings.theme === theme) return;
+    state.settings.theme = theme;
     try {
-        window.localStorage && localStorage.setItem('bubudget_theme', next);
+        window.localStorage && localStorage.setItem('bubudget_theme', theme);
     } catch (e) {}
     if (typeof saveState === 'function') saveState();
     applySettings();
 }
-if (typeof window !== 'undefined') window.toggleThemeFromSidebar = toggleThemeFromSidebar;
+if (typeof window !== 'undefined') window.setThemeFromSidebar = setThemeFromSidebar;
 
 function renderSettings() {
     const currencyInput = document.getElementById('settings-currency');
