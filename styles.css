@@ -111,6 +111,15 @@ body.theme-dark #food-overview-header .grid,
 body.theme-dark #food-overview-rows {
     color: #cbd5f5;
 }
+/* Ledger options bar (Hide empty / Sort) in dark mode */
+body.theme-dark #ledger-options-bar span {
+    color: #e5e7eb;
+}
+body.theme-dark #ledger-sort {
+    background-color: #020617;
+    border-color: #334155;
+    color: #e5e7eb;
+}
 body.theme-dark .modal-content { background: #111827; }
 body.theme-dark #app-alert-modal .modal-content #app-alert-title,
 body.theme-dark #app-alert-modal .modal-content #app-alert-message { color: #e2e8f0; }
@@ -125,6 +134,28 @@ body.theme-dark #app-alert-modal .modal-content #app-alert-cancel:hover { backgr
 body.theme-dark #bank-balance-info { color: #94a3b8; }
 body.theme-dark #bank-balance-info-btn { border-color: #64748b; color: #94a3b8; }
 body.theme-dark #bank-balance-info-btn:hover { background: #334155; }
+
+/* Dark mode sidebar: use dark panel and brighter nav text */
+body.theme-dark .desktop-sidebar .flex.flex-col {
+    background-color: rgba(15, 23, 42, 0.98);
+    color: #e5e7eb;
+}
+body.theme-dark .desktop-sidebar .desktop-nav-item,
+body.theme-dark .desktop-sidebar nav a {
+    color: #e5e7eb;
+}
+body.theme-dark .desktop-sidebar .desktop-nav-item span,
+body.theme-dark .desktop-sidebar .desktop-nav-item svg {
+    color: inherit;
+}
+body.theme-dark .desktop-sidebar .desktop-nav-item:hover {
+    background: #1f2937;
+}
+body.theme-dark .desktop-sidebar .text-slate-400,
+body.theme-dark .desktop-sidebar .text-slate-500,
+body.theme-dark .desktop-sidebar .text-slate-600 {
+    color: #e5e7eb;
+}
 
 /* Sepia theme */
 body.theme-sepia {
@@ -158,8 +189,12 @@ body.theme-sepia .text-slate-600 { color: #3b2f2a; }
 body.theme-sepia .text-slate-500 { color: #4b3b33; }
 body.theme-sepia .text-slate-400 { color: #7c5a3c; }
 body.theme-sepia .text-slate-300 { color: #a4744a; }
+body.theme-sepia .text-slate-200 { color: #4b3b33; }
 body.theme-sepia .text-indigo-200,
 body.theme-sepia .text-indigo-300 { color: #3b2f2a; }
+/* Tailwind opacity variants like text-indigo-200/90 */
+body.theme-sepia [class*="text-indigo-200"] { color: #3b2f2a; }
+body.theme-sepia [class*="text-indigo-300"] { color: #3b2f2a; }
 body.theme-sepia .text-amber-100 { color: #3b2f2a; }
 body.theme-sepia input,
 body.theme-sepia select,

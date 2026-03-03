@@ -213,17 +213,6 @@ function showBudgetPlanTip(index) {
         // After scroll settles, position the tip card near the target and ensure it is visible
         window.requestAnimationFrame(function () {
             positionBudgetPlanTipCard(targetEl);
-            var card = document.getElementById('onboarding-tip-card');
-            // On small screens we treat the tip as a bottom sheet and avoid extra scrolling,
-            // since the target has already been scrolled into view above.
-            var viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
-            if (card && viewportWidth > 640) {
-                try {
-                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                } catch (e) {
-                    card.scrollIntoView(true);
-                }
-            }
         });
     } else {
         // If we don't have a specific target, fall back to centering the card
