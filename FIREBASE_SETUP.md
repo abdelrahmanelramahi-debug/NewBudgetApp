@@ -96,8 +96,8 @@ Firebase sends reset emails from `noreply@[your-project].firebaseapp.com`. Some 
 
 1. In Firebase Console go to **Authentication** → **Templates**
 2. Click **Password reset**
-3. Set **Sender name** to your app name (e.g. "Finance Command")
-4. Set **Subject** to something clear, e.g. "Reset your Finance Command password"
+3. Set **Sender name** to your app name (e.g. "BuBudget")
+4. Set **Subject** to something clear, e.g. "Reset your BuBudget password"
 5. Edit the **Email body** to mention your app name and that the user requested a password reset
 6. Click **Save**
 

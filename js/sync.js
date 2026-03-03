@@ -118,7 +118,9 @@
                 if (typeof lastUpdated.toMillis === 'function') savedTime = lastUpdated.toMillis();
             }
             try {
+                var modKey = STORAGE_KEYS.MODIFIED;
                 var syncKey = STORAGE_KEYS.LAST_SYNCED;
+                global.localStorage.setItem(modKey, String(savedTime));
                 global.localStorage.setItem(syncKey, String(savedTime));
             } catch (e) {}
             lastSyncTime = savedTime ? new Date(savedTime) : new Date();
@@ -188,25 +190,34 @@
                 if (synced) lastSyncedToCloud = parseInt(synced, 10) || 0;
             } catch (e) {}
 
-            if (localModified > lastSyncedToCloud && hasMeaningfulData(state)) {
-                // Only push if cloud is not newer than our local changes (another device may have saved)
-                if (cloudTime <= localModified) {
-                    return saveStateToCloud().then(function () {
-                        if (typeof refreshUI === 'function') refreshUI();
-                        updateSyncStatus('Synced (local was newer)', true, false);
-                        if (cloudData.lastUpdated) lastSyncTime = cloudData.lastUpdated.toDate ? cloudData.lastUpdated.toDate() : new Date();
-                    });
-                }
-                /* else: cloud is newer (e.g. phone saved while this tab was idle), fall through and pull */
-            }
-            if (cloudTime <= localModified || !hasMeaningfulData(cloudData.data)) {
+            // Core rule:
+            // - If cloud has meaningful data and is newer than what we've last synced locally, pull cloud (even if local "modified" time is newer).
+            // - Only push local if (a) local has changed since last sync AND (b) cloud has not changed since last sync.
+            var cloudHasData = hasMeaningfulData(cloudData.data);
+            var localHasData = hasMeaningfulData(state);
+
+            if (cloudHasData && cloudTime > lastSyncedToCloud) {
+                // Cloud is newer than our last known synced version -> pull cloud below.
+            } else if (!cloudHasData && localHasData) {
+                // Cloud empty but local has data -> seed cloud from local.
                 return saveStateToCloud().then(function () {
                     if (typeof refreshUI === 'function') refreshUI();
                     updateSyncStatus('Synced', true, false);
                 });
+            } else if (localModified > lastSyncedToCloud && localHasData && cloudTime <= lastSyncedToCloud) {
+                // Local changed since last sync, and cloud hasn't changed since last sync -> push local.
+                return saveStateToCloud().then(function () {
+                    if (typeof refreshUI === 'function') refreshUI();
+                    updateSyncStatus('Synced (local)', true, false);
+                    if (cloudData.lastUpdated) lastSyncTime = cloudData.lastUpdated.toDate ? cloudData.lastUpdated.toDate() : new Date();
+                });
+            } else {
+                // Already in sync (or both empty) -> nothing to do.
+                updateSyncStatus('Synced', true, false);
+                return;
             }
 
-            if (cloudData.data && typeof cloudData.data === 'object' && hasMeaningfulData(cloudData.data)) {
+            if (cloudData.data && typeof cloudData.data === 'object' && cloudHasData) {
                 var localDeletedBuckets = Array.isArray(state._deletedPayablesBuckets) ? state._deletedPayablesBuckets.slice() : [];
                 state = { ...state, ...cloudData.data };
                 var cloudDeletedBuckets = Array.isArray(cloudData.data._deletedPayablesBuckets) ? cloudData.data._deletedPayablesBuckets : [];

@@ -1229,6 +1229,33 @@ function calculateReality() {
     if (typeof renderBankBalanceCard === 'function') renderBankBalanceCard();
 }
 
+function getCurrentPayCycleDay() {
+    if (typeof getPayCycleInfo !== 'function') return null;
+    try {
+        var info = getPayCycleInfo();
+        if (!info || !Array.isArray(info.dates)) return null;
+        var now = new Date();
+        var y = now.getFullYear();
+        var m = now.getMonth();
+        var d = now.getDate();
+        for (var i = 0; i < info.dates.length; i++) {
+            var it = info.dates[i];
+            if (it && it.year === y && it.month === m && it.date === d) return it.cycleDay;
+        }
+        // Fallback: compute from cycleStart
+        if (info.cycleStart && info.cycleStart.getTime) {
+            var diffDays = Math.floor((now.getTime() - info.cycleStart.getTime()) / 86400000);
+            return diffDays + 1;
+        }
+    } catch (e) {}
+    return null;
+}
+
+function isLastWeekOfPayCycle() {
+    var day = getCurrentPayCycleDay();
+    return typeof day === 'number' && day >= 22 && day <= 28;
+}
+
 // Updates surplus display, deficit trigger visibility, and calls calculateReality.
 function updateGlobalUI() {
     var surplus = (state.accounts && state.accounts.surplus !== undefined) ? state.accounts.surplus : 0;
@@ -1263,6 +1290,13 @@ function updateGlobalUI() {
         var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
         headerDateEl.textContent = monthNames[d.getMonth()] + ' ' + d.getDate();
     }
+
+    // End-of-cycle actions: show New month buttons only in last week of pay cycle
+    var showEndCycle = isLastWeekOfPayCycle();
+    var wBtn = getEl('weekly-newmonth-btn');
+    var fBtn = getEl('food-newmonth-btn');
+    if (wBtn) wBtn.classList.toggle('hidden', !showEndCycle);
+    if (fBtn) fBtn.classList.toggle('hidden', !showEndCycle);
 }
 
 function renderCategoryHistory() {

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <title>Budgetation</title>
+    <title>BuBudget</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="styles.css">
@@ -34,7 +34,7 @@
     <div id="onboarding" class="fixed inset-0 z-50 bg-slate-50 overflow-y-auto hidden">
         <div class="max-w-lg mx-auto px-6 py-12">
             <div id="onboarding-step-welcome" class="onboarding-step">
-                <h2 class="text-2xl font-black text-slate-900 mb-2">Welcome to Budgetation</h2>
+                <h2 class="text-2xl font-black text-slate-900 mb-2">Welcome to BuBudget</h2>
                 <p class="text-sm text-slate-600 mb-2">Track spending, weekly allowance, and bank balance in one place.</p>
                 <p class="text-sm text-slate-600 mb-8">Set up your budget in a few steps. You can change anything later in Settings.</p>
                 <div class="flex flex-col gap-3">
@@ -185,7 +185,7 @@
         <!-- Desktop sidebar (visible from lg up) -->
         <aside id="desktop-sidebar" class="desktop-sidebar hidden lg:flex flex-col w-56 flex-shrink-0 border-r border-slate-200 bg-white/95 backdrop-blur">
             <div class="p-4 border-b border-slate-100">
-                <h1 class="text-sm font-black text-slate-900 tracking-tight">Budgetation</h1>
+                <h1 class="text-sm font-black text-slate-900 tracking-tight">BuBudget</h1>
             </div>
             <nav class="p-2 flex-1 flex flex-col gap-0.5">
                 <button type="button" class="desktop-nav-item nav-ledger-pill tab-btn tab-active w-full text-left py-2 px-3 rounded-md text-sm font-semibold text-slate-700 hover:bg-slate-100 transition" onclick="switchPage('ledger'); closeSideMenu();">Home</button>
@@ -211,11 +211,6 @@
                     </button>
                     <div id="header-date-newmonth" class="flex items-center gap-1 sm:gap-1.5">
                         <span id="header-today-date" class="text-[10px] font-bold text-slate-500 uppercase tracking-wider tabular-nums whitespace-nowrap">—</span>
-                        <span class="text-slate-300 text-[10px]" aria-hidden="true">·</span>
-                        <button type="button" onclick="openNewMonthConfirm()" class="text-[10px] font-semibold tracking-wider text-indigo-600 hover:text-indigo-700 hover:bg-indigo-50 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-lg transition whitespace-nowrap" title="Week 4 leftover moves to Week 1; weeks 2–4 reset; food calendar clears. Bank balance stays the same.">
-                            <span class="sm:hidden">New</span>
-                            <span class="hidden sm:inline">New month</span>
-                        </button>
                     </div>
                 </div>
                 <div class="flex items-center gap-1 sm:gap-2 min-w-0 overflow-hidden justify-end">
@@ -330,6 +325,7 @@
                             <div class="flex items-baseline gap-2 flex-wrap">
                                 <span class="text-[10px] font-bold uppercase tracking-widest text-indigo-200">Weekly Allowance</span>
                                 <span id="weekly-mini-totals" class="text-[9px] font-bold text-indigo-200/90">—</span>
+                                <button type="button" id="weekly-newmonth-btn" onclick="openWeeklyNewMonthConfirm()" class="hidden ml-1 px-2 py-1 rounded-lg bg-white/15 hover:bg-white/25 text-[9px] font-black uppercase tracking-wider transition" title="End-of-cycle rollover">New month</button>
                             </div>
                             <span class="text-[9px] font-bold uppercase tracking-widest text-indigo-300 block mt-1.5">Week <span id="weekly-week-count">1</span>/4</span>
                             <div class="flex items-baseline gap-2 mt-3">
@@ -385,7 +381,10 @@
             <!-- Food Tracker -->
             <div class="premium-card p-6 space-y-6">
                 <div>
-                    <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Food Cycle</span>
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Food Cycle</span>
+                        <button type="button" id="food-newmonth-btn" onclick="openFoodNewMonthConfirm()" class="hidden px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-[9px] font-black uppercase tracking-wider text-slate-600 transition" title="End-of-cycle reset">New month</button>
+                    </div>
                     <p class="text-[10px] font-bold text-slate-400 mt-1"><span id="daily-food-rate">0.00</span> <span data-currency>AED</span>/Day</p>
                 </div>
 

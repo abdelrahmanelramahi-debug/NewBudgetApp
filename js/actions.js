@@ -1306,12 +1306,11 @@ function nextWeek() {
     renderLedger();
 }
 
-// Start new month: roll Week 4 leftover into Week 1, zero weeks 2–4, reset food tracking, switch view to Week 1. No new money — bank balance stays the same.
-function startNewMonth() {
+// Weekly-only "new month": roll Week 4 leftover into Week 1 and reset Weeks 2–4 to 0. No new money.
+function startNewMonthWeeklyRollover() {
     pushToUndo();
     if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
 
-    // Roll Week 4 leftover into Week 1 (move only; total weekly goes down by week 2 + week 3)
     var week4Bal = typeof getWeeklyBalance === 'function' ? getWeeklyBalance(4) : 0;
     if (week4Bal > 0) {
         setWeeklyBalance(1, getWeeklyBalance(1) + week4Bal);
@@ -1320,9 +1319,19 @@ function startNewMonth() {
     setWeeklyBalance(2, 0);
     setWeeklyBalance(3, 0);
     if (state.accounts.weekly) state.accounts.weekly._zeroFixed = true;
+    state.accounts.weekly.week = 1;
+    state.accounts.weekly.balance = getWeeklyBalance(1);
+    saveState();
+    if (typeof renderLedger === 'function') renderLedger();
+    if (typeof updateGlobalUI === 'function') updateGlobalUI();
+}
+window.startNewMonthWeeklyRollover = startNewMonthWeeklyRollover;
 
+// Food-only "new month": move unconsumed food value to buffer, then clear the food calendar.
+function startNewMonthFoodReset() {
+    pushToUndo();
     if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
-    // Policy: unconsumed days become buffer — move their value from Daily Food to buffer (do not create money).
+
     var daysUsed = state.food.daysUsed || 0;
     var daysTotal = state.food.daysTotal || 28;
     var unconsumed = Math.max(0, daysTotal - daysUsed);
@@ -1341,25 +1350,48 @@ function startNewMonth() {
     state.food.consumedDays = [];
     state.food.daysUsed = 0;
     state.food.history = [];
-    state.accounts.weekly.week = 1;
-    state.accounts.weekly.balance = getWeeklyBalance(1);
     saveState();
     if (typeof renderLedger === 'function') renderLedger();
     if (typeof refreshUI === 'function') refreshUI();
     if (typeof updateGlobalUI === 'function') updateGlobalUI();
 }
+window.startNewMonthFoodReset = startNewMonthFoodReset;
+
+// Legacy combined action (kept for compatibility): weekly rollover + food reset.
+function startNewMonth() {
+    startNewMonthWeeklyRollover();
+    startNewMonthFoodReset();
+}
 window.startNewMonth = startNewMonth;
 
+function openWeeklyNewMonthConfirm() {
+    showAppConfirm(
+        'Move Week 4 leftover into Week 1 and reset Weeks 2–4 to zero. Total balance stays the same.',
+        function () { startNewMonthWeeklyRollover(); },
+        null,
+        { confirmLabel: 'Roll to new month', hideIcon: true }
+    );
+}
+window.openWeeklyNewMonthConfirm = openWeeklyNewMonthConfirm;
+
+function openFoodNewMonthConfirm() {
+    showAppConfirm(
+        'Reset the food calendar for a new cycle. Unused food value moves to Buffer.',
+        function () { startNewMonthFoodReset(); },
+        null,
+        { confirmLabel: 'Reset food cycle', hideIcon: true }
+    );
+}
+window.openFoodNewMonthConfirm = openFoodNewMonthConfirm;
+
+// Old header button entrypoint (now unused)
 function openNewMonthConfirm() {
-    var msg = 'Week 4 leftover moves to Week 1. Weeks 2–4 reset to zero. Your food calendar clears. Your bank balance does not change.';
-    var foodBal = typeof getItemBalance === 'function' ? getItemBalance('Daily Food', 0) : 0;
-    var plannedFood = typeof getPlanAmount === 'function' ? getPlanAmount('Daily Food') : 0;
-    if (foodBal <= 0 && plannedFood > 0) {
-        msg += ' Fund food from Home after.';
-    }
-    showAppConfirm(msg, function () {
-        startNewMonth();
-    }, null, { confirmLabel: 'Start new month', hideIcon: true });
+    showAppConfirm(
+        'Weekly: Week 4 → Week 1. Food: calendar resets. Total balance stays the same.',
+        function () { startNewMonth(); },
+        null,
+        { confirmLabel: 'Start new month', hideIcon: true }
+    );
 }
 window.openNewMonthConfirm = openNewMonthConfirm;
 

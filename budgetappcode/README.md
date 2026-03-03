@@ -1,6 +1,6 @@
-# Finance Command
+# BuBudget
 
-Finance Command is a lightweight, single-page finance app for budget tracking and
+BuBudget is a lightweight, single-page finance app for budget tracking and
 daily spending control. It runs entirely in the browser and stores its state in
 localStorage.
 
