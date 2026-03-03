@@ -1088,15 +1088,22 @@ body.theme-dark .desktop-nav-item:hover {
     cursor: not-allowed;
 }
 
-/* Onboarding tips overlay: simple centered card over dimmed background */
+/* Onboarding tips overlay + tip card */
 #onboarding-budget-tips-overlay {
+    pointer-events: auto;
+}
+
+#onboarding-tip-card {
     pointer-events: auto;
 }
 
 /* Soft highlight for tips & home tour (works on desktop + mobile) */
 .onboarding-tip-highlight,
 .home-tour-highlight {
+    position: relative;
+    z-index: 30;
     box-shadow: 0 0 0 2px rgba(129, 140, 248, 0.9),
                 0 18px 40px rgba(15, 23, 42, 0.35);
     border-radius: 16px;
+    background-color: rgba(255, 255, 255, 0.98);
 }

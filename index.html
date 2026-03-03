@@ -126,14 +126,13 @@
                     <button type="button" onclick="addOnboardingSuggestion('subscriptions')" class="onboarding-suggestion-btn py-2 px-3 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-indigo-100 hover:text-indigo-700 border border-slate-200 transition">+ Subscriptions</button>
                 </div>
                 <div id="onboarding-strategy-sections" class="flex-1 min-h-0 overflow-y-auto space-y-4 pb-4"></div>
-                <div id="onboarding-budget-tips-overlay" class="hidden absolute inset-0 z-20 flex items-center justify-center p-4 bg-black/40">
-                    <div id="onboarding-tip-card" class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 border-2 border-indigo-200">
-                        <p id="onboarding-tip-title" class="text-xs font-black text-indigo-800 uppercase tracking-wide mb-2">Tip</p>
-                        <p id="onboarding-tip-body" class="text-sm text-slate-700 mb-6 leading-relaxed"></p>
-                        <div class="flex gap-2">
-                            <button type="button" id="onboarding-tip-skip" onclick="skipBudgetPlanTips()" class="py-2.5 px-4 text-slate-500 text-xs font-bold hover:text-slate-700">Skip tips</button>
-                            <button type="button" id="onboarding-tip-next" onclick="nextBudgetPlanTip()" class="flex-1 py-2.5 px-4 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase">Next</button>
-                        </div>
+                <div id="onboarding-budget-tips-overlay" class="hidden absolute inset-0 z-20 bg-black/40"></div>
+                <div id="onboarding-tip-card" class="hidden absolute z-40 max-w-sm w-full p-6 bg-white rounded-2xl shadow-xl border-2 border-indigo-200">
+                    <p id="onboarding-tip-title" class="text-xs font-black text-indigo-800 uppercase tracking-wide mb-2">Tip</p>
+                    <p id="onboarding-tip-body" class="text-sm text-slate-700 mb-6 leading-relaxed"></p>
+                    <div class="flex gap-2">
+                        <button type="button" id="onboarding-tip-skip" onclick="skipBudgetPlanTips()" class="py-2.5 px-4 text-slate-500 text-xs font-bold hover:text-slate-700">Skip tips</button>
+                        <button type="button" id="onboarding-tip-next" onclick="nextBudgetPlanTip()" class="flex-1 py-2.5 px-4 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase">Next</button>
                     </div>
                 </div>
                 <div class="flex gap-3 flex-shrink-0 pt-2">

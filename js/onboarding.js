@@ -83,21 +83,80 @@ function showOnboardingStep(index) {
 }
 
 function startBudgetPlanTips() {
-    // Disable onboarding tips on mobile – desktop only
-    if (isMobileDevice()) {
-        if (typeof state !== 'undefined') {
-            state._sawBudgetPlanTips = true;
-            if (typeof saveState === 'function') saveState();
-        }
-        return;
-    }
     if (typeof state !== 'undefined' && state._sawBudgetPlanTips) return;
     onboardingBudgetTipIndex = 0;
     var overlay = document.getElementById('onboarding-budget-tips-overlay');
-    if (!overlay) return;
+    var card = document.getElementById('onboarding-tip-card');
+    if (!overlay || !card) return;
     overlay.classList.remove('hidden');
+    card.classList.remove('hidden');
     showBudgetPlanTip(0);
+
+    if (!window._onboardingTipResize) {
+        window._onboardingTipResize = function () {
+            var step = document.getElementById('onboarding-step-categories');
+            if (!step) return;
+            var currentTip = ONBOARDING_BUDGET_TIPS[onboardingBudgetTipIndex];
+            if (!currentTip || !currentTip.target) return;
+            var targetEl = step.querySelector(currentTip.target);
+            if (targetEl) {
+                positionBudgetPlanTipCard(targetEl);
+            }
+        };
+        window.addEventListener('resize', window._onboardingTipResize);
+    }
 }
+
+function positionBudgetPlanTipCard(targetEl) {
+    var step = document.getElementById('onboarding-step-categories');
+    var card = document.getElementById('onboarding-tip-card');
+    if (!step || !card || !targetEl) return;
+
+    // Ensure the card has a width for measurement
+    if (card.classList.contains('hidden')) {
+        card.classList.remove('hidden');
+    }
+
+    var stepRect = step.getBoundingClientRect();
+    var targetRect = targetEl.getBoundingClientRect();
+    var cardRect = card.getBoundingClientRect();
+
+    var padding = 16;
+    var viewportWidth = window.innerWidth || document.documentElement.clientWidth || stepRect.width;
+    var viewportHeight = window.innerHeight || document.documentElement.clientHeight || stepRect.height;
+
+    var cardWidth = cardRect.width || Math.min(360, stepRect.width - padding * 2);
+    var cardHeight = cardRect.height || 0;
+
+    // Preferred position: below the target, centered horizontally
+    var preferredTop = targetRect.bottom + 12;
+    var preferredLeft = targetRect.left + (targetRect.width / 2) - (cardWidth / 2);
+
+    // Clamp horizontally within viewport and within the onboarding step
+    var minLeft = Math.max(padding, stepRect.left + padding);
+    var maxLeft = Math.min(viewportWidth - padding - cardWidth, stepRect.right - padding - cardWidth);
+    var finalLeft = Math.min(Math.max(preferredLeft, minLeft), maxLeft);
+
+    // Vertical clamping: keep within viewport and within the onboarding step
+    var minTop = Math.max(padding, stepRect.top + padding);
+    var maxTop = Math.min(viewportHeight - padding - cardHeight, stepRect.bottom - padding - cardHeight);
+
+    var finalTop = preferredTop;
+    if (finalTop + cardHeight > maxTop) {
+        // Try placing above the target instead
+        finalTop = targetRect.top - cardHeight - 12;
+    }
+    finalTop = Math.min(Math.max(finalTop, minTop), maxTop);
+
+    // Convert from viewport coordinates to step-relative coordinates
+    var relativeTop = finalTop - stepRect.top + step.scrollTop;
+    var relativeLeft = finalLeft - stepRect.left + step.scrollLeft;
+
+    card.style.top = relativeTop + 'px';
+    card.style.left = relativeLeft + 'px';
+    card.style.maxWidth = cardWidth + 'px';
+}
+
 function showBudgetPlanTip(index) {
     var titleEl = document.getElementById('onboarding-tip-title');
     var bodyEl = document.getElementById('onboarding-tip-body');
@@ -110,20 +169,20 @@ function showBudgetPlanTip(index) {
     bodyEl.textContent = tip.body;
     nextBtn.textContent = index >= ONBOARDING_BUDGET_TIPS.length - 1 ? 'Got it' : 'Next';
 
-    // Scroll and lightly highlight the relevant area (works on mobile & desktop)
+    var step = document.getElementById('onboarding-step-categories');
+    if (!step) return;
+
+    // Clear previous highlights
+    step.querySelectorAll('.onboarding-tip-highlight').forEach(function (el) {
+        el.classList.remove('onboarding-tip-highlight');
+    });
+
+    var targetEl = null;
     if (tip.target) {
-        var step = document.getElementById('onboarding-step-categories');
-        if (!step) return;
+        targetEl = step.querySelector(tip.target);
+    }
 
-        // Clear previous highlights
-        step.querySelectorAll('.onboarding-tip-highlight').forEach(function (el) {
-            el.classList.remove('onboarding-tip-highlight');
-        });
-
-        var targetEl = step.querySelector(tip.target);
-        if (!targetEl) return;
-
-        // Add highlight class
+    if (targetEl) {
         targetEl.classList.add('onboarding-tip-highlight');
 
         // Smooth scroll so the target is near the center of the screen
@@ -131,6 +190,18 @@ function showBudgetPlanTip(index) {
             targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
         } catch (e) {
             targetEl.scrollIntoView(true);
+        }
+
+        // After scroll settles, position the tip card near the target
+        window.requestAnimationFrame(function () {
+            positionBudgetPlanTipCard(targetEl);
+        });
+    } else {
+        // If we don't have a specific target, fall back to centering the card
+        var card = document.getElementById('onboarding-tip-card');
+        if (card) {
+            card.style.top = '';
+            card.style.left = '';
         }
     }
 }
@@ -151,7 +222,13 @@ function finishBudgetPlanTips() {
         window._onboardingTipResize = null;
     }
     var overlay = document.getElementById('onboarding-budget-tips-overlay');
+    var card = document.getElementById('onboarding-tip-card');
     if (overlay) overlay.classList.add('hidden');
+    if (card) {
+        card.classList.add('hidden');
+        card.style.top = '';
+        card.style.left = '';
+    }
     if (typeof state !== 'undefined') {
         state._sawBudgetPlanTips = true;
         if (typeof saveState === 'function') saveState();
