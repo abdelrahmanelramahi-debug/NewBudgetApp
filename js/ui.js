@@ -694,9 +694,9 @@ function renderLedger() {
                     </div>
                     <div class="flex-shrink-0">
                         <span class="text-[10px] font-bold uppercase tracking-widest text-indigo-200">General Savings</span>
-                        <div class="text-2xl font-black mt-0.5">${formatMoney(savBal)} <span class="text-xs text-indigo-300">${getCurrencyLabel()}</span></div>
+                        <div class="text-2xl font-black mt-0.5 major-fund-amount">${formatMoney(savBal)} <span class="text-xs text-indigo-300">${getCurrencyLabel()}</span></div>
                     </div>
-                    <button onclick="openSavingsBuckets()" class="w-full py-2 mt-2 bg-white/20 hover:bg-white/30 rounded-lg text-[10px] font-black uppercase transition text-center backdrop-blur-sm">Manage</button>
+                    <button onclick="openSavingsBuckets()" class="w-full py-2 mt-2 bg-white text-slate-900 hover:bg-indigo-50 rounded-lg text-[10px] font-black uppercase transition text-center">Manage</button>
                 </div>
                 <div class="premium-card p-4 bg-slate-800 text-white border-slate-700 shadow-md flex flex-col justify-between min-h-0 relative overflow-hidden group rounded-xl">
                     <div class="absolute top-0 right-0 p-2 opacity-10 pointer-events-none">
@@ -704,7 +704,7 @@ function renderLedger() {
                     </div>
                     <div class="flex-shrink-0">
                         <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Car Fund</span>
-                        <div class="text-2xl font-black mt-0.5">${formatMoney(carBal)} <span class="text-xs text-slate-500">${getCurrencyLabel()}</span></div>
+                        <div class="text-2xl font-black mt-0.5 major-fund-amount">${formatMoney(carBal)} <span class="text-xs text-slate-500">${getCurrencyLabel()}</span></div>
                     </div>
                     <button onclick="openTool('Car Fund')" class="w-full py-2 mt-2 bg-white text-slate-800 hover:bg-slate-100 rounded-lg text-[10px] font-black uppercase transition text-center">Manage</button>
                 </div>
@@ -714,7 +714,7 @@ function renderLedger() {
                     </div>
                     <div class="flex-shrink-0">
                         <span class="text-[10px] font-bold uppercase tracking-widest text-amber-100">Payables</span>
-                        <div class="text-2xl font-black mt-0.5">${formatMoney(payBal)} <span class="text-xs text-amber-100">${getCurrencyLabel()}</span></div>
+                        <div class="text-2xl font-black mt-0.5 major-fund-amount">${formatMoney(payBal)} <span class="text-xs text-amber-100">${getCurrencyLabel()}</span></div>
                     </div>
                     <button onclick="openPayablesBuckets()" class="w-full py-2 mt-2 bg-white text-amber-900 hover:bg-amber-50 rounded-lg text-[10px] font-black uppercase transition text-center">Manage</button>
                 </div>

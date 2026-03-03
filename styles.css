@@ -157,6 +157,27 @@ body.theme-dark .desktop-sidebar .text-slate-600 {
     color: #e5e7eb;
 }
 
+/* Dark mode sidebar: make white icon pills and footer controls high-contrast */
+body.theme-dark .desktop-sidebar .desktop-nav-item .inline-flex {
+    background-color: #f9fafb;
+}
+body.theme-dark .desktop-sidebar .desktop-nav-item .inline-flex svg {
+    color: #020617;
+}
+body.theme-dark .desktop-sidebar .mt-auto .inline-flex {
+    background-color: #f9fafb;
+}
+body.theme-dark .desktop-sidebar .mt-auto .inline-flex svg {
+    color: #020617;
+}
+body.theme-dark .desktop-sidebar .mt-auto .text-slate-600,
+body.theme-dark .desktop-sidebar .mt-auto .text-slate-500,
+body.theme-dark .desktop-sidebar .mt-auto .text-slate-400,
+body.theme-dark .desktop-sidebar .mt-auto button,
+body.theme-dark .desktop-sidebar .mt-auto button span {
+    color: #020617;
+}
+
 /* Sepia theme */
 body.theme-sepia {
     background-color: #f3e8d5;
@@ -214,6 +235,9 @@ body.theme-sepia .major-funds .major-fund-bar {
 }
 body.theme-sepia .major-funds .major-fund-bar span,
 body.theme-sepia .major-funds .major-fund-bar div {
+    color: #1f2933;
+}
+body.theme-sepia .major-funds .major-fund-amount {
     color: #1f2933;
 }
 
