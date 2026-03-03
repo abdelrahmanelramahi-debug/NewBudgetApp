@@ -1183,7 +1183,6 @@ function renderBankBalanceCard() {
     var total = getCurrentBalance();
     var totalEl = getEl('bank-balance-total');
     var barEl = getEl('bank-balance-bar');
-    if (totalEl) totalEl.innerText = typeof formatMoney === 'function' ? formatMoney(total) : total.toFixed(2);
     if (!barEl) return;
 
     _bankBalanceColorFallbackIndex = 0;
@@ -1196,12 +1195,19 @@ function renderBankBalanceCard() {
         });
     }
     segments = segments.filter(function (s) { return s.amount > 0; });
-    if (segments.length === 0 || total <= 0) {
+
+    // Total for what is currently shown in the bar
+    var visibleTotal = segments.reduce(function (sum, s) { return sum + s.amount; }, 0);
+    if (totalEl) {
+        var displayTotal = visibleTotal > 0 ? visibleTotal : total;
+        totalEl.innerText = typeof formatMoney === 'function' ? formatMoney(displayTotal) : displayTotal.toFixed(2);
+    }
+
+    if (segments.length === 0 || visibleTotal <= 0 || total <= 0) {
         barEl.innerHTML = '<div class="flex-1 rounded-lg bg-slate-200" title="No balance"></div>';
         return;
     }
-    var totalAmount = segments.reduce(function (sum, s) { return sum + s.amount; }, 0);
-    if (totalAmount <= 0) totalAmount = total;
+    var totalAmount = visibleTotal;
     var currency = getCurrencyLabel();
     var html = segments.map(function (item) {
         var pct = Math.max(0, (item.amount / totalAmount) * 100);
@@ -1292,7 +1298,11 @@ function calculateReality() {
     var headerBank = getEl('header-bank-balance');
     if (realityTotal) realityTotal.innerText = formatMoney(total);
     if (headerReality) headerReality.innerText = formatMoney(total);
-    if (headerBank) headerBank.innerText = 'Bank ' + formatMoney(total);
+    if (headerBank) {
+        var currencyLabelEl = document.querySelector('#bank-balance-total + [data-currency]');
+        var currencyLabel = currencyLabelEl ? currencyLabelEl.textContent || '' : '';
+        headerBank.innerHTML = 'Balance: <span class=\"font-normal text-slate-700\">' + formatMoney(total) + (currencyLabel ? ' ' + currencyLabel : '') + '</span>';
+    }
     if (typeof renderBankBalanceCard === 'function') renderBankBalanceCard();
 }
 

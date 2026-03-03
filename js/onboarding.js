@@ -265,7 +265,7 @@ var HOME_TOUR_STEPS = [
     },
     {
         title: 'Weekly allowance',
-        body: 'This is your safe-to-spend amount for this week. Use Spend to record purchases, or Top Up to move money in from Extra.',
+        body: 'This is your safe-to-spend amount for this week. Use Spend to record purchases, or Transfer to move money between Weekly and Extra.',
         target: '.weekly-hero'
     },
     {

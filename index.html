@@ -182,21 +182,126 @@
     <!-- Main app (hidden when onboarding is visible) -->
     <div id="app-shell" class="flex flex-col min-h-screen min-h-dvh lg:flex-row">
         <!-- Desktop sidebar (visible from lg up) -->
-        <aside id="desktop-sidebar" class="desktop-sidebar hidden lg:flex flex-col w-56 flex-shrink-0 border-r border-slate-200 bg-white/95 backdrop-blur">
-            <div class="p-4 border-b border-slate-100">
-                <h1 class="text-sm font-black text-slate-900 tracking-tight">BuBudget</h1>
+        <aside id="desktop-sidebar" class="desktop-sidebar hidden lg:flex flex-col w-64 flex-shrink-0 px-4 py-6">
+            <div class="flex flex-col bg-white/95 backdrop-blur shadow-lg rounded-3xl w-full h-full overflow-hidden">
+                <div class="flex items-center justify-between px-4 pt-4 pb-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-xs font-black tracking-tight">
+                            BU
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-sm font-bold text-slate-900 leading-tight">BuBudget</span>
+                            <span class="text-[11px] text-slate-400 leading-tight">Personal budgeting</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="px-4 pb-3">
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-3 flex items-center text-slate-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="6"></circle>
+                                <line x1="16.5" y1="16.5" x2="21" y2="21"></line>
+                            </svg>
+                        </span>
+                        <input
+                            type="text"
+                            placeholder="Search..."
+                            class="w-full pl-8 pr-3 py-2 rounded-2xl bg-slate-50 border border-slate-100 text-[12px] text-slate-600 placeholder-slate-400 outline-none focus:ring-2 focus:ring-indigo-200"
+                        >
+                    </div>
+                </div>
+                <nav class="px-2 pt-1 pb-3 flex-1 flex flex-col gap-1 text-sm">
+                    <button type="button" class="desktop-nav-item nav-ledger-pill tab-btn tab-active flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-800 hover:bg-indigo-50 data-[active=true]:bg-indigo-600 data-[active=true]:text-white transition"
+                            onclick="switchPage('ledger'); closeSideMenu();">
+                        <span class="inline-flex items-center justify-center w-7 h-7 rounded-xl bg-indigo-50 text-indigo-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 11l9-8 9 8"></path>
+                                <path d="M5 10v10h14V10"></path>
+                            </svg>
+                        </span>
+                        <span>Home</span>
+                    </button>
+                    <button type="button" id="nav-budget" class="desktop-nav-item tab-btn tab-inactive flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-700 hover:bg-slate-50 transition"
+                            onclick="switchPage('budget'); closeSideMenu();">
+                        <span class="inline-flex items-center justify-center w-7 h-7 rounded-xl bg-slate-50 text-slate-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="7" height="7" rx="2"></rect>
+                                <rect x="14" y="3" width="7" height="7" rx="2"></rect>
+                                <rect x="14" y="14" width="7" height="7" rx="2"></rect>
+                                <rect x="3" y="14" width="7" height="7" rx="2"></rect>
+                            </svg>
+                        </span>
+                        <span>Budget Plan</span>
+                    </button>
+                    <button type="button" id="nav-profile" class="desktop-nav-item tab-btn tab-inactive flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-700 hover:bg-slate-50 transition"
+                            onclick="switchPage('profile'); closeSideMenu();">
+                        <span class="inline-flex items-center justify-center w-7 h-7 rounded-xl bg-slate-50 text-slate-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="8" r="3.5"></circle>
+                                <path d="M4 20c1.5-3 4.3-5 8-5s6.5 2 8 5"></path>
+                            </svg>
+                        </span>
+                        <span>Profile</span>
+                    </button>
+                    <button type="button" id="nav-settings" class="desktop-nav-item tab-btn tab-inactive flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-700 hover:bg-slate-50 transition"
+                            onclick="switchPage('settings'); closeSideMenu();">
+                        <span class="inline-flex items-center justify-center w-7 h-7 rounded-xl bg-slate-50 text-slate-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1.82l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 8.6 15a1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0 .6-1A1.65 1.65 0 0 0 4.6 6.2l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .33-1.82l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 15.4 9a1.65 1.65 0 0 0 .6 1 1.65 1.65 0 0 0 1 .6 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 15z"></path>
+                            </svg>
+                        </span>
+                        <span>Settings</span>
+                    </button>
+                    <a href="mailto:omniveradigital@gmail.com?subject=Finance%20Command%20Bug%20Report"
+                       onclick="closeSideMenu()"
+                       class="mt-1 flex items-center gap-3 w-full px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-600 hover:bg-slate-50 transition">
+                        <span class="inline-flex items-center justify-center w-7 h-7 rounded-xl bg-slate-50 text-slate-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 4h16v16H4z"></path>
+                                <path d="m4 4 8 8 8-8"></path>
+                            </svg>
+                        </span>
+                        <span>Report a Bug</span>
+                    </a>
+                </nav>
+                <div class="mt-auto border-t border-slate-100 px-4 py-4 flex flex-col gap-2">
+                    <button type="button" class="w-full flex items-center justify-between px-3 py-2 rounded-2xl bg-slate-50 text-[12px] font-semibold text-slate-600">
+                        <span class="flex items-center gap-2">
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-xl bg-white text-slate-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                                    <polyline points="16 17 21 12 16 7"></polyline>
+                                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                                </svg>
+                            </span>
+                            <span>Logout</span>
+                        </span>
+                        <span class="text-[11px] text-slate-400">Soon</span>
+                    </button>
+                    <div class="flex items-center justify-between px-3 py-2 rounded-2xl bg-slate-50 text-[12px] font-semibold text-slate-600">
+                        <span class="flex items-center gap-2">
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-xl bg-white text-slate-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="5"></circle>
+                                    <path d="M12 3v2"></path>
+                                    <path d="M12 19v2"></path>
+                                    <path d="M3 12h2"></path>
+                                    <path d="M19 12h2"></path>
+                                </svg>
+                            </span>
+                            <span>Dark mode</span>
+                        </span>
+                        <button type="button" class="relative inline-flex h-5 w-9 items-center rounded-full bg-slate-200">
+                            <span class="inline-block h-4 w-4 translate-x-1 rounded-full bg-white shadow transition-transform"></span>
+                        </button>
+                    </div>
+                </div>
             </div>
-            <nav class="p-2 flex-1 flex flex-col gap-0.5">
-                <button type="button" class="desktop-nav-item nav-ledger-pill tab-btn tab-active w-full text-left py-2 px-3 rounded-md text-sm font-semibold text-slate-700 hover:bg-slate-100 transition" onclick="switchPage('ledger'); closeSideMenu();">Home</button>
-                <button type="button" id="nav-budget" class="desktop-nav-item tab-btn tab-inactive w-full text-left py-2 px-3 rounded-md text-sm font-semibold text-slate-700 hover:bg-slate-100 transition" onclick="switchPage('budget'); closeSideMenu();">Budget Plan</button>
-                <button type="button" id="nav-profile" class="desktop-nav-item tab-btn tab-inactive w-full text-left py-2 px-3 rounded-md text-sm font-semibold text-slate-700 hover:bg-slate-100 transition" onclick="switchPage('profile'); closeSideMenu();">Profile</button>
-                <button type="button" id="nav-settings" class="desktop-nav-item tab-btn tab-inactive w-full text-left py-2 px-3 rounded-md text-sm font-semibold text-slate-700 hover:bg-slate-100 transition" onclick="switchPage('settings'); closeSideMenu();">Settings</button>
-                <a href="mailto:omniveradigital@gmail.com?subject=Finance%20Command%20Bug%20Report" onclick="closeSideMenu()" class="block py-2 px-3 rounded-md text-sm font-semibold text-slate-600 hover:bg-slate-100 transition">Report a Bug</a>
-            </nav>
         </aside>
         <div id="app-main" class="flex-1 flex flex-col min-h-0 min-w-0 w-full max-w-xl lg:max-w-none mx-auto px-4 lg:px-6">
     <!-- Home header: sticky only on Home (ledger) page -->
-    <nav id="app-header" class="nav-header home-header w-full">
+    <nav id="app-header" class="nav-header home-header w-full sticky top-0 z-40 bg-white/95 backdrop-blur">
         <div class="home-header-inner">
             <div class="home-header-row flex flex-nowrap items-center justify-between gap-2 min-w-0 overflow-x-hidden">
                 <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 min-w-0">
@@ -204,7 +309,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
                     </button>
                     <div class="flex flex-col leading-tight">
-                        <span id="header-bank-balance" class="text-[9px] font-bold text-slate-700 uppercase tracking-wider tabular-nums whitespace-nowrap">Bank 0.00</span>
+                        <span id="header-bank-balance" class="text-xs sm:text-sm font-bold text-slate-900 tracking-wider tabular-nums whitespace-nowrap">Balance: <span class="font-normal text-slate-700">0.00 AED</span></span>
                         <div id="header-date-newmonth" class="flex items-center gap-1 sm:gap-1.5">
                             <span id="header-today-date" class="text-[10px] font-bold text-slate-500 uppercase tracking-wider tabular-nums whitespace-nowrap">—</span>
                         </div>
@@ -240,21 +345,122 @@
         </div>
     </nav>
 
-    <!-- Side menu drawer -->
+    <!-- Side menu drawer (mobile) -->
     <div id="side-menu" class="fixed inset-0 z-[60] hidden">
         <div id="side-menu-backdrop" onclick="closeSideMenu()" class="absolute inset-0 bg-black/30"></div>
-        <div class="side-menu-panel absolute top-0 left-0 bottom-0 w-72 max-w-[85vw] bg-white shadow-xl flex flex-col">
-            <div class="p-4 border-b border-slate-100 flex items-center justify-between">
-                <span class="text-xs font-black text-slate-500 uppercase tracking-widest">Menu</span>
-                <button type="button" onclick="closeSideMenu()" class="p-2 rounded-lg text-slate-500 hover:bg-slate-100">&#10005;</button>
+        <div class="side-menu-panel absolute top-0 left-0 bottom-0 w-72 max-w-[85vw] px-3 py-5">
+            <div class="flex flex-col bg-white shadow-2xl rounded-3xl w-full h-full overflow-hidden">
+                <div class="flex items-center justify-between px-4 pt-4 pb-3">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-xs font-black tracking-tight">
+                            BU
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-sm font-bold text-slate-900 leading-tight">BuBudget</span>
+                            <span class="text-[11px] text-slate-400 leading-tight">Personal budgeting</span>
+                        </div>
+                    </div>
+                    <button type="button" onclick="closeSideMenu()" class="p-2 rounded-full bg-slate-50 text-slate-500 hover:bg-slate-100">
+                        &#10005;
+                    </button>
+                </div>
+                <div class="px-4 pb-3">
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-3 flex items-center text-slate-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="6"></circle>
+                                <line x1="16.5" y1="16.5" x2="21" y2="21"></line>
+                            </svg>
+                        </span>
+                        <input
+                            type="text"
+                            placeholder="Search..."
+                            class="w-full pl-8 pr-3 py-2 rounded-2xl bg-slate-50 border border-slate-100 text-[12px] text-slate-600 placeholder-slate-400 outline-none focus:ring-2 focus:ring-indigo-200"
+                        >
+                    </div>
+                </div>
+                <nav class="px-2 pt-1 pb-3 flex-1 flex flex-col gap-1 text-sm overflow-y-auto">
+                    <button type="button" onclick="switchPage('ledger'); closeSideMenu();" class="flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-800 bg-indigo-50 hover:bg-indigo-100 transition">
+                        <span class="inline-flex items-center justify-center w-7 h-7 rounded-xl bg-indigo-100 text-indigo-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 11l9-8 9 8"></path>
+                                <path d="M5 10v10h14V10"></path>
+                            </svg>
+                        </span>
+                        <span>Home</span>
+                    </button>
+                    <button type="button" onclick="switchPage('budget'); closeSideMenu();" class="flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-700 hover:bg-slate-50 transition">
+                        <span class="inline-flex items-center justify-center w-7 h-7 rounded-xl bg-slate-50 text-slate-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="3" width="7" height="7" rx="2"></rect>
+                                <rect x="14" y="3" width="7" height="7" rx="2"></rect>
+                                <rect x="14" y="14" width="7" height="7" rx="2"></rect>
+                                <rect x="3" y="14" width="7" height="7" rx="2"></rect>
+                            </svg>
+                        </span>
+                        <span>Budget Plan</span>
+                    </button>
+                    <button type="button" onclick="switchPage('profile'); closeSideMenu();" class="flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-700 hover:bg-slate-50 transition">
+                        <span class="inline-flex items-center justify-center w-7 h-7 rounded-xl bg-slate-50 text-slate-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="8" r="3.5"></circle>
+                                <path d="M4 20c1.5-3 4.3-5 8-5s6.5 2 8 5"></path>
+                            </svg>
+                        </span>
+                        <span>Profile</span>
+                    </button>
+                    <button type="button" onclick="switchPage('settings'); closeSideMenu();" class="flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-700 hover:bg-slate-50 transition">
+                        <span class="inline-flex items-center justify-center w-7 h-7 rounded-xl bg-slate-50 text-slate-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 0-.33 1.82l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 8.6 15a1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0 .6-1A1.65 1.65 0 0 0 4.6 6.2l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 0 .33-1.82l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 15.4 9a1.65 1.65 0 0 0 .6 1 1.65 1.65 0 0 0 1 .6 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 15z"></path>
+                            </svg>
+                        </span>
+                        <span>Settings</span>
+                    </button>
+                    <a href="mailto:omniveradigital@gmail.com?subject=Finance%20Command%20Bug%20Report" onclick="closeSideMenu()" class="mt-1 flex items-center gap-3 w-full px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-600 hover:bg-slate-50 transition">
+                        <span class="inline-flex items-center justify-center w-7 h-7 rounded-xl bg-slate-50 text-slate-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 4h16v16H4z"></path>
+                                <path d="m4 4 8 8 8-8"></path>
+                            </svg>
+                        </span>
+                        <span>Report a Bug</span>
+                    </a>
+                </nav>
+                <div class="mt-auto border-t border-slate-100 px-4 py-4 flex flex-col gap-2">
+                    <button type="button" class="w-full flex items-center justify-between px-3 py-2 rounded-2xl bg-slate-50 text-[12px] font-semibold text-slate-600">
+                        <span class="flex items-center gap-2">
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-xl bg-white text-slate-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                                    <polyline points="16 17 21 12 16 7"></polyline>
+                                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                                </svg>
+                            </span>
+                            <span>Logout</span>
+                        </span>
+                        <span class="text-[11px] text-slate-400">Soon</span>
+                    </button>
+                    <div class="flex items-center justify-between px-3 py-2 rounded-2xl bg-slate-50 text-[12px] font-semibold text-slate-600">
+                        <span class="flex items-center gap-2">
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-xl bg-white text-slate-500">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="5"></circle>
+                                    <path d="M12 3v2"></path>
+                                    <path d="M12 19v2"></path>
+                                    <path d="M3 12h2"></path>
+                                    <path d="M19 12h2"></path>
+                                </svg>
+                            </span>
+                            <span>Dark mode</span>
+                        </span>
+                        <button type="button" class="relative inline-flex h-5 w-9 items-center rounded-full bg-slate-200">
+                            <span class="inline-block h-4 w-4 translate-x-1 rounded-full bg-white shadow transition-transform"></span>
+                        </button>
+                    </div>
+                </div>
             </div>
-            <nav class="p-3 space-y-1">
-                <button type="button" onclick="switchPage('ledger'); closeSideMenu();" class="w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Home</button>
-                <button type="button" onclick="switchPage('budget'); closeSideMenu();" class="w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Budget Plan</button>
-                <button type="button" onclick="switchPage('profile'); closeSideMenu();" class="w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Profile</button>
-                <button type="button" onclick="switchPage('settings'); closeSideMenu();" class="w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Settings</button>
-                <a href="mailto:omniveradigital@gmail.com?subject=Finance%20Command%20Bug%20Report" onclick="closeSideMenu()" class="block w-full text-left py-3 px-4 rounded-xl text-sm font-bold text-slate-700 hover:bg-slate-50 transition">Report a Bug</a>
-            </nav>
         </div>
     </div>
 
@@ -277,11 +483,10 @@
             <div class="paycheck-home-card premium-card p-4 flex flex-col sm:flex-row sm:items-center gap-3 border border-slate-200 rounded-xl bg-slate-50/50">
                 <div class="flex-1 min-w-0">
                     <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Paycheck</span>
-                    <p class="text-[10px] text-slate-400 mt-0.5">Add to Extra or distribute across planned budgets (incl. food cycle).</p>
+                    <p class="text-[10px] text-slate-400 mt-0.5">Distribute your paycheck across planned budgets (incl. food cycle).</p>
                 </div>
                 <div class="flex flex-wrap gap-2 sm:flex-shrink-0">
                     <input type="number" id="paycheck-amount" placeholder="Amount..." class="flex-1 min-w-[100px] max-w-[140px] bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-300" autocomplete="off">
-                    <button type="button" onclick="applyPaycheckAdd()" class="bg-slate-900 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase hover:bg-slate-800 transition">Add</button>
                     <button type="button" onclick="applyPaycheckDistribute()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase hover:bg-indigo-700 transition">Distribute</button>
                 </div>
             </div>
@@ -407,7 +612,6 @@
                     </div>
                     <div class="flex gap-2">
                         <button onclick="inlineWeeklyAdjust(-1)" class="flex-1 bg-white text-indigo-900 px-4 py-2 rounded-lg text-[10px] font-black uppercase">Spend</button>
-                        <button onclick="topUpWeeklyInline()" class="flex-1 bg-emerald-400 text-emerald-900 px-4 py-2 rounded-lg text-[10px] font-black uppercase">Top Up</button>
                         <button onclick="openTool('Weekly Misc', 'Weekly Allowance', true)" class="flex-1 bg-indigo-500 text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase">Transfer</button>
                     </div>
                 </div>
