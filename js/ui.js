@@ -113,6 +113,18 @@ function applySettings() {
     if (hideEmpty) hideEmpty.checked = !!state.settings?.hideEmptyCategories;
     var sortSelect = document.getElementById('ledger-sort');
     if (sortSelect) sortSelect.value = state.settings?.categorySort || 'default';
+
+    // Sync sidebar toggle thumb position (simple visual cue)
+    var thumb = document.getElementById('sidebar-theme-thumb');
+    var thumbMobile = document.getElementById('mobile-sidebar-theme-thumb');
+    var isDark = theme === 'dark';
+    var translateClassOn = 'translate-x-4';
+    var translateClassOff = 'translate-x-1';
+    [thumb, thumbMobile].forEach(function(t) {
+        if (!t) return;
+        t.classList.remove(translateClassOn, translateClassOff);
+        t.classList.add(isDark ? translateClassOn : translateClassOff);
+    });
 }
 
 function setLedgerViewOptions() {
@@ -125,6 +137,20 @@ function setLedgerViewOptions() {
     if (typeof renderLedger === 'function') renderLedger();
 }
 if (typeof window !== 'undefined') window.setLedgerViewOptions = setLedgerViewOptions;
+
+function toggleThemeFromSidebar() {
+    if (typeof state === 'undefined') return;
+    if (!state.settings) state.settings = {};
+    var current = state.settings.theme || 'light';
+    var next = current === 'dark' ? 'light' : 'dark';
+    state.settings.theme = next;
+    try {
+        window.localStorage && localStorage.setItem('bubudget_theme', next);
+    } catch (e) {}
+    if (typeof saveState === 'function') saveState();
+    applySettings();
+}
+if (typeof window !== 'undefined') window.toggleThemeFromSidebar = toggleThemeFromSidebar;
 
 function renderSettings() {
     const currencyInput = document.getElementById('settings-currency');
@@ -1194,23 +1220,27 @@ function renderBankBalanceCard() {
             return !_bankBalanceHiddenGroups[s.group];
         });
     }
-    segments = segments.filter(function (s) { return s.amount > 0; });
+    // Keep segments with non-zero amounts (can be positive or negative)
+    segments = segments.filter(function (s) { return s.amount !== 0; });
 
-    // Total for what is currently shown in the bar
-    var visibleTotal = segments.reduce(function (sum, s) { return sum + s.amount; }, 0);
+    // Net total (including negatives) and absolute total for sizing
+    var visibleNetTotal = segments.reduce(function (sum, s) { return sum + s.amount; }, 0);
+    var visibleAbsTotal = segments.reduce(function (sum, s) { return sum + Math.abs(s.amount); }, 0);
+
     if (totalEl) {
-        var displayTotal = visibleTotal > 0 ? visibleTotal : total;
+        // If nothing is shown, fall back to overall total
+        var displayTotal = visibleAbsTotal > 0 ? visibleNetTotal : total;
         totalEl.innerText = typeof formatMoney === 'function' ? formatMoney(displayTotal) : displayTotal.toFixed(2);
     }
 
-    if (segments.length === 0 || visibleTotal <= 0 || total <= 0) {
+    if (segments.length === 0 || visibleAbsTotal <= 0 || total <= 0) {
         barEl.innerHTML = '<div class="flex-1 rounded-lg bg-slate-200" title="No balance"></div>';
         return;
     }
-    var totalAmount = visibleTotal;
+    var totalAmount = visibleAbsTotal;
     var currency = getCurrencyLabel();
     var html = segments.map(function (item) {
-        var pct = Math.max(0, (item.amount / totalAmount) * 100);
+        var pct = Math.max(0, (Math.abs(item.amount) / totalAmount) * 100);
         var width = pct < 0.5 ? '0.5' : pct.toFixed(1);
         var color = getBankBalanceSegmentColor(item.label);
         var labelEsc = escapeAttr(item.label);
