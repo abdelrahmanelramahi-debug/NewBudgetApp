@@ -12,10 +12,21 @@ var onboardingCategoriesInitialized = false;
 var onboardingBudgetTipIndex = 0;
 
 var ONBOARDING_BUDGET_TIPS = [
-    { title: 'Watch the total', body: 'The box above shows how much you\'ve allocated. We\'ll nudge you if you\'re under or over. You can change anything later in Budget Plan.', target: '#onboarding-cat-total-card' },
-    { title: 'Start here', body: 'Change amounts with the number or the slider under each row. Savings and core spending are your base—you can tweak them later in Budget Plan.', target: '#onboarding-strategy-sections' },
-    { title: 'Add categories', body: 'Tap + Health, + Groceries, and so on to add more, or use Add Category for your own.', target: '#onboarding-suggestions-row' },
-    { title: 'Fill in categories', body: 'In each category (like Health or Groceries), tap the number to type an amount for an item. Use the + button to add a new item, and the pencil/trash to edit or remove. Leaving items at 0 is totally fine—you can come back later.', target: '#onboarding-strategy-sections' }
+    {
+        title: 'Watch the total',
+        body: 'This box shows how much of your monthly income is allocated. We’ll flag it if you go under or over your total. You can change these amounts any time in Budget Plan.',
+        target: '#onboarding-cat-total-card'
+    },
+    {
+        title: 'Set your amounts',
+        body: 'Use the number or the slider under each row to choose how much you want to spend or save in that section. Start with these core sections first.',
+        target: '#onboarding-strategy-sections'
+    },
+    {
+        title: 'Add and fill categories',
+        body: 'Use + Health, + Groceries, and Add Category to create sections that match your life. Inside each category, use the + button and amount fields to add items. It’s fine to leave anything at 0 for now.',
+        target: '#onboarding-suggestions-row'
+    }
 ];
 
 /** Suggested categories (emptied: amounts at 0 so user can fill). Same structure as template. */
@@ -247,10 +258,26 @@ window.nextBudgetPlanTip = nextBudgetPlanTip;
 window.skipBudgetPlanTips = skipBudgetPlanTips;
 
 var HOME_TOUR_STEPS = [
-    { title: 'Weekly Allowance', body: 'Track your weekly spending here. Enter an amount and tap Spend, or Top Up from Extra. Use Transfer to move between weeks.', target: '.weekly-hero' },
-    { title: 'Food Tracker', body: 'Mark days you\'ve eaten to use your food budget. Use \"Mark Day Consumed\" and the calendar below. You can extend your cycle with buffer days.', target: '#page-ledger .premium-card:nth-of-type(2)' },
-    { title: 'Categories', body: 'Spend from your budget categories (Health, Groceries, etc.). Tap a category to deduct or add. Single-action items can be checked off when done.', target: '#ledger-categories' },
-    { title: 'Bank Balance', body: 'This is the reality check of what should read in your bank account. The bar shows how it\'s split (Extra, Weekly, Food, etc.). Tap Breakdown for details.', target: '.bank-balance-card' }
+    {
+        title: 'Weekly allowance',
+        body: 'This shows what you can spend this week. Enter an amount and tap Spend to record it, or Top Up to add more from Extra.',
+        target: '.weekly-hero'
+    },
+    {
+        title: 'Food tracker',
+        body: 'Use \"Mark Day Consumed\" and the calendar to track food spending by day. Buffer days let you stretch the month when you need to.',
+        target: '#page-ledger .premium-card:nth-of-type(2)'
+    },
+    {
+        title: 'Categories',
+        body: 'Each category (like Health or Groceries) is a mini budget. Tap a category to spend from it or move money between categories.',
+        target: '#ledger-categories'
+    },
+    {
+        title: 'Bank balance',
+        body: 'This is what your bank account should read if everything matches the plan. The colored bar shows how it’s split across Extra, Weekly, Food, and categories.',
+        target: '.bank-balance-card'
+    }
 ];
 var homeTourStepIndex = 0;
 function startHomeTour() {
