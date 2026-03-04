@@ -2313,6 +2313,12 @@ function createPayablesBucket() {
     const name = input?.value?.trim();
     if (!name) return;
     ensureAccountsState();
+    // Block recreating buckets that were explicitly deleted/retired so they
+    // can't silently "fight" with older/stale copies on other devices.
+    if (Array.isArray(state._deletedPayablesBuckets) && state._deletedPayablesBuckets.indexOf(name) !== -1) {
+        showAppAlert('This name was previously deleted. Please choose a different name.');
+        return;
+    }
     if (state.accounts.payablesBuckets[name] !== undefined) {
         showAppAlert('Subcategory already exists.');
         return;
@@ -2342,6 +2348,9 @@ function renamePayablesBucket(oldName, newNameFromInline) {
         return;
     }
     pushToUndo();
+    // Treat the old name as permanently retired so it cannot "respawn"
+    // from any stale source (other device, old tab, or cloud copy).
+    if (typeof markPayablesBucketDeleted === 'function') markPayablesBucketDeleted(oldName);
     state.accounts.payablesBuckets[newName] = state.accounts.payablesBuckets[oldName] || 0;
     delete state.accounts.payablesBuckets[oldName];
     if (state.accounts.payablesDefaultBucket === oldName) {
