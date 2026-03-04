@@ -306,7 +306,9 @@
             if (!getCurrentUser() || syncInProgress) return;
             var now = Date.now();
             if (lastSuccessfulSaveTime && (now - lastSuccessfulSaveTime) < MIN_SAVED_AGO_MS) return;
-            saveStateToCloud();
+            // Use the conflict-aware load logic for auto-sync so idle tabs
+            // don't push stale local state over newer cloud/mobile changes.
+            loadStateFromCloud(0);
         }, AUTO_SYNC_INTERVAL_MS);
     }
 
