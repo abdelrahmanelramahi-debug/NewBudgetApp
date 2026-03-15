@@ -260,6 +260,19 @@ body.theme-dark #page-budget-plan .premium-card.bg-slate-50 input {
 body.theme-dark .budget-plan-page-header .bg-slate-100 input {
     color: #0f172a;
 }
+/* Budget plan number inputs (input-pill): dark text on white/light box for readability */
+body.theme-dark .input-pill {
+    color: #0f172a;
+}
+body.theme-dark .input-pill:focus {
+    color: #0f172a;
+}
+body.theme-dark .input-pill::placeholder {
+    color: #64748b;
+}
+body.theme-dark .input-pill:read-only {
+    color: #475569;
+}
 /* Alert boxes on budget plan (amber-50, red-50) – already have dark text classes, ensure in dark mode */
 body.theme-dark #page-budget-plan .bg-amber-50,
 body.theme-dark #page-budget-plan .bg-red-50 {
@@ -806,32 +819,34 @@ body.theme-dark .food-calendar-buffer {
 }
 body.theme-dark .food-buffer-row .w-12 { color: #34d399; }
 
-/* Transportation card in dark mode: light box with dark text for contrast */
+/* Transportation card in dark mode: dark box like Savings/Payables, light title/amount, white button with dark text */
 body.theme-dark .major-funds .premium-card.bg-slate-800 {
-    background-color: #f1f5f9;
-    border-color: #e2e8f0;
-    color: #0f172a;
+    background-color: #1e293b;
+    border-color: #334155;
+    color: #e5e7eb;
 }
-body.theme-dark .major-funds .premium-card.bg-slate-800 .text-slate-400,
+body.theme-dark .major-funds .premium-card.bg-slate-800 .text-slate-400 {
+    color: #94a3b8;
+}
 body.theme-dark .major-funds .premium-card.bg-slate-800 .text-slate-500 {
-    color: #475569;
+    color: #cbd5e1;
 }
 body.theme-dark .major-funds .premium-card.bg-slate-800 .major-fund-amount {
-    color: #0f172a;
+    color: #f1f5f9;
 }
 body.theme-dark .major-funds .premium-card.bg-slate-800 .major-fund-amount .text-slate-500 {
-    color: #64748b;
+    color: #94a3b8;
 }
 body.theme-dark .major-funds .premium-card.bg-slate-800 button {
     background-color: #fff;
     color: #0f172a;
-    border-color: #e2e8f0;
+    border-color: transparent;
 }
 body.theme-dark .major-funds .premium-card.bg-slate-800 button:hover {
     background-color: #e2e8f0;
 }
 body.theme-dark .major-funds .premium-card.bg-slate-800 svg {
-    color: #475569;
+    color: #94a3b8;
 }
 
 /* Food cycle day numbers: dark text on light boxes in dark mode */

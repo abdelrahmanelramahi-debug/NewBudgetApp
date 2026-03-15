@@ -104,8 +104,13 @@
             return;
         }
 
+        // Theme is device-local only: do not sync across devices
+        var dataToSave = JSON.parse(JSON.stringify(state));
+        if (dataToSave.settings && Object.prototype.hasOwnProperty.call(dataToSave.settings, 'theme')) {
+            delete dataToSave.settings.theme;
+        }
         return userDocRef.set({
-            data: state,
+            data: dataToSave,
             lastUpdated: serverTimestamp,
             version: state.schemaVersion || 2,
             syncProtocolVersion: SYNC_PROTOCOL_VERSION
@@ -218,6 +223,7 @@
             }
 
             if (cloudData.data && typeof cloudData.data === 'object' && cloudHasData) {
+                var localTheme = (state.settings && state.settings.theme) || (global.localStorage && global.localStorage.getItem('bubudget_theme')) || 'light';
                 var localDeletedBuckets = Array.isArray(state._deletedPayablesBuckets) ? state._deletedPayablesBuckets.slice() : [];
                 state = { ...state, ...cloudData.data };
                 var cloudDeletedBuckets = Array.isArray(cloudData.data._deletedPayablesBuckets) ? cloudData.data._deletedPayablesBuckets : [];
@@ -235,6 +241,7 @@
                 if (typeof ensureSystemSavings === 'function') ensureSystemSavings();
                 if (typeof ensureCoreItems === 'function') ensureCoreItems();
                 if (typeof ensureSettings === 'function') ensureSettings();
+                if (state.settings) state.settings.theme = localTheme;
                 if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
                 if (typeof purgeDeletedPayablesBuckets === 'function') purgeDeletedPayablesBuckets();
                 var stateKey = STORAGE_KEYS.STATE;
