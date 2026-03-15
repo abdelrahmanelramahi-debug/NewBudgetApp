@@ -127,7 +127,23 @@ body.theme-dark #ledger-sort {
     border-color: #334155;
     color: #e5e7eb;
 }
+/* Ledger categories (groceries, misc, etc.): light text in dark mode */
+body.theme-dark #ledger-categories button .text-slate-800,
+body.theme-dark #ledger-categories .text-slate-800 {
+    color: #e5e7eb;
+}
+body.theme-dark .ledger-bar .text-slate-800,
+body.theme-dark .ledger-bar p.text-slate-800 {
+    color: #e5e7eb;
+}
+body.theme-dark .ledger-bar .text-slate-400 {
+    color: #94a3b8;
+}
 body.theme-dark .modal-content { background: #111827; }
+body.theme-dark .modal-content .text-slate-900,
+body.theme-dark .modal-content .text-slate-800 {
+    color: #e5e7eb;
+}
 body.theme-dark #app-alert-modal .modal-content #app-alert-title,
 body.theme-dark #app-alert-modal .modal-content #app-alert-message { color: #e2e8f0; }
 body.theme-dark #app-alert-modal .modal-content #app-alert-icon { background: rgba(99, 102, 241, 0.2); color: #818cf8; }
@@ -141,6 +157,114 @@ body.theme-dark #app-alert-modal .modal-content #app-alert-cancel:hover { backgr
 body.theme-dark #bank-balance-info { color: #94a3b8; }
 body.theme-dark #bank-balance-info-btn { border-color: #64748b; color: #94a3b8; }
 body.theme-dark #bank-balance-info-btn:hover { background: #334155; }
+
+/* Settings, Budget Plan, Profile, modals: text in light boxes = dark for readability */
+body.theme-dark #page-settings .bg-slate-50,
+body.theme-dark #page-profile .bg-slate-50,
+body.theme-dark #page-budget-plan .bg-slate-50,
+body.theme-dark .modal-content .bg-slate-50 {
+    color: #0f172a;
+}
+body.theme-dark #page-settings .bg-slate-50 .text-slate-400,
+body.theme-dark #page-profile .bg-slate-50 .text-slate-400,
+body.theme-dark #page-budget-plan .bg-slate-50 .text-slate-400,
+body.theme-dark .modal-content .bg-slate-50 .text-slate-400 {
+    color: #64748b;
+}
+body.theme-dark #page-settings .bg-slate-50 .text-slate-500,
+body.theme-dark #page-profile .bg-slate-50 .text-slate-500,
+body.theme-dark #page-budget-plan .bg-slate-50 .text-slate-500,
+body.theme-dark .modal-content .bg-slate-50 .text-slate-500 {
+    color: #475569;
+}
+body.theme-dark #page-settings .bg-slate-50 .text-slate-600,
+body.theme-dark #page-profile .bg-slate-50 .text-slate-600,
+body.theme-dark #page-budget-plan .bg-slate-50 .text-slate-600,
+body.theme-dark .modal-content .bg-slate-50 .text-slate-600 {
+    color: #334155;
+}
+body.theme-dark #page-settings .bg-slate-50 .text-slate-800,
+body.theme-dark #page-settings .bg-slate-50 .text-slate-900,
+body.theme-dark #page-profile .bg-slate-50 .text-slate-800,
+body.theme-dark #page-profile .bg-slate-50 .text-slate-900,
+body.theme-dark #page-budget-plan .bg-slate-50 .text-slate-800,
+body.theme-dark #page-budget-plan .bg-slate-50 .text-slate-900,
+body.theme-dark .modal-content .bg-slate-50 .text-slate-800,
+body.theme-dark .modal-content .bg-slate-50 .text-slate-900 {
+    color: #0f172a;
+}
+body.theme-dark #page-settings .bg-slate-50 input,
+body.theme-dark #page-settings .bg-slate-50 select,
+body.theme-dark #page-profile .bg-slate-50 input,
+body.theme-dark #page-profile .bg-slate-50 select,
+body.theme-dark #page-budget-plan .bg-slate-50 input,
+body.theme-dark #page-budget-plan .bg-slate-50 select,
+body.theme-dark .modal-content .bg-slate-50 input,
+body.theme-dark .modal-content .bg-slate-50 select {
+    color: #0f172a;
+}
+/* Light inputs/boxes on dark cards (e.g. budget plan header income input) */
+body.theme-dark #page-budget-plan .bg-slate-100,
+body.theme-dark .modal-content .bg-slate-100 {
+    color: #0f172a;
+}
+body.theme-dark #page-budget-plan .bg-slate-100 input,
+body.theme-dark #page-budget-plan .bg-slate-100 select,
+body.theme-dark .modal-content .bg-slate-100 input,
+body.theme-dark .modal-content .bg-slate-100 select {
+    color: #0f172a;
+}
+/* Tinted light boxes in modals (amber, indigo, etc.) – keep text dark */
+body.theme-dark .modal-content .bg-amber-50,
+body.theme-dark .modal-content .bg-indigo-50,
+body.theme-dark .modal-content .bg-emerald-50,
+body.theme-dark .modal-content .bg-red-50 {
+    color: #0f172a;
+}
+body.theme-dark .modal-content .bg-indigo-50 .text-indigo-900,
+body.theme-dark .modal-content .bg-amber-50 .text-amber-700,
+body.theme-dark .modal-content .bg-emerald-50 .text-emerald-600,
+body.theme-dark .modal-content .bg-red-50 .text-red-800 {
+    color: inherit;
+}
+body.theme-dark .modal-content .bg-indigo-50 input {
+    color: #1e3a5f;
+}
+/* Modal close buttons and other controls on dark modal that are light (slate-100) */
+body.theme-dark .modal-content .bg-slate-100 {
+    background-color: #334155;
+    color: #e2e8f0;
+}
+body.theme-dark .modal-content .bg-slate-100:hover {
+    background-color: #475569;
+}
+body.theme-dark .modal-content .bg-slate-100.text-slate-500 {
+    color: #e2e8f0;
+}
+/* Budget plan: premium-cards that are explicitly light (bg-slate-50) – dark text */
+body.theme-dark #page-budget-plan .premium-card.bg-slate-50 {
+    background-color: #f1f5f9;
+    border-color: #e2e8f0;
+    color: #0f172a;
+}
+body.theme-dark #page-budget-plan .premium-card.bg-slate-50 .text-slate-500,
+body.theme-dark #page-budget-plan .premium-card.bg-slate-50 .text-slate-400,
+body.theme-dark #page-budget-plan .premium-card.bg-slate-50 .text-slate-300 {
+    color: #475569;
+}
+body.theme-dark #page-budget-plan .premium-card.bg-slate-50 .text-slate-900,
+body.theme-dark #page-budget-plan .premium-card.bg-slate-50 input {
+    color: #0f172a;
+}
+/* Budget plan header is dark; ensure any light element inside has dark text */
+body.theme-dark .budget-plan-page-header .bg-slate-100 input {
+    color: #0f172a;
+}
+/* Alert boxes on budget plan (amber-50, red-50) – already have dark text classes, ensure in dark mode */
+body.theme-dark #page-budget-plan .bg-amber-50,
+body.theme-dark #page-budget-plan .bg-red-50 {
+    color: #0f172a;
+}
 
 /* Dark mode sidebar: use dark panel and brighter nav text */
 body.theme-dark .desktop-sidebar .flex.flex-col {
@@ -183,6 +307,61 @@ body.theme-dark .desktop-sidebar .mt-auto .text-slate-400,
 body.theme-dark .desktop-sidebar .mt-auto button,
 body.theme-dark .desktop-sidebar .mt-auto button span {
     color: #020617;
+}
+
+/* Dark mode sidebar: search icon and Report a Bug icon visible on dark background */
+body.theme-dark .desktop-sidebar .px-4.pb-3 .relative > span {
+    color: #334155;
+}
+body.theme-dark .desktop-sidebar nav a .inline-flex {
+    background-color: #f1f5f9;
+}
+body.theme-dark .desktop-sidebar nav a .inline-flex svg {
+    color: #0f172a;
+}
+
+/* Dark mode mobile side menu: dark panel and visible search / Report a Bug icons */
+body.theme-dark #side-menu .side-menu-panel > div {
+    background-color: #111827;
+    border-color: #1e293b;
+    color: #e5e7eb;
+}
+body.theme-dark #side-menu .side-menu-panel .text-slate-900,
+body.theme-dark #side-menu .side-menu-panel .text-slate-800,
+body.theme-dark #side-menu .side-menu-panel .text-slate-700,
+body.theme-dark #side-menu .side-menu-panel .text-slate-600 {
+    color: #e5e7eb;
+}
+body.theme-dark #side-menu .side-menu-panel .text-slate-400,
+body.theme-dark #side-menu .side-menu-panel .text-slate-500 {
+    color: #94a3b8;
+}
+body.theme-dark #side-menu .side-menu-panel .relative span {
+    color: #94a3b8;
+}
+body.theme-dark #side-menu .side-menu-panel input {
+    background-color: #1e293b;
+    border-color: #334155;
+    color: #e2e8f0;
+}
+body.theme-dark #side-menu .side-menu-panel input::placeholder {
+    color: #94a3b8;
+}
+body.theme-dark #side-menu .side-menu-panel nav a .inline-flex {
+    background-color: #334155;
+    color: #e2e8f0;
+}
+body.theme-dark #side-menu .side-menu-panel nav a .inline-flex svg {
+    color: #e2e8f0;
+}
+body.theme-dark #side-menu .side-menu-panel nav a:hover {
+    background: #1e293b;
+}
+body.theme-dark #side-menu .side-menu-panel .bg-slate-50 {
+    background-color: #1e293b;
+}
+body.theme-dark #side-menu .side-menu-panel .border-slate-100 {
+    border-color: #1e293b;
 }
 
 /* Sepia theme */
@@ -626,6 +805,43 @@ body.theme-dark .food-calendar-buffer {
     background: linear-gradient(to bottom, rgba(16, 185, 129, 0.12), transparent);
 }
 body.theme-dark .food-buffer-row .w-12 { color: #34d399; }
+
+/* Transportation card in dark mode: light box with dark text for contrast */
+body.theme-dark .major-funds .premium-card.bg-slate-800 {
+    background-color: #f1f5f9;
+    border-color: #e2e8f0;
+    color: #0f172a;
+}
+body.theme-dark .major-funds .premium-card.bg-slate-800 .text-slate-400,
+body.theme-dark .major-funds .premium-card.bg-slate-800 .text-slate-500 {
+    color: #475569;
+}
+body.theme-dark .major-funds .premium-card.bg-slate-800 .major-fund-amount {
+    color: #0f172a;
+}
+body.theme-dark .major-funds .premium-card.bg-slate-800 .major-fund-amount .text-slate-500 {
+    color: #64748b;
+}
+body.theme-dark .major-funds .premium-card.bg-slate-800 button {
+    background-color: #fff;
+    color: #0f172a;
+    border-color: #e2e8f0;
+}
+body.theme-dark .major-funds .premium-card.bg-slate-800 button:hover {
+    background-color: #e2e8f0;
+}
+body.theme-dark .major-funds .premium-card.bg-slate-800 svg {
+    color: #475569;
+}
+
+/* Food cycle day numbers: dark text on light boxes in dark mode */
+body.theme-dark .food-calendar-core .food-overview-cell.bg-white,
+body.theme-dark .food-calendar-core .food-overview-cell.bg-slate-100 {
+    color: #0f172a;
+}
+body.theme-dark .food-calendar-core .food-overview-cell.bg-slate-200 {
+    color: #1e293b;
+}
 
 /* Compact mode */
 body.compact .nav-header { padding: 0.5rem 0; }
