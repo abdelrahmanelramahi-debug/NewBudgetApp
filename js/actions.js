@@ -38,6 +38,13 @@ function ensureAccountsState() {
     if (!state.accounts.payablesDefaultBucket) {
         state.accounts.payablesDefaultBucket = 'Main';
     }
+    if (!state.accounts.transportationBuckets) {
+        const seed = state.accounts.buckets['Transportation'] ?? 0;
+        state.accounts.transportationBuckets = { Main: seed };
+    }
+    if (!state.accounts.transportationDefaultBucket) {
+        state.accounts.transportationDefaultBucket = 'Main';
+    }
 }
 
 function setItemBalance(label, value) {
@@ -56,6 +63,13 @@ function setItemBalance(label, value) {
         }
         state.accounts.payablesBuckets[target] = value;
         syncPayablesTotal();
+    } else if (label === 'Transportation') {
+        const target = state.accounts.transportationDefaultBucket || 'Main';
+        if (state.accounts.transportationBuckets[target] === undefined) {
+            state.accounts.transportationBuckets[target] = 0;
+        }
+        state.accounts.transportationBuckets[target] = value;
+        syncTransportationTotal();
     } else if (isAccountLabel(label)) {
         state.accounts.buckets[label] = value;
     } else {
@@ -77,6 +91,11 @@ function removeItemBalance(label) {
                 state.accounts.payablesBuckets[key] = 0;
             });
             syncPayablesTotal();
+        } else if (label === 'Transportation') {
+            Object.keys(state.accounts.transportationBuckets).forEach(key => {
+                state.accounts.transportationBuckets[key] = 0;
+            });
+            syncTransportationTotal();
         } else {
             state.accounts.buckets[label] = 0;
         }
@@ -94,6 +113,10 @@ function adjustItemBalance(label, delta) {
         adjustPayablesTotal(delta);
         return;
     }
+    if (label === 'Transportation') {
+        adjustTransportationTotal(delta);
+        return;
+    }
     const current = getItemBalance(label, 0);
     setItemBalance(label, current + delta);
 }
@@ -106,6 +129,11 @@ function syncSavingsTotal() {
 function syncPayablesTotal() {
     ensureAccountsState();
     state.accounts.buckets['Payables'] = getPayablesTotal();
+}
+
+function syncTransportationTotal() {
+    ensureAccountsState();
+    state.accounts.buckets['Transportation'] = getTransportationTotal();
 }
 
 function adjustPayablesTotal(delta) {
@@ -176,6 +204,41 @@ function debitSavings(amount) {
         remaining -= take;
     });
     syncSavingsTotal();
+}
+
+function adjustTransportationTotal(delta) {
+    if (delta === 0) return;
+    if (delta > 0) {
+        creditTransportation(delta);
+    } else {
+        debitTransportation(Math.abs(delta));
+    }
+}
+
+function creditTransportation(amount) {
+    ensureAccountsState();
+    const target = state.accounts.transportationDefaultBucket || 'Main';
+    if (state.accounts.transportationBuckets[target] === undefined) {
+        state.accounts.transportationBuckets[target] = 0;
+    }
+    state.accounts.transportationBuckets[target] += amount;
+    syncTransportationTotal();
+}
+
+function debitTransportation(amount) {
+    ensureAccountsState();
+    let remaining = amount;
+    const target = state.accounts.transportationDefaultBucket || 'Main';
+    const keys = Object.keys(state.accounts.transportationBuckets);
+    const order = [target, ...keys.filter(k => k !== target)];
+    order.forEach(key => {
+        if (remaining <= 0) return;
+        const available = state.accounts.transportationBuckets[key] || 0;
+        const take = Math.min(available, remaining);
+        state.accounts.transportationBuckets[key] = available - take;
+        remaining -= take;
+    });
+    syncTransportationTotal();
 }
 
 function getPlanAmount(label) {
@@ -1544,6 +1607,7 @@ function syncCarFundAmount(sid, idx, val) {
     const num = parseFloat(val) || 0;
     const snapped = Math.round(num / CAR_SLIDER_STEP) * CAR_SLIDER_STEP;
     fastUpdateItemAmount(sid, idx, snapped);
+    if (typeof syncTransportationTotal === 'function') syncTransportationTotal();
 }
 
 // Paycheck + Allocation
@@ -1935,6 +1999,7 @@ function createSavingsBucket() {
         return;
     }
     pushToUndo();
+    if (typeof unmarkSavingsBucketDeleted === 'function') unmarkSavingsBucketDeleted(name);
     state.accounts.savingsBuckets[name] = 0;
     syncSavingsTotal();
     input.value = '';
@@ -1960,6 +2025,7 @@ function renameSavingsBucket(oldName, newNameFromInline) {
     }
     pushToUndo();
     if (typeof markSavingsBucketDeleted === 'function') markSavingsBucketDeleted(oldName);
+    if (typeof unmarkSavingsBucketDeleted === 'function') unmarkSavingsBucketDeleted(newName);
     state.accounts.savingsBuckets[newName] = state.accounts.savingsBuckets[oldName] || 0;
     delete state.accounts.savingsBuckets[oldName];
     if (state.accounts.savingsDefaultBucket === oldName) {
@@ -1990,6 +2056,342 @@ function deleteSavingsBucket(name) {
         applyTransaction({ type: 'adjust_surplus', delta: amount });
         saveState();
         renderSavingsBuckets();
+        updateGlobalUI();
+    }, null, { confirmLabel: 'Delete' });
+}
+
+// Transportation Buckets (same interface as Savings / Payables)
+var TRANSPORTATION_EXTRA = '__extra__';
+var TRANSPORTATION_WEEKLY = '__weekly__';
+
+function openTransportationBuckets() {
+    renderTransportationBuckets();
+    toggleModal('transportation-buckets-modal', true);
+}
+window.openTransportationBuckets = openTransportationBuckets;
+
+function closeTransportationBuckets() {
+    toggleModal('transportation-buckets-modal', false);
+}
+window.closeTransportationBuckets = closeTransportationBuckets;
+
+function adjustTransportationBucket(bucketKey, delta) {
+    ensureAccountsState();
+    if (state.accounts.transportationBuckets[bucketKey] === undefined) {
+        state.accounts.transportationBuckets[bucketKey] = 0;
+    }
+    state.accounts.transportationBuckets[bucketKey] += delta;
+    if (state.accounts.transportationBuckets[bucketKey] < 0) {
+        state.accounts.transportationBuckets[bucketKey] = 0;
+    }
+    syncTransportationTotal();
+}
+
+function getTransportationBucketAmount(bucketKey) {
+    ensureAccountsState();
+    return state.accounts.transportationBuckets[bucketKey] || 0;
+}
+
+function doTransportationTransfer(fromKey, toKey, amount) {
+    if (!fromKey || !toKey || fromKey === toKey) return;
+    var val = parseFloat(amount);
+    if (!val || val <= 0) return;
+    ensureAccountsState();
+    if (fromKey === TRANSPORTATION_EXTRA && toKey !== TRANSPORTATION_EXTRA) {
+        if (!canApplySurplusDelta(-val)) return;
+        pushToUndo();
+        adjustTransportationBucket(toKey, val);
+        applyTransaction({ type: 'adjust_surplus', delta: -val });
+    } else if (fromKey !== TRANSPORTATION_EXTRA && toKey === TRANSPORTATION_EXTRA) {
+        var available = getTransportationBucketAmount(fromKey);
+        var take = Math.min(val, available);
+        if (take <= 0) return;
+        pushToUndo();
+        adjustTransportationBucket(fromKey, -take);
+        applyTransaction({ type: 'adjust_surplus', delta: take });
+    } else {
+        var available = getTransportationBucketAmount(fromKey);
+        var take = Math.min(val, available);
+        if (take <= 0) return;
+        pushToUndo();
+        state.accounts.transportationBuckets[fromKey] = available - take;
+        state.accounts.transportationBuckets[toKey] = (state.accounts.transportationBuckets[toKey] || 0) + take;
+        syncTransportationTotal();
+    }
+    saveState();
+    renderTransportationBuckets();
+    updateGlobalUI();
+}
+
+function doTransportationAddFromWeekly(toBucketKey, amount) {
+    var val = parseFloat(amount);
+    if (!val || val <= 0) return;
+    var wlabel = getWeeklyLabel();
+    var available = getItemBalance(wlabel, 0);
+    var take = Math.min(val, available);
+    if (take <= 0) return;
+    pushToUndo();
+    adjustItemBalance(wlabel, -take);
+    adjustTransportationBucket(toBucketKey, take);
+    saveState();
+    renderTransportationBuckets();
+    updateGlobalUI();
+}
+
+function doTransportationSendToWeekly(fromBucketKey, amount) {
+    var val = parseFloat(amount);
+    if (!val || val <= 0) return;
+    var available = getTransportationBucketAmount(fromBucketKey);
+    var take = Math.min(val, available);
+    if (take <= 0) return;
+    pushToUndo();
+    adjustTransportationBucket(fromBucketKey, -take);
+    adjustItemBalance(getWeeklyLabel(), take);
+    saveState();
+    renderTransportationBuckets();
+    updateGlobalUI();
+}
+
+function renderTransportationBuckets() {
+    ensureAccountsState();
+    var entries = Object.entries(state.accounts.transportationBuckets || {});
+    if (Array.isArray(state._deletedTransportationBuckets) && state._deletedTransportationBuckets.length) {
+        entries = entries.filter(function (e) { return state._deletedTransportationBuckets.indexOf(e[0]) === -1; });
+    }
+    var esc = function (s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); };
+    var bucketOpts = entries.map(function (e) { return '<option value="' + esc(e[0]) + '">' + esc(e[0]) + '</option>'; }).join('');
+    var fromToOpts = '<option value="' + TRANSPORTATION_EXTRA + '">Extra</option><option value="' + TRANSPORTATION_WEEKLY + '">Weekly Allowance</option>' + bucketOpts;
+
+    var moveFrom = document.getElementById('transportation-move-from');
+    var moveTo = document.getElementById('transportation-move-to');
+    if (moveFrom) moveFrom.innerHTML = fromToOpts;
+    if (moveTo) moveTo.innerHTML = fromToOpts;
+
+    var list = document.getElementById('transportation-buckets-list');
+    if (!list) return;
+    if (!entries.length) {
+        list.innerHTML = '<div class="text-center text-[10px] text-slate-400 py-4">No buckets yet. Create one below.</div>';
+        return;
+    }
+    list.innerHTML = entries.map(function (e) {
+        var key = e[0], amount = e[1];
+        return '<div class="bucket-row bucket-row-card ledger-bar flex items-center gap-2 sm:gap-3 w-full py-2.5 px-3 sm:px-4 rounded-xl border border-slate-100 bg-white hover:border-slate-200 transition-all" data-bucket-key="' + esc(key) + '" data-context="transportation">' +
+            '<div class="flex-1 min-w-0 flex flex-col gap-0.5">' +
+            '<div class="bucket-row-label-wrap" role="button" tabindex="0" title="Tap to rename">' +
+            '<span class="bucket-row-label text-[11px] font-bold uppercase tracking-wider text-slate-500 truncate">' + esc(key) + '</span>' +
+            '<input type="text" class="bucket-row-name-edit" maxlength="80" aria-label="Rename bucket" autocomplete="off">' +
+            '<span class="bucket-row-label-line" aria-hidden="true"></span>' +
+            '</div>' +
+            '<div class="h-1.5 w-full max-w-[100px] rounded-full bg-slate-100 overflow-hidden"><div class="ledger-bar-fill h-full rounded-full bg-slate-400 transition-all" style="width:100%"></div></div>' +
+            '</div>' +
+            '<div class="flex items-center gap-1.5 flex-shrink-0 text-right">' +
+            '<p class="bucket-row-balance bucket-amount text-base sm:text-lg font-black text-slate-800">' + formatMoney(amount) + '</p>' +
+            '</div>' +
+            '<div class="ledger-bar-actions bucket-row-controls flex items-center gap-1.5 flex-shrink-0">' +
+            '<input type="number" class="bucket-amount-input ledger-bar-amount w-14 sm:w-16 h-8 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-slate-200" placeholder="0" min="0" step="any" inputmode="decimal" autocomplete="off">' +
+            '<div class="flex flex-col gap-0 rounded-lg border border-slate-200 overflow-hidden bg-slate-50/80">' +
+            '<button type="button" class="bucket-stepper-plus w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none" data-dir="1" aria-label="Add">+</button>' +
+            '<button type="button" class="bucket-stepper-minus w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none border-t border-slate-200" data-dir="-1" aria-label="Subtract">−</button>' +
+            '</div>' +
+            '<button type="button" onclick="var b=this.closest(\'.bucket-row\'); var k=b.getAttribute(\'data-bucket-key\'); var v=b.querySelector(\'.bucket-amount-input\'); openBucketTransferModal(\'transportation\', k, v?v.value:\'\');" class="h-8 w-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-sm font-bold transition" title="Transfer">⋯</button>' +
+            '<button type="button" class="bucket-row-apply ledger-bar-complete flex-shrink-0 w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center text-sm font-bold hover:bg-emerald-600 transition shadow-sm" title="Apply amount">✓</button>' +
+            '</div></div>';
+    }).join('');
+
+    if (!list._transportationDelegation) {
+        list._transportationDelegation = true;
+        list.addEventListener('click', function (e) {
+            var row = e.target.closest('.bucket-row');
+            if (!row) return;
+            var key = row.getAttribute('data-bucket-key');
+            if (!key) return;
+
+            var labelWrap = e.target.closest('.bucket-row-label-wrap');
+            if (labelWrap && !e.target.closest('.bucket-row-name-edit')) {
+                e.preventDefault();
+                var editInput = labelWrap.querySelector('.bucket-row-name-edit');
+                if (editInput) {
+                    labelWrap.classList.add('editing');
+                    editInput.value = key;
+                    editInput.focus();
+                    editInput.select();
+                }
+                return;
+            }
+
+            var stepperBtn = e.target.closest('.bucket-stepper-plus, .bucket-stepper-minus');
+            if (stepperBtn) {
+                var dir = parseInt(stepperBtn.getAttribute('data-dir'), 10);
+                var input = row.querySelector('.bucket-amount-input');
+                if (dir && input) applyTransportationBucketDelta(key, dir, input);
+                return;
+            }
+
+            var applyBtn = e.target.closest('.bucket-row-apply');
+            if (applyBtn) {
+                var input = row.querySelector('.bucket-amount-input');
+                if (input) applyTransportationBucketDelta(key, 1, input);
+                return;
+            }
+        });
+        list.addEventListener('blur', function (e) {
+            var editInput = e.target.closest && e.target.closest('.bucket-row-name-edit');
+            if (!editInput) return;
+            var row = editInput.closest('.bucket-row');
+            var wrap = editInput.closest('.bucket-row-label-wrap');
+            if (!row || !wrap) return;
+            if (!list.contains(row)) return;
+            var key = row.getAttribute('data-bucket-key');
+            var newName = editInput.value.trim();
+            wrap.classList.remove('editing');
+            if (newName && newName !== key) renameTransportationBucket(key, newName);
+        }, true);
+        list.addEventListener('keydown', function (e) {
+            var editInput = e.target.closest && e.target.closest('.bucket-row-name-edit');
+            if (!editInput) return;
+            var row = editInput.closest('.bucket-row');
+            var wrap = editInput.closest('.bucket-row-label-wrap');
+            if (!row || !wrap) return;
+            if (!list.contains(row)) return;
+            var key = row.getAttribute('data-bucket-key');
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                var newName = editInput.value.trim();
+                wrap.classList.remove('editing');
+                if (newName && newName !== key) renameTransportationBucket(key, newName);
+                editInput.blur();
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                editInput.value = key;
+                wrap.classList.remove('editing');
+                editInput.blur();
+            }
+        });
+    }
+
+    var moveBtn = document.getElementById('transportation-move-btn');
+    if (moveBtn && !moveBtn._wired) {
+        moveBtn._wired = true;
+        moveBtn.addEventListener('click', function () {
+            var fromEl = document.getElementById('transportation-move-from');
+            var toEl = document.getElementById('transportation-move-to');
+            var amountEl = document.getElementById('transportation-move-amount');
+            if (!fromEl || !toEl || !amountEl) return;
+            var from = fromEl.value, to = toEl.value, amount = amountEl.value;
+            if (from === to) return;
+            if (from === TRANSPORTATION_WEEKLY && to !== TRANSPORTATION_EXTRA && to !== TRANSPORTATION_WEEKLY) {
+                doTransportationAddFromWeekly(to, amount);
+            } else if (to === TRANSPORTATION_WEEKLY && from !== TRANSPORTATION_EXTRA && from !== TRANSPORTATION_WEEKLY) {
+                doTransportationSendToWeekly(from, amount);
+            } else {
+                doTransportationTransfer(from, to, amount);
+            }
+            amountEl.value = '';
+        });
+    }
+}
+
+function applyTransportationBucketDelta(bucketKey, dir, amountEl) {
+    var el = amountEl || document.getElementById('transportation-bucket-amount');
+    var val = el ? parseFloat(el.value) : NaN;
+    if (!val || val <= 0) return;
+    pushToUndo();
+    if (dir > 0) {
+        if (!canApplySurplusDelta(-val)) return;
+        adjustTransportationBucket(bucketKey, val);
+        applyTransaction({ type: 'adjust_surplus', delta: -val });
+    } else {
+        const available = getTransportationBucketAmount(bucketKey);
+        const take = Math.min(val, available);
+        if (take <= 0) return;
+        adjustTransportationBucket(bucketKey, -take);
+        applyTransaction({ type: 'adjust_surplus', delta: take });
+    }
+    saveState();
+    updateTransportationBucketRowAmount(bucketKey);
+    updateGlobalUI();
+}
+
+function updateTransportationBucketRowAmount(bucketKey) {
+    var list = document.getElementById('transportation-buckets-list');
+    if (!list) return;
+    var rows = list.querySelectorAll('.bucket-row');
+    for (var i = 0; i < rows.length; i++) {
+        if (rows[i].getAttribute('data-bucket-key') === bucketKey) {
+            var el = rows[i].querySelector('.bucket-row-balance') || rows[i].querySelector('.bucket-amount');
+            if (el) el.textContent = formatMoney(getTransportationBucketAmount(bucketKey));
+            return;
+        }
+    }
+}
+
+function createTransportationBucket() {
+    const input = document.getElementById('transportation-bucket-name');
+    const name = input?.value?.trim();
+    if (!name) return;
+    ensureAccountsState();
+    if (state.accounts.transportationBuckets[name] !== undefined) {
+        showAppAlert('Subcategory already exists.');
+        return;
+    }
+    pushToUndo();
+    if (typeof unmarkTransportationBucketDeleted === 'function') unmarkTransportationBucketDeleted(name);
+    state.accounts.transportationBuckets[name] = 0;
+    syncTransportationTotal();
+    input.value = '';
+    saveState();
+    renderTransportationBuckets();
+    updateGlobalUI();
+}
+
+function updateTransportationDefaultBucket(value) {
+    if (!value) return;
+    ensureAccountsState();
+    state.accounts.transportationDefaultBucket = value;
+    saveState();
+}
+
+function renameTransportationBucket(oldName, newNameFromInline) {
+    const newName = newNameFromInline !== undefined ? String(newNameFromInline).trim() : prompt('Rename subcategory:', oldName);
+    if (!newName || newName === oldName) return;
+    ensureAccountsState();
+    if (state.accounts.transportationBuckets[newName] !== undefined) {
+        showAppAlert('Subcategory already exists.');
+        return;
+    }
+    pushToUndo();
+    if (typeof markTransportationBucketDeleted === 'function') markTransportationBucketDeleted(oldName);
+    if (typeof unmarkTransportationBucketDeleted === 'function') unmarkTransportationBucketDeleted(newName);
+    state.accounts.transportationBuckets[newName] = state.accounts.transportationBuckets[oldName] || 0;
+    delete state.accounts.transportationBuckets[oldName];
+    if (state.accounts.transportationDefaultBucket === oldName) {
+        state.accounts.transportationDefaultBucket = newName;
+    }
+    syncTransportationTotal();
+    saveState();
+    renderTransportationBuckets();
+    updateGlobalUI();
+}
+
+function deleteTransportationBucket(name) {
+    ensureAccountsState();
+    const remaining = Object.keys(state.accounts.transportationBuckets).length;
+    if (remaining <= 1) {
+        showAppAlert('You must keep at least one subcategory.');
+        return;
+    }
+    showAppConfirm('Delete "' + name + '" and move its funds to Extra?', function () {
+        const amount = state.accounts.transportationBuckets[name] || 0;
+        pushToUndo();
+        if (typeof markTransportationBucketDeleted === 'function') markTransportationBucketDeleted(name);
+        delete state.accounts.transportationBuckets[name];
+        if (state.accounts.transportationDefaultBucket === name) {
+            state.accounts.transportationDefaultBucket = Object.keys(state.accounts.transportationBuckets)[0];
+        }
+        syncTransportationTotal();
+        applyTransaction({ type: 'adjust_surplus', delta: amount });
+        saveState();
+        renderTransportationBuckets();
         updateGlobalUI();
     }, null, { confirmLabel: 'Delete' });
 }
@@ -2027,6 +2429,11 @@ function openBucketTransferModal(context, bucketKey, prefillAmount) {
         (Object.keys(state.accounts.savingsBuckets || {})).forEach(function (k) {
             if (k !== bucketKey) toOpts += '<option value="' + esc(k) + '">' + esc(k) + '</option>';
         });
+    } else if (context === 'transportation') {
+        toOpts = '<option value="' + TRANSPORTATION_EXTRA + '">Extra</option><option value="' + TRANSPORTATION_WEEKLY + '">Weekly Allowance</option>';
+        (Object.keys(state.accounts.transportationBuckets || {})).forEach(function (k) {
+            if (k !== bucketKey) toOpts += '<option value="' + esc(k) + '">' + esc(k) + '</option>';
+        });
     } else {
         toOpts = '<option value="' + PAYABLES_EXTRA + '">Extra</option><option value="' + PAYABLES_WEEKLY + '">Weekly Allowance</option>';
         (Object.keys(state.accounts.payablesBuckets || {})).forEach(function (k) {
@@ -2047,6 +2454,9 @@ function openBucketTransferModal(context, bucketKey, prefillAmount) {
             if (ctx === 'savings') {
                 doSavingsTransfer(fromKey, toKey, amount);
                 renderSavingsBuckets();
+            } else if (ctx === 'transportation') {
+                doTransportationTransfer(fromKey, toKey, amount);
+                renderTransportationBuckets();
             } else {
                 doPayablesTransfer(fromKey, toKey, amount);
                 renderPayablesBuckets();
@@ -2073,6 +2483,7 @@ function deleteBucketFromTransferModal() {
     closeBucketTransferModal();
     if (ctx === 'savings') deleteSavingsBucket(key);
     else if (ctx === 'payables') deletePayablesBucket(key);
+    else if (ctx === 'transportation') deleteTransportationBucket(key);
 }
 window.deleteBucketFromTransferModal = deleteBucketFromTransferModal;
 
@@ -2333,17 +2744,12 @@ function createPayablesBucket() {
     const name = input?.value?.trim();
     if (!name) return;
     ensureAccountsState();
-    // Block recreating buckets that were explicitly deleted/retired so they
-    // can't silently "fight" with older/stale copies on other devices.
-    if (Array.isArray(state._deletedPayablesBuckets) && state._deletedPayablesBuckets.indexOf(name) !== -1) {
-        showAppAlert('This name was previously deleted. Please choose a different name.');
-        return;
-    }
     if (state.accounts.payablesBuckets[name] !== undefined) {
         showAppAlert('Subcategory already exists.');
         return;
     }
     pushToUndo();
+    if (typeof unmarkPayablesBucketDeleted === 'function') unmarkPayablesBucketDeleted(name);
     state.accounts.payablesBuckets[name] = 0;
     syncPayablesTotal();
     input.value = '';
@@ -2368,9 +2774,8 @@ function renamePayablesBucket(oldName, newNameFromInline) {
         return;
     }
     pushToUndo();
-    // Treat the old name as permanently retired so it cannot "respawn"
-    // from any stale source (other device, old tab, or cloud copy).
     if (typeof markPayablesBucketDeleted === 'function') markPayablesBucketDeleted(oldName);
+    if (typeof unmarkPayablesBucketDeleted === 'function') unmarkPayablesBucketDeleted(newName);
     state.accounts.payablesBuckets[newName] = state.accounts.payablesBuckets[oldName] || 0;
     delete state.accounts.payablesBuckets[oldName];
     if (state.accounts.payablesDefaultBucket === oldName) {
@@ -2457,6 +2862,11 @@ function rebuildTotals() {
                         state.accounts.payablesBuckets.Main = item.amount;
                     }
                     syncPayablesTotal();
+                } else if (item.label === 'Transportation') {
+                    if (state.accounts.transportationBuckets.Main === undefined) {
+                        state.accounts.transportationBuckets.Main = item.amount;
+                    }
+                    syncTransportationTotal();
                 } else if (state.accounts.buckets[item.label] === undefined) {
                     state.accounts.buckets[item.label] = item.amount;
                 }

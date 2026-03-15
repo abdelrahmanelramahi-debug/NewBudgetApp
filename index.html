@@ -983,6 +983,29 @@
         </div>
     </div>
 
+    <!-- Transportation Buckets Modal -->
+    <div id="transportation-buckets-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-2">
+                <span class="text-[10px] font-bold uppercase tracking-widest text-slate-600">Transportation</span>
+                <button onclick="closeTransportationBuckets()" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
+            </div>
+            <p class="text-xs text-slate-500 mb-4">Move money between buckets or to/from Extra and Weekly.</p>
+
+            <div class="premium-card p-4 border border-slate-200 rounded-xl mb-4">
+                <div class="flex justify-between items-center mb-3 pb-3 border-b border-slate-100">
+                    <span class="text-[11px] font-black text-slate-800 uppercase tracking-widest">Buckets</span>
+                </div>
+                <div id="transportation-buckets-list" class="space-y-0 max-h-52 overflow-y-auto"></div>
+            </div>
+
+            <div class="flex gap-2">
+                <input type="text" id="transportation-bucket-name" placeholder="New bucket name" class="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium outline-none" autocomplete="off">
+                <button type="button" onclick="createTransportationBucket()" class="shrink-0 py-2 px-4 bg-slate-600 text-white rounded-lg text-xs font-bold uppercase">Create</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Payables Buckets Modal -->
     <div id="payables-buckets-modal" class="modal-overlay hidden">
         <div class="modal-content">

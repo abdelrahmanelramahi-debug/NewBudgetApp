@@ -18,13 +18,23 @@ function getPayablesTotal() {
     return Object.values(buckets).reduce((sum, val) => sum + (val || 0), 0);
 }
 
-/** Current balance for an item (savings/payables/buckets/ledger). */
+/** Total of all transportation buckets (or legacy single bucket). */
+function getTransportationTotal() {
+    const buckets = state.accounts?.transportationBuckets;
+    if (!buckets) return state.accounts?.buckets?.['Transportation'] ?? 0;
+    return Object.values(buckets).reduce((sum, val) => sum + (val || 0), 0);
+}
+
+/** Current balance for an item (savings/payables/transportation/buckets/ledger). */
 function getItemBalance(label, fallback = 0) {
     if (label === _generalSavingsLabel) {
         return getSavingsTotal();
     }
     if (label === _payablesLabel) {
         return getPayablesTotal();
+    }
+    if (label === 'Transportation') {
+        return getTransportationTotal();
     }
     if (isAccountLabel(label)) {
         return state.accounts?.buckets?.[label] ?? fallback;
@@ -58,6 +68,13 @@ function getLiquidityBreakdown() {
             if (item.label === _payablesLabel && state.accounts?.payablesBuckets) {
                 Object.entries(state.accounts.payablesBuckets).forEach(([key, amount]) => {
                     items.push({ label: `Payables: ${key}`, amount: amount });
+                    totalLiquid += amount;
+                });
+                return;
+            }
+            if (item.label === 'Transportation' && state.accounts?.transportationBuckets) {
+                Object.entries(state.accounts.transportationBuckets).forEach(([key, amount]) => {
+                    items.push({ label: `Transportation: ${key}`, amount: amount });
                     totalLiquid += amount;
                 });
                 return;

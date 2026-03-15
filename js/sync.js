@@ -226,6 +226,7 @@
                 var localTheme = (state.settings && state.settings.theme) || (global.localStorage && global.localStorage.getItem('bubudget_theme')) || 'light';
                 var localDeletedPayables = Array.isArray(state._deletedPayablesBuckets) ? state._deletedPayablesBuckets.slice() : [];
                 var localDeletedSavings = Array.isArray(state._deletedSavingsBuckets) ? state._deletedSavingsBuckets.slice() : [];
+                var localDeletedTransportation = Array.isArray(state._deletedTransportationBuckets) ? state._deletedTransportationBuckets.slice() : [];
                 state = { ...state, ...cloudData.data };
                 var cloudDeletedPayables = Array.isArray(cloudData.data._deletedPayablesBuckets) ? cloudData.data._deletedPayablesBuckets : [];
                 var mergedPayables = localDeletedPayables.concat(cloudDeletedPayables);
@@ -249,6 +250,17 @@
                         return true;
                     });
                 }
+                var cloudDeletedTransportation = Array.isArray(cloudData.data._deletedTransportationBuckets) ? cloudData.data._deletedTransportationBuckets : [];
+                var mergedTransportation = localDeletedTransportation.concat(cloudDeletedTransportation);
+                if (mergedTransportation.length) {
+                    var seenT = {};
+                    state._deletedTransportationBuckets = mergedTransportation.filter(function (n) {
+                        if (!n) return false;
+                        if (seenT[n]) return false;
+                        seenT[n] = true;
+                        return true;
+                    });
+                }
                 if (typeof migrateState === 'function') migrateState();
                 if (typeof ensureSystemSavings === 'function') ensureSystemSavings();
                 if (typeof ensureCoreItems === 'function') ensureCoreItems();
@@ -257,6 +269,7 @@
                 if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
                 if (typeof purgeDeletedPayablesBuckets === 'function') purgeDeletedPayablesBuckets();
                 if (typeof purgeDeletedSavingsBuckets === 'function') purgeDeletedSavingsBuckets();
+                if (typeof purgeDeletedTransportationBuckets === 'function') purgeDeletedTransportationBuckets();
                 var stateKey = STORAGE_KEYS.STATE;
                 var modKey = STORAGE_KEYS.MODIFIED;
                 var syncKey = STORAGE_KEYS.LAST_SYNCED;

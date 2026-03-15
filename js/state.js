@@ -101,6 +101,11 @@ function purgeDeletedPayablesBuckets() {
     });
 }
 
+function unmarkPayablesBucketDeleted(name) {
+    if (!name || !Array.isArray(state._deletedPayablesBuckets)) return;
+    state._deletedPayablesBuckets = state._deletedPayablesBuckets.filter(function (n) { return n !== name; });
+}
+
 // Same for savings buckets: prevent deleted/renamed buckets from respawning after sync
 function markSavingsBucketDeleted(name) {
     if (!name) return;
@@ -116,6 +121,32 @@ function purgeDeletedSavingsBuckets() {
             delete state.accounts.savingsBuckets[name];
         }
     });
+}
+
+function unmarkSavingsBucketDeleted(name) {
+    if (!name || !Array.isArray(state._deletedSavingsBuckets)) return;
+    state._deletedSavingsBuckets = state._deletedSavingsBuckets.filter(function (n) { return n !== name; });
+}
+
+function markTransportationBucketDeleted(name) {
+    if (!name) return;
+    if (!Array.isArray(state._deletedTransportationBuckets)) state._deletedTransportationBuckets = [];
+    if (!state._deletedTransportationBuckets.includes(name)) state._deletedTransportationBuckets.push(name);
+}
+
+function purgeDeletedTransportationBuckets() {
+    if (!state.accounts || !state.accounts.transportationBuckets) return;
+    if (!Array.isArray(state._deletedTransportationBuckets) || !state._deletedTransportationBuckets.length) return;
+    state._deletedTransportationBuckets.forEach(function (name) {
+        if (name && state.accounts.transportationBuckets[name] !== undefined) {
+            delete state.accounts.transportationBuckets[name];
+        }
+    });
+}
+
+function unmarkTransportationBucketDeleted(name) {
+    if (!name || !Array.isArray(state._deletedTransportationBuckets)) return;
+    state._deletedTransportationBuckets = state._deletedTransportationBuckets.filter(function (n) { return n !== name; });
 }
 
 /** Returns a fresh example budget (generic defaults, not personal). Use for "Load example budget" in Settings. */
@@ -215,7 +246,8 @@ function migrateState() {
                 weekly: state.weekly || { balance: getWeeklyConfigAmount(), week: 1 },
                 buckets: {},
                 savingsBuckets: {},
-                payablesBuckets: {}
+                payablesBuckets: {},
+                transportationBuckets: {}
             };
         }
         if (!state.accounts.buckets) state.accounts.buckets = {};
@@ -234,6 +266,13 @@ function migrateState() {
         if (!state.accounts.payablesDefaultBucket) {
             state.accounts.payablesDefaultBucket = 'Main';
         }
+        if (!state.accounts.transportationBuckets) {
+            const seed = state.accounts.buckets['Transportation'] ?? 0;
+            state.accounts.transportationBuckets = { Main: seed };
+        }
+        if (!state.accounts.transportationDefaultBucket) {
+            state.accounts.transportationDefaultBucket = 'Main';
+        }
         ACCOUNT_LABELS.forEach(label => {
             if (state.accounts.buckets[label] === undefined) {
                 const legacy = state.balances?.[label];
@@ -246,6 +285,7 @@ function migrateState() {
         // any stale source (cloud, local backup, or old tabs).
         if (!Array.isArray(state._deletedPayablesBuckets)) state._deletedPayablesBuckets = [];
         if (!Array.isArray(state._deletedSavingsBuckets)) state._deletedSavingsBuckets = [];
+        if (!Array.isArray(state._deletedTransportationBuckets)) state._deletedTransportationBuckets = [];
         ACCOUNT_LABELS.forEach(label => {
             if (state.balances[label] !== undefined) delete state.balances[label];
         });
@@ -279,7 +319,11 @@ function migrateState() {
             payablesBuckets: {
                 Main: buckets['Payables'] ?? 0
             },
-            payablesDefaultBucket: 'Main'
+            payablesDefaultBucket: 'Main',
+            transportationBuckets: {
+                Main: buckets['Transportation'] ?? 0
+            },
+            transportationDefaultBucket: 'Main'
         },
         balances: Object.keys(legacyBalances).reduce((acc, key) => {
             if (!ACCOUNT_LABELS.includes(key)) acc[key] = legacyBalances[key];
@@ -290,6 +334,7 @@ function migrateState() {
     };
     if (!Array.isArray(state._deletedPayablesBuckets)) state._deletedPayablesBuckets = [];
     if (!Array.isArray(state._deletedSavingsBuckets)) state._deletedSavingsBuckets = [];
+    if (!Array.isArray(state._deletedTransportationBuckets)) state._deletedTransportationBuckets = [];
 }
 
 function isAccountLabel(label) {
@@ -480,10 +525,17 @@ function initSurplusFromOpening() {
     if (!state.accounts.payablesDefaultBucket) {
         state.accounts.payablesDefaultBucket = 'Main';
     }
+    if (!state.accounts.transportationBuckets) {
+        state.accounts.transportationBuckets = { Main: state.accounts.buckets['Transportation'] ?? 0 };
+    }
+    if (!state.accounts.transportationDefaultBucket) {
+        state.accounts.transportationDefaultBucket = 'Main';
+    }
 
     // After any ensure/migration, force-remove buckets the user has explicitly deleted.
     purgeDeletedPayablesBuckets();
     if (typeof purgeDeletedSavingsBuckets === 'function') purgeDeletedSavingsBuckets();
+    if (typeof purgeDeletedTransportationBuckets === 'function') purgeDeletedTransportationBuckets();
 
     state.categories.forEach(sec => {
         sec.items.forEach(item => {

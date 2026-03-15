@@ -670,7 +670,7 @@ function renderLedger() {
                     </div>
                     <div class="flex items-center gap-2 flex-shrink-0">
                         <span class="text-base font-black">${formatMoney(carBal)}</span>
-                        <button onclick="openTool('Transportation')" class="py-1.5 px-2.5 rounded-lg bg-white text-slate-800 hover:bg-slate-100 text-[10px] font-black uppercase">Manage</button>
+                        <button onclick="openTransportationBuckets()" class="py-1.5 px-2.5 rounded-lg bg-white text-slate-800 hover:bg-slate-100 text-[10px] font-black uppercase">Manage</button>
                     </div>
                 </div>
                 <div class="major-fund-bar flex items-center justify-between gap-2 py-2.5 px-3 rounded-xl bg-amber-500 text-white border border-amber-400">
@@ -706,7 +706,7 @@ function renderLedger() {
                         <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Transportation</span>
                         <div class="text-2xl font-black mt-0.5 major-fund-amount">${formatMoney(carBal)} <span class="text-xs text-slate-500">${getCurrencyLabel()}</span></div>
                     </div>
-                    <button onclick="openTool('Transportation')" class="w-full py-2 mt-2 bg-white text-slate-800 hover:bg-slate-100 rounded-lg text-[10px] font-black uppercase transition text-center">Manage</button>
+                    <button onclick="openTransportationBuckets()" class="w-full py-2 mt-2 bg-white text-slate-800 hover:bg-slate-100 rounded-lg text-[10px] font-black uppercase transition text-center">Manage</button>
                 </div>
                 <div class="premium-card p-4 bg-amber-500 text-white border-amber-400 shadow-md flex flex-col justify-between min-h-0 relative overflow-hidden group rounded-xl">
                     <div class="absolute top-0 right-0 p-2 opacity-10 pointer-events-none">
