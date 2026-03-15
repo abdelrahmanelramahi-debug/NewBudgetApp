@@ -123,7 +123,6 @@ function positionBudgetPlanTipCard(targetEl) {
     var card = document.getElementById('onboarding-tip-card');
     if (!step || !card || !targetEl) return;
 
-    // Ensure the card has a width for measurement
     if (card.classList.contains('hidden')) {
         card.classList.remove('hidden');
     }
@@ -141,34 +140,43 @@ function positionBudgetPlanTipCard(targetEl) {
     if (isMobile) {
         cardWidth = Math.min(stepRect.width - padding * 2, 480);
     }
-    var cardHeight = cardRect.height || 0;
 
-    // Prefer tip card BELOW the target so the highlighted area stays visible above (especially on mobile).
+    if (isMobile) {
+        // Mobile only: fix tip card to bottom of viewport so it's always visible and never covers the highlight.
+        card.style.position = 'fixed';
+        card.style.bottom = padding + 'px';
+        card.style.left = '50%';
+        card.style.transform = 'translateX(-50%)';
+        card.style.top = 'auto';
+        card.style.maxWidth = cardWidth + 'px';
+        card.style.width = 'calc(100% - ' + (padding * 2) + 'px)';
+        return;
+    }
+
+    // Desktop: position card relative to target (unchanged)
+    var cardHeight = cardRect.height || 0;
     var preferredTop = targetRect.bottom + 12;
     var preferredLeft = targetRect.left + (targetRect.width / 2) - (cardWidth / 2);
 
-    // Clamp horizontally within viewport and within the onboarding step
     var minLeft = Math.max(padding, stepRect.left + padding);
     var maxLeft = Math.min(viewportWidth - padding - cardWidth, stepRect.right - padding - cardWidth);
     var finalLeft = Math.min(Math.max(preferredLeft, minLeft), maxLeft);
 
-    // Vertical clamping: keep within viewport and within the onboarding step
     var minTop = Math.max(padding, stepRect.top + padding);
     var maxTop = Math.min(viewportHeight - padding - cardHeight, stepRect.bottom - padding - cardHeight);
 
     var finalTop = preferredTop;
     if (finalTop + cardHeight > maxTop) {
-        if (isMobile) {
-            // Keep card below target on mobile so it doesn't cover the highlighted region; allow off-screen and scroll to show.
-            finalTop = Math.max(preferredTop, minTop);
-        } else {
-            finalTop = Math.min(Math.max(targetRect.top - cardHeight - 12, minTop), maxTop);
-        }
+        finalTop = Math.min(Math.max(targetRect.top - cardHeight - 12, minTop), maxTop);
     } else {
         finalTop = Math.min(Math.max(finalTop, minTop), maxTop);
     }
 
-    // Convert from viewport coordinates to step-relative coordinates
+    card.style.position = '';
+    card.style.bottom = '';
+    card.style.transform = '';
+    card.style.width = '';
+
     var relativeTop = finalTop - stepRect.top;
     var relativeLeft = finalLeft - stepRect.left;
 
@@ -205,27 +213,37 @@ function showBudgetPlanTip(index) {
     if (targetEl) {
         targetEl.classList.add('onboarding-tip-highlight');
 
-        // Minimal scroll so target is in view (avoid scrolling to middle of large regions)
-        try {
-            targetEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        } catch (e) {
-            targetEl.scrollIntoView(true);
+        var vw = window.innerWidth || document.documentElement.clientWidth || 0;
+        var isMobile = vw <= 640;
+
+        if (isMobile) {
+            // Mobile: scroll target to top so highlighted region is visible above the fixed tip card
+            try {
+                targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } catch (e) {
+                targetEl.scrollIntoView(true);
+            }
+        } else {
+            try {
+                targetEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } catch (e) {
+                targetEl.scrollIntoView(true);
+            }
         }
 
-        // Position the tip card, then scroll so the tip box is in view (on mobile put card at bottom so highlight stays visible above)
         window.requestAnimationFrame(function () {
             positionBudgetPlanTipCard(targetEl);
-            var card = document.getElementById('onboarding-tip-card');
-            if (card) {
-                window.requestAnimationFrame(function () {
-                    try {
-                        var vw = window.innerWidth || document.documentElement.clientWidth || 0;
-                        var blockMode = vw <= 640 ? 'end' : 'center';
-                        card.scrollIntoView({ behavior: 'smooth', block: blockMode });
-                    } catch (e) {
-                        card.scrollIntoView(true);
-                    }
-                });
+            if (!isMobile) {
+                var card = document.getElementById('onboarding-tip-card');
+                if (card) {
+                    window.requestAnimationFrame(function () {
+                        try {
+                            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        } catch (e) {
+                            card.scrollIntoView(true);
+                        }
+                    });
+                }
             }
         });
     } else {
@@ -260,6 +278,10 @@ function finishBudgetPlanTips() {
         card.classList.add('hidden');
         card.style.top = '';
         card.style.left = '';
+        card.style.position = '';
+        card.style.bottom = '';
+        card.style.transform = '';
+        card.style.width = '';
     }
     if (typeof state !== 'undefined') {
         state._sawBudgetPlanTips = true;
@@ -311,9 +333,24 @@ function positionHomeTourCard(targetEl) {
     var viewportWidth = window.innerWidth || document.documentElement.clientWidth || pageRect.width;
     var viewportHeight = window.innerHeight || document.documentElement.clientHeight || pageRect.height;
 
+    var isMobile = viewportWidth <= 640;
     var cardWidth = cardRect.width || Math.min(360, pageRect.width - padding * 2);
-    var cardHeight = cardRect.height || 0;
+    if (isMobile) {
+        cardWidth = Math.min(pageRect.width - padding * 2, 480);
+    }
 
+    if (isMobile) {
+        card.style.position = 'fixed';
+        card.style.bottom = padding + 'px';
+        card.style.left = '50%';
+        card.style.transform = 'translateX(-50%)';
+        card.style.top = 'auto';
+        card.style.maxWidth = cardWidth + 'px';
+        card.style.width = 'calc(100% - ' + (padding * 2) + 'px)';
+        return;
+    }
+
+    var cardHeight = cardRect.height || 0;
     var preferredTop = targetRect.bottom + 12;
     var preferredLeft = targetRect.left + (targetRect.width / 2) - (cardWidth / 2);
 
@@ -329,6 +366,11 @@ function positionHomeTourCard(targetEl) {
         finalTop = targetRect.top - cardHeight - 12;
     }
     finalTop = Math.min(Math.max(finalTop, minTop), maxTop);
+
+    card.style.position = '';
+    card.style.bottom = '';
+    card.style.transform = '';
+    card.style.width = '';
 
     var relativeTop = finalTop - pageRect.top;
     var relativeLeft = finalLeft - pageRect.left;
@@ -374,23 +416,35 @@ function showHomeTourStep(index) {
         if (!targetEl) return;
 
         targetEl.classList.add('home-tour-highlight');
-        try {
-            targetEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        } catch (e) {
-            targetEl.scrollIntoView(true);
+
+        var isMobile = (window.innerWidth || document.documentElement.clientWidth || 0) <= 640;
+        if (isMobile) {
+            try {
+                targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } catch (e) {
+                targetEl.scrollIntoView(true);
+            }
+        } else {
+            try {
+                targetEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            } catch (e) {
+                targetEl.scrollIntoView(true);
+            }
         }
 
         window.requestAnimationFrame(function () {
             positionHomeTourCard(targetEl);
-            var card = document.getElementById('home-tour-card');
-            if (card) {
-                window.requestAnimationFrame(function () {
-                    try {
-                        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    } catch (e) {
-                        card.scrollIntoView(true);
-                    }
-                });
+            if (!isMobile) {
+                var card = document.getElementById('home-tour-card');
+                if (card) {
+                    window.requestAnimationFrame(function () {
+                        try {
+                            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        } catch (e) {
+                            card.scrollIntoView(true);
+                        }
+                    });
+                }
             }
         });
     }
@@ -414,6 +468,10 @@ function finishHomeTour() {
         card.classList.add('hidden');
         card.style.top = '';
         card.style.left = '';
+        card.style.position = '';
+        card.style.bottom = '';
+        card.style.transform = '';
+        card.style.width = '';
     }
     if (typeof state !== 'undefined') {
         state._sawHomePageTour = true;
