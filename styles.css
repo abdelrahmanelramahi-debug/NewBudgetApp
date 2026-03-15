@@ -1374,3 +1374,15 @@ body.theme-sepia .onboarding-tip-highlight,
 body.theme-sepia .home-tour-highlight {
     background-color: #fef3c7 !important;
 }
+
+/* Weekly allowance card: keep normal indigo when highlighted so text stays readable */
+#page-ledger .weekly-hero.home-tour-highlight,
+.weekly-hero.home-tour-highlight {
+    background-color: #4f46e5 !important;
+}
+body.theme-dark #page-ledger .weekly-hero.home-tour-highlight,
+body.theme-dark .weekly-hero.home-tour-highlight,
+body.theme-sepia #page-ledger .weekly-hero.home-tour-highlight,
+body.theme-sepia .weekly-hero.home-tour-highlight {
+    background-color: #4f46e5 !important;
+}

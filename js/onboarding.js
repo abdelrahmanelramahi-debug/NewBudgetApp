@@ -19,31 +19,10 @@ var ONBOARDING_BUDGET_TIPS = [
     },
     {
         title: 'Set your amounts',
-        body: 'Use the amount fields and sliders under each row to decide how much you want to spend or save in each section. Start with the main sections first—you can fine-tune later in Budget Plan.',
+        body: 'Use the amount fields and sliders under each row to decide how much you want to spend or save in each section. Use Add Category to create more sections. You can fine-tune later in Budget Plan.',
         target: '#onboarding-strategy-sections'
-    },
-    {
-        title: 'Add categories that fit your life',
-        body: 'Use the + Health and + Groceries buttons and Add Category to create sections that match your life. Inside each category, use the + button and amount fields to add items. It’s fine to leave anything at 0 for now.',
-        target: '#onboarding-suggestions-row'
     }
 ];
-
-/** Suggested categories (emptied: amounts at 0 so user can fill). Same structure as template. */
-var ONBOARDING_SUGGESTIONS = {
-    health: { id: 'health', label: 'Health', isLedgerLinked: true, isSingleAction: true, items: [
-        { label: 'Supplements', amount: 0 }, { label: 'Protein', amount: 0 }, { label: 'Vitamins', amount: 0 }, { label: 'Other health', amount: 0 }
-    ]},
-    groceries: { id: 'groceries', label: 'Groceries', isLedgerLinked: true, isSingleAction: true, items: [
-        { label: 'Staples', amount: 0 }, { label: 'Produce', amount: 0 }
-    ]},
-    misc: { id: 'misc', label: 'Misc', isLedgerLinked: true, isSingleAction: true, items: [
-        { label: 'Snacks', amount: 0 }, { label: 'Misc', amount: 0 }, { label: 'Personal', amount: 0 }, { label: 'Household', amount: 0 }
-    ]},
-    subscriptions: { id: 'subscriptions', label: 'Subscriptions', isLedgerLinked: true, isSingleAction: true, items: [
-        { label: 'Streaming', amount: 0 }, { label: 'App 1', amount: 0 }, { label: 'App 2', amount: 0 }, { label: 'Cloud', amount: 0 }, { label: 'Sub other', amount: 0 }
-    ]}
-};
 
 function getOnboardingEl() { return document.getElementById('onboarding'); }
 function getAppShellEl() { return document.getElementById('app-shell'); }
@@ -463,14 +442,6 @@ function initAndRenderOnboardingCategories() {
     if (!onboardingCategoriesInitialized && typeof state !== 'undefined') {
         onboardingCategoriesInitialized = true;
         state.categories = (state.categories || []).filter(function (s) { return s.isSystem; });
-        /* Pre-create generic categories with items (user can edit amounts) */
-        var keys = Object.keys(ONBOARDING_SUGGESTIONS);
-        for (var i = 0; i < keys.length; i++) {
-            var template = ONBOARDING_SUGGESTIONS[keys[i]];
-            if (template && !state.categories.some(function (s) { return s.id === template.id; })) {
-                state.categories.push(JSON.parse(JSON.stringify(template)));
-            }
-        }
         if (state.balances) {
             var balKeys = Object.keys(state.balances);
             balKeys.forEach(function (k) { delete state.balances[k]; });
@@ -496,18 +467,6 @@ function initAndRenderOnboardingCategories() {
     setTimeout(function () {
         if (typeof state !== 'undefined' && !state._sawBudgetPlanTips) startBudgetPlanTips();
     }, 300);
-}
-
-function addOnboardingSuggestion(key) {
-    var template = ONBOARDING_SUGGESTIONS[key];
-    if (!template || typeof state === 'undefined') return;
-    if (state.categories.some(function (s) { return s.id === template.id; })) return;
-    var clone = JSON.parse(JSON.stringify(template));
-    state.categories.push(clone);
-    if (typeof saveState === 'function') saveState();
-    if (typeof renderStrategy === 'function') {
-        renderStrategy({ containerId: 'onboarding-strategy-sections', onboarding: true });
-    }
 }
 
 function updateOnboardingSummary() {
@@ -631,7 +590,6 @@ window.onboardingBack = onboardingBack;
 window.onboardingSkipAll = onboardingSkipAll;
 window.onboardingComplete = onboardingComplete;
 window.updateOnboardingSummary = updateOnboardingSummary;
-window.addOnboardingSuggestion = addOnboardingSuggestion;
 window.initAndRenderOnboardingCategories = initAndRenderOnboardingCategories;
 
 function onboardingOpenAuth() {
