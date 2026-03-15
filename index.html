@@ -293,7 +293,7 @@
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
                     </button>
                     <div class="home-header-balance-date flex flex-col leading-tight min-w-0">
-                        <span id="header-bank-balance" class="text-[11px] sm:text-sm font-bold text-slate-900 tracking-wider tabular-nums truncate">Balance: <span class="font-normal text-slate-700">0.00 AED</span></span>
+                        <span id="header-bank-balance" class="text-[10px] sm:text-[11px] font-bold text-slate-900 tracking-wider tabular-nums truncate">Balance: <span class="font-normal text-slate-700">0.00 AED</span></span>
                         <span id="header-today-date" class="text-[9px] font-bold text-slate-500 uppercase tracking-wider tabular-nums whitespace-nowrap">—</span>
                     </div>
                 </div>
@@ -302,10 +302,10 @@
                         <span id="header-extra-label" class="home-header-label shrink-0">Extra</span>
                         <span class="home-header-extra-amount text-emerald-600 tabular-nums whitespace-nowrap overflow-hidden min-w-0" id="global-surplus">0.00</span>
                     </div>
-                    <div id="deficit-trigger" class="hidden shrink-0">
+                    <div id="deficit-trigger" class="hidden shrink-0 deficit-trigger-desktop-only">
                         <button onclick="openDeficitModal()" class="home-header-resolve-btn">Resolve</button>
                     </div>
-                    <button onclick="toggleSurplusControls()" class="home-header-icon-btn shrink-0" aria-label="Extra options">
+                    <button id="surplus-controls-toggle" onclick="toggleSurplusControls()" class="home-header-icon-btn shrink-0" aria-label="Extra options">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
                     </button>
                     <div class="home-header-actions flex-shrink-0 flex items-center gap-0.5 sm:gap-1">
@@ -322,6 +322,7 @@
                     <button onclick="adjustGlobalSurplus(1)" class="home-header-surplus-btn home-header-surplus-add">Add</button>
                     <button onclick="adjustGlobalSurplus(-1)" class="home-header-surplus-btn home-header-surplus-deduct">Deduct</button>
                     <button onclick="openTool('Surplus', 'Extra Fund', true)" class="home-header-surplus-btn home-header-surplus-transfer">Transfer</button>
+                    <button type="button" id="surplus-controls-resolve" onclick="openDeficitModal()" class="home-header-surplus-btn home-header-resolve-btn hidden">Resolve</button>
                 </div>
             </div>
         </div>
@@ -482,7 +483,6 @@
                             <span id="bank-balance-total" class="text-3xl font-black text-slate-900">0.00</span>
                             <span class="text-sm font-bold text-slate-500" data-currency>AED</span>
                         </div>
-                        <span id="bank-balance-date" class="bank-balance-date-mobile text-[9px] font-bold text-slate-500 uppercase tracking-wider tabular-nums mt-0.5 block">—</span>
                     </div>
                     <div class="flex items-center gap-1.5 flex-shrink-0">
                         <button type="button" id="bank-balance-info-btn" onclick="document.getElementById('bank-balance-info').classList.toggle('hidden')" class="bank-balance-info-btn w-8 h-8 rounded-full border border-slate-300 text-slate-500 hover:bg-slate-100 flex items-center justify-center text-xs font-bold transition" aria-label="What is Bank Balance?">i</button>

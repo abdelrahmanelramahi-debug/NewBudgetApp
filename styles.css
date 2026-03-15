@@ -764,18 +764,28 @@ textarea,
         padding-bottom: 0.75rem;
     }
 
-    /* Constrain width; ensure main area scrolls and content is visible */
+    /* Constrain width; main area scrolls so home header can stick to top */
     #app-main {
         max-width: 42rem;
         min-height: 0;
-        overflow: hidden;
+        max-height: 100vh;
+        overflow-y: auto;
+        overflow-x: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    #app-main .nav-header.home-header {
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        flex-shrink: 0;
     }
 
     #main-content {
         margin-top: 0.75rem;
         flex: 1;
         min-height: 0;
-        overflow-y: auto;
     }
 
     /* Ledger top: single column, compact gap */
@@ -922,7 +932,7 @@ body.theme-dark .desktop-nav-item:hover {
 @media (max-width: 640px) {
     .home-header-inner { padding: 0.5rem 0.5rem 0.75rem; }
     .home-header-row { gap: 0.5rem; }
-    .home-header-balance-date { display: none !important; }
+    .deficit-trigger-desktop-only { display: none !important; }
     .home-header-icon-btn { width: 32px; height: 32px; border-radius: 8px; }
     .home-header-undo-redo { width: 28px; height: 28px; border-radius: 6px; }
     .home-header-undo-redo svg { width: 14px; height: 14px; }
@@ -933,10 +943,6 @@ body.theme-dark .desktop-nav-item:hover {
     #header-extra-label { display: none; }
 }
 
-.bank-balance-date-mobile { display: block; }
-@media (min-width: 641px) {
-    .bank-balance-date-mobile { display: none !important; }
-}
 .home-header-balance {
     display: inline-flex;
     align-items: baseline;
@@ -1015,6 +1021,17 @@ body.theme-dark .desktop-nav-item:hover {
     letter-spacing: 0.08em;
     cursor: pointer;
 }
+/* Extra dropdown chevron red when Extra is negative */
+.home-header-extra-chevron-negative {
+    color: #dc2626 !important;
+}
+body.theme-dark .home-header-extra-chevron-negative {
+    color: #f87171 !important;
+}
+body.theme-sepia .home-header-extra-chevron-negative {
+    color: #b91c1c !important;
+}
+
 .home-header-resolve-btn {
     padding: 0.5rem 0.75rem;
     border-radius: 10px;

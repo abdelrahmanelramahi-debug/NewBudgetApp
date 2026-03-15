@@ -1372,6 +1372,7 @@ function renderBankBalanceCard() {
 }
 
 // Writes current balance to reality elements (if present) and refreshes bank balance bar.
+// Header bank balance uses full total (getCurrentBalance); not affected by bank balance card filters.
 function calculateReality() {
     var total = getCurrentBalance();
     var realityTotal = getEl('reality-total');
@@ -1425,13 +1426,19 @@ function updateGlobalUI() {
         surpEl.title = formatSignedMoney(surplus) + ' ' + (typeof getCurrencyLabel === 'function' ? getCurrencyLabel() : '');
     }
 
+    var surplusResolveInDropdown = getEl('surplus-controls-resolve');
+    var surplusToggleBtn = getEl('surplus-controls-toggle');
     if (dTrigger && surpEl) {
         if (surplus < 0) {
             dTrigger.classList.remove('hidden');
+            if (surplusResolveInDropdown) surplusResolveInDropdown.classList.remove('hidden');
+            if (surplusToggleBtn) surplusToggleBtn.classList.add('home-header-extra-chevron-negative');
             surpEl.classList.remove('text-emerald-600');
             surpEl.classList.add('text-red-600');
         } else {
             dTrigger.classList.add('hidden');
+            if (surplusResolveInDropdown) surplusResolveInDropdown.classList.add('hidden');
+            if (surplusToggleBtn) surplusToggleBtn.classList.remove('home-header-extra-chevron-negative');
             surpEl.classList.add('text-emerald-600');
             surpEl.classList.remove('text-red-600');
         }
@@ -1443,14 +1450,12 @@ function updateGlobalUI() {
     if (surpEl) void surpEl.offsetHeight;
 
     var headerDateEl = getEl('header-today-date');
-    var bankBalanceDateEl = getEl('bank-balance-date');
     var dateStr = (function () {
         var d = new Date();
         var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
         return monthNames[d.getMonth()] + ' ' + d.getDate();
     })();
     if (headerDateEl) headerDateEl.textContent = dateStr;
-    if (bankBalanceDateEl) bankBalanceDateEl.textContent = dateStr;
 
     // End-of-cycle actions: show New month buttons only in last week of pay cycle
     var showEndCycle = isLastWeekOfPayCycle();
