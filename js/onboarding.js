@@ -141,19 +141,7 @@ function positionBudgetPlanTipCard(targetEl) {
         cardWidth = Math.min(stepRect.width - padding * 2, 480);
     }
 
-    if (isMobile) {
-        // Mobile only: fix tip card to bottom of viewport so it's always visible and never covers the highlight.
-        card.style.position = 'fixed';
-        card.style.bottom = padding + 'px';
-        card.style.left = '50%';
-        card.style.transform = 'translateX(-50%)';
-        card.style.top = 'auto';
-        card.style.maxWidth = cardWidth + 'px';
-        card.style.width = 'calc(100% - ' + (padding * 2) + 'px)';
-        return;
-    }
-
-    // Desktop: position card relative to target (unchanged)
+    // Position card relative to target (overlay near the element it discusses), same for mobile and desktop
     var cardHeight = cardRect.height || 0;
     var preferredTop = targetRect.bottom + 12;
     var preferredLeft = targetRect.left + (targetRect.width / 2) - (cardWidth / 2);
@@ -216,34 +204,23 @@ function showBudgetPlanTip(index) {
         var vw = window.innerWidth || document.documentElement.clientWidth || 0;
         var isMobile = vw <= 640;
 
-        if (isMobile) {
-            // Mobile: scroll target to top so highlighted region is visible above the fixed tip card
-            try {
-                targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            } catch (e) {
-                targetEl.scrollIntoView(true);
-            }
-        } else {
-            try {
-                targetEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            } catch (e) {
-                targetEl.scrollIntoView(true);
-            }
+        try {
+            targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } catch (e) {
+            targetEl.scrollIntoView(true);
         }
 
         window.requestAnimationFrame(function () {
             positionBudgetPlanTipCard(targetEl);
-            if (!isMobile) {
-                var card = document.getElementById('onboarding-tip-card');
-                if (card) {
-                    window.requestAnimationFrame(function () {
-                        try {
-                            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        } catch (e) {
-                            card.scrollIntoView(true);
-                        }
-                    });
-                }
+            var card = document.getElementById('onboarding-tip-card');
+            if (card) {
+                window.requestAnimationFrame(function () {
+                    try {
+                        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    } catch (e) {
+                        card.scrollIntoView(true);
+                    }
+                });
             }
         });
     } else {

@@ -81,40 +81,30 @@
                 </div>
             </div>
             <div id="onboarding-step-categories" class="onboarding-step hidden flex flex-col min-h-0 relative">
-                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Step 4 of 5</p>
-                <h2 class="text-xl font-black text-slate-900 mb-1">Set up your budget plan</h2>
-                <p class="text-sm text-slate-600 mb-4">Your budget includes common categories and items below—tweak amounts or add more in Budget Plan later.</p>
-                <div id="onboarding-cat-header" class="sticky top-0 z-10 bg-slate-50 -mx-6 px-6 pt-1 pb-4 flex-shrink-0 mb-2">
-                    <div id="onboarding-cat-total-card" class="premium-card px-4 py-3 flex flex-col gap-2 border border-slate-200 rounded-xl shadow-sm">
-                        <div class="flex items-center gap-2 flex-wrap">
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Step 4 of 5</p>
+                <h2 class="text-lg font-black text-slate-900 mb-0.5">Set up your budget plan</h2>
+                <p class="text-xs text-slate-600 mb-2">Tweak amounts below or add more in Budget Plan later.</p>
+                <div id="onboarding-cat-header" class="sticky top-0 z-10 bg-slate-50/95 backdrop-blur -mx-6 px-6 py-2 flex-shrink-0 mb-1">
+                    <div id="onboarding-cat-total-card" class="premium-card px-3 py-2 flex items-center justify-between gap-2 border border-slate-200 rounded-lg shadow-sm">
+                        <div class="flex items-baseline gap-1.5">
                             <span class="text-[10px] font-bold uppercase text-slate-500">Total</span>
-                            <span id="onboarding-cat-total" class="text-lg font-black text-slate-900">0</span>
-                            <span class="text-sm font-bold text-slate-400" data-currency>AED</span>
+                            <span id="onboarding-cat-total" class="text-base font-black text-slate-900">0</span>
+                            <span class="text-xs font-bold text-slate-400" data-currency>AED</span>
                         </div>
-                        <p id="onboarding-cat-allocated" class="text-[11px] font-bold text-slate-600">
-                            <span id="onboarding-cat-allocated-val">0</span> / <span id="onboarding-cat-total-val">0</span> allocated
+                        <p id="onboarding-cat-allocated" class="text-[10px] font-bold text-slate-600">
+                            <span id="onboarding-cat-allocated-val">0</span>/<span id="onboarding-cat-total-val">0</span> allocated
                         </p>
                     </div>
-                    <div id="onboarding-cat-unallocated-alert" class="hidden mt-3 rounded-xl overflow-hidden border-2 border-amber-300 bg-gradient-to-r from-amber-50 to-amber-100/80 shadow-sm animate-pulse-subtle">
-                        <div class="flex items-center gap-3 px-4 py-3">
-                            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-amber-200/80 flex items-center justify-center text-amber-700">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 8v4"/><path d="M12 16h.01"/><circle cx="12" cy="12" r="10"/></svg>
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <p class="text-xs font-black text-amber-800 uppercase tracking-wide">Under budget</p>
-                                <p class="text-[11px] font-bold text-amber-700 mt-0.5"><span id="onboarding-cat-unallocated-amount">0</span> <span data-currency>AED</span> not allocated yet</p>
-                            </div>
+                    <div id="onboarding-cat-unallocated-alert" class="hidden mt-1.5 rounded-lg overflow-hidden border border-amber-300 bg-amber-50/90">
+                        <div class="flex items-center gap-2 px-3 py-1.5">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 flex-shrink-0 text-amber-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 8v4"/><path d="M12 16h.01"/><circle cx="12" cy="12" r="10"/></svg>
+                            <p class="text-[11px] font-bold text-amber-800"><span id="onboarding-cat-unallocated-amount">0</span> <span data-currency>AED</span> not allocated</p>
                         </div>
                     </div>
-                    <div id="onboarding-cat-overallocated-alert" class="hidden mt-3 rounded-xl overflow-hidden border-2 border-red-300 bg-gradient-to-r from-red-50 to-red-100/80 shadow-sm animate-pulse-subtle">
-                        <div class="flex items-center gap-3 px-4 py-3">
-                            <div class="flex-shrink-0 w-10 h-10 rounded-full bg-red-200/80 flex items-center justify-center text-red-700">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 9v2"/><path d="M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <p class="text-xs font-black text-red-800 uppercase tracking-wide">Over budget</p>
-                                <p class="text-[11px] font-bold text-red-700 mt-0.5"><span id="onboarding-cat-overallocated-amount">0</span> <span data-currency>AED</span> over — reduce allocations</p>
-                            </div>
+                    <div id="onboarding-cat-overallocated-alert" class="hidden mt-1.5 rounded-lg overflow-hidden border border-red-300 bg-red-50/90">
+                        <div class="flex items-center gap-2 px-3 py-1.5">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 flex-shrink-0 text-red-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 9v2"/><path d="M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+                            <p class="text-[11px] font-bold text-red-800"><span id="onboarding-cat-overallocated-amount">0</span> <span data-currency>AED</span> over — reduce</p>
                         </div>
                     </div>
                 </div>
