@@ -1437,6 +1437,7 @@ function updateGlobalUI() {
 
     var surplusResolveInDropdown = getEl('surplus-controls-resolve');
     var surplusToggleBtn = getEl('surplus-controls-toggle');
+    var surpCurrencyEl = getEl('global-surplus-currency');
     if (dTrigger && surpEl) {
         if (surplus < 0) {
             dTrigger.classList.remove('hidden');
@@ -1444,12 +1445,20 @@ function updateGlobalUI() {
             if (surplusToggleBtn) surplusToggleBtn.classList.add('home-header-extra-chevron-negative');
             surpEl.classList.remove('text-emerald-600');
             surpEl.classList.add('text-red-600');
+            if (surpCurrencyEl) {
+                surpCurrencyEl.classList.remove('text-emerald-600');
+                surpCurrencyEl.classList.add('text-red-600');
+            }
         } else {
             dTrigger.classList.add('hidden');
             if (surplusResolveInDropdown) surplusResolveInDropdown.classList.add('hidden');
             if (surplusToggleBtn) surplusToggleBtn.classList.remove('home-header-extra-chevron-negative');
             surpEl.classList.add('text-emerald-600');
             surpEl.classList.remove('text-red-600');
+            if (surpCurrencyEl) {
+                surpCurrencyEl.classList.add('text-emerald-600');
+                surpCurrencyEl.classList.remove('text-red-600');
+            }
         }
     }
 
