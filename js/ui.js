@@ -1038,7 +1038,7 @@ function updateFoodUI() {
                 if (futureInCycle || consumed) {
                     var tickTitle = consumed ? 'Unmark' : 'Mark consumed';
                     var transferTitle = 'Transfer day to...';
-                    hoverActions = '<div class="food-day-hover-actions absolute inset-0 flex rounded-md overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">' +
+                    hoverActions = '<div class="food-day-hover-actions absolute inset-0 flex rounded-md overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto">' +
                         '<span class="pointer-events-auto flex-1 flex items-center justify-center min-w-0 food-day-consume-panel" title="' + tickTitle + '" onclick="event.stopPropagation(); setFoodDayFromCalendar(' + cycleDay + ', \'' + action + '\')" role="button" aria-label="' + tickTitle + '">' +
                         '<span class="text-white text-[10px] font-black">✓</span></span>';
                     if (!consumed) {
@@ -1051,7 +1051,8 @@ function updateFoodUI() {
                 }
                 var wrapperClass = 'food-overview-cell-wrapper group relative overflow-hidden';
                 if (isToday) wrapperClass += ' food-cell-today-wrapper';
-                rowHtml += '<div class="' + wrapperClass + '">' + cellContent + hoverActions + '</div>';
+                var dataAttrs = (futureInCycle || consumed) ? ' data-cycle-day="' + cycleDay + '" data-consumed="' + (consumed ? '1' : '0') + '"' : '';
+                rowHtml += '<div class="' + wrapperClass + '"' + dataAttrs + '>' + cellContent + hoverActions + '</div>';
             }
             rowHtml += '</div></div>';
             coreHtml += rowHtml;
@@ -1082,13 +1083,13 @@ function updateFoodUI() {
                         var b = bufferDates[idx];
                         var bufCellCls = 'food-overview-cell rounded-md flex items-center justify-center text-[10px] font-black min-h-[2rem] bg-emerald-500 text-white border border-emerald-600 cursor-pointer transition';
                         var bufCellContent = '<div class="' + bufCellCls + '" data-date="' + b.date + '" title="' + b.monthName + ' ' + b.date + '">' + b.date + '</div>';
-                        var bufHover = '<div class="food-day-hover-actions absolute inset-0 flex rounded-md overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">' +
+                        var bufHover = '<div class="food-day-hover-actions absolute inset-0 flex rounded-md overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto">' +
                             '<span class="pointer-events-auto flex-1 flex items-center justify-center min-w-0 food-day-consume-panel" title="Consume" onclick="event.stopPropagation(); consumeBufferDay()" role="button" aria-label="Consume">' +
                             '<span class="text-white text-[10px] font-black">✓</span></span>' +
                             '<span class="pointer-events-auto flex-1 flex items-center justify-center min-w-0 food-day-transfer-panel" title="Transfer day to..." onclick="event.stopPropagation(); openBufferDayTransferPopover(this)" role="button" aria-label="Transfer">' +
                             '<span class="text-white text-[10px] font-black">↗</span></span>' +
                             '</div>';
-                        bufRow += '<div class="food-overview-cell-wrapper group relative overflow-hidden">' + bufCellContent + bufHover + '</div>';
+                        bufRow += '<div class="food-overview-cell-wrapper group relative overflow-hidden" data-buffer="true">' + bufCellContent + bufHover + '</div>';
                     } else {
                         bufRow += '<div class="food-overview-cell rounded-md min-h-[2rem] bg-transparent"></div>';
                     }
@@ -1098,6 +1099,32 @@ function updateFoodUI() {
             }
             bufferWrapper.innerHTML = bufHtml;
             rowsContainer.appendChild(bufferWrapper);
+        }
+
+        if (!rowsContainer._foodDayActionWired) {
+            rowsContainer._foodDayActionWired = true;
+            rowsContainer.addEventListener('click', function(e) {
+                if (!isTouchOrSmall()) return;
+                var wrapper = e.target.closest('.food-overview-cell-wrapper');
+                if (!wrapper) return;
+                if (wrapper.getAttribute('data-buffer') === 'true') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openBufferDayActionPopover(wrapper);
+                    return;
+                }
+                var cycleDay = wrapper.getAttribute('data-cycle-day');
+                if (cycleDay) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    var consumed = wrapper.getAttribute('data-consumed') === '1';
+                    openFoodDayActionPopover(parseInt(cycleDay, 10), consumed, wrapper);
+                }
+            }, true);
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('#food-day-action-popover')) return;
+                closeFoodDayActionPopover();
+            });
         }
     }
 
@@ -1113,6 +1140,75 @@ function toggleBufferDropdown() {
     if (chevron) chevron.classList.toggle('rotate-180', !body.classList.contains('hidden'));
 }
 window.toggleBufferDropdown = toggleBufferDropdown;
+
+function isTouchOrSmall() {
+    return (typeof window !== 'undefined' && window.matchMedia && (window.matchMedia('(max-width: 768px)').matches || window.matchMedia('(pointer: coarse)').matches));
+}
+
+var _foodDayActionPopoverAnchor = null;
+
+function openFoodDayActionPopover(cycleDay, consumed, anchorEl) {
+    var pop = document.getElementById('food-day-action-popover');
+    var consumeBtn = document.getElementById('food-day-action-consume');
+    var transferBtn = document.getElementById('food-day-action-transfer');
+    if (!pop || !consumeBtn || !transferBtn) return;
+    _foodDayActionPopoverAnchor = anchorEl;
+    pop.removeAttribute('data-buffer');
+    pop.setAttribute('data-cycle-day', String(cycleDay));
+    consumeBtn.textContent = consumed ? 'Unmark' : 'Mark consumed';
+    consumeBtn.onclick = function() {
+        if (typeof setFoodDayFromCalendar === 'function') setFoodDayFromCalendar(cycleDay, consumed ? 'unmark' : 'mark');
+        closeFoodDayActionPopover();
+        if (typeof updateFoodUI === 'function') updateFoodUI();
+        if (typeof renderLedger === 'function') renderLedger();
+        if (typeof updateGlobalUI === 'function') updateGlobalUI();
+    };
+    transferBtn.onclick = function() {
+        closeFoodDayActionPopover();
+        if (typeof openFoodDayTransferPopover === 'function') openFoodDayTransferPopover(cycleDay, _foodDayActionPopoverAnchor);
+    };
+    if (anchorEl && anchorEl.getBoundingClientRect) {
+        var rect = anchorEl.getBoundingClientRect();
+        pop.style.left = rect.left + 'px';
+        pop.style.top = (rect.bottom + 4) + 'px';
+    }
+    pop.classList.remove('hidden');
+}
+
+function openBufferDayActionPopover(anchorEl) {
+    var pop = document.getElementById('food-day-action-popover');
+    var consumeBtn = document.getElementById('food-day-action-consume');
+    var transferBtn = document.getElementById('food-day-action-transfer');
+    if (!pop || !consumeBtn || !transferBtn) return;
+    _foodDayActionPopoverAnchor = anchorEl;
+    pop.setAttribute('data-buffer', 'true');
+    pop.removeAttribute('data-cycle-day');
+    consumeBtn.textContent = 'Consume';
+    consumeBtn.onclick = function() {
+        if (typeof consumeBufferDay === 'function') consumeBufferDay();
+        closeFoodDayActionPopover();
+        if (typeof updateFoodUI === 'function') updateFoodUI();
+        if (typeof renderLedger === 'function') renderLedger();
+        if (typeof updateGlobalUI === 'function') updateGlobalUI();
+    };
+    transferBtn.onclick = function() {
+        closeFoodDayActionPopover();
+        if (typeof openBufferDayTransferPopover === 'function') openBufferDayTransferPopover(_foodDayActionPopoverAnchor);
+    };
+    if (anchorEl && anchorEl.getBoundingClientRect) {
+        var rect = anchorEl.getBoundingClientRect();
+        pop.style.left = rect.left + 'px';
+        pop.style.top = (rect.bottom + 4) + 'px';
+    }
+    pop.classList.remove('hidden');
+}
+
+function closeFoodDayActionPopover() {
+    var pop = document.getElementById('food-day-action-popover');
+    if (pop) pop.classList.add('hidden');
+    _foodDayActionPopoverAnchor = null;
+}
+window.closeFoodDayActionPopover = closeFoodDayActionPopover;
 
 // High-level segments for the bank balance bar: overarching categories + standalone major funds (no micro items, no "Other").
 function getBankBalanceBarSegments() {

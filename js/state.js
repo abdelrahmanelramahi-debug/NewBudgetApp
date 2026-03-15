@@ -220,7 +220,9 @@ function loadState() {
             const loaded = JSON.parse(saved);
             state = { ...state, ...loaded };
             if(typeof state.monthlyIncome === 'undefined') state.monthlyIncome = 5000;
-            if(!('onboardingComplete' in loaded)) state.onboardingComplete = true;
+            // Only treat as onboarding-complete when loaded state explicitly has the flag (existing users).
+            // If key is missing (old schema or new device), keep default false so new users see onboarding.
+            if ('onboardingComplete' in loaded) state.onboardingComplete = !!loaded.onboardingComplete;
         } catch(e) { console.error("Save data corrupt, using default"); }
     }
     migrateState();
