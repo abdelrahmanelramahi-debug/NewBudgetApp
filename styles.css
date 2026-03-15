@@ -365,6 +365,14 @@ body.theme-dark #side-menu .mobile-sidebar-theme-row .inline-flex.rounded-full b
     color: #1e293b;
     background-color: #f1f5f9;
 }
+/* Theme row icon (sun/circle): dark on white box in dark mode so it contrasts */
+body.theme-dark #side-menu .mobile-sidebar-theme-row .flex.items-center.gap-1\.5 .inline-flex {
+    background-color: #e2e8f0;
+    color: #334155;
+}
+body.theme-dark #side-menu .mobile-sidebar-theme-row .flex.items-center.gap-1\.5 .inline-flex svg {
+    color: #334155;
+}
 
 /* Dark mode mobile side menu: dark panel and visible search / Report a Bug icons */
 body.theme-dark #side-menu .side-menu-panel > div {
@@ -912,31 +920,70 @@ body.theme-dark .major-funds .premium-card.bg-slate-800 svg {
     color: #c7d2fe;
 }
 
-/* Mobile major-fund bars: match desktop in dark mode (Transportation = same dark box as desktop) */
-body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar:nth-child(2) {
+/* Mobile major-fund bars: match desktop in dark mode (all three = same dark box as .premium-card) */
+body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar {
     background-color: #020617;
     border-color: #111827;
-    color: #f1f5f9;
+    color: #e5e7eb;
 }
-body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar:nth-child(2) span,
-body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar:nth-child(2) div {
-    color: #f1f5f9;
+body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar span,
+body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar div {
+    color: #e5e7eb;
 }
-body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar:nth-child(2) .text-base {
-    color: #f1f5f9;
+body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar .text-base {
+    color: #e5e7eb;
 }
-body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar:nth-child(2) button {
+body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar button {
     background-color: #fff;
     color: #0f172a;
 }
-body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar:nth-child(2) button:hover {
+body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar button:hover {
     background-color: #e2e8f0;
+}
+body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar svg {
+    color: #cbd5e1;
+}
+body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar [class*="bg-white/20"] {
+    background-color: rgba(255, 255, 255, 0.12);
+}
+/* Transportation (2nd bar): indigo-tinted text like desktop .bg-slate-800 card */
+body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar:nth-child(2) {
+    color: #f1f5f9;
+}
+body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar:nth-child(2) span,
+body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar:nth-child(2) div,
+body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar:nth-child(2) .text-base {
+    color: #f1f5f9;
 }
 body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar:nth-child(2) svg {
     color: #c7d2fe;
 }
 body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar:nth-child(2) [class*="bg-white/20"] {
     background-color: rgba(199, 210, 254, 0.25);
+}
+/* Savings (1st bar): indigo-tinted text/svg like desktop */
+body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar:nth-child(1) span,
+body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar:nth-child(1) div,
+body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar:nth-child(1) .text-base {
+    color: #e0e7ff;
+}
+body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar:nth-child(1) svg {
+    color: #a5b4fc;
+}
+body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar:nth-child(1) [class*="bg-white/20"] {
+    background-color: rgba(165, 180, 252, 0.25);
+}
+/* Payables (3rd bar): amber-tinted text/svg like desktop */
+body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar:nth-child(3) span,
+body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar:nth-child(3) div,
+body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar:nth-child(3) .text-base {
+    color: #fef3c7;
+}
+body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar:nth-child(3) svg {
+    color: #fcd34d;
+}
+body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar:nth-child(3) [class*="bg-white/20"] {
+    background-color: rgba(252, 211, 77, 0.2);
 }
 
 /* Food cycle day numbers: dark text on light boxes in dark mode */
