@@ -333,6 +333,39 @@ body.theme-dark .desktop-sidebar nav a .inline-flex svg {
     color: #0f172a;
 }
 
+/* Mobile side menu: selected nav item always has dark text on light background */
+#side-menu .side-menu-nav-btn.tab-active {
+    background-color: #eef2ff;
+    color: #0f172a;
+}
+#side-menu .side-menu-nav-btn.tab-active span {
+    color: inherit;
+}
+#side-menu .side-menu-nav-btn.tab-active .inline-flex {
+    background-color: #c7d2fe;
+    color: #3730a3;
+}
+/* Mobile sidebar theme row: always white box with dark text */
+#side-menu .mobile-sidebar-theme-row {
+    background-color: #ffffff;
+    border-color: #e2e8f0;
+    color: #1e293b;
+}
+#side-menu .mobile-sidebar-theme-row .inline-flex.rounded-full button {
+    color: #1e293b;
+    background-color: #f1f5f9;
+}
+body.theme-dark #side-menu .mobile-sidebar-theme-row,
+body.theme-sepia #side-menu .mobile-sidebar-theme-row {
+    background-color: #ffffff;
+    border-color: #e2e8f0;
+    color: #1e293b;
+}
+body.theme-dark #side-menu .mobile-sidebar-theme-row .inline-flex.rounded-full button:not(.bg-indigo-600):not(.bg-amber-500) {
+    color: #1e293b;
+    background-color: #f1f5f9;
+}
+
 /* Dark mode mobile side menu: dark panel and visible search / Report a Bug icons */
 body.theme-dark #side-menu .side-menu-panel > div {
     background-color: #111827;
@@ -348,6 +381,20 @@ body.theme-dark #side-menu .side-menu-panel .text-slate-600 {
 body.theme-dark #side-menu .side-menu-panel .text-slate-400,
 body.theme-dark #side-menu .side-menu-panel .text-slate-500 {
     color: #94a3b8;
+}
+body.theme-dark #side-menu .side-menu-nav-btn.tab-active {
+    background-color: #eef2ff;
+    color: #0f172a;
+}
+body.theme-dark #side-menu .side-menu-nav-btn.tab-active span {
+    color: #0f172a;
+}
+body.theme-dark #side-menu .side-menu-nav-btn.tab-active .inline-flex {
+    background-color: #c7d2fe;
+    color: #3730a3;
+}
+body.theme-dark #side-menu .side-menu-nav-btn.tab-active .inline-flex svg {
+    color: #3730a3;
 }
 body.theme-dark #side-menu .side-menu-panel .relative span {
     color: #94a3b8;
@@ -428,16 +475,31 @@ body.theme-sepia .bank-balance-card {
 body.theme-sepia #bank-balance-total { color: #1f2933; }
 body.theme-sepia .bank-balance-legend span { color: #7c2d12; }
 
-/* Major funds cards in sepia: stronger contrast for headings and amounts */
+/* Major funds cards in sepia: mobile bars match desktop (same sepia card look) */
 body.theme-sepia .major-funds .major-fund-bar {
-    border-color: rgba(59, 47, 42, 0.15);
+    background-color: #fff7ec;
+    border-color: #f3e2c6;
+    color: #3b2f2a;
 }
-body.theme-sepia .major-funds .major-fund-bar span,
-body.theme-sepia .major-funds .major-fund-bar div {
-    color: #1f2933;
+body.theme-sepia .major-funds .space-y-1.5 > .major-fund-bar span,
+body.theme-sepia .major-funds .space-y-1.5 > .major-fund-bar div {
+    color: #3b2f2a;
 }
+body.theme-sepia .major-funds .space-y-1.5 > .major-fund-bar .major-fund-amount,
 body.theme-sepia .major-funds .major-fund-amount {
-    color: #1f2933;
+    color: #3b2f2a;
+}
+body.theme-sepia .major-funds .space-y-1.5 > .major-fund-bar button {
+    background-color: #fff;
+    color: #0f172a;
+    border: 1px solid #f3e2c6;
+}
+body.theme-sepia .major-funds .space-y-1.5 > .major-fund-bar button:hover {
+    background-color: #f3e2c6;
+    color: #3b2f2a;
+}
+body.theme-sepia .major-funds .space-y-1.5 > .major-fund-bar svg {
+    color: #7c5a3c;
 }
 
 /* Weekly allowance card in sepia: keep strong contrast */
@@ -848,6 +910,33 @@ body.theme-dark .major-funds .premium-card.bg-slate-800 button:hover {
 }
 body.theme-dark .major-funds .premium-card.bg-slate-800 svg {
     color: #c7d2fe;
+}
+
+/* Mobile major-fund bars: match desktop in dark mode (Transportation = same dark box as desktop) */
+body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar:nth-child(2) {
+    background-color: #020617;
+    border-color: #111827;
+    color: #f1f5f9;
+}
+body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar:nth-child(2) span,
+body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar:nth-child(2) div {
+    color: #f1f5f9;
+}
+body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar:nth-child(2) .text-base {
+    color: #f1f5f9;
+}
+body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar:nth-child(2) button {
+    background-color: #fff;
+    color: #0f172a;
+}
+body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar:nth-child(2) button:hover {
+    background-color: #e2e8f0;
+}
+body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar:nth-child(2) svg {
+    color: #c7d2fe;
+}
+body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar:nth-child(2) [class*="bg-white/20"] {
+    background-color: rgba(199, 210, 254, 0.25);
 }
 
 /* Food cycle day numbers: dark text on light boxes in dark mode */
@@ -1441,6 +1530,12 @@ body.theme-sepia .home-header-extra-chevron-negative {
     background: rgba(71, 85, 105, 0.92);
     gap: 0;
 }
+/* On mobile / touch: hide the split checkmark+transfer overlay; only the action popover is used */
+@media (max-width: 768px), (pointer: coarse) {
+    .food-day-hover-actions {
+        display: none !important;
+    }
+}
 .food-day-consume-panel {
     background: rgba(5, 150, 105, 0.95);
     transition: filter 0.15s;
@@ -1465,6 +1560,37 @@ body.theme-sepia .home-header-extra-chevron-negative {
     border: none;
     background: none;
     cursor: pointer;
+}
+
+/* Food day action popover (mobile tap): friendly, high tap targets */
+.food-day-action-popover {
+    touch-action: manipulation;
+}
+.food-day-action-popover .food-day-action-popover-btn {
+    min-height: 44px;
+}
+body.theme-dark .food-day-action-popover {
+    background-color: #1e293b;
+    border-color: #334155;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+    ring-color: rgba(255, 255, 255, 0.06);
+}
+body.theme-dark .food-day-action-popover .food-day-action-popover-btn {
+    color: #e2e8f0;
+}
+body.theme-dark .food-day-action-popover .food-day-action-popover-btn:hover {
+    background-color: rgba(16, 185, 129, 0.15);
+}
+body.theme-dark .food-day-action-popover .food-day-action-transfer:hover {
+    background-color: rgba(99, 102, 241, 0.2);
+}
+body.theme-dark .food-day-action-popover .food-day-action-consume-btn span:first-of-type {
+    background-color: rgba(16, 185, 129, 0.3);
+    color: #6ee7b7;
+}
+body.theme-dark .food-day-action-popover .food-day-action-transfer span:first-of-type {
+    background-color: #334155;
+    color: #94a3b8;
 }
 
 /* Budget calendar: 28-day core vs buffer section */

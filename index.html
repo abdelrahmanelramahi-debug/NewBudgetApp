@@ -364,7 +364,7 @@
                     </div>
                 </div>
                 <nav class="px-2 pt-1 pb-3 flex-1 flex flex-col gap-1 text-sm overflow-y-auto">
-                    <button type="button" onclick="switchPage('ledger'); closeSideMenu();" class="flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-800 bg-indigo-50 hover:bg-indigo-100 transition">
+                    <button type="button" id="mobile-nav-ledger" data-nav-page="ledger" onclick="switchPage('ledger'); closeSideMenu();" class="side-menu-nav-btn flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-700 hover:bg-slate-50 transition tab-btn tab-active">
                         <span class="inline-flex items-center justify-center w-7 h-7 rounded-xl bg-indigo-100 text-indigo-600">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M3 11l9-8 9 8"></path>
@@ -373,7 +373,7 @@
                         </span>
                         <span>Home</span>
                     </button>
-                    <button type="button" onclick="switchPage('budget'); closeSideMenu();" class="flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-700 hover:bg-slate-50 transition">
+                    <button type="button" id="mobile-nav-budget" data-nav-page="budget" onclick="switchPage('budget'); closeSideMenu();" class="side-menu-nav-btn flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-700 hover:bg-slate-50 transition tab-btn tab-inactive">
                         <span class="inline-flex items-center justify-center w-7 h-7 rounded-xl bg-slate-50 text-slate-500">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <rect x="3" y="3" width="7" height="7" rx="2"></rect>
@@ -384,7 +384,7 @@
                         </span>
                         <span>Budget Plan</span>
                     </button>
-                    <button type="button" onclick="switchPage('profile'); closeSideMenu();" class="flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-700 hover:bg-slate-50 transition">
+                    <button type="button" id="mobile-nav-profile" data-nav-page="profile" onclick="switchPage('profile'); closeSideMenu();" class="side-menu-nav-btn flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-700 hover:bg-slate-50 transition tab-btn tab-inactive">
                         <span class="inline-flex items-center justify-center w-7 h-7 rounded-xl bg-slate-50 text-slate-500">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="12" cy="8" r="3.5"></circle>
@@ -393,7 +393,7 @@
                         </span>
                         <span>Profile</span>
                     </button>
-                    <button type="button" onclick="switchPage('settings'); closeSideMenu();" class="flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-700 hover:bg-slate-50 transition">
+                    <button type="button" id="mobile-nav-settings" data-nav-page="settings" onclick="switchPage('settings'); closeSideMenu();" class="side-menu-nav-btn flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-700 hover:bg-slate-50 transition tab-btn tab-inactive">
                         <span class="inline-flex items-center justify-center w-7 h-7 rounded-xl bg-slate-50 text-slate-500">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="12" cy="12" r="3"></circle>
@@ -426,9 +426,9 @@
                         </span>
                         <span class="text-[11px] text-slate-400">Soon</span>
                     </button>
-                    <div class="flex items-center justify-between px-3 py-2 rounded-2xl bg-slate-50 text-[12px] font-semibold text-slate-600">
+                    <div class="mobile-sidebar-theme-row flex items-center justify-between px-3 py-2 rounded-2xl bg-white border border-slate-200 text-[12px] font-semibold text-slate-800">
                         <span class="flex items-center gap-1.5">
-                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-xl bg-white text-slate-500">
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-xl bg-slate-100 text-slate-600">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <circle cx="12" cy="12" r="5"></circle>
                                     <path d="M12 3v2"></path>
@@ -439,9 +439,9 @@
                             </span>
                         </span>
                         <div class="inline-flex rounded-full bg-slate-100 p-0.5 text-[10px] font-semibold whitespace-nowrap">
-                            <button type="button" onclick="setThemeFromSidebar('light')" class="px-2 py-0.5 rounded-full text-slate-600 bg-slate-100">Light</button>
-                            <button type="button" onclick="setThemeFromSidebar('dark')" class="px-2 py-0.5 rounded-full text-slate-600 bg-slate-100">Dark</button>
-                            <button type="button" onclick="setThemeFromSidebar('sepia')" class="px-2 py-0.5 rounded-full text-slate-600 bg-slate-100">Sepia</button>
+                            <button type="button" id="mobile-theme-chip-light" onclick="setThemeFromSidebar('light')" class="px-2 py-0.5 rounded-full text-slate-800 bg-slate-100">Light</button>
+                            <button type="button" id="mobile-theme-chip-dark" onclick="setThemeFromSidebar('dark')" class="px-2 py-0.5 rounded-full text-slate-800 bg-slate-100">Dark</button>
+                            <button type="button" id="mobile-theme-chip-sepia" onclick="setThemeFromSidebar('sepia')" class="px-2 py-0.5 rounded-full text-slate-800 bg-slate-100">Sepia</button>
                         </div>
                     </div>
                 </div>
@@ -659,9 +659,15 @@
                         <p class="text-[9px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1 border-b border-slate-100">To</p>
                         <div id="food-day-transfer-targets" class="py-0.5"></div>
                     </div>
-                    <div id="food-day-action-popover" class="hidden fixed z-30 w-[160px] py-1 bg-white border border-slate-200 rounded-lg shadow-xl shadow-slate-200/50" role="dialog" aria-label="Day action">
-                        <button type="button" id="food-day-action-consume" class="food-day-action-consume-btn block w-full text-left px-3 py-2.5 text-[11px] font-bold text-slate-700 hover:bg-slate-100 rounded-t-lg transition-colors border-b border-slate-100">Mark consumed</button>
-                        <button type="button" id="food-day-action-transfer" class="block w-full text-left px-3 py-2.5 text-[11px] font-bold text-slate-700 hover:bg-slate-100 rounded-b-lg transition-colors">Transfer day to…</button>
+                    <div id="food-day-action-popover" class="food-day-action-popover hidden fixed z-30 min-w-[200px] py-2 bg-white border border-slate-200 rounded-xl shadow-xl shadow-slate-300/40 ring-1 ring-slate-900/5" role="dialog" aria-label="Day action">
+                        <button type="button" id="food-day-action-consume" class="food-day-action-popover-btn food-day-action-consume-btn flex items-center gap-3 w-full text-left px-4 py-3 text-[13px] font-semibold text-slate-800 hover:bg-emerald-50 active:bg-emerald-100 rounded-lg mx-2 mb-1 transition-colors">
+                            <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 shrink-0" aria-hidden="true">✓</span>
+                            <span class="food-day-action-consume-label">Mark consumed</span>
+                        </button>
+                        <button type="button" id="food-day-action-transfer" class="food-day-action-popover-btn food-day-action-transfer flex items-center gap-3 w-full text-left px-4 py-3 text-[13px] font-semibold text-slate-800 hover:bg-indigo-50 active:bg-indigo-100 rounded-lg mx-2 mt-1 transition-colors">
+                            <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-600 shrink-0" aria-hidden="true">↗</span>
+                            <span>Transfer day to…</span>
+                        </button>
                     </div>
                 </div>
 
@@ -761,6 +767,10 @@
 
         <!-- PAGE: PROFILE -->
         <div id="page-profile" class="space-y-6 hidden">
+            <header class="lg:hidden premium-card px-4 py-3 flex items-center gap-3 border border-slate-200 shadow-sm">
+                <button type="button" onclick="switchPage('ledger')" class="p-2 -ml-1 rounded-lg text-slate-500 hover:bg-slate-100 transition flex-shrink-0" aria-label="Back">&#8592;</button>
+                <h2 class="text-base font-black text-slate-900 uppercase tracking-wider">Profile</h2>
+            </header>
             <div class="premium-card p-6 space-y-4">
                 <div>
                     <h3 class="text-sm font-black text-slate-800 uppercase tracking-widest">Account</h3>
@@ -782,6 +792,10 @@
 
         <!-- PAGE: SETTINGS -->
         <div id="page-settings" class="space-y-6 hidden">
+            <header class="lg:hidden premium-card px-4 py-3 flex items-center gap-3 border border-slate-200 shadow-sm">
+                <button type="button" onclick="switchPage('ledger')" class="p-2 -ml-1 rounded-lg text-slate-500 hover:bg-slate-100 transition flex-shrink-0" aria-label="Back">&#8592;</button>
+                <h2 class="text-base font-black text-slate-900 uppercase tracking-wider">Settings</h2>
+            </header>
             <!-- Setup -->
             <div class="premium-card p-6 space-y-4">
                 <div>

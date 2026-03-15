@@ -123,15 +123,26 @@ function applySettings() {
     var chipLight = document.getElementById('theme-chip-light');
     var chipDark = document.getElementById('theme-chip-dark');
     var chipSepia = document.getElementById('theme-chip-sepia');
+    var mobileChips = [document.getElementById('mobile-theme-chip-light'), document.getElementById('mobile-theme-chip-dark'), document.getElementById('mobile-theme-chip-sepia')];
     [chipLight, chipDark, chipSepia].forEach(function (chip) {
         if (!chip) return;
         chip.classList.remove('bg-slate-200', 'bg-indigo-600', 'bg-amber-500', 'text-white', 'text-slate-600');
         chip.classList.add('text-slate-600', 'bg-slate-100');
     });
+    mobileChips.forEach(function (chip) {
+        if (!chip) return;
+        chip.classList.remove('bg-indigo-600', 'bg-amber-500', 'text-white', 'text-slate-800');
+        chip.classList.add('text-slate-800', 'bg-slate-100');
+    });
     var activeChip = theme === 'dark' ? chipDark : theme === 'sepia' ? chipSepia : chipLight;
     if (activeChip) {
         activeChip.classList.remove('bg-slate-100', 'text-slate-600');
         activeChip.classList.add(theme === 'sepia' ? 'bg-amber-500' : 'bg-indigo-600', 'text-white');
+    }
+    var activeMobile = theme === 'dark' ? document.getElementById('mobile-theme-chip-dark') : theme === 'sepia' ? document.getElementById('mobile-theme-chip-sepia') : document.getElementById('mobile-theme-chip-light');
+    if (activeMobile) {
+        activeMobile.classList.remove('bg-slate-100', 'text-slate-800');
+        activeMobile.classList.add(theme === 'sepia' ? 'bg-amber-500' : 'bg-indigo-600', 'text-white');
     }
 }
 
@@ -193,6 +204,12 @@ function switchPage(page, options) {
         profile: document.getElementById('nav-profile'),
         settings: document.getElementById('nav-settings')
     };
+    const mobileTabs = {
+        ledger: document.getElementById('mobile-nav-ledger'),
+        budget: document.getElementById('mobile-nav-budget'),
+        profile: document.getElementById('mobile-nav-profile'),
+        settings: document.getElementById('mobile-nav-settings')
+    };
 
     Object.keys(pages).forEach(key => {
         if(pages[key]) pages[key].classList.add('hidden');
@@ -202,6 +219,10 @@ function switchPage(page, options) {
             tabs[key].classList.remove('tab-active');
             tabs[key].classList.add('tab-inactive');
         }
+        if(mobileTabs[key]) {
+            mobileTabs[key].classList.remove('tab-active');
+            mobileTabs[key].classList.add('tab-inactive');
+        }
     });
 
     if(pages[page]) pages[page].classList.remove('hidden');
@@ -210,6 +231,10 @@ function switchPage(page, options) {
     } else if(tabs[page]) {
         tabs[page].classList.remove('tab-inactive');
         tabs[page].classList.add('tab-active');
+    }
+    if(mobileTabs[page]) {
+        mobileTabs[page].classList.remove('tab-inactive');
+        mobileTabs[page].classList.add('tab-active');
     }
 
     var appHeader = document.getElementById('app-header');
@@ -1155,7 +1180,8 @@ function openFoodDayActionPopover(cycleDay, consumed, anchorEl) {
     _foodDayActionPopoverAnchor = anchorEl;
     pop.removeAttribute('data-buffer');
     pop.setAttribute('data-cycle-day', String(cycleDay));
-    consumeBtn.textContent = consumed ? 'Unmark' : 'Mark consumed';
+    var consumeLabel = consumeBtn.querySelector('.food-day-action-consume-label');
+    if (consumeLabel) consumeLabel.textContent = consumed ? 'Unmark' : 'Mark consumed'; else consumeBtn.textContent = consumed ? 'Unmark' : 'Mark consumed';
     consumeBtn.onclick = function() {
         if (typeof setFoodDayFromCalendar === 'function') setFoodDayFromCalendar(cycleDay, consumed ? 'unmark' : 'mark');
         closeFoodDayActionPopover();
@@ -1183,7 +1209,8 @@ function openBufferDayActionPopover(anchorEl) {
     _foodDayActionPopoverAnchor = anchorEl;
     pop.setAttribute('data-buffer', 'true');
     pop.removeAttribute('data-cycle-day');
-    consumeBtn.textContent = 'Consume';
+    var consumeLabel = consumeBtn.querySelector('.food-day-action-consume-label');
+    if (consumeLabel) consumeLabel.textContent = 'Consume'; else consumeBtn.textContent = 'Consume';
     consumeBtn.onclick = function() {
         if (typeof consumeBufferDay === 'function') consumeBufferDay();
         closeFoodDayActionPopover();
