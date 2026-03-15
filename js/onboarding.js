@@ -432,7 +432,7 @@ function initAndRenderOnboardingCategories() {
             balKeys.forEach(function (k) { delete state.balances[k]; });
         }
         if (state.accounts && state.accounts.buckets) {
-            var sysLabels = ['General Savings', 'Payables', 'Car Fund', 'Weekly Misc'];
+            var sysLabels = ['Savings', 'Payables', 'Transportation', 'Weekly Allowance'];
             var bucketKeys = Object.keys(state.accounts.buckets);
             bucketKeys.forEach(function (k) {
                 if (sysLabels.indexOf(k) === -1) delete state.accounts.buckets[k];

@@ -595,7 +595,7 @@
                             <button id="next-week-btn" onclick="nextWeek()" class="p-2 bg-white/20 rounded-lg hover:bg-emerald-500 hover:text-white transition group" title="Next week">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="group-hover:rotate-180 transition-transform"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                             </button>
-                            <button onclick="openTool('Weekly Misc', 'Weekly Allowance')" class="p-2 bg-white/20 rounded-lg hover:bg-white/30 transition" title="Manage / Transfer">
+                            <button onclick="openTool('Weekly Allowance', 'Weekly Allowance')" class="p-2 bg-white/20 rounded-lg hover:bg-white/30 transition" title="Manage / Transfer">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20v-6M9 17h6M12 4v6M9 7h6M21 12H3"/></svg>
                             </button>
                         </div>
@@ -626,7 +626,7 @@
                     </div>
                     <div class="flex gap-2">
                         <button onclick="inlineWeeklyAdjust(-1)" class="flex-1 bg-white text-indigo-900 px-4 py-2 rounded-lg text-[10px] font-black uppercase">Spend</button>
-                        <button onclick="openTool('Weekly Misc', 'Weekly Allowance', true)" class="flex-1 bg-indigo-500 text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase">Transfer</button>
+                        <button onclick="openTool('Weekly Allowance', 'Weekly Allowance', true)" class="flex-1 bg-indigo-500 text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase">Transfer</button>
                     </div>
                 </div>
             </div>
@@ -688,7 +688,7 @@
                             <label class="text-[9px] font-bold uppercase text-emerald-700/80">Fund from</label>
                             <select id="food-buffer-source" class="w-full bg-white border border-emerald-200 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-300">
                                 <option value="surplus">Extra</option>
-                                <option value="savings">General Savings</option>
+                                <option value="savings">Savings</option>
                                 <option value="weekly">Weekly Allowance</option>
                             </select>
                         </div>

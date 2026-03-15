@@ -1302,10 +1302,10 @@ body.theme-dark .desktop-nav-item:hover {
     cursor: not-allowed;
 }
 
-/* Onboarding tips overlay + tip card (overlay below highlight so highlighted area stays ungreyed) */
+/* Onboarding tips overlay + tip card (overlay must sit below highlight so highlighted area stays ungreyed) */
 #onboarding-budget-tips-overlay {
     pointer-events: auto;
-    z-index: 10;
+    z-index: 10 !important;
 }
 
 #onboarding-tip-card {
@@ -1314,35 +1314,55 @@ body.theme-dark .desktop-nav-item:hover {
 
 #home-tour-overlay {
     pointer-events: auto;
-    z-index: 10;
+    z-index: 10 !important;
 }
 
 #home-tour-card {
     pointer-events: auto;
 }
 
-/* Soft highlight for tips & home tour: above overlay, inset so edges stay on page, ungreyed background */
-.onboarding-tip-highlight,
-.home-tour-highlight {
+/* Soft highlight for tips & home tour: above overlay, inset so outline does not leak, ungreyed background */
+#onboarding-step-categories .onboarding-tip-highlight,
+#page-ledger .home-tour-highlight {
     position: relative;
-    z-index: 25;
+    z-index: 25 !important;
     box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
     border-radius: 16px;
     outline: 2px solid rgba(129, 140, 248, 0.9);
     outline-offset: -2px;
-    background-color: #ffffff;
-    margin-left: 12px;
-    margin-right: 12px;
-    max-width: calc(100% - 24px);
+    background-color: #ffffff !important;
+    margin-left: 16px !important;
+    margin-right: 16px !important;
+    max-width: calc(100% - 32px) !important;
     box-sizing: border-box;
 }
 
-body.theme-dark .onboarding-tip-highlight,
-body.theme-dark .home-tour-highlight {
-    background-color: #1e293b;
+/* Fallback when target is not inside #onboarding-step-categories / #page-ledger (e.g. body) */
+.onboarding-tip-highlight,
+.home-tour-highlight {
+    position: relative;
+    z-index: 25 !important;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+    border-radius: 16px;
+    outline: 2px solid rgba(129, 140, 248, 0.9);
+    outline-offset: -2px;
+    background-color: #ffffff !important;
+    margin-left: 16px !important;
+    margin-right: 16px !important;
+    max-width: calc(100% - 32px) !important;
+    box-sizing: border-box;
 }
 
+body.theme-dark #onboarding-step-categories .onboarding-tip-highlight,
+body.theme-dark #page-ledger .home-tour-highlight,
+body.theme-dark .onboarding-tip-highlight,
+body.theme-dark .home-tour-highlight {
+    background-color: #1e293b !important;
+}
+
+body.theme-sepia #onboarding-step-categories .onboarding-tip-highlight,
+body.theme-sepia #page-ledger .home-tour-highlight,
 body.theme-sepia .onboarding-tip-highlight,
 body.theme-sepia .home-tour-highlight {
-    background-color: #fef3c7;
+    background-color: #fef3c7 !important;
 }

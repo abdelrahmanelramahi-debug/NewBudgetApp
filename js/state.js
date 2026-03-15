@@ -16,14 +16,14 @@ let state = {
         payDate: 28
     },
     categories: [
-        { id: 'sys_savings', label: 'System Savings', isSystem: true, items: [
-            { label: 'General Savings', amount: 1000, isAutoCalculated: false },
+        { id: 'sys_savings', label: 'Savings', isSystem: true, items: [
+            { label: 'Savings', amount: 1000, isAutoCalculated: false },
             { label: 'Payables', amount: 0, isAutoCalculated: false }
         ] },
-        { id: 'core_essentials', label: 'Core Essentials', isSystem: true, items: [
-            { label: 'Weekly Misc', amount: 400, isCore: true },
+        { id: 'core_essentials', label: 'Essentials', isSystem: true, items: [
+            { label: 'Weekly Allowance', amount: 400, isCore: true },
             { label: 'Daily Food', amount: 600, isCore: true },
-            { label: 'Car Fund', amount: 300, isCore: true }
+            { label: 'Transportation', amount: 300, isCore: true }
         ]},
         { id: 'health', label: 'Health', isLedgerLinked: true, isSingleAction: true, items: [
             { label: 'Supplements', amount: 50 },
@@ -53,10 +53,10 @@ let state = {
         surplus: 0,
         weekly: { balance: 100, week: 1 },
         buckets: {
-            'General Savings': 1000,
+            'Savings': 1000,
             'Payables': 0,
-            'Car Fund': 300,
-            'Weekly Misc': 400
+            'Transportation': 300,
+            'Weekly Allowance': 400
         }
     },
     balances: {
@@ -106,14 +106,14 @@ function getExampleBudget() {
     return {
         monthlyIncome: 5000,
         categories: [
-            { id: 'sys_savings', label: 'System Savings', isSystem: true, items: [
-                { label: 'General Savings', amount: 1000, isAutoCalculated: false },
+            { id: 'sys_savings', label: 'Savings', isSystem: true, items: [
+                { label: 'Savings', amount: 1000, isAutoCalculated: false },
                 { label: 'Payables', amount: 0, isAutoCalculated: false }
             ] },
-            { id: 'core_essentials', label: 'Core Essentials', isSystem: true, items: [
-                { label: 'Weekly Misc', amount: 400, isCore: true },
+            { id: 'core_essentials', label: 'Essentials', isSystem: true, items: [
+                { label: 'Weekly Allowance', amount: 400, isCore: true },
                 { label: 'Daily Food', amount: 600, isCore: true },
-                { label: 'Car Fund', amount: 300, isCore: true }
+                { label: 'Transportation', amount: 300, isCore: true }
             ]},
             { id: 'health', label: 'Health', isLedgerLinked: true, isSingleAction: true, items: [
                 { label: 'Supplements', amount: 50 }, { label: 'Protein', amount: 75 }, { label: 'Vitamins', amount: 50 }, { label: 'Other health', amount: 40 }
@@ -128,7 +128,7 @@ function getExampleBudget() {
                 { label: 'Streaming', amount: 50 }, { label: 'App 1', amount: 20 }, { label: 'App 2', amount: 15 }, { label: 'Cloud', amount: 5 }, { label: 'Sub other', amount: 15 }
             ]}
         ],
-        buckets: { 'General Savings': 1000, 'Payables': 0, 'Car Fund': 300, 'Weekly Misc': 400 },
+        buckets: { 'Savings': 1000, 'Payables': 0, 'Transportation': 300, 'Weekly Allowance': 400 },
         balances: {
             'Supplements': 50, 'Protein': 75, 'Vitamins': 50, 'Other health': 40,
             'Staples': 40, 'Produce': 30,
@@ -165,6 +165,27 @@ function loadState() {
     ensureFoodConsumedDays();
 }
 
+function migrateLabelRename() {
+    const buckets = state.accounts && state.accounts.buckets ? state.accounts.buckets : {};
+    const updates = {};
+    if (buckets['General Savings'] !== undefined && buckets['Savings'] === undefined) { updates['Savings'] = buckets['General Savings']; }
+    if (buckets['Weekly Misc'] !== undefined && buckets['Weekly Allowance'] === undefined) { updates['Weekly Allowance'] = buckets['Weekly Misc']; }
+    if (buckets['Car Fund'] !== undefined && buckets['Transportation'] === undefined) { updates['Transportation'] = buckets['Car Fund']; }
+    Object.keys(updates).forEach(function (k) { state.accounts.buckets[k] = updates[k]; });
+    if (buckets['General Savings'] !== undefined) delete state.accounts.buckets['General Savings'];
+    if (buckets['Weekly Misc'] !== undefined) delete state.accounts.buckets['Weekly Misc'];
+    if (buckets['Car Fund'] !== undefined) delete state.accounts.buckets['Car Fund'];
+    (state.categories || []).forEach(function (sec) {
+        if (sec.id === 'sys_savings' && sec.label === 'System Savings') sec.label = 'Savings';
+        if (sec.id === 'core_essentials' && sec.label === 'Core Essentials') sec.label = 'Essentials';
+        (sec.items || []).forEach(function (item) {
+            if (item.label === 'General Savings') item.label = 'Savings';
+            if (item.label === 'Weekly Misc') item.label = 'Weekly Allowance';
+            if (item.label === 'Car Fund') item.label = 'Transportation';
+        });
+    });
+}
+
 function migrateState() {
     const schema = state.schemaVersion || 1;
     if (schema >= 2) {
@@ -181,8 +202,9 @@ function migrateState() {
             };
         }
         if (!state.accounts.buckets) state.accounts.buckets = {};
+        migrateLabelRename();
         if (!state.accounts.savingsBuckets) {
-            const seed = state.accounts.buckets['General Savings'] ?? 0;
+            const seed = state.accounts.buckets['Savings'] ?? 0;
             state.accounts.savingsBuckets = { Main: seed };
         }
         if (!state.accounts.savingsDefaultBucket) {
@@ -217,11 +239,12 @@ function migrateState() {
     const legacyBalances = state.balances || {};
     const legacyWeekly = state.weekly || { balance: getWeeklyConfigAmount(), week: 1 };
 
-    const buckets = {};
-    ACCOUNT_LABELS.forEach(label => {
-        const bal = legacyBalances[label];
-        if (bal !== undefined) buckets[label] = bal;
-    });
+    const buckets = {
+        'Savings': legacyBalances['General Savings'] ?? legacyBalances['Savings'] ?? 0,
+        'Payables': legacyBalances['Payables'] ?? 0,
+        'Transportation': legacyBalances['Car Fund'] ?? legacyBalances['Transportation'] ?? 0,
+        'Weekly Allowance': legacyBalances['Weekly Misc'] ?? legacyBalances['Weekly Allowance'] ?? 0
+    };
 
     state = {
         ...state,
@@ -230,14 +253,9 @@ function migrateState() {
         accounts: {
             surplus: state.surplus || 0,
             weekly: legacyWeekly,
-            buckets: {
-                'General Savings': buckets['General Savings'] ?? 0,
-                'Payables': buckets['Payables'] ?? 0,
-                'Car Fund': buckets['Car Fund'] ?? 0,
-                'Weekly Misc': buckets['Weekly Misc'] ?? 0
-            },
+            buckets: buckets,
             savingsBuckets: {
-                Main: buckets['General Savings'] ?? 0
+                Main: buckets['Savings']
             },
             savingsDefaultBucket: 'Main',
             payablesBuckets: {
@@ -301,17 +319,17 @@ function ensureSystemSavings() {
     if(!sys) {
         state.categories.unshift({
             id: 'sys_savings',
-            label: 'System Savings',
+            label: 'Savings',
             isSystem: true,
             items: [
-                { label: 'General Savings', amount: 1000, isAutoCalculated: false },
+                { label: 'Savings', amount: 1000, isAutoCalculated: false },
                 { label: 'Payables', amount: 0, isAutoCalculated: false }
             ]
         });
     } else {
-        const savings = sys.items.find(i => i.label === 'General Savings');
+        const savings = sys.items.find(i => i.label === 'Savings');
         if (!savings) {
-            sys.items.unshift({ label: 'General Savings', amount: 1000, isAutoCalculated: false });
+            sys.items.unshift({ label: 'Savings', amount: 1000, isAutoCalculated: false });
         }
         const payables = sys.items.find(i => i.label === 'Payables');
         if (!payables) {
@@ -327,18 +345,18 @@ function ensureCoreItems() {
     if (!core) {
         state.categories.splice(1, 0, {
             id: coreId,
-            label: 'Core Essentials',
+            label: 'Essentials',
             isSystem: true,
             items: [
-                { label: 'Weekly Misc', amount: 400, isCore: true },
+                { label: 'Weekly Allowance', amount: 400, isCore: true },
                 { label: 'Daily Food', amount: 600, isCore: true },
-                { label: 'Car Fund', amount: 300, isCore: true }
+                { label: 'Transportation', amount: 300, isCore: true }
             ]
         });
     } else {
-        const car = core.items.find(i => i.label === 'Car Fund');
+        const car = core.items.find(i => i.label === 'Transportation');
         if (!car) {
-            core.items.push({ label: 'Car Fund', amount: 300, isCore: true });
+            core.items.push({ label: 'Transportation', amount: 300, isCore: true });
         }
     }
 
@@ -432,7 +450,7 @@ function initSurplusFromOpening() {
     }
     if (!state.accounts.buckets) state.accounts.buckets = {};
     if (!state.accounts.savingsBuckets) {
-        state.accounts.savingsBuckets = { Main: state.accounts.buckets['General Savings'] ?? 0 };
+        state.accounts.savingsBuckets = { Main: state.accounts.buckets['Savings'] ?? 0 };
     }
     if (!state.accounts.savingsDefaultBucket) {
         state.accounts.savingsDefaultBucket = 'Main';

@@ -25,7 +25,7 @@ function ensureAccountsState() {
     }
     if (!state.accounts.buckets) state.accounts.buckets = {};
     if (!state.accounts.savingsBuckets) {
-        const seed = state.accounts.buckets['General Savings'] ?? 0;
+        const seed = state.accounts.buckets['Savings'] ?? 0;
         state.accounts.savingsBuckets = { Main: seed };
     }
     if (!state.accounts.savingsDefaultBucket) {
@@ -42,7 +42,7 @@ function ensureAccountsState() {
 
 function setItemBalance(label, value) {
     ensureAccountsState();
-    if (label === 'General Savings') {
+    if (label === 'Savings') {
         const target = state.accounts.savingsDefaultBucket || 'Main';
         if (state.accounts.savingsBuckets[target] === undefined) {
             state.accounts.savingsBuckets[target] = 0;
@@ -67,7 +67,7 @@ function removeItemBalance(label) {
     if (isAccountLabel(label)) {
         // Keep account buckets, zero them instead of deleting
         ensureAccountsState();
-        if (label === 'General Savings') {
+        if (label === 'Savings') {
             Object.keys(state.accounts.savingsBuckets).forEach(key => {
                 state.accounts.savingsBuckets[key] = 0;
             });
@@ -86,7 +86,7 @@ function removeItemBalance(label) {
 }
 
 function adjustItemBalance(label, delta) {
-    if (label === 'General Savings') {
+    if (label === 'Savings') {
         adjustSavingsTotal(delta);
         return;
     }
@@ -100,7 +100,7 @@ function adjustItemBalance(label, delta) {
 
 function syncSavingsTotal() {
     ensureAccountsState();
-    state.accounts.buckets['General Savings'] = getSavingsTotal();
+    state.accounts.buckets['Savings'] = getSavingsTotal();
 }
 
 function syncPayablesTotal() {
@@ -205,7 +205,7 @@ function applyTransaction(tx) {
                 const toWeek = parseInt(toWeekMatch[1], 10);
                 if (tx.from === 'Surplus') {
                     state.accounts.surplus -= tx.amount;
-                } else if (tx.from === 'Weekly Misc') {
+                } else if (tx.from === 'Weekly Allowance') {
                     setWeeklyBalance(state.accounts.weekly.week, getWeeklyBalance() - tx.amount);
                 } else {
                     adjustItemBalance(tx.from, -tx.amount);
@@ -217,7 +217,7 @@ function applyTransaction(tx) {
                 state.accounts.surplus -= tx.amount;
             } else {
                 adjustItemBalance(tx.from, -tx.amount);
-                if (tx.from === 'Weekly Misc') {
+                if (tx.from === 'Weekly Allowance') {
                     setWeeklyBalance(state.accounts.weekly.week, getWeeklyBalance() - tx.amount);
                 }
             }
@@ -225,7 +225,7 @@ function applyTransaction(tx) {
                 state.accounts.surplus += tx.amount;
             } else {
                 adjustItemBalance(tx.to, tx.amount);
-                if (tx.to === 'Weekly Misc') {
+                if (tx.to === 'Weekly Allowance') {
                     setWeeklyBalance(state.accounts.weekly.week, getWeeklyBalance() + tx.amount);
                 }
             }
@@ -289,7 +289,7 @@ function applyTransaction(tx) {
             break;
         }
         case 'weekly_adjust':
-            adjustItemBalance('Weekly Misc', tx.delta);
+            adjustItemBalance('Weekly Allowance', tx.delta);
             setWeeklyBalance(state.accounts.weekly.week, getWeeklyBalance() + tx.delta);
             break;
         case 'food_spend':
@@ -492,7 +492,7 @@ function openDeficitModal() {
 
     state.categories.forEach(sec => {
         sec.items.forEach(item => {
-            if(['Weekly Misc', 'Daily Food'].includes(item.label)) return;
+            if(['Weekly Allowance', 'Daily Food'].includes(item.label)) return;
 
             const bal = getItemBalance(item.label, item.amount);
             if(bal > 0) {
@@ -536,14 +536,14 @@ function raidWeekly(available) {
     const take = Math.min(deficit, available);
     if (take > 0) {
         pushToUndo();
-        if(getItemBalance('Weekly Misc', undefined) === undefined) {
+        if(getItemBalance('Weekly Allowance', undefined) === undefined) {
             const fullAmt = getWeeklyConfigAmount() * 4;
-            setItemBalance('Weekly Misc', fullAmt);
+            setItemBalance('Weekly Allowance', fullAmt);
         }
         setWeeklyBalance(state.accounts.weekly.week, getWeeklyBalance() - take);
-        applyTransaction({ type: 'adjust_item_balance', label: 'Weekly Misc', delta: -take });
+        applyTransaction({ type: 'adjust_item_balance', label: 'Weekly Allowance', delta: -take });
         applyTransaction({ type: 'adjust_surplus', delta: take });
-        logHistory('Weekly Misc', -take, 'Deficit Cover');
+        logHistory('Weekly Allowance', -take, 'Deficit Cover');
         saveState();
         renderLedger();
         if(state.accounts.surplus >= 0) closeDeficitModal();
@@ -793,7 +793,7 @@ function renderTransferTargets(container) {
     container.innerHTML = '';
 
     // When transferring from Weekly Allowance, show "Transfer to another week" first
-    if (activeCat === 'Weekly Misc') {
+    if (activeCat === 'Weekly Allowance') {
         const curWeek = state.accounts.weekly?.week || 1;
         container.innerHTML += `<p class="text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-1.5">Transfer to week</p>`;
         for (let w = 1; w <= WEEKLY_MAX_WEEKS; w++) {
@@ -812,8 +812,8 @@ function renderTransferTargets(container) {
 
     // Define Priority Targets
     const priorities = [
-        { id: 'Weekly Misc', label: 'Weekly Allowance', bg: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
-        { id: 'General Savings', label: 'General Savings', bg: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+        { id: 'Weekly Allowance', label: 'Weekly Allowance', bg: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
+        { id: 'Savings', label: 'Savings', bg: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
         { id: 'Surplus', label: 'Extra (Unallocated)', bg: 'bg-slate-200 text-slate-700 border-slate-300' }
     ];
 
@@ -836,7 +836,7 @@ function renderTransferTargets(container) {
     state.categories.forEach(sec => {
         sec.items.forEach(item => {
             // Skip if it is the current active category, or if it's already in priority list
-            if(item.label === activeCat || ['Weekly Misc', 'General Savings'].includes(item.label)) return;
+            if(item.label === activeCat || ['Weekly Allowance', 'Savings'].includes(item.label)) return;
             if(item.label === 'Daily Food') return; // Usually locked/automated
 
             container.innerHTML += `
@@ -1007,12 +1007,12 @@ window.transferFoodDayTo = transferFoodDayTo;
 function getFoodDayTransferTargets() {
     var targets = [
         { id: 'Surplus', label: 'Extra' },
-        { id: 'General Savings', label: 'General Savings' },
-        { id: 'Weekly Misc', label: 'Weekly Allowance' }
+        { id: 'Savings', label: 'Savings' },
+        { id: 'Weekly Allowance', label: 'Weekly Allowance' }
     ];
     (state.categories || []).forEach(function(sec) {
         (sec.items || []).forEach(function(item) {
-            if (item.label === 'Daily Food' || item.label === 'Weekly Misc' || item.label === 'General Savings') return;
+            if (item.label === 'Daily Food' || item.label === 'Weekly Allowance' || item.label === 'Savings') return;
             targets.push({ id: item.label, label: item.label });
         });
     });
@@ -1129,7 +1129,7 @@ function deductFromBufferSource(sourceId, amount) {
         debitSavings(amount);
     } else if (sourceId === 'weekly') {
         setWeeklyBalance(state.accounts.weekly.week, Math.max(0, getWeeklyBalance() - amount));
-        applyTransaction({ type: 'adjust_item_balance', label: 'Weekly Misc', delta: -amount });
+        applyTransaction({ type: 'adjust_item_balance', label: 'Weekly Allowance', delta: -amount });
     } else {
         const current = getItemBalance(sourceId, 0);
         if (getItemBalance(sourceId, undefined) === undefined) setItemBalance(sourceId, current);
@@ -1257,7 +1257,7 @@ function inlineWeeklyAdjust(dir) {
                 // Take everything that is left in this week
                 if (current !== 0) {
                     applyTransaction({ type: 'weekly_adjust', delta: -current });
-                    logHistory('Weekly Misc', -current, 'Spend', getWeeklyInlineNote());
+                    logHistory('Weekly Allowance', -current, 'Spend', getWeeklyInlineNote());
                 }
                 // And cover the remainder from Extra
                 applyTransaction({ type: 'adjust_surplus', delta: -over });
@@ -1275,7 +1275,7 @@ function inlineWeeklyAdjust(dir) {
     // Normal spend / top up within available weekly amount
     pushToUndo();
     applyTransaction({ type: 'weekly_adjust', delta: val * dir });
-    logHistory('Weekly Misc', val * dir, 'Spend', getWeeklyInlineNote());
+    logHistory('Weekly Allowance', val * dir, 'Spend', getWeeklyInlineNote());
     if (inputEl) inputEl.value = '';
     var noteEl = document.getElementById('weekly-inline-note');
     if (noteEl) noteEl.value = '';
@@ -1288,7 +1288,7 @@ function topUpWeeklyInline() {
         pushToUndo();
         applyTransaction({ type: 'adjust_surplus', delta: -val });
         applyTransaction({ type: 'weekly_adjust', delta: val });
-        logHistory('Weekly Misc', val, 'Top Up', getWeeklyInlineNote());
+        logHistory('Weekly Allowance', val, 'Top Up', getWeeklyInlineNote());
         document.getElementById('weekly-inline-val').value = '';
         var noteEl = document.getElementById('weekly-inline-note');
         if (noteEl) noteEl.value = '';
@@ -1478,19 +1478,19 @@ function fastUpdateItemAmount(sid, idx, val) {
             const dailyRate = state.food.daysTotal > 0 ? (num / state.food.daysTotal) : 0;
             badge.innerText = `${formatMoney(dailyRate)}/day`;
         }
-    } else if(item.label === 'Weekly Misc') {
+    } else if(item.label === 'Weekly Allowance') {
         const slider = document.getElementById('weekly-amount-slider');
         if(slider) {
             const snapped = Math.round(num / WEEKLY_SLIDER_STEP) * WEEKLY_SLIDER_STEP;
             if(slider.value !== String(snapped)) slider.value = String(snapped);
         }
-    } else if(item.label === 'General Savings') {
+    } else if(item.label === 'Savings') {
         const slider = document.getElementById('general-savings-slider');
         if(slider) {
             const snapped = Math.round(num / SAVINGS_SLIDER_STEP) * SAVINGS_SLIDER_STEP;
             if(slider.value !== String(snapped)) slider.value = String(snapped);
         }
-    } else if(item.label === 'Car Fund') {
+    } else if(item.label === 'Transportation') {
         const slider = document.getElementById('car-fund-slider');
         if(slider) {
             const snapped = Math.round(num / CAR_SLIDER_STEP) * CAR_SLIDER_STEP;
@@ -1581,7 +1581,7 @@ function applyPaycheckDistribute() {
     const items = getAllocatableItems().map(item => {
         let current;
         const isFood = item.label === foodLabelCanonical || item.label === 'Food Base';
-        if (item.label === 'Weekly Misc') {
+        if (item.label === 'Weekly Allowance') {
             current = (state.accounts.weekly.balances && state.accounts.weekly.balances.length >= 4)
                 ? (state.accounts.weekly.balances[0] || 0) + (state.accounts.weekly.balances[1] || 0) + (state.accounts.weekly.balances[2] || 0) + (state.accounts.weekly.balances[3] || 0)
                 : 0;
@@ -1611,7 +1611,7 @@ function applyPaycheckDistribute() {
         if (item.deficit > 0) {
             const isFood = item.label === foodLabelCanonical || item.label === 'Food Base';
             const transferTo = isFood ? foodLabelCanonical : item.label;
-            if (item.label === 'Weekly Misc') {
+            if (item.label === 'Weekly Allowance') {
                 // Spread across all 4 weeks so it doesn't all land in the current week
                 ensureWeeklyState();
                 var perWeek = item.deficit / 4;
@@ -1620,7 +1620,7 @@ function applyPaycheckDistribute() {
                 }
                 state.accounts.surplus -= item.deficit;
                 var sumWeeks = (state.accounts.weekly.balances[0] || 0) + (state.accounts.weekly.balances[1] || 0) + (state.accounts.weekly.balances[2] || 0) + (state.accounts.weekly.balances[3] || 0);
-                if (state.accounts.buckets) state.accounts.buckets['Weekly Misc'] = sumWeeks;
+                if (state.accounts.buckets) state.accounts.buckets['Weekly Allowance'] = sumWeeks;
                 logHistory(item.label, item.deficit, 'Distribute');
             } else {
                 applyTransaction({ type: 'transfer', from: 'Surplus', to: transferTo, amount: item.deficit });
@@ -2427,7 +2427,7 @@ function rebuildTotals() {
     state.categories.forEach(sec => {
         sec.items.forEach(item => {
             if (isAccountLabel(item.label)) {
-                if (item.label === 'General Savings') {
+                if (item.label === 'Savings') {
                     if (state.accounts.savingsBuckets.Main === undefined) {
                         state.accounts.savingsBuckets.Main = item.amount;
                     }

@@ -383,10 +383,10 @@ function renderStrategy(opts) {
             if (item.label === 'Daily Food' || item.label === 'Food Base') {
                 const dailyRate = item.amount / state.food.daysTotal;
                 amortLabel = `<span id="food-base-daily-badge" class="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold ml-2">${formatMoney(dailyRate)}/day</span>`;
-            } else if (item.label === 'Weekly Misc') {
+            } else if (item.label === 'Weekly Allowance') {
                 const weeklyRate = item.amount / 4;
                 amortLabel = `<span class="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-bold ml-2">~${formatMoney(weeklyRate)}/wk</span>`;
-            } else if (item.label === 'Car Fund') {
+            } else if (item.label === 'Transportation') {
                 const weeklyRate = item.amount / 4;
                 amortLabel = `<span class="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-bold ml-2">~${formatMoney(weeklyRate)}/wk</span>`;
             }
@@ -425,7 +425,7 @@ function renderStrategy(opts) {
                     </div>
                 </div>
             ` : '';
-            const isWeeklyMisc = item.label === 'Weekly Misc';
+            const isWeeklyMisc = item.label === 'Weekly Allowance';
             const WEEKLY_SLIDER_STEP = 20;
             const weeklyBudgetCap = totalBudget > 0
                 ? Math.ceil(totalBudget / WEEKLY_SLIDER_STEP) * WEEKLY_SLIDER_STEP
@@ -449,7 +449,7 @@ function renderStrategy(opts) {
                     </div>
                 </div>
             ` : '';
-            const isGeneralSavings = item.label === 'General Savings';
+            const isGeneralSavings = item.label === 'Savings';
             const SAVINGS_SLIDER_STEP = 50;
             const savingsBudgetCap = totalBudget > 0
                 ? Math.ceil(totalBudget / SAVINGS_SLIDER_STEP) * SAVINGS_SLIDER_STEP
@@ -473,7 +473,7 @@ function renderStrategy(opts) {
                     </div>
                 </div>
             ` : '';
-            const isCarFund = item.label === 'Car Fund';
+            const isCarFund = item.label === 'Transportation';
             const CAR_SLIDER_STEP = 20;
             const carBudgetCap = totalBudget > 0
                 ? Math.ceil(totalBudget / CAR_SLIDER_STEP) * CAR_SLIDER_STEP
@@ -641,8 +641,8 @@ function renderLedger() {
         return getItemBalance(lbl, 0);
     };
 
-    const savBal = getBal('General Savings');
-    const carBal = getBal('Car Fund');
+    const savBal = getBal('Savings');
+    const carBal = getBal('Transportation');
     const payBal = getBal('Payables');
 
     const majorHtml = `
@@ -654,7 +654,7 @@ function renderLedger() {
                         <span class="flex-shrink-0 w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                         </span>
-                        <span class="text-[11px] font-bold uppercase tracking-wider truncate">General Savings</span>
+                        <span class="text-[11px] font-bold uppercase tracking-wider truncate">Savings</span>
                     </div>
                     <div class="flex items-center gap-2 flex-shrink-0">
                         <span class="text-base font-black">${formatMoney(savBal)}</span>
@@ -666,11 +666,11 @@ function renderLedger() {
                         <span class="flex-shrink-0 w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
                             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
                         </span>
-                        <span class="text-[11px] font-bold uppercase tracking-wider truncate">Car Fund</span>
+                        <span class="text-[11px] font-bold uppercase tracking-wider truncate">Transportation</span>
                     </div>
                     <div class="flex items-center gap-2 flex-shrink-0">
                         <span class="text-base font-black">${formatMoney(carBal)}</span>
-                        <button onclick="openTool('Car Fund')" class="py-1.5 px-2.5 rounded-lg bg-white text-slate-800 hover:bg-slate-100 text-[10px] font-black uppercase">Manage</button>
+                        <button onclick="openTool('Transportation')" class="py-1.5 px-2.5 rounded-lg bg-white text-slate-800 hover:bg-slate-100 text-[10px] font-black uppercase">Manage</button>
                     </div>
                 </div>
                 <div class="major-fund-bar flex items-center justify-between gap-2 py-2.5 px-3 rounded-xl bg-amber-500 text-white border border-amber-400">
@@ -693,7 +693,7 @@ function renderLedger() {
                         <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                     </div>
                     <div class="flex-shrink-0">
-                        <span class="text-[10px] font-bold uppercase tracking-widest text-indigo-200">General Savings</span>
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-indigo-200">Savings</span>
                         <div class="text-2xl font-black mt-0.5 major-fund-amount">${formatMoney(savBal)} <span class="text-xs text-indigo-300">${getCurrencyLabel()}</span></div>
                     </div>
                     <button onclick="openSavingsBuckets()" class="w-full py-2 mt-2 bg-white text-slate-900 hover:bg-indigo-50 rounded-lg text-[10px] font-black uppercase transition text-center">Manage</button>
@@ -703,10 +703,10 @@ function renderLedger() {
                         <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
                     </div>
                     <div class="flex-shrink-0">
-                        <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Car Fund</span>
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Transportation</span>
                         <div class="text-2xl font-black mt-0.5 major-fund-amount">${formatMoney(carBal)} <span class="text-xs text-slate-500">${getCurrencyLabel()}</span></div>
                     </div>
-                    <button onclick="openTool('Car Fund')" class="w-full py-2 mt-2 bg-white text-slate-800 hover:bg-slate-100 rounded-lg text-[10px] font-black uppercase transition text-center">Manage</button>
+                    <button onclick="openTool('Transportation')" class="w-full py-2 mt-2 bg-white text-slate-800 hover:bg-slate-100 rounded-lg text-[10px] font-black uppercase transition text-center">Manage</button>
                 </div>
                 <div class="premium-card p-4 bg-amber-500 text-white border-amber-400 shadow-md flex flex-col justify-between min-h-0 relative overflow-hidden group rounded-xl">
                     <div class="absolute top-0 right-0 p-2 opacity-10 pointer-events-none">
@@ -723,7 +723,7 @@ function renderLedger() {
     `;
     container.innerHTML += majorHtml;
 
-    // Category view options (above creatable categories, below General Savings / Car Fund / Payables)
+    // Category view options (above creatable categories, below Savings / Transportation / Payables)
     var optionsBarHtml = `
         <div id="ledger-options-bar" class="flex flex-wrap items-center gap-3 py-2 px-1 mb-1">
             <label class="flex items-center gap-2 cursor-pointer">
@@ -745,7 +745,7 @@ function renderLedger() {
     container.innerHTML += optionsBarHtml;
 
     // Create categorical dropdowns matching the strategy structure
-    var majorLabels = typeof MAJOR_FUND_LABELS !== 'undefined' ? MAJOR_FUND_LABELS : ['Weekly Misc', 'Daily Food', 'General Savings', 'Car Fund', 'Payables'];
+    var majorLabels = typeof MAJOR_FUND_LABELS !== 'undefined' ? MAJOR_FUND_LABELS : ['Weekly Allowance', 'Daily Food', 'Savings', 'Transportation', 'Payables'];
     var skipLabels = majorLabels.concat(['Food Base']);
     var hideEmpty = !!state.settings?.hideEmptyCategories;
     var sortBy = state.settings?.categorySort || 'default';
@@ -956,10 +956,10 @@ function updateFoodUI() {
     var bufferSourceSel = document.getElementById('food-buffer-source');
     if (bufferSourceSel) {
         var currentVal = bufferSourceSel.value;
-        var opts = '<option value="surplus">Extra</option><option value="savings">General Savings</option><option value="weekly">Weekly Allowance</option>';
+        var opts = '<option value="surplus">Extra</option><option value="savings">Savings</option><option value="weekly">Weekly Allowance</option>';
         var buckets = state.accounts && state.accounts.buckets ? Object.keys(state.accounts.buckets) : [];
         buckets.forEach(function(label) {
-            if (label === 'General Savings') return;
+            if (label === 'Savings') return;
             var bal = typeof getItemBalance === 'function' ? getItemBalance(label, 0) : 0;
             if (bal > 0) opts += '<option value="' + String(label).replace(/"/g, '&quot;') + '">' + String(label).replace(/</g, '&lt;') + '</option>';
         });
@@ -1111,7 +1111,7 @@ window.toggleBufferDropdown = toggleBufferDropdown;
 function getBankBalanceBarSegments() {
     var segments = [];
     var getBal = typeof getItemBalance === 'function' ? getItemBalance : function() { return 0; };
-    var getSavings = typeof getSavingsTotal === 'function' ? getSavingsTotal() : (state.accounts?.buckets?.['General Savings'] ?? 0);
+    var getSavings = typeof getSavingsTotal === 'function' ? getSavingsTotal() : (state.accounts?.buckets?.['Savings'] ?? 0);
     var gsLabel = ITEM_LABELS.GENERAL_SAVINGS;
     var payLabel = ITEM_LABELS.PAYABLES;
     var carLabel = ITEM_LABELS.CAR_FUND;

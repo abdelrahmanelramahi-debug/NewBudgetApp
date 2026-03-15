@@ -14,10 +14,10 @@ const SECTION_IDS = {
 
 // Item labels for major funds and core items (used across state, logic, ui, actions).
 const ITEM_LABELS = {
-    GENERAL_SAVINGS: 'General Savings',
+    GENERAL_SAVINGS: 'Savings',
     PAYABLES: 'Payables',
-    CAR_FUND: 'Car Fund',
-    WEEKLY_MISC: 'Weekly Misc',
+    CAR_FUND: 'Transportation',
+    WEEKLY_MISC: 'Weekly Allowance',
     FOOD_BASE: 'Daily Food'
 };
 
