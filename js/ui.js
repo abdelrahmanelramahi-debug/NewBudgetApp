@@ -1216,7 +1216,16 @@ function toggleBankBalanceGroup(group) {
 }
 
 function bankBalanceFilterSelectAll() {
-    _bankBalanceHiddenGroups = {};
+    if (!_bankBalanceHiddenGroups || typeof _bankBalanceHiddenGroups !== 'object') {
+        _bankBalanceHiddenGroups = {};
+    }
+    var groups = ['extra', 'savings', 'payables', 'car', 'weekly', 'food', 'categories'];
+    var allVisible = groups.every(function (g) { return !_bankBalanceHiddenGroups[g]; });
+    if (allVisible) {
+        groups.forEach(function (g) { _bankBalanceHiddenGroups[g] = true; });
+    } else {
+        _bankBalanceHiddenGroups = {};
+    }
     renderBankBalanceCard();
     syncBankBalanceFilterUI();
 }

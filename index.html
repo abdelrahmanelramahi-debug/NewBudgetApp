@@ -301,6 +301,7 @@
                     <div class="home-header-extra flex items-center gap-1 sm:gap-1.5 min-w-0 overflow-hidden shrink">
                         <span id="header-extra-label" class="home-header-label shrink-0">Extra</span>
                         <span class="home-header-extra-amount text-emerald-600 tabular-nums whitespace-nowrap overflow-hidden min-w-0" id="global-surplus">0.00</span>
+                        <span class="home-header-extra-amount text-emerald-600 shrink-0" data-currency>AED</span>
                     </div>
                     <div id="deficit-trigger" class="hidden shrink-0 deficit-trigger-desktop-only">
                         <button onclick="openDeficitModal()" class="home-header-resolve-btn">Resolve</button>
@@ -618,7 +619,7 @@
                     </div>
                     <div class="flex gap-2">
                         <button onclick="inlineWeeklyAdjust(-1)" class="flex-1 bg-white text-indigo-900 px-4 py-2 rounded-lg text-[10px] font-black uppercase">Spend</button>
-                        <button onclick="openTool('Weekly Allowance', 'Weekly Allowance', true)" class="flex-1 bg-indigo-500 text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase">Transfer</button>
+                        <button onclick="var v=document.getElementById('weekly-inline-val'); openTool('Weekly Allowance', 'Weekly Allowance', true, v?v.value:'');" class="flex-1 bg-indigo-500 text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase">Transfer</button>
                     </div>
                 </div>
             </div>
