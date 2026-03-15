@@ -915,14 +915,20 @@ body.theme-dark .desktop-nav-item:hover {
 @media (max-width: 640px) {
     .home-header-inner { padding: 0.5rem 0.5rem 0.75rem; }
     .home-header-row { gap: 0.5rem; }
+    .home-header-balance-date { display: none !important; }
     .home-header-icon-btn { width: 32px; height: 32px; border-radius: 8px; }
     .home-header-undo-redo { width: 28px; height: 28px; border-radius: 6px; }
     .home-header-undo-redo svg { width: 14px; height: 14px; }
     .home-header-actions { gap: 2px; }
     .home-header-extra { display: flex; align-items: baseline; gap: 0.25rem; }
-    .home-header-extra-amount { font-size: 0.8125rem; }
+    .home-header-extra-amount { font-size: 0.8125rem; min-width: 3.5ch; }
     .home-header-label { display: inline; }
     #header-extra-label { display: none; }
+}
+
+.bank-balance-date-mobile { display: block; }
+@media (min-width: 641px) {
+    .bank-balance-date-mobile { display: none !important; }
 }
 .home-header-balance {
     display: inline-flex;
@@ -1335,6 +1341,7 @@ body.theme-dark .desktop-nav-item:hover {
     margin-right: 16px !important;
     max-width: calc(100% - 32px) !important;
     box-sizing: border-box;
+    padding: 6px;
 }
 
 /* Fallback when target is not inside #onboarding-step-categories / #page-ledger (e.g. body) */
@@ -1351,6 +1358,7 @@ body.theme-dark .desktop-nav-item:hover {
     margin-right: 16px !important;
     max-width: calc(100% - 32px) !important;
     box-sizing: border-box;
+    padding: 6px;
 }
 
 body.theme-dark #onboarding-step-categories .onboarding-tip-highlight,

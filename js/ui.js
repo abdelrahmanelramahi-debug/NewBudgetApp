@@ -1436,11 +1436,14 @@ function updateGlobalUI() {
     if (surpEl) void surpEl.offsetHeight;
 
     var headerDateEl = getEl('header-today-date');
-    if (headerDateEl) {
+    var bankBalanceDateEl = getEl('bank-balance-date');
+    var dateStr = (function () {
         var d = new Date();
         var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-        headerDateEl.textContent = monthNames[d.getMonth()] + ' ' + d.getDate();
-    }
+        return monthNames[d.getMonth()] + ' ' + d.getDate();
+    })();
+    if (headerDateEl) headerDateEl.textContent = dateStr;
+    if (bankBalanceDateEl) bankBalanceDateEl.textContent = dateStr;
 
     // End-of-cycle actions: show New month buttons only in last week of pay cycle
     var showEndCycle = isLastWeekOfPayCycle();

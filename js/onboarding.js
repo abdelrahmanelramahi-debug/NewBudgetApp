@@ -200,18 +200,26 @@ function showBudgetPlanTip(index) {
     if (targetEl) {
         targetEl.classList.add('onboarding-tip-highlight');
 
-        // Smooth scroll so the target is clearly visible (mobile: nearer top, desktop: center)
+        // Minimal scroll so target is in view (avoid scrolling to middle of large regions)
         try {
-            var vw = window.innerWidth || document.documentElement.clientWidth || 0;
-            var blockMode = vw <= 640 ? 'start' : 'center';
-            targetEl.scrollIntoView({ behavior: 'smooth', block: blockMode });
+            targetEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         } catch (e) {
             targetEl.scrollIntoView(true);
         }
 
-        // After scroll settles, position the tip card near the target and ensure it is visible
+        // Position the tip card, then scroll so the tip box is in view (not the highlight)
         window.requestAnimationFrame(function () {
             positionBudgetPlanTipCard(targetEl);
+            var card = document.getElementById('onboarding-tip-card');
+            if (card) {
+                window.requestAnimationFrame(function () {
+                    try {
+                        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    } catch (e) {
+                        card.scrollIntoView(true);
+                    }
+                });
+            }
         });
     } else {
         // If we don't have a specific target, fall back to centering the card
@@ -368,7 +376,7 @@ function showHomeTourStep(index) {
 
         targetEl.classList.add('home-tour-highlight');
         try {
-            targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            targetEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         } catch (e) {
             targetEl.scrollIntoView(true);
         }
@@ -377,11 +385,13 @@ function showHomeTourStep(index) {
             positionHomeTourCard(targetEl);
             var card = document.getElementById('home-tour-card');
             if (card) {
-                try {
-                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                } catch (e) {
-                    card.scrollIntoView(true);
-                }
+                window.requestAnimationFrame(function () {
+                    try {
+                        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    } catch (e) {
+                        card.scrollIntoView(true);
+                    }
+                });
             }
         });
     }
