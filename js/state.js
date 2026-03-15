@@ -197,6 +197,21 @@ function saveState() {
 }
 window.saveState = saveState; // Make it globally accessible
 
+function pushAutoBackup() {
+    if (!state || typeof getCurrentBalance !== 'function') return;
+    try {
+        var total = getCurrentBalance();
+        var clone = JSON.parse(JSON.stringify(state));
+        var key = STORAGE_KEYS.AUTO_BACKUPS;
+        var raw = localStorage.getItem(key);
+        var list = raw ? JSON.parse(raw) : [];
+        list.unshift({ savedAt: Date.now(), bankBalance: total, state: clone });
+        list = list.slice(0, 5);
+        localStorage.setItem(key, JSON.stringify(list));
+    } catch (e) { console.error('Auto-backup failed:', e); }
+}
+window.pushAutoBackup = pushAutoBackup;
+
 function loadState() {
     var stateKey = STORAGE_KEYS.STATE;
     const saved = localStorage.getItem(stateKey);

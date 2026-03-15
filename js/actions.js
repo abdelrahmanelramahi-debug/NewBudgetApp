@@ -2896,9 +2896,66 @@ function exportState() {
     URL.revokeObjectURL(url);
 }
 
+function openImportBackupModal() {
+    renderAutoBackupList();
+    toggleModal('import-backup-modal', true);
+}
+window.openImportBackupModal = openImportBackupModal;
+
+function closeImportBackupModal() {
+    toggleModal('import-backup-modal', false);
+}
+window.closeImportBackupModal = closeImportBackupModal;
+
+function renderAutoBackupList() {
+    const listEl = document.getElementById('import-auto-backup-list');
+    if (!listEl) return;
+    const key = STORAGE_KEYS.AUTO_BACKUPS;
+    const raw = localStorage.getItem(key);
+    const list = raw ? JSON.parse(raw) : [];
+    if (!list.length) {
+        listEl.innerHTML = '<p class="text-xs text-slate-400">No auto-saved versions available.</p>';
+        return;
+    }
+    const currency = (typeof getCurrencyLabel === 'function') ? getCurrencyLabel() : '';
+    listEl.innerHTML = list.map(function (entry, idx) {
+        const savedAt = entry.savedAt ? new Date(entry.savedAt) : new Date();
+        const dateStr = savedAt.toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
+        const balanceStr = (typeof formatMoney === 'function') ? formatMoney(entry.bankBalance || 0) : String(entry.bankBalance || 0);
+        return '<div class="flex items-center justify-between gap-3 py-2 px-3 rounded-lg bg-slate-50 border border-slate-100">' +
+            '<div class="min-w-0 flex-1">' +
+            '<p class="text-xs font-bold text-slate-700 truncate">' + dateStr + '</p>' +
+            '<p class="text-[10px] text-slate-500">Bank balance: ' + balanceStr + ' ' + currency + '</p>' +
+            '</div>' +
+            '<button type="button" onclick="restoreFromAutoBackup(' + idx + ')" class="shrink-0 py-2 px-3 bg-indigo-600 text-white rounded-lg text-[10px] font-bold uppercase">Restore</button>' +
+            '</div>';
+    }).join('');
+}
+
+function restoreFromAutoBackup(index) {
+    const key = STORAGE_KEYS.AUTO_BACKUPS;
+    const raw = localStorage.getItem(key);
+    const list = raw ? JSON.parse(raw) : [];
+    const entry = list[index];
+    if (!entry || !entry.state) {
+        showAppAlert('That version is no longer available.');
+        return;
+    }
+    showAppConfirm('Restore this version? Current state will be replaced and the page will reload.', function () {
+        state = entry.state;
+        migrateState();
+        ensureSystemSavings();
+        ensureCoreItems();
+        ensureSettings();
+        saveState();
+        closeImportBackupModal();
+        location.reload();
+    }, null, { confirmLabel: 'Restore' });
+}
+window.restoreFromAutoBackup = restoreFromAutoBackup;
+
 function triggerImport() {
-    const input = document.getElementById('settings-import-file');
-    if(input) input.click();
+    openImportBackupModal();
 }
 
 function importStateFile(file) {
@@ -2907,12 +2964,13 @@ function importStateFile(file) {
     reader.onload = function(e) {
         try {
             const imported = JSON.parse(e.target.result);
-            state = { ...state, ...imported };
+            state = imported;
             migrateState();
             ensureSystemSavings();
             ensureCoreItems();
             ensureSettings();
             saveState();
+            if (typeof closeImportBackupModal === 'function') closeImportBackupModal();
             location.reload();
         } catch (err) {
             showAppAlert('Import failed. The file is not valid JSON.');
@@ -2942,7 +3000,7 @@ function recoverLocalData() {
         }
         showAppConfirm('Found local backup data. Restore it? This will overwrite current state.', function () {
             pushToUndo();
-            state = { ...state, ...recovered };
+            state = recovered;
             migrateState();
             ensureSystemSavings();
             ensureCoreItems();

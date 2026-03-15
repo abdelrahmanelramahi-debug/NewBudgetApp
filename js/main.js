@@ -91,6 +91,23 @@ window.onload = function() {
             clearTimeout(resizeTid);
             resizeTid = setTimeout(function() { if (typeof updateGlobalUI === 'function') updateGlobalUI(); }, 100);
         });
+        // Auto-backup after 5 min idle (last 5 versions in localStorage)
+        var idleBackupTimer;
+        var activityDebounceTimer;
+        function resetIdleBackupTimer() {
+            clearTimeout(idleBackupTimer);
+            idleBackupTimer = setTimeout(function() {
+                if (typeof pushAutoBackup === 'function') pushAutoBackup();
+            }, 5 * 60 * 1000);
+        }
+        function onIdleActivity() {
+            clearTimeout(activityDebounceTimer);
+            activityDebounceTimer = setTimeout(resetIdleBackupTimer, 1000);
+        }
+        ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(function(ev) {
+            document.addEventListener(ev, onIdleActivity);
+        });
+        resetIdleBackupTimer();
     }
 
     if (!state.onboardingComplete && typeof showOnboarding === 'function') {
