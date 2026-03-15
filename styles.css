@@ -819,34 +819,35 @@ body.theme-dark .food-calendar-buffer {
 }
 body.theme-dark .food-buffer-row .w-12 { color: #34d399; }
 
-/* Transportation card in dark mode: dark box like Savings/Payables, light title/amount, white button with dark text */
+/* Transportation card in dark mode: match Savings (same dark box, indigo-tinted title/amount, white button with dark text) */
 body.theme-dark .major-funds .premium-card.bg-slate-800 {
-    background-color: #1e293b;
-    border-color: #334155;
-    color: #e5e7eb;
+    background-color: #020617;
+    border-color: #111827;
+    color: #f1f5f9;
 }
 body.theme-dark .major-funds .premium-card.bg-slate-800 .text-slate-400 {
-    color: #94a3b8;
+    color: #c7d2fe;
 }
 body.theme-dark .major-funds .premium-card.bg-slate-800 .text-slate-500 {
-    color: #cbd5e1;
+    color: #a5b4fc;
 }
 body.theme-dark .major-funds .premium-card.bg-slate-800 .major-fund-amount {
     color: #f1f5f9;
 }
 body.theme-dark .major-funds .premium-card.bg-slate-800 .major-fund-amount .text-slate-500 {
-    color: #94a3b8;
+    color: #a5b4fc;
 }
-body.theme-dark .major-funds .premium-card.bg-slate-800 button {
+body.theme-dark .major-funds .premium-card.bg-slate-800 button,
+body.theme-dark .major-funds .premium-card.bg-slate-800 button.text-slate-800 {
     background-color: #fff;
-    color: #0f172a;
+    color: #0f172a !important;
     border-color: transparent;
 }
 body.theme-dark .major-funds .premium-card.bg-slate-800 button:hover {
     background-color: #e2e8f0;
 }
 body.theme-dark .major-funds .premium-card.bg-slate-800 svg {
-    color: #94a3b8;
+    color: #c7d2fe;
 }
 
 /* Food cycle day numbers: dark text on light boxes in dark mode */
