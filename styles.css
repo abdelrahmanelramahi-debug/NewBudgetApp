@@ -116,7 +116,7 @@ body.theme-dark .food-row-current {
     background: rgba(99, 102, 241, 0.12);
 }
 body.theme-dark .food-cell-today {
-    box-shadow: 0 0 0 2px rgba(129, 140, 248, 0.8);
+    box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.95);
 }
 /* Ledger options bar (Hide empty / Sort) in dark mode */
 body.theme-dark #ledger-options-bar span {
@@ -1224,7 +1224,7 @@ body.theme-dark .desktop-nav-item:hover {
 }
 /* Current day cell: ring so it stands out */
 .food-cell-today {
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.9);
+    box-shadow: 0 0 0 3px #4f46e5;
 }
 
 /* Major funds: compact on mobile */
