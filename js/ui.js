@@ -1005,6 +1005,8 @@ function updateFoodUI() {
     if (rowsContainer) {
         rowsContainer.innerHTML = '';
         var dates = payCycle.dates;
+        var todaySlot = dates.findIndex(function(p) { return p.date === todayDate && p.month === todayMonth && p.year === todayYear; });
+        var currentWeekRowIndex = todaySlot >= 0 ? Math.floor(todaySlot / 7) : -1;
         // 28-day core: pay day = first slot, no empty cells; each row = 7 consecutive days (pay day + 0..6, etc.)
         var coreWrapper = document.createElement('div');
         coreWrapper.className = 'food-calendar-core';
@@ -1012,7 +1014,9 @@ function updateFoodUI() {
         for (var r = 0; r < 4; r++) {
             var weekNum = r + 1;
             var weekLabel = 'Week ' + weekNum;
-            var rowHtml = '<div class="food-week-row flex gap-2 items-stretch rounded-lg"><div class="w-12 flex-shrink-0 flex items-center text-[10px] font-black uppercase tracking-wider text-slate-400">' + weekLabel + '</div><div class="grid grid-cols-7 gap-1 flex-1">';
+            var rowClass = 'food-week-row flex gap-2 items-stretch rounded-lg';
+            if (r === currentWeekRowIndex) rowClass += ' food-row-current';
+            var rowHtml = '<div class="' + rowClass + '"><div class="w-12 flex-shrink-0 flex items-center text-[10px] font-black uppercase tracking-wider text-slate-400">' + weekLabel + '</div><div class="grid grid-cols-7 gap-1 flex-1">';
             for (var col = 0; col < 7; col++) {
                 var slot = r * 7 + col;
                 var p = dates[slot];
@@ -1023,9 +1027,10 @@ function updateFoodUI() {
                 var action = consumed ? 'unmark' : 'mark';
                 var cls = 'food-overview-cell rounded-md flex items-center justify-center text-[10px] font-black min-h-[2rem] transition cursor-pointer ';
                 if (consumed) cls += 'bg-slate-200 text-slate-500 hover:bg-slate-300';
-                else if (isToday) cls += 'bg-indigo-500 text-white shadow-md hover:bg-indigo-600';
+                else if (isToday) cls += 'bg-indigo-500 text-white shadow-md hover:bg-indigo-600 food-cell-today';
                 else if (futureInCycle) cls += 'bg-slate-100 text-slate-400 border border-slate-200 hover:bg-slate-200';
                 else cls += 'bg-white text-slate-400 border border-slate-200';
+                if (isToday && consumed) cls += ' food-cell-today';
                 var label = consumed ? '✓' : p.date;
                 var clickAttr = ' onclick="event.stopPropagation(); setFoodDayFromCalendar(' + cycleDay + ', \'' + action + '\')" role="button"';
                 var cellContent = '<div' + clickAttr + ' class="' + cls + '" data-cycle-day="' + cycleDay + '" data-date="' + p.date + '" title="' + (consumed ? 'Click to unmark' : 'Click to mark consumed') + ' · ' + p.monthName + ' ' + p.date + '">' + label + '</div>';

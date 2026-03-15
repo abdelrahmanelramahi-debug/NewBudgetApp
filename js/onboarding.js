@@ -13,13 +13,13 @@ var onboardingBudgetTipIndex = 0;
 
 var ONBOARDING_BUDGET_TIPS = [
     {
-        title: 'Watch your total',
-        body: 'This box shows how much of your monthly income is allocated. We’ll flag it if you go under or over your total so you can adjust before you finish. You can change these amounts any time in Budget Plan.',
+        title: 'Total Budget',
+        body: "See how much of your monthly income you've assigned. Stay within 100% for a balanced plan.",
         target: '#onboarding-cat-header'
     },
     {
-        title: 'Set your amounts',
-        body: 'Use the amount fields and sliders under each row to decide how much you want to spend or save in each section. Use Add Category to create more sections. You can fine-tune later in Budget Plan.',
+        title: 'Set Your Categories',
+        body: 'Use sliders or type amounts. Add new categories anytime and fine-tune later.',
         target: '#onboarding-strategy-sections'
     }
 ];
@@ -250,23 +250,23 @@ window.skipBudgetPlanTips = skipBudgetPlanTips;
 
 var HOME_TOUR_STEPS = [
     {
-        title: 'Bank balance',
-        body: 'See what your bank account should read if everything matches your plan. The bar shows how your money is split across Extra, Weekly, Food, and categories.',
+        title: 'Bank Balance',
+        body: 'What your bank balance should show if you're following your plan. The bar shows how your money is split across sections.',
         target: '.bank-balance-card'
     },
     {
-        title: 'Weekly allowance',
-        body: 'This is your safe-to-spend amount for this week. Use Spend to record purchases, or Transfer to move money between Weekly and Extra.',
+        title: 'Weekly Allowance',
+        body: 'Your safe-to-spend amount for this week. Record purchases or move money when needed.',
         target: '.weekly-hero'
     },
     {
-        title: 'Food tracker',
-        body: 'Use \"Mark Day Consumed\" and this calendar to track food spending by day. Buffer days help you stretch the month when you need to.',
+        title: 'Food Tracker',
+        body: 'Tap a day when you use your food budget. Buffer days help you stretch the month.',
         target: '#food-tracker-card'
     },
     {
         title: 'Categories',
-        body: 'Each category (like Health or Groceries) is its own mini budget. Tap a category to spend from it or move money between categories.',
+        body: 'Each category is its own mini-budget. Tap to spend from it or move money between categories.',
         target: '#ledger-categories'
     }
 ];

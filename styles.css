@@ -111,6 +111,13 @@ body.theme-dark #food-overview-header .grid,
 body.theme-dark #food-overview-rows {
     color: #cbd5f5;
 }
+body.theme-dark .food-row-current {
+    border-color: rgba(129, 140, 248, 0.5);
+    background: rgba(99, 102, 241, 0.12);
+}
+body.theme-dark .food-cell-today {
+    box-shadow: 0 0 0 2px rgba(129, 140, 248, 0.8);
+}
 /* Ledger options bar (Hide empty / Sort) in dark mode */
 body.theme-dark #ledger-options-bar span {
     color: #e5e7eb;
@@ -1207,8 +1214,17 @@ body.theme-dark .desktop-nav-item:hover {
     color: #059669;
 }
 
+/* Current week: subtle box around the row */
 .food-row-current {
-    border-left: 3px solid #4f46e5;
+    padding: 4px;
+    margin: 0 -4px;
+    border-radius: 10px;
+    border: 2px solid rgba(99, 102, 241, 0.5);
+    background: rgba(99, 102, 241, 0.06);
+}
+/* Current day cell: ring so it stands out */
+.food-cell-today {
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.9);
 }
 
 /* Major funds: compact on mobile */
