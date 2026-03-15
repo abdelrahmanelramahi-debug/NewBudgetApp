@@ -664,6 +664,10 @@ textarea,
         overflow: hidden;
     }
 
+    .bank-balance-card {
+        overflow: visible !important;
+    }
+
     .premium-card .flex {
         flex-wrap: wrap;
     }
@@ -933,9 +937,11 @@ body.theme-dark .desktop-nav-item:hover {
     .home-header-inner { padding: 0.5rem 0.5rem 0.75rem; }
     .home-header-row { gap: 0.5rem; }
     .deficit-trigger-desktop-only { display: none !important; }
-    .home-header-icon-btn { width: 32px; height: 32px; border-radius: 8px; }
-    .home-header-undo-redo { width: 28px; height: 28px; border-radius: 6px; }
-    .home-header-undo-redo svg { width: 14px; height: 14px; }
+    .home-header-extra-amount { font-size: 0.8125rem; }
+    .home-header-icon-btn { width: 30px; height: 30px; border-radius: 8px; }
+    .home-header-icon-btn svg { width: 13px; height: 13px; }
+    .home-header-undo-redo { width: 26px; height: 26px; border-radius: 6px; }
+    .home-header-undo-redo svg { width: 11px; height: 11px; }
     .home-header-actions { gap: 2px; }
     .home-header-extra { display: flex; align-items: baseline; gap: 0.25rem; }
     .home-header-extra-amount { font-size: 0.8125rem; min-width: 3.5ch; }
@@ -987,27 +993,40 @@ body.theme-dark .desktop-nav-item:hover {
     border-color: #94a3b8;
 }
 .home-header-extra-amount {
-    font-size: 1.125rem;
+    font-size: 0.875rem;
     font-weight: 800;
     letter-spacing: -0.02em;
 }
 .home-header-actions {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 2px;
 }
 .home-header-icon-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
     background: rgba(241, 245, 249, 0.9);
     color: #475569;
     border: none;
     cursor: pointer;
     transition: background 0.2s, color 0.2s;
+}
+.home-header-icon-btn svg {
+    width: 14px;
+    height: 14px;
+}
+.home-header-undo-redo {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+}
+.home-header-undo-redo svg {
+    width: 12px;
+    height: 12px;
 }
 .home-header-icon-btn:hover {
     background: #e2e8f0;
@@ -1278,11 +1297,34 @@ body.theme-sepia .home-header-extra-chevron-negative {
     outline: none;
 }
 
-/* Show in bar dropdown: iOS touch scrolling */
+/* Show in bar dropdown: scrollable list and visible checkboxes */
+#bank-balance-filter-dropdown {
+    display: flex;
+    flex-direction: column;
+    max-height: min(70vh, 320px);
+    overflow: hidden;
+}
 .bank-balance-filter-list {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y;
     overscroll-behavior: contain;
+}
+#bank-balance-filter-dropdown .bank-balance-filter-list > div {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+}
+#bank-balance-filter-dropdown .bank-balance-filter-list input[type="checkbox"] {
+    width: 1.125rem;
+    height: 1.125rem;
+    flex-shrink: 0;
+    cursor: pointer;
+    accent-color: #6366f1;
 }
 
 /* Modals */

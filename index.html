@@ -306,11 +306,11 @@
                         <button onclick="openDeficitModal()" class="home-header-resolve-btn">Resolve</button>
                     </div>
                     <button id="surplus-controls-toggle" onclick="toggleSurplusControls()" class="home-header-icon-btn shrink-0" aria-label="Extra options">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
                     </button>
                     <div class="home-header-actions flex-shrink-0 flex items-center gap-0.5 sm:gap-1">
-                        <button onclick="globalUndo()" id="global-undo-btn" class="home-header-icon-btn home-header-undo-redo opacity-40 pointer-events-none" title="Undo" aria-label="Undo"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-4 h-4 sm:w-4 sm:h-4"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg></button>
-                        <button onclick="globalRedo()" id="global-redo-btn" class="home-header-icon-btn home-header-undo-redo opacity-40 pointer-events-none" title="Redo" aria-label="Redo"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-4 h-4 sm:w-4 sm:h-4"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg></button>
+                        <button onclick="globalUndo()" id="global-undo-btn" class="home-header-icon-btn home-header-undo-redo opacity-40 pointer-events-none" title="Undo" aria-label="Undo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg></button>
+                        <button onclick="globalRedo()" id="global-redo-btn" class="home-header-icon-btn home-header-undo-redo opacity-40 pointer-events-none" title="Redo" aria-label="Redo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg></button>
                     </div>
                 </div>
             </div>
@@ -463,15 +463,23 @@
                 </div>
             </div>
             <div class="ledger-top-grid grid grid-cols-1 lg:grid-cols-1 gap-4">
-            <!-- Paycheck / Distribute (compact strip on Home) -->
-            <div class="paycheck-home-card premium-card p-4 flex flex-col sm:flex-row sm:items-center gap-3 border border-slate-200 rounded-xl bg-slate-50/50">
-                <div class="flex-1 min-w-0">
-                    <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Paycheck</span>
-                    <p class="text-[10px] text-slate-400 mt-0.5">Distribute your paycheck across planned budgets.</p>
-                </div>
-                <div class="flex flex-wrap gap-2 sm:flex-shrink-0">
-                    <input type="number" id="paycheck-amount" placeholder="Amount..." class="flex-1 min-w-[100px] max-w-[140px] bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-300" autocomplete="off">
-                    <button type="button" onclick="applyPaycheckDistribute()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase hover:bg-indigo-700 transition">Distribute</button>
+            <!-- Paycheck / Distribute: long button opens amount form -->
+            <div class="paycheck-home-card premium-card border border-slate-200 rounded-xl bg-slate-50/50 overflow-hidden">
+                <button type="button" id="paycheck-trigger-btn" onclick="togglePaycheckPanel()" aria-expanded="false" aria-controls="paycheck-panel" class="w-full p-4 flex items-center justify-between gap-3 text-left hover:bg-slate-100/70 transition">
+                    <div class="min-w-0">
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500 block">Paycheck</span>
+                        <p class="text-[10px] text-slate-400 mt-0.5">Distribute your paycheck across planned budgets.</p>
+                    </div>
+                    <span class="paycheck-chevron text-slate-400 shrink-0">▼</span>
+                </button>
+                <div id="paycheck-panel" class="hidden border-t border-slate-200/80 bg-white/60 p-4" aria-hidden="true">
+                    <label for="paycheck-amount" class="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">Amount</label>
+                    <div class="flex flex-wrap gap-2 items-center">
+                        <input type="number" id="paycheck-amount" placeholder="Enter amount..." class="flex-1 min-w-[120px] max-w-[180px] bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-300" autocomplete="off">
+                        <span class="text-sm font-bold text-slate-400" data-currency>AED</span>
+                        <button type="button" onclick="applyPaycheckDistribute()" class="bg-indigo-600 text-white px-5 py-2.5 rounded-lg text-[10px] font-black uppercase hover:bg-indigo-700 transition">Distribute</button>
+                        <button type="button" onclick="togglePaycheckPanel()" class="text-slate-500 text-[10px] font-bold hover:text-slate-700 px-2 py-1">Close</button>
+                    </div>
                 </div>
             </div>
             <!-- Bank Balance card (breakdown bar above weekly) -->

@@ -1572,8 +1572,12 @@ function applyPaycheckAdd() {
 }
 
 function applyPaycheckDistribute() {
-    const val = parseFloat(document.getElementById('paycheck-amount').value);
-    if(!val || val <= 0) return;
+    const raw = document.getElementById('paycheck-amount').value;
+    const val = parseFloat(raw);
+    if (raw === '' || isNaN(val) || val <= 0) {
+        if (typeof showAppAlert === 'function') showAppAlert('Enter a positive amount for your paycheck.');
+        return;
+    }
 
     if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
 
@@ -1642,7 +1646,21 @@ function applyPaycheckDistribute() {
     renderLedger();
     renderStrategy();
     updateGlobalUI();
+    togglePaycheckPanel(); // collapse after successful distribute
 }
+
+function togglePaycheckPanel() {
+    const panel = document.getElementById('paycheck-panel');
+    const trigger = document.getElementById('paycheck-trigger-btn');
+    if (!panel || !trigger) return;
+    const isOpen = !panel.classList.contains('hidden');
+    panel.classList.toggle('hidden', isOpen);
+    panel.setAttribute('aria-hidden', isOpen ? 'true' : 'false');
+    trigger.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+    const chevron = trigger.querySelector('.paycheck-chevron');
+    if (chevron) chevron.textContent = isOpen ? '▼' : '▲';
+}
+window.togglePaycheckPanel = togglePaycheckPanel;
 
 // Savings Buckets (source/dest options for "outside" buckets)
 var SAVINGS_EXTRA = '__extra__';
