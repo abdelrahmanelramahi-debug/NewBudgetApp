@@ -1203,7 +1203,7 @@ body.theme-dark .desktop-nav-item:hover {
 .food-calendar-core {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
 }
 .food-calendar-buffer {
     margin-top: 0.75rem;
