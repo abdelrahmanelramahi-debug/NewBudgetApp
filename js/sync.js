@@ -224,16 +224,28 @@
 
             if (cloudData.data && typeof cloudData.data === 'object' && cloudHasData) {
                 var localTheme = (state.settings && state.settings.theme) || (global.localStorage && global.localStorage.getItem('bubudget_theme')) || 'light';
-                var localDeletedBuckets = Array.isArray(state._deletedPayablesBuckets) ? state._deletedPayablesBuckets.slice() : [];
+                var localDeletedPayables = Array.isArray(state._deletedPayablesBuckets) ? state._deletedPayablesBuckets.slice() : [];
+                var localDeletedSavings = Array.isArray(state._deletedSavingsBuckets) ? state._deletedSavingsBuckets.slice() : [];
                 state = { ...state, ...cloudData.data };
-                var cloudDeletedBuckets = Array.isArray(cloudData.data._deletedPayablesBuckets) ? cloudData.data._deletedPayablesBuckets : [];
-                var mergedDeleted = localDeletedBuckets.concat(cloudDeletedBuckets);
-                if (mergedDeleted.length) {
+                var cloudDeletedPayables = Array.isArray(cloudData.data._deletedPayablesBuckets) ? cloudData.data._deletedPayablesBuckets : [];
+                var mergedPayables = localDeletedPayables.concat(cloudDeletedPayables);
+                if (mergedPayables.length) {
                     var seen = {};
-                    state._deletedPayablesBuckets = mergedDeleted.filter(function (n) {
+                    state._deletedPayablesBuckets = mergedPayables.filter(function (n) {
                         if (!n) return false;
                         if (seen[n]) return false;
                         seen[n] = true;
+                        return true;
+                    });
+                }
+                var cloudDeletedSavings = Array.isArray(cloudData.data._deletedSavingsBuckets) ? cloudData.data._deletedSavingsBuckets : [];
+                var mergedSavings = localDeletedSavings.concat(cloudDeletedSavings);
+                if (mergedSavings.length) {
+                    var seenS = {};
+                    state._deletedSavingsBuckets = mergedSavings.filter(function (n) {
+                        if (!n) return false;
+                        if (seenS[n]) return false;
+                        seenS[n] = true;
                         return true;
                     });
                 }
@@ -244,6 +256,7 @@
                 if (state.settings) state.settings.theme = localTheme;
                 if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
                 if (typeof purgeDeletedPayablesBuckets === 'function') purgeDeletedPayablesBuckets();
+                if (typeof purgeDeletedSavingsBuckets === 'function') purgeDeletedSavingsBuckets();
                 var stateKey = STORAGE_KEYS.STATE;
                 var modKey = STORAGE_KEYS.MODIFIED;
                 var syncKey = STORAGE_KEYS.LAST_SYNCED;

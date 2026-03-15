@@ -1959,6 +1959,7 @@ function renameSavingsBucket(oldName, newNameFromInline) {
         return;
     }
     pushToUndo();
+    if (typeof markSavingsBucketDeleted === 'function') markSavingsBucketDeleted(oldName);
     state.accounts.savingsBuckets[newName] = state.accounts.savingsBuckets[oldName] || 0;
     delete state.accounts.savingsBuckets[oldName];
     if (state.accounts.savingsDefaultBucket === oldName) {
@@ -1980,6 +1981,7 @@ function deleteSavingsBucket(name) {
     showAppConfirm('Delete "' + name + '" bucket and move its funds to Extra?', function () {
         const amount = state.accounts.savingsBuckets[name] || 0;
         pushToUndo();
+        if (typeof markSavingsBucketDeleted === 'function') markSavingsBucketDeleted(name);
         delete state.accounts.savingsBuckets[name];
         if (state.accounts.savingsDefaultBucket === name) {
             state.accounts.savingsDefaultBucket = Object.keys(state.accounts.savingsBuckets)[0];

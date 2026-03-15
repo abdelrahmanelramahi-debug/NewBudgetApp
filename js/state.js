@@ -101,6 +101,23 @@ function purgeDeletedPayablesBuckets() {
     });
 }
 
+// Same for savings buckets: prevent deleted/renamed buckets from respawning after sync
+function markSavingsBucketDeleted(name) {
+    if (!name) return;
+    if (!Array.isArray(state._deletedSavingsBuckets)) state._deletedSavingsBuckets = [];
+    if (!state._deletedSavingsBuckets.includes(name)) state._deletedSavingsBuckets.push(name);
+}
+
+function purgeDeletedSavingsBuckets() {
+    if (!state.accounts || !state.accounts.savingsBuckets) return;
+    if (!Array.isArray(state._deletedSavingsBuckets) || !state._deletedSavingsBuckets.length) return;
+    state._deletedSavingsBuckets.forEach(function (name) {
+        if (name && state.accounts.savingsBuckets[name] !== undefined) {
+            delete state.accounts.savingsBuckets[name];
+        }
+    });
+}
+
 /** Returns a fresh example budget (generic defaults, not personal). Use for "Load example budget" in Settings. */
 function getExampleBudget() {
     return {
@@ -228,6 +245,7 @@ function migrateState() {
         // Initialize deleted-bucket trackers used to hard-suppress resurrected buckets from
         // any stale source (cloud, local backup, or old tabs).
         if (!Array.isArray(state._deletedPayablesBuckets)) state._deletedPayablesBuckets = [];
+        if (!Array.isArray(state._deletedSavingsBuckets)) state._deletedSavingsBuckets = [];
         ACCOUNT_LABELS.forEach(label => {
             if (state.balances[label] !== undefined) delete state.balances[label];
         });
@@ -271,6 +289,7 @@ function migrateState() {
         histories: state.histories || {}
     };
     if (!Array.isArray(state._deletedPayablesBuckets)) state._deletedPayablesBuckets = [];
+    if (!Array.isArray(state._deletedSavingsBuckets)) state._deletedSavingsBuckets = [];
 }
 
 function isAccountLabel(label) {
@@ -464,6 +483,7 @@ function initSurplusFromOpening() {
 
     // After any ensure/migration, force-remove buckets the user has explicitly deleted.
     purgeDeletedPayablesBuckets();
+    if (typeof purgeDeletedSavingsBuckets === 'function') purgeDeletedSavingsBuckets();
 
     state.categories.forEach(sec => {
         sec.items.forEach(item => {
