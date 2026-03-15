@@ -158,10 +158,15 @@ function positionBudgetPlanTipCard(targetEl) {
 
     var finalTop = preferredTop;
     if (finalTop + cardHeight > maxTop) {
-        // No room below: try above the target so the card stays on screen
-        finalTop = targetRect.top - cardHeight - 12;
+        if (isMobile) {
+            // Keep card below target on mobile so it doesn't cover the highlighted region; allow off-screen and scroll to show.
+            finalTop = Math.max(preferredTop, minTop);
+        } else {
+            finalTop = Math.min(Math.max(targetRect.top - cardHeight - 12, minTop), maxTop);
+        }
+    } else {
+        finalTop = Math.min(Math.max(finalTop, minTop), maxTop);
     }
-    finalTop = Math.min(Math.max(finalTop, minTop), maxTop);
 
     // Convert from viewport coordinates to step-relative coordinates
     var relativeTop = finalTop - stepRect.top;
@@ -207,14 +212,16 @@ function showBudgetPlanTip(index) {
             targetEl.scrollIntoView(true);
         }
 
-        // Position the tip card, then scroll so the tip box is in view (not the highlight)
+        // Position the tip card, then scroll so the tip box is in view (on mobile put card at bottom so highlight stays visible above)
         window.requestAnimationFrame(function () {
             positionBudgetPlanTipCard(targetEl);
             var card = document.getElementById('onboarding-tip-card');
             if (card) {
                 window.requestAnimationFrame(function () {
                     try {
-                        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        var vw = window.innerWidth || document.documentElement.clientWidth || 0;
+                        var blockMode = vw <= 640 ? 'end' : 'center';
+                        card.scrollIntoView({ behavior: 'smooth', block: blockMode });
                     } catch (e) {
                         card.scrollIntoView(true);
                     }
@@ -332,14 +339,6 @@ function positionHomeTourCard(targetEl) {
 }
 
 function startHomeTour() {
-    // Disable home tour on mobile – desktop only
-    if (isMobileDevice()) {
-        if (typeof state !== 'undefined') {
-            state._sawHomePageTour = true;
-            if (typeof saveState === 'function') saveState();
-        }
-        return;
-    }
     if (typeof state !== 'undefined' && state._sawHomePageTour) return;
     homeTourStepIndex = 0;
     var overlay = document.getElementById('home-tour-overlay');
