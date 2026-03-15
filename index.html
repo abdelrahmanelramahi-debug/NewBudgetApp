@@ -902,22 +902,13 @@
             <div class="premium-card p-6 space-y-4">
                 <div>
                     <h3 class="text-sm font-black text-slate-800 uppercase tracking-widest">Data</h3>
-                    <p class="text-xs text-slate-500 mt-1">Export or import a backup, load the example budget, or reset all data.</p>
+                    <p class="text-xs text-slate-500 mt-1">Export or import a backup, or reset all data.</p>
                 </div>
                 <div class="flex flex-col gap-2">
                     <button onclick="exportState()" class="w-full py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Export Backup</button>
                     <button onclick="triggerImport()" class="w-full py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Import Backup</button>
-                    <button onclick="loadExampleBudget()" class="w-full py-3 bg-indigo-50 text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest">Load example budget</button>
+                    <button onclick="rebuildTotals()" class="w-full py-3 bg-slate-50 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 transition">Rebuild Totals</button>
                     <button onclick="resetAppData()" class="w-full py-3 bg-red-50 text-red-500 rounded-xl text-[10px] font-black uppercase tracking-widest">Reset All Data</button>
-                    <button type="button" onclick="var b=document.getElementById('data-advanced-block'); b.classList.toggle('hidden'); var c=document.getElementById('data-advanced-chevron'); var t=document.getElementById('data-advanced-trigger'); if(c) c.textContent=b.classList.contains('hidden')?'▼':'▲'; if(t) t.setAttribute('aria-expanded', b.classList.contains('hidden')?'false':'true');" class="w-full py-2 flex items-center justify-between gap-2 text-left text-[10px] font-bold uppercase tracking-widest text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-lg transition mt-2" aria-expanded="false" aria-controls="data-advanced-block" id="data-advanced-trigger">
-                        <span>Advanced</span>
-                        <span id="data-advanced-chevron" class="text-slate-400 shrink-0" aria-hidden="true">▼</span>
-                    </button>
-                    <div id="data-advanced-block" class="hidden pt-1 flex flex-col gap-2 border-t border-slate-100 mt-1">
-                        <p class="text-[10px] text-slate-400 mt-1">Recover from a local backup or fix balance totals if something looks wrong.</p>
-                        <button onclick="recoverLocalData()" class="w-full py-2.5 bg-slate-50 text-slate-600 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-slate-100 transition">Recover from Local Storage</button>
-                        <button onclick="rebuildTotals()" class="w-full py-2.5 bg-slate-50 text-slate-600 rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-slate-100 transition">Rebuild Totals</button>
-                    </div>
                     <input type="file" id="settings-import-file" accept="application/json" class="hidden" onchange="importStateFile(this.files[0])">
                 </div>
             </div>
