@@ -1049,7 +1049,9 @@ function updateFoodUI() {
                     }
                     hoverActions += '</div>';
                 }
-                rowHtml += '<div class="food-overview-cell-wrapper group relative overflow-hidden">' + cellContent + hoverActions + '</div>';
+                var wrapperClass = 'food-overview-cell-wrapper group relative overflow-hidden';
+                if (isToday) wrapperClass += ' food-cell-today-wrapper';
+                rowHtml += '<div class="' + wrapperClass + '">' + cellContent + hoverActions + '</div>';
             }
             rowHtml += '</div></div>';
             coreHtml += rowHtml;
