@@ -315,10 +315,6 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-1 sm:gap-2 min-w-0 overflow-hidden justify-end">
-                    <div class="home-header-actions flex-shrink-0 hidden xs:flex sm:flex">
-                        <button onclick="globalUndo()" id="global-undo-btn" class="home-header-icon-btn opacity-40 pointer-events-none" title="Undo"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg></button>
-                        <button onclick="globalRedo()" id="global-redo-btn" class="home-header-icon-btn opacity-40 pointer-events-none" title="Redo"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg></button>
-                    </div>
                     <div class="home-header-extra flex items-center gap-1 sm:gap-1.5 min-w-0 overflow-hidden shrink">
                         <span id="header-extra-label" class="home-header-label shrink-0">Extra</span>
                         <span class="home-header-extra-amount text-emerald-600 tabular-nums whitespace-nowrap overflow-hidden min-w-0" id="global-surplus">0.00</span>
@@ -329,6 +325,10 @@
                     <button onclick="toggleSurplusControls()" class="home-header-icon-btn shrink-0" aria-label="Extra options">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
                     </button>
+                    <div class="home-header-actions flex-shrink-0 flex items-center gap-0.5 sm:gap-1">
+                        <button onclick="globalUndo()" id="global-undo-btn" class="home-header-icon-btn home-header-undo-redo opacity-40 pointer-events-none" title="Undo" aria-label="Undo"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-4 h-4 sm:w-4 sm:h-4"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg></button>
+                        <button onclick="globalRedo()" id="global-redo-btn" class="home-header-icon-btn home-header-undo-redo opacity-40 pointer-events-none" title="Redo" aria-label="Redo"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="w-4 h-4 sm:w-4 sm:h-4"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg></button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -539,7 +539,7 @@
                         <span class="text-[10px] font-black uppercase tracking-widest text-slate-500">Show in bar</span>
                         <button type="button" onclick="bankBalanceFilterSelectAll()" class="text-[10px] font-bold text-indigo-600 hover:text-indigo-700">Select all</button>
                     </div>
-                    <div class="py-2 max-h-56 overflow-y-auto">
+                    <div class="bank-balance-filter-list py-2 max-h-56 overflow-y-auto">
                         <div class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" onclick="toggleBankBalanceGroup('extra')">
                             <input type="checkbox" id="bb-filter-extra" class="w-4 h-4 accent-emerald-500">
                             <span class="text-[11px] text-slate-700">Extra (Unallocated)</span>

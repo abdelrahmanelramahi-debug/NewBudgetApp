@@ -143,9 +143,8 @@ function positionBudgetPlanTipCard(targetEl) {
     }
     var cardHeight = cardRect.height || 0;
 
-    // Preferred position: below the target on desktop, above on mobile to keep
-    // both the card and target visible without pushing the card too far down.
-    var preferredTop = isMobile ? (targetRect.top - cardHeight - 12) : (targetRect.bottom + 12);
+    // Prefer tip card BELOW the target so the highlighted area stays visible above (especially on mobile).
+    var preferredTop = targetRect.bottom + 12;
     var preferredLeft = targetRect.left + (targetRect.width / 2) - (cardWidth / 2);
 
     // Clamp horizontally within viewport and within the onboarding step
@@ -159,8 +158,8 @@ function positionBudgetPlanTipCard(targetEl) {
 
     var finalTop = preferredTop;
     if (finalTop + cardHeight > maxTop) {
-        // Try the opposite side of the target
-        finalTop = isMobile ? (targetRect.bottom + 12) : (targetRect.top - cardHeight - 12);
+        // No room below: try above the target so the card stays on screen
+        finalTop = targetRect.top - cardHeight - 12;
     }
     finalTop = Math.min(Math.max(finalTop, minTop), maxTop);
 

@@ -916,6 +916,9 @@ body.theme-dark .desktop-nav-item:hover {
     .home-header-inner { padding: 0.5rem 0.5rem 0.75rem; }
     .home-header-row { gap: 0.5rem; }
     .home-header-icon-btn { width: 32px; height: 32px; border-radius: 8px; }
+    .home-header-undo-redo { width: 28px; height: 28px; border-radius: 6px; }
+    .home-header-undo-redo svg { width: 14px; height: 14px; }
+    .home-header-actions { gap: 2px; }
     .home-header-extra { display: flex; align-items: baseline; gap: 0.25rem; }
     .home-header-extra-amount { font-size: 0.8125rem; }
     .home-header-label { display: inline; }
@@ -1228,6 +1231,13 @@ body.theme-dark .desktop-nav-item:hover {
     outline: none;
 }
 
+/* Show in bar dropdown: iOS touch scrolling */
+.bank-balance-filter-list {
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    overscroll-behavior: contain;
+}
+
 /* Modals */
 .modal-overlay {
     position: fixed;
@@ -1246,6 +1256,9 @@ body.theme-dark .desktop-nav-item:hover {
     background: white;
     width: 100%;
     max-width: 24rem;
+    max-height: 90vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     border-radius: 24px;
     padding: 1.5rem;
     box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
@@ -1289,9 +1302,10 @@ body.theme-dark .desktop-nav-item:hover {
     cursor: not-allowed;
 }
 
-/* Onboarding tips overlay + tip card */
+/* Onboarding tips overlay + tip card (overlay below highlight so highlighted area stays ungreyed) */
 #onboarding-budget-tips-overlay {
     pointer-events: auto;
+    z-index: 10;
 }
 
 #onboarding-tip-card {
@@ -1300,20 +1314,35 @@ body.theme-dark .desktop-nav-item:hover {
 
 #home-tour-overlay {
     pointer-events: auto;
+    z-index: 10;
 }
 
 #home-tour-card {
     pointer-events: auto;
 }
 
-/* Soft highlight for tips & home tour (works on desktop + mobile) */
+/* Soft highlight for tips & home tour: above overlay, inset so edges stay on page, ungreyed background */
 .onboarding-tip-highlight,
 .home-tour-highlight {
     position: relative;
-    z-index: 30;
+    z-index: 25;
     box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
     border-radius: 16px;
     outline: 2px solid rgba(129, 140, 248, 0.9);
     outline-offset: -2px;
-    background-color: rgba(129, 140, 248, 0.04);
+    background-color: #ffffff;
+    margin-left: 12px;
+    margin-right: 12px;
+    max-width: calc(100% - 24px);
+    box-sizing: border-box;
+}
+
+body.theme-dark .onboarding-tip-highlight,
+body.theme-dark .home-tour-highlight {
+    background-color: #1e293b;
+}
+
+body.theme-sepia .onboarding-tip-highlight,
+body.theme-sepia .home-tour-highlight {
+    background-color: #fef3c7;
 }
