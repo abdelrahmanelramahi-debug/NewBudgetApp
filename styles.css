@@ -437,6 +437,28 @@ body.theme-sepia {
     background-color: #f3e8d5;
     color: #3b2f2a;
 }
+/* Onboarding in sepia: warm background and matching cards/inputs */
+body.theme-sepia #onboarding {
+    background-color: #f3e8d5;
+}
+body.theme-sepia #onboarding .bg-slate-50 {
+    background-color: #fff7ec;
+    border-color: #f3e2c6;
+}
+body.theme-sepia #onboarding .premium-card {
+    background-color: #fff7ec;
+    border-color: #f3e2c6;
+}
+body.theme-sepia #onboarding input,
+body.theme-sepia #onboarding select,
+body.theme-sepia #onboarding textarea {
+    background-color: #fffbf5;
+    border-color: #f3e2c6;
+    color: #3b2f2a;
+}
+body.theme-sepia #onboarding .border-slate-200 {
+    border-color: #f3e2c6;
+}
 body.theme-sepia .nav-header {
     border-bottom-color: #e2c9aa;
 }
