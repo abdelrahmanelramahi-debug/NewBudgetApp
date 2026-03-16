@@ -556,7 +556,7 @@ function applyOnboardingValues(skipAll) {
 function finishOnboarding() {
     state.onboardingComplete = true;
     try {
-        if (typeof STORAGE_KEYS !== 'undefined' && STORAGE_KEYS.ONBOARDING_DONE) {
+        if (typeof STORAGE_KEYS !== 'undefined' && STORAGE_KEYS.ONBOARDING_DONE && localStorage.setItem) {
             localStorage.setItem(STORAGE_KEYS.ONBOARDING_DONE, '1');
         }
     } catch (e) {}
@@ -589,7 +589,7 @@ function onboardingSignInAndSkip() {
         if (typeof saveState === 'function') saveState();
     }
     try {
-        if (typeof STORAGE_KEYS !== 'undefined' && STORAGE_KEYS.ONBOARDING_DONE) {
+        if (typeof STORAGE_KEYS !== 'undefined' && STORAGE_KEYS.ONBOARDING_DONE && localStorage.setItem) {
             localStorage.setItem(STORAGE_KEYS.ONBOARDING_DONE, '1');
         }
     } catch (e) {}
@@ -607,6 +607,7 @@ window.onboardingNext = onboardingNext;
 window.onboardingBack = onboardingBack;
 window.onboardingSkipAll = onboardingSkipAll;
 window.onboardingComplete = onboardingComplete;
+window.onboardingSignInAndSkip = onboardingSignInAndSkip;
 window.updateOnboardingSummary = updateOnboardingSummary;
 window.initAndRenderOnboardingCategories = initAndRenderOnboardingCategories;
 

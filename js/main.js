@@ -19,12 +19,6 @@ window.onload = function() {
     if (shouldShowOnboarding) {
         if (typeof showOnboarding === 'function') {
             showOnboarding(runAppInit);
-        } else {
-            // Onboarding script may have failed to load (e.g. 404, error); still show onboarding container, hide app
-            var ob = document.getElementById('onboarding');
-            var app = document.getElementById('app-shell');
-            if (ob) ob.classList.remove('hidden');
-            if (app) app.classList.add('hidden');
         }
         return;
     }
