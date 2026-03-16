@@ -1,9 +1,17 @@
 // INIT
 window.onload = function() {
     loadState();
+    // Decide onboarding first: no saved state = first launch; ?onboarding=1 = force re-run
+    var hasSavedState = !!localStorage.getItem(STORAGE_KEYS.STATE);
+    if (!hasSavedState) state.onboardingComplete = false;
     if (typeof window.location !== 'undefined' && window.location.search.indexOf('onboarding=1') !== -1) {
         state.onboardingComplete = false;
     }
+    if (!state.onboardingComplete && typeof showOnboarding === 'function') {
+        showOnboarding(runAppInit);
+        return;
+    }
+
     ensureSystemSavings();
     ensureCoreItems();
 
@@ -110,15 +118,7 @@ window.onload = function() {
         resetIdleBackupTimer();
     }
 
-    // First launch (no saved state) must always show onboarding
-    if (!localStorage.getItem(STORAGE_KEYS.STATE)) {
-        state.onboardingComplete = false;
-    }
-    if (!state.onboardingComplete && typeof showOnboarding === 'function') {
-        showOnboarding(runAppInit);
-        return;
-    }
-    // Onboarding complete: ensure app is visible (in case inline script didn't run)
+    // Onboarding complete: ensure app is visible
     var ob = document.getElementById('onboarding');
     var app = document.getElementById('app-shell');
     if (ob) ob.classList.add('hidden');
