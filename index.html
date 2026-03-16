@@ -38,8 +38,8 @@
                 <p class="text-sm text-slate-600 mb-2">Track spending, weekly allowance, and bank balance in one place.</p>
                 <p class="text-sm text-slate-600 mb-8">Set up your budget in a few steps. You can change anything later in Settings.</p>
                 <div class="flex flex-col gap-3">
-                    <button type="button" onclick="onboardingNext(event)" class="w-full py-3 px-6 bg-indigo-600 text-white rounded-xl text-sm font-black uppercase tracking-wider">Get started</button>
-                    <button type="button" onclick="onboardingSignInAndSkip()" class="w-full py-3 px-6 bg-slate-900 text-white rounded-xl text-sm font-black uppercase tracking-wider">Sign In / Sync</button>
+                    <button type="button" id="onboarding-welcome-get-started" class="w-full py-3 px-6 bg-indigo-600 text-white rounded-xl text-sm font-black uppercase tracking-wider">Get started</button>
+                    <button type="button" id="onboarding-welcome-signin" class="w-full py-3 px-6 bg-slate-900 text-white rounded-xl text-sm font-black uppercase tracking-wider">Sign In / Sync</button>
                 </div>
             </div>
             <div id="onboarding-step-currency" class="onboarding-step hidden">
@@ -844,7 +844,7 @@
                         </select>
                     </div>
                     <div class="bg-slate-50 p-4 rounded-xl">
-                        <label class="text-[9px] font-bold uppercase text-slate-400">Salary receipt day (column label)</label>
+                        <label class="text-[9px] font-bold uppercase text-slate-400">First day of week</label>
                         <select id="settings-first-day-of-week" class="w-full bg-transparent text-lg font-black outline-none mt-1" onchange="saveSettingsFromUI()">
                             <option value="0">Sunday</option>
                             <option value="1">Monday</option>

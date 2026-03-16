@@ -38,6 +38,26 @@ function showOnboarding(onComplete) {
     if (app) app.classList.add('hidden');
     prefillOnboardingFromState();
     showOnboardingStep(0);
+    wireOnboardingWelcomeButtons();
+}
+
+function wireOnboardingWelcomeButtons() {
+    var getStarted = document.getElementById('onboarding-welcome-get-started');
+    var signIn = document.getElementById('onboarding-welcome-signin');
+    if (getStarted && !getStarted._wired) {
+        getStarted._wired = true;
+        getStarted.addEventListener('click', function (e) {
+            e.preventDefault();
+            if (typeof onboardingNext === 'function') onboardingNext(e);
+        });
+    }
+    if (signIn && !signIn._wired) {
+        signIn._wired = true;
+        signIn.addEventListener('click', function (e) {
+            e.preventDefault();
+            if (typeof onboardingSignInAndSkip === 'function') onboardingSignInAndSkip();
+        });
+    }
 }
 
 function hideOnboarding() {
@@ -620,3 +640,14 @@ function onboardingSkipAccount() {
 }
 window.onboardingOpenAuth = onboardingOpenAuth;
 window.onboardingSkipAccount = onboardingSkipAccount;
+
+(function () {
+    function wireWelcome() {
+        if (typeof wireOnboardingWelcomeButtons === 'function') wireOnboardingWelcomeButtons();
+    }
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', wireWelcome);
+    } else {
+        wireWelcome();
+    }
+})();
