@@ -467,20 +467,27 @@ window.skipHomeTour = skipHomeTour;
 function initAndRenderOnboardingCategories() {
     if (!onboardingCategoriesInitialized && typeof state !== 'undefined') {
         onboardingCategoriesInitialized = true;
-        state.categories = (state.categories || []).filter(function (s) { return s.isSystem; });
-        if (state.balances) {
-            var balKeys = Object.keys(state.balances);
-            balKeys.forEach(function (k) { delete state.balances[k]; });
-        }
-        if (state.accounts && state.accounts.buckets) {
-            var sysLabels = ['Savings', 'Payables', 'Transportation', 'Weekly Allowance'];
-            var bucketKeys = Object.keys(state.accounts.buckets);
-            bucketKeys.forEach(function (k) {
-                if (sysLabels.indexOf(k) === -1) delete state.accounts.buckets[k];
-            });
-        }
+        // Keep preset categories (Health, Groceries, Misc, Subscriptions with their sub-items); only ensure system sections exist
         if (typeof ensureSystemSavings === 'function') ensureSystemSavings();
         if (typeof ensureCoreItems === 'function') ensureCoreItems();
+        // If state has no non-system categories (e.g. old saved state), add default presets so onboarding shows them
+        var hasPresets = (state.categories || []).some(function (s) { return !s.isSystem && s.items && s.items.length > 0; });
+        if (!hasPresets && state.categories) {
+            state.categories.push(
+                { id: 'health', label: 'Health', isLedgerLinked: true, isSingleAction: true, items: [
+                    { label: 'Supplements', amount: 50 }, { label: 'Protein', amount: 75 }, { label: 'Vitamins', amount: 50 }, { label: 'Other health', amount: 40 }
+                ]},
+                { id: 'groceries', label: 'Groceries', isLedgerLinked: true, isSingleAction: true, items: [
+                    { label: 'Staples', amount: 40 }, { label: 'Produce', amount: 30 }
+                ]},
+                { id: 'misc', label: 'Misc', isLedgerLinked: true, isSingleAction: true, items: [
+                    { label: 'Snacks', amount: 50 }, { label: 'Misc', amount: 30 }, { label: 'Personal', amount: 25 }, { label: 'Household', amount: 15 }
+                ]},
+                { id: 'subscriptions', label: 'Subscriptions', isLedgerLinked: true, isSingleAction: true, items: [
+                    { label: 'Streaming', amount: 50 }, { label: 'App 1', amount: 20 }, { label: 'App 2', amount: 15 }, { label: 'Cloud', amount: 5 }, { label: 'Sub other', amount: 15 }
+                ]}
+            );
+        }
     }
     var obInc = document.getElementById('onboarding-income');
     if (obInc && obInc.value.trim() !== '' && typeof state !== 'undefined') {
