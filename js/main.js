@@ -110,6 +110,10 @@ window.onload = function() {
         resetIdleBackupTimer();
     }
 
+    // First launch (no saved state) must always show onboarding
+    if (!localStorage.getItem(STORAGE_KEYS.STATE)) {
+        state.onboardingComplete = false;
+    }
     if (!state.onboardingComplete && typeof showOnboarding === 'function') {
         showOnboarding(runAppInit);
         return;

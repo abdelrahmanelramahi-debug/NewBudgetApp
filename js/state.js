@@ -224,6 +224,9 @@ function loadState() {
             // If key is missing (old schema or new device), keep default false so new users see onboarding.
             if ('onboardingComplete' in loaded) state.onboardingComplete = !!loaded.onboardingComplete;
         } catch(e) { console.error("Save data corrupt, using default"); }
+    } else {
+        // No saved state = first launch; always show onboarding (don't rely on default alone).
+        state.onboardingComplete = false;
     }
     migrateState();
     ensureSettings();
