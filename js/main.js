@@ -1,14 +1,31 @@
 // INIT
 window.onload = function() {
     loadState();
-    // Decide onboarding first: no saved state = first launch; ?onboarding=1 = force re-run
+    // Decide onboarding: use device-local flag so we don't skip onboarding when state was restored from elsewhere
     var hasSavedState = !!localStorage.getItem(STORAGE_KEYS.STATE);
+    var onboardingDoneFlag = localStorage.getItem(STORAGE_KEYS.ONBOARDING_DONE);
+    var forceOnboarding = typeof window.location !== 'undefined' && window.location.search.indexOf('onboarding=1') !== -1;
+
     if (!hasSavedState) state.onboardingComplete = false;
-    if (typeof window.location !== 'undefined' && window.location.search.indexOf('onboarding=1') !== -1) {
+    if (forceOnboarding) {
         state.onboardingComplete = false;
+        try { localStorage.removeItem(STORAGE_KEYS.ONBOARDING_DONE); } catch (e) {}
     }
-    if (!state.onboardingComplete && typeof showOnboarding === 'function') {
-        showOnboarding(runAppInit);
+    // Existing users: they have state with onboardingComplete true but no flag yet; set flag once so we don't show onboarding
+    if (hasSavedState && state.onboardingComplete && onboardingDoneFlag === null) {
+        try { localStorage.setItem(STORAGE_KEYS.ONBOARDING_DONE, '1'); onboardingDoneFlag = '1'; } catch (e) {}
+    }
+    var shouldShowOnboarding = !onboardingDoneFlag || !state.onboardingComplete || forceOnboarding;
+    if (shouldShowOnboarding) {
+        if (typeof showOnboarding === 'function') {
+            showOnboarding(runAppInit);
+        } else {
+            // Onboarding script may have failed to load (e.g. 404, error); still show onboarding container, hide app
+            var ob = document.getElementById('onboarding');
+            var app = document.getElementById('app-shell');
+            if (ob) ob.classList.remove('hidden');
+            if (app) app.classList.add('hidden');
+        }
         return;
     }
 

@@ -555,6 +555,11 @@ function applyOnboardingValues(skipAll) {
 
 function finishOnboarding() {
     state.onboardingComplete = true;
+    try {
+        if (typeof STORAGE_KEYS !== 'undefined' && STORAGE_KEYS.ONBOARDING_DONE) {
+            localStorage.setItem(STORAGE_KEYS.ONBOARDING_DONE, '1');
+        }
+    } catch (e) {}
     hideOnboarding();
     if (typeof ensureSystemSavings === 'function') ensureSystemSavings();
     if (typeof ensureCoreItems === 'function') ensureCoreItems();
@@ -583,6 +588,11 @@ function onboardingSignInAndSkip() {
         state.onboardingComplete = true;
         if (typeof saveState === 'function') saveState();
     }
+    try {
+        if (typeof STORAGE_KEYS !== 'undefined' && STORAGE_KEYS.ONBOARDING_DONE) {
+            localStorage.setItem(STORAGE_KEYS.ONBOARDING_DONE, '1');
+        }
+    } catch (e) {}
     hideOnboarding();
     if (onboardingCompleteCallback) {
         onboardingCompleteCallback();

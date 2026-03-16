@@ -3,7 +3,8 @@ const STORAGE_KEYS = {
     STATE: 'financeCmd_state',
     MODIFIED: 'financeCmd_state_modified',
     LAST_SYNCED: 'financeCmd_last_synced_to_cloud',
-    AUTO_BACKUPS: 'financeCmd_auto_backups'
+    AUTO_BACKUPS: 'financeCmd_auto_backups',
+    ONBOARDING_DONE: 'financeCmd_onboarding_done'
 };
 
 // Section IDs for system/core categories (used by state and logic).
