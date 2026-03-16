@@ -31,6 +31,7 @@ function showOnboarding(onComplete) {
     onboardingCompleteCallback = onComplete;
     onboardingStepIndex = 0;
     onboardingCategoriesInitialized = false;
+    if (typeof state !== 'undefined') state.onboardingComplete = false;
     var el = getOnboardingEl();
     var app = getAppShellEl();
     if (el) el.classList.remove('hidden');
@@ -70,6 +71,11 @@ function showOnboardingStep(index) {
         var card = document.getElementById('onboarding-account-card');
         if (card && (typeof isLoggedIn !== 'function' || !isLoggedIn())) card.classList.remove('hidden');
     }
+    // Keep onboarding visible and app hidden while moving between steps (guard against any other code flipping them)
+    var ob = getOnboardingEl();
+    var app = getAppShellEl();
+    if (ob) ob.classList.remove('hidden');
+    if (app) app.classList.add('hidden');
 }
 
 function startBudgetPlanTips() {
@@ -491,7 +497,9 @@ function updateOnboardingSummary() {
     if (sumCat) sumCat.textContent = cat;
 }
 
-function onboardingNext() {
+function onboardingNext(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    if (e && e.stopPropagation) e.stopPropagation();
     var step = ONBOARDING_STEPS[onboardingStepIndex];
     if (step === 'income') {
         var input = document.getElementById('onboarding-income');
