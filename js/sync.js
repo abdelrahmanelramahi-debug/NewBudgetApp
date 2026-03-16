@@ -223,7 +223,7 @@
             }
 
             if (cloudData.data && typeof cloudData.data === 'object' && cloudHasData) {
-                var localTheme = (state.settings && state.settings.theme) || (global.localStorage && global.localStorage.getItem('bubudget_theme')) || 'light';
+                var localTheme = (state.settings && state.settings.theme) || (global.localStorage && global.localStorage.getItem('bubudget_theme')) || 'sepia';
                 var localDeletedPayables = Array.isArray(state._deletedPayablesBuckets) ? state._deletedPayablesBuckets.slice() : [];
                 var localDeletedSavings = Array.isArray(state._deletedSavingsBuckets) ? state._deletedSavingsBuckets.slice() : [];
                 var localDeletedTransportation = Array.isArray(state._deletedTransportationBuckets) ? state._deletedTransportationBuckets.slice() : [];

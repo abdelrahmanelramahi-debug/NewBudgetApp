@@ -105,7 +105,7 @@ function updateCurrencyLabels() {
 function applySettings() {
     const body = document.body;
     if(!body) return;
-    const theme = state.settings?.theme || 'light';
+    const theme = state.settings?.theme || 'sepia';
     body.classList.toggle('theme-dark', theme === 'dark');
     body.classList.toggle('theme-sepia', theme === 'sepia');
     body.classList.toggle('compact', !!state.settings?.compact);
@@ -180,7 +180,7 @@ function renderSettings() {
     const allowNegative = document.getElementById('settings-allow-negative');
     if(allowNegative) allowNegative.checked = !!state.settings?.allowNegativeSurplus;
     const themeSelect = document.getElementById('settings-theme');
-    if(themeSelect) themeSelect.value = state.settings?.theme || 'light';
+    if(themeSelect) themeSelect.value = state.settings?.theme || 'sepia';
     const compactToggle = document.getElementById('settings-compact');
     if(compactToggle) compactToggle.checked = !!state.settings?.compact;
     const firstDaySelect = document.getElementById('settings-first-day-of-week');

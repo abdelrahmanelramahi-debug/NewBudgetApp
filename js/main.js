@@ -1,6 +1,7 @@
 // INIT
 window.onload = function() {
     loadState();
+    if (typeof applySettings === 'function') applySettings();
     // Decide onboarding: use device-local flag so we don't skip onboarding when state was restored from elsewhere
     var hasSavedState = !!localStorage.getItem(STORAGE_KEYS.STATE);
     var onboardingDoneFlag = localStorage.getItem(STORAGE_KEYS.ONBOARDING_DONE);

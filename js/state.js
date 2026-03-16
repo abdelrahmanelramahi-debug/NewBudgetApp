@@ -10,7 +10,7 @@ let state = {
         decimals: 2,
         confirmSurplusEdits: true,
         allowNegativeSurplus: true,
-        theme: 'light',
+        theme: 'sepia',
         compact: false,
         firstDayOfWeek: 3,
         payDate: 28
@@ -367,7 +367,7 @@ function ensureSettings() {
         decimals: 2,
         confirmSurplusEdits: true,
         allowNegativeSurplus: true,
-        theme: 'light',
+        theme: 'sepia',
         compact: false,
         firstDayOfWeek: 3,
         payDate: 28,
