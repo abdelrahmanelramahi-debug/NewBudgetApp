@@ -30,8 +30,8 @@
 </head>
 <body>
 
-    <!-- Onboarding overlay -->
-    <div id="onboarding" class="fixed inset-0 z-50 bg-slate-50 overflow-y-auto hidden">
+    <!-- Onboarding: visible by default so new users see it first; hidden when app-ready -->
+    <div id="onboarding" class="fixed inset-0 z-50 bg-slate-50 overflow-y-auto">
         <div class="max-w-lg mx-auto px-6 py-12">
             <div id="onboarding-step-welcome" class="onboarding-step">
                 <h2 class="text-2xl font-black text-slate-900 mb-2">Welcome to BuBudget</h2>
@@ -162,8 +162,24 @@
         </div>
     </div>
 
-    <!-- Main app (hidden when onboarding is visible) -->
-    <div id="app-shell" class="flex flex-col min-h-screen min-h-dvh lg:flex-row">
+    <!-- Main app: hidden by default so new users see onboarding first; shown when app-ready -->
+    <div id="app-shell" class="flex flex-col min-h-screen min-h-dvh lg:flex-row hidden">
+        <script>
+        (function(){
+            try {
+                var raw = localStorage.getItem('financeCmd_state');
+                if (raw) {
+                    var s = JSON.parse(raw);
+                    if (s && s.onboardingComplete === true) {
+                        var ob = document.getElementById('onboarding');
+                        var app = document.getElementById('app-shell');
+                        if (ob) ob.classList.add('hidden');
+                        if (app) app.classList.remove('hidden');
+                    }
+                }
+            } catch (e) {}
+        })();
+        </script>
         <!-- Desktop sidebar (visible from lg up) -->
         <aside id="desktop-sidebar" class="desktop-sidebar hidden lg:flex flex-col w-64 flex-shrink-0 px-4 py-6">
             <div class="flex flex-col bg-white/95 backdrop-blur shadow-lg rounded-3xl w-full h-full overflow-hidden">

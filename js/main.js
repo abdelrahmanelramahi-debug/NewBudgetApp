@@ -118,6 +118,11 @@ window.onload = function() {
         showOnboarding(runAppInit);
         return;
     }
+    // Onboarding complete: ensure app is visible (in case inline script didn't run)
+    var ob = document.getElementById('onboarding');
+    var app = document.getElementById('app-shell');
+    if (ob) ob.classList.add('hidden');
+    if (app) app.classList.remove('hidden');
     // Defer first paint until auth (and cloud load if logged in) so we don't flash stale surplus (e.g. -1175) from localStorage
     if (typeof whenAuthReady === 'function') {
         whenAuthReady(runAppInit);
