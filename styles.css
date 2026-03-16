@@ -459,6 +459,38 @@ body.theme-sepia #onboarding textarea {
 body.theme-sepia #onboarding .border-slate-200 {
     border-color: #f3e2c6;
 }
+/* Step 4 sticky header: stay on top when scrolling (content scrolls beneath it) */
+#onboarding-step-categories {
+    isolation: isolate;
+}
+#onboarding-cat-header {
+    z-index: 20;
+}
+#onboarding-strategy-sections {
+    position: relative;
+    z-index: 0;
+}
+body.theme-sepia #onboarding-cat-header {
+    background-color: #f3e8d5;
+    background-image: none;
+    backdrop-filter: none;
+}
+body.theme-sepia #onboarding-cat-header #onboarding-cat-total-card {
+    background-color: #fff7ec;
+    border-color: #f3e2c6;
+}
+body.theme-sepia #onboarding-cat-header .border-amber-300 {
+    border-color: #d97706;
+}
+body.theme-sepia #onboarding-cat-header .bg-amber-50\/90 {
+    background-color: rgba(255, 251, 235, 0.95);
+}
+body.theme-sepia #onboarding-cat-header .border-red-300 {
+    border-color: #dc2626;
+}
+body.theme-sepia #onboarding-cat-header .bg-red-50\/90 {
+    background-color: rgba(254, 242, 242, 0.95);
+}
 body.theme-sepia .nav-header {
     border-bottom-color: #e2c9aa;
 }
