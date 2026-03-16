@@ -277,7 +277,7 @@ window.skipBudgetPlanTips = skipBudgetPlanTips;
 var HOME_TOUR_STEPS = [
     {
         title: 'Bank Balance',
-        body: 'What your bank balance should show if you're following your plan. The bar shows how your money is split across sections.',
+        body: 'What your bank balance should show if you\'re following your plan. The bar shows how your money is split across sections.',
         target: '.bank-balance-card'
     },
     {
