@@ -2898,6 +2898,180 @@ function saveSettingsFromUI() {
     renderSettings();
 }
 
+// --- BUG REPORTS ---
+var ADMIN_EMAILS = ['a.w.vnn2@gmail.com'];
+function isAdminAccount() {
+    try {
+        var u = (typeof window !== 'undefined') ? window.currentUser : null;
+        var email = (u && u.email) ? String(u.email).trim().toLowerCase() : '';
+        return !!email && ADMIN_EMAILS.indexOf(email) !== -1;
+    } catch (e) {
+        return false;
+    }
+}
+window.isAdminAccount = isAdminAccount;
+
+function openBugReportModal() {
+    var err = document.getElementById('bug-report-error');
+    if (err) { err.textContent = ''; err.classList.add('hidden'); }
+    var nameEl = document.getElementById('bug-report-name');
+    var subjEl = document.getElementById('bug-report-subject');
+    var detailsEl = document.getElementById('bug-report-details');
+    var attachEl = document.getElementById('bug-report-attachment');
+    if (nameEl && !nameEl.value) nameEl.value = '';
+    if (subjEl) subjEl.value = '';
+    if (detailsEl) detailsEl.value = '';
+    if (attachEl) attachEl.value = '';
+    toggleModal('bug-report-modal', true);
+}
+window.openBugReportModal = openBugReportModal;
+
+function closeBugReportModal() {
+    toggleModal('bug-report-modal', false);
+}
+window.closeBugReportModal = closeBugReportModal;
+
+async function submitBugReport() {
+    var err = document.getElementById('bug-report-error');
+    function setErr(msg) {
+        if (!err) return;
+        err.textContent = msg;
+        err.classList.remove('hidden');
+    }
+    if (err) { err.textContent = ''; err.classList.add('hidden'); }
+
+    var subject = (document.getElementById('bug-report-subject')?.value || '').trim();
+    var details = (document.getElementById('bug-report-details')?.value || '').trim();
+    var name = (document.getElementById('bug-report-name')?.value || '').trim();
+    var fileInput = document.getElementById('bug-report-attachment');
+    var file = (fileInput && fileInput.files && fileInput.files[0]) ? fileInput.files[0] : null;
+
+    if (!subject) return setErr('Please enter a subject.');
+    if (!details) return setErr('Please enter details.');
+    if (!window.firebaseDb || !window.firebase) return setErr('Cloud not available right now.');
+
+    var submitBtn = document.getElementById('bug-report-submit');
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Sending…'; }
+
+    try {
+        var user = (typeof window !== 'undefined') ? window.currentUser : null;
+        var email = user && user.email ? String(user.email) : null;
+        var uid = user && user.uid ? String(user.uid) : null;
+
+        var report = {
+            createdAt: window.firebase.firestore.FieldValue.serverTimestamp(),
+            status: 'new',
+            subject: subject,
+            details: details,
+            reporterName: name || 'Anon',
+            reporterEmail: email,
+            reporterUid: uid,
+            userAgent: (typeof navigator !== 'undefined' ? navigator.userAgent : null),
+            appVersion: (typeof SYNC_PROTOCOL_VERSION !== 'undefined' ? ('sync-v' + SYNC_PROTOCOL_VERSION) : null)
+        };
+
+        var docRef = await window.firebaseDb.collection('bugReports').add(report);
+
+        // Optional attachment -> Firebase Storage
+        if (file && window.firebaseStorage) {
+            // Lightweight size guard (Firestore/Storage rules aside)
+            if (file.size > 8 * 1024 * 1024) throw new Error('Attachment too large (max 8MB).');
+            var safeName = String(file.name || 'attachment').replace(/[^\w.\-]+/g, '_').slice(0, 80);
+            var path = 'bugReports/' + docRef.id + '/' + safeName;
+            var ref = window.firebaseStorage.ref().child(path);
+            await ref.put(file);
+            var url = await ref.getDownloadURL();
+            await docRef.update({
+                attachment: {
+                    name: file.name || safeName,
+                    type: file.type || null,
+                    size: file.size || null,
+                    storagePath: path,
+                    downloadURL: url
+                }
+            });
+        }
+
+        closeBugReportModal();
+        if (typeof showAppAlert === 'function') showAppAlert('Bug report sent. Thanks!');
+    } catch (e) {
+        console.error('Bug report submit failed:', e);
+        setErr(e && e.message ? e.message : 'Failed to send report.');
+    } finally {
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Send report'; }
+    }
+}
+window.submitBugReport = submitBugReport;
+
+function openAdminBugReports() {
+    if (!isAdminAccount()) {
+        if (typeof showAppAlert === 'function') showAppAlert('Admin only.');
+        return;
+    }
+    toggleModal('admin-bug-reports-modal', true);
+    loadAdminBugReports();
+}
+window.openAdminBugReports = openAdminBugReports;
+
+function closeAdminBugReports() {
+    toggleModal('admin-bug-reports-modal', false);
+}
+window.closeAdminBugReports = closeAdminBugReports;
+
+function fmtAdminTime(ts) {
+    try {
+        if (!ts) return '';
+        var d = (ts.toDate ? ts.toDate() : (ts.seconds ? new Date(ts.seconds * 1000) : null));
+        if (!d) return '';
+        return d.toLocaleString();
+    } catch (e) { return ''; }
+}
+
+async function loadAdminBugReports() {
+    if (!isAdminAccount()) return;
+    var list = document.getElementById('admin-bug-reports-list');
+    if (!list) return;
+    list.innerHTML = '<div class="text-xs text-slate-500">Loading…</div>';
+    try {
+        var snap = await window.firebaseDb.collection('bugReports').orderBy('createdAt', 'desc').limit(50).get({ source: 'server' });
+        if (!snap || !snap.docs) {
+            list.innerHTML = '<div class="text-xs text-slate-500">No data.</div>';
+            return;
+        }
+        if (snap.docs.length === 0) {
+            list.innerHTML = '<div class="text-xs text-slate-500">No reports yet.</div>';
+            return;
+        }
+        list.innerHTML = snap.docs.map(function (doc) {
+            var d = doc.data() || {};
+            var subject = String(d.subject || '(no subject)').replace(/</g, '&lt;');
+            var name = String(d.reporterName || 'Anon').replace(/</g, '&lt;');
+            var email = d.reporterEmail ? String(d.reporterEmail).replace(/</g, '&lt;') : '';
+            var when = fmtAdminTime(d.createdAt);
+            var details = String(d.details || '').replace(/</g, '&lt;');
+            var attach = (d.attachment && d.attachment.downloadURL) ? String(d.attachment.downloadURL).replace(/"/g, '&quot;') : '';
+            var attachHtml = attach ? ('<a class="text-[11px] font-bold text-indigo-600 underline" href="' + attach + '" target="_blank" rel="noopener">Attachment</a>') : '<span class="text-[11px] text-slate-400">No attachment</span>';
+            return (
+                '<div class="rounded-xl border border-slate-200 bg-white p-4">' +
+                    '<div class="flex items-start justify-between gap-3">' +
+                        '<div class="min-w-0">' +
+                            '<p class="text-[11px] font-black text-slate-900 truncate">' + subject + '</p>' +
+                            '<p class="text-[10px] font-bold text-slate-500 mt-1">' + name + (email ? (' · ' + email) : '') + '</p>' +
+                            (when ? ('<p class="text-[10px] text-slate-400 mt-1">' + when + '</p>') : '') +
+                        '</div>' +
+                        '<div class="flex-shrink-0">' + attachHtml + '</div>' +
+                    '</div>' +
+                    '<div class="mt-3 text-[11px] text-slate-700 whitespace-pre-wrap leading-relaxed">' + details + '</div>' +
+                '</div>'
+            );
+        }).join('');
+    } catch (e) {
+        console.error('Load admin bug reports failed:', e);
+        list.innerHTML = '<div class="text-xs text-red-500">Failed to load reports.</div>';
+    }
+}
+window.loadAdminBugReports = loadAdminBugReports;
+
 function rebuildTotals() {
     pushToUndo();
     ensureAccountsState();

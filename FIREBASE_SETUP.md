@@ -41,6 +41,67 @@ service cloud.firestore {
 
 3. Click **Publish**
 
+---
+
+## Bug reports (Admin-only) – Firestore + Storage rules
+
+This app includes an in-app **Bug report** form. Reports are written to:
+
+- Firestore collection: `bugReports`
+- (Optional attachments) Firebase Storage path: `bugReports/{reportId}/{filename}`
+
+### 1) Recommended Firestore rules
+
+You should **NOT** rely on the frontend “admin email” check for security. Lock it down in rules.
+
+Example rules (simple email-allowlist; good enough for a personal app):
+
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email in ['a.w.vnn2@gmail.com'];
+    }
+
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /bugReports/{reportId} {
+      // Any signed-in user can create a report
+      allow create: if request.auth != null;
+      // Only admins can read/update/delete reports
+      allow read, update, delete: if isAdmin();
+    }
+  }
+}
+```
+
+### 2) Recommended Storage rules (for attachments)
+
+```javascript
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email in ['a.w.vnn2@gmail.com'];
+    }
+
+    match /bugReports/{reportId}/{fileName} {
+      // Any signed-in user can upload
+      allow write: if request.auth != null;
+      // Only admins can download
+      allow read: if isAdmin();
+    }
+  }
+}
+```
+
+If you want stronger security, the best practice is to use **custom claims** for admins (set via Admin SDK / Cloud Functions) instead of an email list in rules.
+
 ## Step 4: Get Your Firebase Config
 
 1. In Firebase Console, click the gear icon ⚙️ → **Project settings**
