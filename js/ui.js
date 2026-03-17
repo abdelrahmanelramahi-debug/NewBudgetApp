@@ -503,7 +503,7 @@ function renderStrategy(opts) {
                 <div class="px-6 pb-3">
                     <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mb-1">
                         <span>Monthly (4 weeks)</span>
-                        <span id="weekly-slider-label-${sid}-${idx}">${weeklySnapped} ${getCurrencyLabel()}</span>
+                        <span id="weekly-slider-label-${sid}-${idx}">${displayAmount} ${getCurrencyLabel()}</span>
                     </div>
                     <input type="range" id="weekly-amount-slider-${sid}-${idx}" min="0" max="${weeklyAmountMax}" step="${WEEKLY_SLIDER_STEP}" value="${weeklySnapped}" oninput="syncWeeklyAmount('${sid}', ${idx}, this.value)" class="w-full">
                     <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mt-1">
@@ -527,7 +527,7 @@ function renderStrategy(opts) {
                 <div class="px-6 pb-3">
                     <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mb-1">
                         <span>Monthly</span>
-                        <span id="savings-slider-label-${sid}-${idx}">${savingsSnapped} ${getCurrencyLabel()}</span>
+                        <span id="savings-slider-label-${sid}-${idx}">${displayAmount} ${getCurrencyLabel()}</span>
                     </div>
                     <input type="range" id="general-savings-slider-${sid}-${idx}" min="0" max="${savingsMax}" step="${SAVINGS_SLIDER_STEP}" value="${savingsSnapped}" oninput="syncGeneralSavingsAmount('${sid}', ${idx}, this.value)" class="w-full">
                     <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mt-1">
@@ -551,7 +551,7 @@ function renderStrategy(opts) {
                 <div class="px-6 pb-3">
                     <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mb-1">
                         <span>Monthly (4 weeks)</span>
-                        <span id="car-slider-label-${sid}-${idx}">${carSnapped} ${getCurrencyLabel()}</span>
+                        <span id="car-slider-label-${sid}-${idx}">${displayAmount} ${getCurrencyLabel()}</span>
                     </div>
                     <input type="range" id="car-fund-slider-${sid}-${idx}" min="0" max="${carMax}" step="${CAR_SLIDER_STEP}" value="${carSnapped}" oninput="syncCarFundAmount('${sid}', ${idx}, this.value)" class="w-full">
                     <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mt-1">
@@ -616,8 +616,8 @@ function renderStrategy(opts) {
         </div>`;
 
     var miniBudgetsHeading = (!forOnboarding && customHtml)
-        ? `<div class="flex items-center justify-between px-1 mb-2">
-                <span class="text-[11px] font-black text-slate-800 uppercase tracking-widest">Mini-Budgets</span>
+        ? `<div class="flex items-center justify-between px-1 mb-3">
+                <span class="text-[12px] font-black text-slate-900 uppercase tracking-[0.2em]">Mini-Budgets</span>
            </div>`
         : '';
 
@@ -795,8 +795,8 @@ function renderLedger() {
 
     // Category view options (above creatable categories, below Savings / Transportation / Payables)
     var optionsBarHtml = `
-        <div id="ledger-options-bar" class="flex flex-wrap items-center justify-between gap-3 py-2 px-1 mb-2">
-            <span class="text-[11px] font-black text-slate-800 uppercase tracking-widest">Mini-Budgets</span>
+        <div id="ledger-options-bar" class="flex flex-wrap items-center justify-between gap-3 py-3 px-1 mb-2">
+            <span class="text-[12px] font-black text-slate-900 uppercase tracking-[0.2em]">Mini-Budgets</span>
             <div class="flex flex-wrap items-center gap-3">
                 <label class="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" id="ledger-hide-empty" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" onchange="setLedgerViewOptions()">
