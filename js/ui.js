@@ -609,13 +609,19 @@ function renderStrategy(opts) {
     });
 
     var toolBarHtml = forOnboarding
-        ? `<div class="flex gap-2 mb-6"><button onclick="openAddCategoryTool()" class="flex-1 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Add Category</button></div>`
-        : `<div class="flex gap-2 mb-6">
+        ? `<div class="flex gap-2 mb-4"><button onclick="openAddCategoryTool()" class="flex-1 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Add Category</button></div>`
+        : `<div class="flex gap-2 mb-4">
             <button onclick="openAddCategoryTool()" class="flex-1 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Add Category</button>
             <button onclick="openDangerModal('global', null)" class="flex-1 py-3 bg-red-50 text-red-500 hover:bg-red-100 rounded-xl text-[10px] font-black uppercase tracking-widest">Clear All</button>
         </div>`;
 
-    container.innerHTML = systemHtml + toolBarHtml + customHtml;
+    var miniBudgetsHeading = (!forOnboarding && customHtml)
+        ? `<div class="flex items-center justify-between px-1 mb-2">
+                <span class="text-[11px] font-black text-slate-800 uppercase tracking-widest">Mini-Budgets</span>
+           </div>`
+        : '';
+
+    container.innerHTML = systemHtml + miniBudgetsHeading + toolBarHtml + customHtml;
 
     if(!systemHtml && !customHtml) {
          container.innerHTML = toolBarHtml + '<div class="text-center py-10 text-slate-300 font-bold uppercase tracking-widest">No Strategies Yet</div>';
@@ -710,7 +716,7 @@ function renderLedger() {
     const payBal = getBal('Payables');
 
     const majorHtml = `
-        <div class="major-funds mb-4 sm:mb-6">
+        <div class="major-funds mb-3 sm:mb-4">
             <!-- Mobile: compact bars (one row per fund), hidden from sm up -->
             <div class="space-y-1.5 max-sm:block sm:hidden">
                 <div class="major-fund-bar flex items-center justify-between gap-2 py-2.5 px-3 rounded-xl bg-indigo-600 text-white border border-indigo-500">
@@ -789,20 +795,23 @@ function renderLedger() {
 
     // Category view options (above creatable categories, below Savings / Transportation / Payables)
     var optionsBarHtml = `
-        <div id="ledger-options-bar" class="flex flex-wrap items-center gap-3 py-2 px-1 mb-1">
-            <label class="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" id="ledger-hide-empty" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" onchange="setLedgerViewOptions()">
-                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Hide empty</span>
-            </label>
-            <div class="flex items-center gap-2">
-                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Sort:</span>
-                <select id="ledger-sort" class="rounded-lg border border-slate-200 px-2 py-1.5 text-xs font-bold text-slate-800 bg-white outline-none focus:ring-2 focus:ring-indigo-200" onchange="setLedgerViewOptions()">
-                    <option value="default">Default</option>
-                    <option value="balanceDesc">Highest first</option>
-                    <option value="balanceAsc">Lowest first</option>
-                    <option value="nameAsc">A–Z</option>
-                    <option value="nameDesc">Z–A</option>
-                </select>
+        <div id="ledger-options-bar" class="flex flex-wrap items-center justify-between gap-3 py-2 px-1 mb-2">
+            <span class="text-[11px] font-black text-slate-800 uppercase tracking-widest">Mini-Budgets</span>
+            <div class="flex flex-wrap items-center gap-3">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" id="ledger-hide-empty" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" onchange="setLedgerViewOptions()">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Hide empty</span>
+                </label>
+                <div class="flex items-center gap-2">
+                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Sort:</span>
+                    <select id="ledger-sort" class="rounded-lg border border-slate-200 px-2 py-1.5 text-xs font-bold text-slate-800 bg-white outline-none focus:ring-2 focus:ring-indigo-200" onchange="setLedgerViewOptions()">
+                        <option value="default">Default</option>
+                        <option value="balanceDesc">Highest first</option>
+                        <option value="balanceAsc">Lowest first</option>
+                        <option value="nameAsc">A–Z</option>
+                        <option value="nameDesc">Z–A</option>
+                    </select>
+                </div>
             </div>
         </div>
     `;
