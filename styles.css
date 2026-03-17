@@ -551,6 +551,15 @@ body.theme-sepia .major-funds .space-y-1.5 > .major-fund-bar .major-fund-amount,
 body.theme-sepia .major-funds .major-fund-amount {
     color: #3b2f2a;
 }
+
+/* Desktop major-fund cards are rendered with Tailwind `text-white`.
+   Force readable dark text in sepia. */
+body.theme-sepia .major-funds .premium-card {
+    color: #3b2f2a !important;
+}
+body.theme-sepia .major-funds .premium-card .major-fund-amount {
+    color: #1f2933 !important;
+}
 body.theme-sepia .major-funds .space-y-1.5 > .major-fund-bar button {
     background-color: #fff;
     color: #0f172a;

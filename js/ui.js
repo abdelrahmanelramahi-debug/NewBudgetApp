@@ -187,6 +187,8 @@ function renderSettings() {
     if(firstDaySelect) firstDaySelect.value = String(state.settings?.firstDayOfWeek ?? 3);
     const payDateSelect = document.getElementById('settings-pay-date');
     if(payDateSelect) payDateSelect.value = String(state.settings?.payDate ?? 28);
+    const showFoodPlan = document.getElementById('settings-show-food-plan');
+    if (showFoodPlan) showFoodPlan.checked = state.settings?.showFoodPlan !== false;
 }
 
 function switchPage(page, options) {
@@ -332,6 +334,7 @@ function updateBudgetPlanAllocated() {
         state.categories.forEach(function (sec) {
             sec.items.forEach(function (item) {
                 if (item.label === 'Payables') return;
+                if ((state.settings && state.settings.showFoodPlan === false) && (item.label === 'Daily Food' || item.label === 'Food Base')) return;
                 allocated += (typeof item.amount === 'number' ? item.amount : 0);
             });
         });
@@ -375,9 +378,21 @@ function renderStrategy(opts) {
     let systemHtml = '';
     let customHtml = '';
 
+    var sysSavingsSec = state.categories.find(function (s) { return s && s.id === 'sys_savings'; }) || null;
+    var savingsIdxInSys = -1;
+    var savingsItemInSys = null;
+    if (sysSavingsSec && Array.isArray(sysSavingsSec.items)) {
+        savingsIdxInSys = sysSavingsSec.items.findIndex(function (i) { return i && i.label === 'Savings'; });
+        if (savingsIdxInSys >= 0) savingsItemInSys = sysSavingsSec.items[savingsIdxInSys];
+    }
+
     state.categories.forEach((sec, secIdx) => {
+        // Hide "Savings" section in Budget Plan; Savings will be shown inside Must Haves.
+        if (sec && sec.id === 'sys_savings') return;
         const budgetPlanItems = sec.items.filter(i => i.label !== 'Payables');
-        const secTotal = budgetPlanItems.reduce((a, b) => a + b.amount, 0);
+        const includeSavingsInMustHaves = sec && sec.id === 'core_essentials' && savingsItemInSys;
+        const secTotalBase = budgetPlanItems.reduce((a, b) => a + b.amount, 0);
+        const secTotal = secTotalBase + (includeSavingsInMustHaves ? (savingsItemInSys.amount || 0) : 0);
         const perc = state.monthlyIncome > 0 ? Math.round((secTotal/state.monthlyIncome)*100) : 0;
 
         let controls;
@@ -399,30 +414,45 @@ function renderStrategy(opts) {
         }
 
         let rowsHtml = '';
+
+        // Must Haves: show Savings inside, then subtitle "Essentials" for existing core items.
+        if (includeSavingsInMustHaves) {
+            rowsHtml += `<div class="pt-1 pb-2 text-[9px] font-black uppercase tracking-widest text-slate-400">Savings</div>`;
+            // Render savings row using sys_savings sid/idx so existing handlers work.
+            rowsHtml += buildBudgetPlanRowHtml(sysSavingsSec.id, savingsIdxInSys, savingsItemInSys, { hideFoodWhenOff: false });
+            rowsHtml += `<div class="pt-4 pb-2 text-[9px] font-black uppercase tracking-widest text-slate-400">Essentials</div>`;
+        }
+
         sec.items.forEach((item, idx) => {
             if (item.label === 'Payables') return;
+            if ((state.settings && state.settings.showFoodPlan === false) && (item.label === 'Daily Food' || item.label === 'Food Base')) return;
+            rowsHtml += buildBudgetPlanRowHtml(sec.id, idx, item, { hideFoodWhenOff: true });
+        });
+
+        function buildBudgetPlanRowHtml(sid, idx, item, optsRow) {
+            optsRow = optsRow || {};
             let amortLabel = item.amortData ? `<span class="text-[9px] bg-indigo-50 text-indigo-600 px-1 rounded font-bold ml-2">${item.amortData.total}/${item.amortData.months}mo</span>` : '';
             const isFoodBase = item.label === 'Daily Food' || item.label === 'Food Base';
 
             // SMART BADGES FOR CORE ITEMS
             if (item.label === 'Daily Food' || item.label === 'Food Base') {
                 const dailyRate = item.amount / state.food.daysTotal;
-                amortLabel = `<span id="food-base-daily-badge" class="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold ml-2">${formatMoney(dailyRate)}/day</span>`;
+                amortLabel = `<span class="budget-item-badge text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold ml-2" data-sid="${sid}" data-idx="${idx}" data-badge="food">${formatMoney(dailyRate)}/day</span>`;
             } else if (item.label === 'Weekly Allowance') {
                 const weeklyRate = item.amount / 4;
-                amortLabel = `<span class="text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-bold ml-2">~${formatMoney(weeklyRate)}/wk</span>`;
+                amortLabel = `<span class="budget-item-badge text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-bold ml-2" data-sid="${sid}" data-idx="${idx}" data-badge="weekly">~${formatMoney(weeklyRate)}/wk</span>`;
             } else if (item.label === 'Transportation') {
                 const weeklyRate = item.amount / 4;
-                amortLabel = `<span class="text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-bold ml-2">~${formatMoney(weeklyRate)}/wk</span>`;
+                amortLabel = `<span class="budget-item-badge text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-bold ml-2" data-sid="${sid}" data-idx="${idx}" data-badge="transport">~${formatMoney(weeklyRate)}/wk</span>`;
             }
 
             const inputAttr = isFoodBase
-                ? `id="food-base-input" onfocus="pushToUndo()" oninput="syncFoodBaseAmount('${sec.id}', ${idx}, this.value)"`
-                : `onfocus="pushToUndo()" oninput="fastUpdateItemAmount('${sec.id}', ${idx}, this.value)"`;
+                ? `onfocus="pushToUndo()" oninput="syncFoodBaseAmount('${sid}', ${idx}, this.value)"`
+                : `onfocus="pushToUndo()" oninput="fastUpdateItemAmount('${sid}', ${idx}, this.value)"`;
 
             // Logic to disable delete for Core items
             const deleteBtnClass = (item.isCore) ? 'text-slate-200 cursor-not-allowed' : 'text-slate-300 hover:text-red-500 hover:bg-red-50 cursor-pointer';
-            const deleteAction = (item.isCore) ? '' : `onclick="openDeleteModal('${sec.id}', ${idx})"`;
+            const deleteAction = (item.isCore) ? '' : `onclick="openDeleteModal('${sid}', ${idx})"`;
 
             const actions = `
                 <button onclick="openAmortTool('${sec.id}', ${idx})" class="p-1.5 text-indigo-400 hover:bg-indigo-50 rounded">✎</button>
@@ -441,9 +471,9 @@ function renderStrategy(opts) {
                 <div class="px-6 pb-3">
                     <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mb-1">
                         <span>Daily Rate</span>
-                        <span>${dailyRateDisplay} ${getCurrencyLabel()}</span>
+                        <span id="food-daily-slider-label-${sid}-${idx}">${dailyRateDisplay} ${getCurrencyLabel()}</span>
                     </div>
-                    <input type="range" id="food-daily-slider" min="0" max="${dailyRateMax}" step="1" value="${dailyRateDisplay}" oninput="syncFoodDailyRate('${sec.id}', ${idx}, this.value)" class="w-full">
+                    <input type="range" id="food-daily-slider" min="0" max="${dailyRateMax}" step="1" value="${dailyRateDisplay}" oninput="syncFoodDailyRate('${sid}', ${idx}, this.value)" class="w-full">
                     <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mt-1">
                         <span>0</span>
                         <span>${dailyRateMax}</span>
@@ -465,7 +495,7 @@ function renderStrategy(opts) {
                 <div class="px-6 pb-3">
                     <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mb-1">
                         <span>Monthly (4 weeks)</span>
-                        <span>${weeklySnapped} ${getCurrencyLabel()}</span>
+                        <span id="weekly-slider-label-${sid}-${idx}">${weeklySnapped} ${getCurrencyLabel()}</span>
                     </div>
                     <input type="range" id="weekly-amount-slider" min="0" max="${weeklyAmountMax}" step="${WEEKLY_SLIDER_STEP}" value="${weeklySnapped}" oninput="syncWeeklyAmount('${sec.id}', ${idx}, this.value)" class="w-full">
                     <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mt-1">
@@ -489,7 +519,7 @@ function renderStrategy(opts) {
                 <div class="px-6 pb-3">
                     <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mb-1">
                         <span>Monthly</span>
-                        <span>${savingsSnapped} ${getCurrencyLabel()}</span>
+                        <span id="savings-slider-label-${sid}-${idx}">${savingsSnapped} ${getCurrencyLabel()}</span>
                     </div>
                     <input type="range" id="general-savings-slider" min="0" max="${savingsMax}" step="${SAVINGS_SLIDER_STEP}" value="${savingsSnapped}" oninput="syncGeneralSavingsAmount('${sec.id}', ${idx}, this.value)" class="w-full">
                     <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mt-1">
@@ -513,7 +543,7 @@ function renderStrategy(opts) {
                 <div class="px-6 pb-3">
                     <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mb-1">
                         <span>Monthly (4 weeks)</span>
-                        <span>${carSnapped} ${getCurrencyLabel()}</span>
+                        <span id="car-slider-label-${sid}-${idx}">${carSnapped} ${getCurrencyLabel()}</span>
                     </div>
                     <input type="range" id="car-fund-slider" min="0" max="${carMax}" step="${CAR_SLIDER_STEP}" value="${carSnapped}" oninput="syncCarFundAmount('${sec.id}', ${idx}, this.value)" class="w-full">
                     <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mt-1">
@@ -523,18 +553,18 @@ function renderStrategy(opts) {
                 </div>
             ` : '';
 
-            rowsHtml += `
+            return `
                 <div class="draggable-row flex justify-between items-center py-3 border-b border-slate-50 last:border-0"
                      draggable="${!item.isCore}"
-                     ondragstart="handleItemDragStart(event, '${sec.id}', ${idx})"
+                     ondragstart="handleItemDragStart(event, '${sid}', ${idx})"
                      ondragover="handleDragOver(event)"
-                     ondrop="handleItemDrop(event, '${sec.id}', ${idx})">
+                     ondrop="handleItemDrop(event, '${sid}', ${idx})">
                     <div class="flex items-center gap-3">
                         <span class="text-slate-300 ${item.isCore ? 'opacity-0' : 'cursor-move'}">::</span>
                         <span class="text-xs font-bold text-slate-600">${item.label} ${amortLabel}</span>
                     </div>
                     <div class="flex items-center gap-2 no-drag" onmousedown="event.stopPropagation()">
-                        <input type="number" value="${displayAmount}" class="input-pill text-slate-900" autocomplete="off" ${inputAttr}>
+                        <input type="number" value="${displayAmount}" class="input-pill text-slate-900 budget-item-input" data-sid="${sid}" data-idx="${idx}" autocomplete="off" ${inputAttr}>
                         ${actions}
                     </div>
                 </div>
@@ -543,8 +573,9 @@ function renderStrategy(opts) {
                 ${generalSavingsSliderHtml}
                 ${carFundSliderHtml}
             `;
-        });
+        }
 
+        var displayLabel = (sec && sec.id === 'core_essentials') ? 'Must Haves' : sec.label;
         const cardHtml = `
             <div class="premium-card p-6 mb-6 draggable-card ${sec.isSystem ? 'bg-indigo-50/50 border-indigo-100' : ''}"
                  draggable="${!sec.isSystem}"
@@ -555,7 +586,7 @@ function renderStrategy(opts) {
                     <div class="flex flex-col gap-0.5">
                         <div class="flex items-center gap-2">
                             <span class="text-slate-300 ${sec.isSystem ? 'opacity-0' : 'cursor-move'} text-xs">☰</span>
-                            <span class="text-[11px] font-black text-slate-800 uppercase tracking-widest">${sec.label}</span>
+                            <span class="text-[11px] font-black text-slate-800 uppercase tracking-widest">${displayLabel}</span>
                         </div>
                         <span class="text-[10px] font-bold text-slate-500 pl-5">${formatMoney(secTotal)} ${getCurrencyLabel()} allocated</span>
                     </div>
@@ -843,16 +874,18 @@ function renderLedger() {
         });
 
         // Section HTML with Toggle + category total (left / allocated)
+        var expandedMap = getLedgerExpandedSections();
+        var isExpanded = !!expandedMap[secId];
         const sectionHtml = `
             <div class="mb-4">
                 <button onclick="toggleLedgerSection('${secId}')" class="flex justify-between items-center w-full py-2.5 px-1 hover:bg-slate-50 rounded-lg transition group">
                     <span class="text-[11px] font-black text-slate-800 uppercase tracking-widest">${sec.label}</span>
                     <span class="flex items-center gap-2">
                         <span class="text-[10px] font-bold text-slate-500">${formatMoney(sumLeft)} / ${formatMoney(sumAllocated)} <span class="text-slate-400">${getCurrencyLabel()}</span></span>
-                        <svg id="icon-${secId}" class="w-4 h-4 text-slate-400 transform -rotate-90 transition-transform group-hover:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        <svg id="icon-${secId}" class="w-4 h-4 text-slate-400 transform ${isExpanded ? '' : '-rotate-90'} transition-transform group-hover:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                     </span>
                 </button>
-                <div id="${secId}" class="space-y-1.5 mt-1 transition-all hidden">
+                <div id="${secId}" class="space-y-1.5 mt-1 transition-all ${isExpanded ? '' : 'hidden'}">
                     ${barsHtml}
                 </div>
             </div>
@@ -865,15 +898,27 @@ function renderLedger() {
     updateGlobalUI();
 }
 
+function getLedgerExpandedSections() {
+    // In-memory expanded state so re-renders don't auto-collapse sections after +/− adjustments.
+    // Stored on window so it's shared across modules and survives renderLedger re-entry.
+    if (typeof window === 'undefined') return {};
+    if (!window.__ledgerExpandedSections || typeof window.__ledgerExpandedSections !== 'object') {
+        window.__ledgerExpandedSections = {};
+    }
+    return window.__ledgerExpandedSections;
+}
+
 function toggleLedgerSection(id) {
     const el = document.getElementById(id);
     const icon = document.getElementById('icon-' + id);
     if (el.classList.contains('hidden')) {
         el.classList.remove('hidden');
         icon.classList.remove('-rotate-90');
+        try { getLedgerExpandedSections()[id] = true; } catch (e) {}
     } else {
         el.classList.add('hidden');
         icon.classList.add('-rotate-90');
+        try { delete getLedgerExpandedSections()[id]; } catch (e) {}
     }
 }
 
@@ -1170,9 +1215,84 @@ function isTouchOrSmall() {
     return (typeof window !== 'undefined' && window.matchMedia && (window.matchMedia('(max-width: 768px)').matches || window.matchMedia('(pointer: coarse)').matches));
 }
 
+function isMobileFoodModal() {
+    return (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 640px)').matches);
+}
+
+function openFoodDayMobileModal(cycleDay, consumed) {
+    var modal = document.getElementById('food-day-mobile-modal');
+    if (!modal) return;
+
+    var day = Math.max(1, Math.min(28, Math.floor(cycleDay)));
+    var payCycle = getPayCycleInfo();
+    var p = payCycle && payCycle.dates ? payCycle.dates[day - 1] : null;
+    var titleEl = document.getElementById('food-day-mobile-title');
+    var subtitleEl = document.getElementById('food-day-mobile-subtitle');
+    if (titleEl) titleEl.textContent = 'Day ' + day;
+    if (subtitleEl) {
+        subtitleEl.textContent = p ? (p.monthName + ' ' + p.date + ' · ' + 'Tap an action below') : 'Tap an action below';
+    }
+
+    modal.setAttribute('data-cycle-day', String(day));
+    modal.setAttribute('data-consumed', consumed ? '1' : '0');
+
+    var consumeBtn = document.getElementById('food-day-mobile-consume-btn');
+    if (consumeBtn) {
+        consumeBtn.textContent = consumed ? 'Unconsume day' : 'Consume day';
+        consumeBtn.className = 'w-full py-3 rounded-2xl text-[12px] font-black uppercase tracking-widest transition ' +
+            (consumed ? 'bg-slate-900 text-white hover:bg-slate-800' : 'bg-emerald-600 text-white hover:bg-emerald-700');
+        consumeBtn.onclick = function () {
+            var d = parseInt(modal.getAttribute('data-cycle-day'), 10);
+            var isConsumed = modal.getAttribute('data-consumed') === '1';
+            if (typeof setFoodDayFromCalendar === 'function') setFoodDayFromCalendar(d, isConsumed ? 'unmark' : 'mark');
+            closeFoodDayMobileModal();
+        };
+    }
+
+    var transferTargets = document.getElementById('food-day-mobile-transfer-targets');
+    var transferDisabled = document.getElementById('food-day-mobile-transfer-disabled');
+    if (transferTargets) {
+        transferTargets.innerHTML = '';
+        if (consumed) {
+            if (transferDisabled) transferDisabled.classList.remove('hidden');
+            transferTargets.classList.add('opacity-50', 'pointer-events-none');
+        } else {
+            if (transferDisabled) transferDisabled.classList.add('hidden');
+            transferTargets.classList.remove('opacity-50', 'pointer-events-none');
+            var targets = (typeof getFoodDayTransferTargets === 'function') ? getFoodDayTransferTargets() : [];
+            transferTargets.innerHTML = (targets || []).map(function (t) {
+                var safeLabel = String(t.label).replace(/</g, '&lt;').replace(/"/g, '&quot;');
+                var tid = String(t.id).replace(/"/g, '&quot;');
+                return (
+                    '<button type="button" class="w-full text-left px-4 py-3 text-[12px] font-bold text-slate-800 hover:bg-slate-50 active:bg-slate-100 transition truncate" ' +
+                    'onclick="transferFoodDayTo(' + day + ', \'' + tid + '\'); closeFoodDayMobileModal();">' +
+                    safeLabel +
+                    '</button>'
+                );
+            }).join('');
+        }
+    }
+
+    if (typeof toggleModal === 'function') toggleModal('food-day-mobile-modal', true);
+    else modal.classList.remove('hidden');
+}
+window.openFoodDayMobileModal = openFoodDayMobileModal;
+
+function closeFoodDayMobileModal() {
+    var modal = document.getElementById('food-day-mobile-modal');
+    if (!modal) return;
+    if (typeof toggleModal === 'function') toggleModal('food-day-mobile-modal', false);
+    else modal.classList.add('hidden');
+}
+window.closeFoodDayMobileModal = closeFoodDayMobileModal;
+
 var _foodDayActionPopoverAnchor = null;
 
 function openFoodDayActionPopover(cycleDay, consumed, anchorEl) {
+    if (isTouchOrSmall() && isMobileFoodModal()) {
+        openFoodDayMobileModal(cycleDay, consumed);
+        return;
+    }
     var pop = document.getElementById('food-day-action-popover');
     var consumeBtn = document.getElementById('food-day-action-consume');
     var transferBtn = document.getElementById('food-day-action-transfer');

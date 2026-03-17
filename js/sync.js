@@ -25,6 +25,9 @@
     var loadRetryCount = 0;
     var realtimeUnsubscribe = null;
     var realtimePullTimeoutId = null;
+    // Prevent stale-tab overwrites on refresh/close:
+    // don't allow any forced "flush" save until we've successfully pulled cloud at least once this session.
+    var hasCompletedInitialCloudLoad = false;
 
     function getCurrentUser() {
         return global.currentUser || null;
@@ -104,18 +107,49 @@
             return;
         }
 
+        // Guard against overwriting newer cloud data from an idle/stale tab.
+        // If the cloud has changed since we last synced locally, do NOT push automatically.
+        // Instead, pull and let the conflict-aware load decide next steps.
+        var lastSyncedToCloud = 0;
+        var localModified = 0;
+        try {
+            var modKey0 = STORAGE_KEYS.MODIFIED;
+            var syncKey0 = STORAGE_KEYS.LAST_SYNCED;
+            var stored0 = global.localStorage.getItem(modKey0);
+            var synced0 = global.localStorage.getItem(syncKey0);
+            if (stored0) localModified = parseInt(stored0, 10) || 0;
+            if (synced0) lastSyncedToCloud = parseInt(synced0, 10) || 0;
+        } catch (e0) {}
+
         // Theme is device-local only: do not sync across devices
         var dataToSave = JSON.parse(JSON.stringify(state));
         if (dataToSave.settings && Object.prototype.hasOwnProperty.call(dataToSave.settings, 'theme')) {
             delete dataToSave.settings.theme;
         }
-        return userDocRef.set({
-            data: dataToSave,
-            lastUpdated: serverTimestamp,
-            version: state.schemaVersion || 2,
-            syncProtocolVersion: SYNC_PROTOCOL_VERSION
-        }, { merge: true }).then(function () {
-            return userDocRef.get({ source: 'server' });
+
+        return userDocRef.get({ source: 'server' }).then(function (existingSnap) {
+            if (existingSnap && existingSnap.exists) {
+                var existing = existingSnap.data() || {};
+                var cloudTime = 0;
+                if (existing.lastUpdated && typeof existing.lastUpdated.toMillis === 'function') {
+                    cloudTime = existing.lastUpdated.toMillis();
+                }
+                var cloudHasData = hasMeaningfulData(existing.data);
+                // If cloud is newer than what we *know* we've synced, this device is stale.
+                // Never allow an automatic overwrite (common on refresh/pagehide).
+                if (cloudHasData && cloudTime > lastSyncedToCloud && localModified <= lastSyncedToCloud) {
+                    updateSyncStatus('Cloud newer — pulling…', true, false);
+                    return loadStateFromCloud(0);
+                }
+            }
+            return userDocRef.set({
+                data: dataToSave,
+                lastUpdated: serverTimestamp,
+                version: state.schemaVersion || 2,
+                syncProtocolVersion: SYNC_PROTOCOL_VERSION
+            }, { merge: true }).then(function () {
+                return userDocRef.get({ source: 'server' });
+            });
         }).then(function (docSnap) {
             var savedTime = Date.now();
             if (docSnap && docSnap.exists && docSnap.data().lastUpdated) {
@@ -284,9 +318,11 @@
                 if (typeof refreshUI === 'function') refreshUI();
                 updateSyncStatus('Synced', true, false);
                 lastSyncTime = cloudData.lastUpdated && cloudData.lastUpdated.toDate ? cloudData.lastUpdated.toDate() : new Date();
+                hasCompletedInitialCloudLoad = true;
             } else {
                 updateSyncStatus('Cloud empty, using local', true, false);
                 if (typeof updateGlobalUI === 'function') updateGlobalUI();
+                hasCompletedInitialCloudLoad = true;
             }
             loadRetryCount = 0;
         }).catch(function (error) {
@@ -350,7 +386,9 @@
             clearTimeout(pushTimeoutId);
             pushTimeoutId = null;
         }
-        if (getCurrentUser()) saveStateToCloud();
+        // On refresh/close (pagehide/hidden), avoid pushing until we've pulled at least once this session.
+        // This prevents a stale, long-idle tab from overwriting newer cloud/mobile data.
+        if (getCurrentUser() && hasCompletedInitialCloudLoad) saveStateToCloud();
     }
 
     function pullFromCloudWhenVisible() {
