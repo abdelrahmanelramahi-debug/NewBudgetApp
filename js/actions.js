@@ -1606,10 +1606,8 @@ function budgetPlanAmountInput(sid, idx, el) {
         // user is mid-typing; don't update state yet
         return;
     }
-    var num = parseFloat(raw);
-    if (Number.isNaN(num)) return;
-    // Live update state/totals/badges, but do NOT overwrite the active input value.
-    fastUpdateItemAmount(sid, idx, num);
+    // Intentionally do NOT update state on every keystroke.
+    // Updating state triggers global UI updates that can interfere with selection/caret (Ctrl+A).
 }
 window.budgetPlanAmountInput = budgetPlanAmountInput;
 
@@ -1624,24 +1622,20 @@ function budgetPlanAmountCommit(sid, idx, el) {
         if (Number.isNaN(num)) num = 0;
     }
 
-    // Snap on commit for slider-linked items (so UI stays consistent)
-    var sec = state.categories.find(function (s) { return s.id === sid; });
-    var item = sec && sec.items ? sec.items[idx] : null;
-    if (item) {
-        if (item.label === 'Weekly Allowance') num = Math.round(num / WEEKLY_SLIDER_STEP) * WEEKLY_SLIDER_STEP;
-        if (item.label === 'Savings') num = Math.round(num / SAVINGS_SLIDER_STEP) * SAVINGS_SLIDER_STEP;
-        if (item.label === 'Transportation') num = Math.round(num / CAR_SLIDER_STEP) * CAR_SLIDER_STEP;
-        // Food base: allow any number; daily slider will round from it
-    }
-
-    // Set the input display once (on blur) so selection/cursor isn't constantly reset.
-    el.value = String(Math.round(num));
+    // Never override what the user typed with step rounding.
+    // Sliders can still snap (they have step), but the typed number is the source of truth.
+    el.value = raw === '' ? '0' : raw;
     fastUpdateItemAmount(sid, idx, num);
 }
 window.budgetPlanAmountCommit = budgetPlanAmountCommit;
 
 function budgetPlanAmountKeydown(e, sid, idx, el) {
     if (!e) return;
+    // Prevent browser/native "select all then immediately change" oddities
+    // by not triggering any commit logic on Ctrl/Cmd+A.
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) {
+        return;
+    }
     if (e.key === 'Enter') {
         e.preventDefault();
         try { el && el.blur && el.blur(); } catch (err) {}
