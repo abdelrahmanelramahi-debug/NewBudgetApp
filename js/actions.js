@@ -1547,36 +1547,39 @@ function fastUpdateItemAmount(sid, idx, val) {
     } else if(item.label === 'Weekly Allowance') {
         const slider = document.getElementById('weekly-amount-slider-' + sid + '-' + idx);
         if(slider) {
+            // Slider snaps to step, but typed input should remain exact.
             const snapped = Math.round(num / WEEKLY_SLIDER_STEP) * WEEKLY_SLIDER_STEP;
             if(slider.value !== String(snapped)) slider.value = String(snapped);
             var inputW = document.querySelector('.budget-item-input[data-sid="' + sid + '"][data-idx="' + idx + '"]');
-            if (inputW && document.activeElement !== inputW && inputW.value !== String(snapped)) inputW.value = String(snapped);
+            if (inputW && document.activeElement !== inputW && inputW.value !== String(num)) inputW.value = String(num);
             var badgeW = document.querySelector('.budget-item-badge[data-badge="weekly"][data-sid="' + sid + '"][data-idx="' + idx + '"]');
-            if (badgeW) badgeW.textContent = '~' + formatMoney(snapped / 4) + '/wk';
+            if (badgeW) badgeW.textContent = '~' + formatMoney(num / 4) + '/wk';
             var labelW = document.getElementById('weekly-slider-label-' + sid + '-' + idx);
-            if (labelW) labelW.textContent = snapped + ' ' + getCurrencyLabel();
+            if (labelW) labelW.textContent = Math.round(num) + ' ' + getCurrencyLabel();
         }
     } else if(item.label === 'Savings') {
         const slider = document.getElementById('general-savings-slider-' + sid + '-' + idx);
         if(slider) {
+            // Slider snaps to step, but typed input should remain exact.
             const snapped = Math.round(num / SAVINGS_SLIDER_STEP) * SAVINGS_SLIDER_STEP;
             if(slider.value !== String(snapped)) slider.value = String(snapped);
             var inputS = document.querySelector('.budget-item-input[data-sid="' + sid + '"][data-idx="' + idx + '"]');
-            if (inputS && document.activeElement !== inputS && inputS.value !== String(snapped)) inputS.value = String(snapped);
+            if (inputS && document.activeElement !== inputS && inputS.value !== String(num)) inputS.value = String(num);
             var labelS = document.getElementById('savings-slider-label-' + sid + '-' + idx);
-            if (labelS) labelS.textContent = snapped + ' ' + getCurrencyLabel();
+            if (labelS) labelS.textContent = Math.round(num) + ' ' + getCurrencyLabel();
         }
     } else if(item.label === 'Transportation') {
         const slider = document.getElementById('car-fund-slider-' + sid + '-' + idx);
         if(slider) {
+            // Slider snaps to step, but typed input should remain exact.
             const snapped = Math.round(num / CAR_SLIDER_STEP) * CAR_SLIDER_STEP;
             if(slider.value !== String(snapped)) slider.value = String(snapped);
             var inputT = document.querySelector('.budget-item-input[data-sid="' + sid + '"][data-idx="' + idx + '"]');
-            if (inputT && document.activeElement !== inputT && inputT.value !== String(snapped)) inputT.value = String(snapped);
+            if (inputT && document.activeElement !== inputT && inputT.value !== String(num)) inputT.value = String(num);
             var badgeT = document.querySelector('.budget-item-badge[data-badge="transport"][data-sid="' + sid + '"][data-idx="' + idx + '"]');
-            if (badgeT) badgeT.textContent = '~' + formatMoney(snapped / 4) + '/wk';
+            if (badgeT) badgeT.textContent = '~' + formatMoney(num / 4) + '/wk';
             var labelT = document.getElementById('car-slider-label-' + sid + '-' + idx);
-            if (labelT) labelT.textContent = snapped + ' ' + getCurrencyLabel();
+            if (labelT) labelT.textContent = Math.round(num) + ' ' + getCurrencyLabel();
         }
     }
     var obStep = document.getElementById('onboarding-step-categories');
