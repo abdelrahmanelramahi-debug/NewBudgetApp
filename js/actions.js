@@ -1537,7 +1537,8 @@ function fastUpdateItemAmount(sid, idx, val) {
             var label = document.getElementById('food-daily-slider-label-' + sid + '-' + idx);
             if (label) label.textContent = String(dailyRounded) + ' ' + getCurrencyLabel();
         }
-        if(input && input.value !== String(num)) input.value = String(num);
+        // Do not overwrite a focused input (it breaks cursor position)
+        if(input && document.activeElement !== input && input.value !== String(num)) input.value = String(num);
         const badge = document.querySelector('.budget-item-badge[data-badge="food"][data-sid="' + sid + '"][data-idx="' + idx + '"]');
         if(badge) {
             const dailyRate = state.food.daysTotal > 0 ? (num / state.food.daysTotal) : 0;
@@ -1549,7 +1550,7 @@ function fastUpdateItemAmount(sid, idx, val) {
             const snapped = Math.round(num / WEEKLY_SLIDER_STEP) * WEEKLY_SLIDER_STEP;
             if(slider.value !== String(snapped)) slider.value = String(snapped);
             var inputW = document.querySelector('.budget-item-input[data-sid="' + sid + '"][data-idx="' + idx + '"]');
-            if (inputW && inputW.value !== String(snapped)) inputW.value = String(snapped);
+            if (inputW && document.activeElement !== inputW && inputW.value !== String(snapped)) inputW.value = String(snapped);
             var badgeW = document.querySelector('.budget-item-badge[data-badge="weekly"][data-sid="' + sid + '"][data-idx="' + idx + '"]');
             if (badgeW) badgeW.textContent = '~' + formatMoney(snapped / 4) + '/wk';
             var labelW = document.getElementById('weekly-slider-label-' + sid + '-' + idx);
@@ -1561,7 +1562,7 @@ function fastUpdateItemAmount(sid, idx, val) {
             const snapped = Math.round(num / SAVINGS_SLIDER_STEP) * SAVINGS_SLIDER_STEP;
             if(slider.value !== String(snapped)) slider.value = String(snapped);
             var inputS = document.querySelector('.budget-item-input[data-sid="' + sid + '"][data-idx="' + idx + '"]');
-            if (inputS && inputS.value !== String(snapped)) inputS.value = String(snapped);
+            if (inputS && document.activeElement !== inputS && inputS.value !== String(snapped)) inputS.value = String(snapped);
             var labelS = document.getElementById('savings-slider-label-' + sid + '-' + idx);
             if (labelS) labelS.textContent = snapped + ' ' + getCurrencyLabel();
         }
@@ -1571,7 +1572,7 @@ function fastUpdateItemAmount(sid, idx, val) {
             const snapped = Math.round(num / CAR_SLIDER_STEP) * CAR_SLIDER_STEP;
             if(slider.value !== String(snapped)) slider.value = String(snapped);
             var inputT = document.querySelector('.budget-item-input[data-sid="' + sid + '"][data-idx="' + idx + '"]');
-            if (inputT && inputT.value !== String(snapped)) inputT.value = String(snapped);
+            if (inputT && document.activeElement !== inputT && inputT.value !== String(snapped)) inputT.value = String(snapped);
             var badgeT = document.querySelector('.budget-item-badge[data-badge="transport"][data-sid="' + sid + '"][data-idx="' + idx + '"]');
             if (badgeT) badgeT.textContent = '~' + formatMoney(snapped / 4) + '/wk';
             var labelT = document.getElementById('car-slider-label-' + sid + '-' + idx);
@@ -1587,6 +1588,66 @@ function fastUpdateItemAmount(sid, idx, val) {
         updateAllocatedTotalUI({ total: total, allocated: allocated, prefix: 'onboarding-cat' });
     }
 }
+
+function isProbablyPartialNumber(s) {
+    // Allow normal typing states: "", "-", ".", "-.", "12.", "12.3"
+    if (s == null) return true;
+    s = String(s);
+    if (s.trim() === '') return true;
+    return /^-?\d*(\.\d*)?$/.test(s);
+}
+
+function budgetPlanAmountInput(sid, idx, el) {
+    if (!el) return;
+    var raw = String(el.value ?? '');
+    // Don't force "0" while typing (this is what made it impossible to type when the field was 0)
+    if (!isProbablyPartialNumber(raw)) return;
+    if (raw.trim() === '' || raw === '-' || raw === '.' || raw === '-.') {
+        // user is mid-typing; don't update state yet
+        return;
+    }
+    var num = parseFloat(raw);
+    if (Number.isNaN(num)) return;
+    // Live update state/totals/badges, but do NOT overwrite the active input value.
+    fastUpdateItemAmount(sid, idx, num);
+}
+window.budgetPlanAmountInput = budgetPlanAmountInput;
+
+function budgetPlanAmountCommit(sid, idx, el) {
+    if (!el) return;
+    var raw = String(el.value ?? '').trim();
+    var num = 0;
+    if (raw === '' || raw === '-' || raw === '.' || raw === '-.') {
+        num = 0;
+    } else {
+        num = parseFloat(raw);
+        if (Number.isNaN(num)) num = 0;
+    }
+
+    // Snap on commit for slider-linked items (so UI stays consistent)
+    var sec = state.categories.find(function (s) { return s.id === sid; });
+    var item = sec && sec.items ? sec.items[idx] : null;
+    if (item) {
+        if (item.label === 'Weekly Allowance') num = Math.round(num / WEEKLY_SLIDER_STEP) * WEEKLY_SLIDER_STEP;
+        if (item.label === 'Savings') num = Math.round(num / SAVINGS_SLIDER_STEP) * SAVINGS_SLIDER_STEP;
+        if (item.label === 'Transportation') num = Math.round(num / CAR_SLIDER_STEP) * CAR_SLIDER_STEP;
+        // Food base: allow any number; daily slider will round from it
+    }
+
+    // Set the input display once (on blur) so selection/cursor isn't constantly reset.
+    el.value = String(Math.round(num));
+    fastUpdateItemAmount(sid, idx, num);
+}
+window.budgetPlanAmountCommit = budgetPlanAmountCommit;
+
+function budgetPlanAmountKeydown(e, sid, idx, el) {
+    if (!e) return;
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        try { el && el.blur && el.blur(); } catch (err) {}
+    }
+}
+window.budgetPlanAmountKeydown = budgetPlanAmountKeydown;
 
 function syncFoodBaseAmount(sid, idx, val) {
     const num = parseFloat(val) || 0;

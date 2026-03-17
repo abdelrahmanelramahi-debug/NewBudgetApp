@@ -455,8 +455,8 @@ function renderStrategy(opts) {
             }
 
             const inputAttr = isFoodBase
-                ? `onfocus="pushToUndo()" oninput="syncFoodBaseAmount('${sid}', ${idx}, this.value)"`
-                : `onfocus="pushToUndo()" oninput="fastUpdateItemAmount('${sid}', ${idx}, this.value)"`;
+                ? `onfocus="pushToUndo()" oninput="budgetPlanAmountInput('${sid}', ${idx}, this)" onblur="budgetPlanAmountCommit('${sid}', ${idx}, this)" onkeydown="budgetPlanAmountKeydown(event, '${sid}', ${idx}, this)"`
+                : `onfocus="pushToUndo()" oninput="budgetPlanAmountInput('${sid}', ${idx}, this)" onblur="budgetPlanAmountCommit('${sid}', ${idx}, this)" onkeydown="budgetPlanAmountKeydown(event, '${sid}', ${idx}, this)"`;
 
             // Logic to disable delete for Core items
             const deleteBtnClass = (item.isCore) ? 'text-slate-200 cursor-not-allowed' : 'text-slate-300 hover:text-red-500 hover:bg-red-50 cursor-pointer';
@@ -572,7 +572,7 @@ function renderStrategy(opts) {
                         <span class="text-xs font-bold text-slate-600">${item.label} ${amortLabel}</span>
                     </div>
                     <div class="flex items-center gap-2 no-drag" onmousedown="event.stopPropagation()">
-                        <input type="number" value="${displayAmount}" class="input-pill text-slate-900 budget-item-input" data-sid="${sid}" data-idx="${idx}" autocomplete="off" ${inputAttr}>
+                        <input type="text" inputmode="decimal" value="${displayAmount}" class="input-pill text-slate-900 budget-item-input" data-sid="${sid}" data-idx="${idx}" autocomplete="off" ${inputAttr}>
                         ${actions}
                     </div>
                 </div>
