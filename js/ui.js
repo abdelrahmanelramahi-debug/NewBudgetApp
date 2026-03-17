@@ -417,7 +417,6 @@ function renderStrategy(opts) {
 
         // Must Haves: show Savings inside, then subtitle "Essentials" for existing core items.
         if (includeSavingsInMustHaves) {
-            rowsHtml += `<div class="pt-1 pb-2 text-[9px] font-black uppercase tracking-widest text-slate-400">Savings</div>`;
             // Render savings row using sys_savings sid/idx so existing handlers work.
             rowsHtml += buildBudgetPlanRowHtml(sysSavingsSec.id, savingsIdxInSys, savingsItemInSys, { hideFoodWhenOff: false });
             rowsHtml += `<div class="pt-4 pb-2 text-[9px] font-black uppercase tracking-widest text-slate-400">Essentials</div>`;
@@ -433,6 +432,8 @@ function renderStrategy(opts) {
             optsRow = optsRow || {};
             let amortLabel = item.amortData ? `<span class="text-[9px] bg-indigo-50 text-indigo-600 px-1 rounded font-bold ml-2">${item.amortData.total}/${item.amortData.months}mo</span>` : '';
             const isFoodBase = item.label === 'Daily Food' || item.label === 'Food Base';
+            const isSavings = item.label === 'Savings';
+            const isDragAllowed = (!item.isCore) && !isSavings;
 
             // SMART BADGES FOR CORE ITEMS
             if (item.label === 'Daily Food' || item.label === 'Food Base') {
@@ -473,7 +474,7 @@ function renderStrategy(opts) {
                         <span>Daily Rate</span>
                         <span id="food-daily-slider-label-${sid}-${idx}">${dailyRateDisplay} ${getCurrencyLabel()}</span>
                     </div>
-                    <input type="range" id="food-daily-slider" min="0" max="${dailyRateMax}" step="1" value="${dailyRateDisplay}" oninput="syncFoodDailyRate('${sid}', ${idx}, this.value)" class="w-full">
+                    <input type="range" id="food-daily-slider-${sid}-${idx}" min="0" max="${dailyRateMax}" step="1" value="${dailyRateDisplay}" oninput="syncFoodDailyRate('${sid}', ${idx}, this.value)" class="w-full">
                     <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mt-1">
                         <span>0</span>
                         <span>${dailyRateMax}</span>
@@ -497,7 +498,7 @@ function renderStrategy(opts) {
                         <span>Monthly (4 weeks)</span>
                         <span id="weekly-slider-label-${sid}-${idx}">${weeklySnapped} ${getCurrencyLabel()}</span>
                     </div>
-                    <input type="range" id="weekly-amount-slider" min="0" max="${weeklyAmountMax}" step="${WEEKLY_SLIDER_STEP}" value="${weeklySnapped}" oninput="syncWeeklyAmount('${sec.id}', ${idx}, this.value)" class="w-full">
+                    <input type="range" id="weekly-amount-slider-${sid}-${idx}" min="0" max="${weeklyAmountMax}" step="${WEEKLY_SLIDER_STEP}" value="${weeklySnapped}" oninput="syncWeeklyAmount('${sid}', ${idx}, this.value)" class="w-full">
                     <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mt-1">
                         <span>0</span>
                         <span>${weeklyAmountMax}</span>
@@ -521,7 +522,7 @@ function renderStrategy(opts) {
                         <span>Monthly</span>
                         <span id="savings-slider-label-${sid}-${idx}">${savingsSnapped} ${getCurrencyLabel()}</span>
                     </div>
-                    <input type="range" id="general-savings-slider" min="0" max="${savingsMax}" step="${SAVINGS_SLIDER_STEP}" value="${savingsSnapped}" oninput="syncGeneralSavingsAmount('${sec.id}', ${idx}, this.value)" class="w-full">
+                    <input type="range" id="general-savings-slider-${sid}-${idx}" min="0" max="${savingsMax}" step="${SAVINGS_SLIDER_STEP}" value="${savingsSnapped}" oninput="syncGeneralSavingsAmount('${sid}', ${idx}, this.value)" class="w-full">
                     <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mt-1">
                         <span>0</span>
                         <span>${savingsMax}</span>
@@ -545,7 +546,7 @@ function renderStrategy(opts) {
                         <span>Monthly (4 weeks)</span>
                         <span id="car-slider-label-${sid}-${idx}">${carSnapped} ${getCurrencyLabel()}</span>
                     </div>
-                    <input type="range" id="car-fund-slider" min="0" max="${carMax}" step="${CAR_SLIDER_STEP}" value="${carSnapped}" oninput="syncCarFundAmount('${sec.id}', ${idx}, this.value)" class="w-full">
+                    <input type="range" id="car-fund-slider-${sid}-${idx}" min="0" max="${carMax}" step="${CAR_SLIDER_STEP}" value="${carSnapped}" oninput="syncCarFundAmount('${sid}', ${idx}, this.value)" class="w-full">
                     <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mt-1">
                         <span>0</span>
                         <span>${carMax}</span>
@@ -555,12 +556,12 @@ function renderStrategy(opts) {
 
             return `
                 <div class="draggable-row flex justify-between items-center py-3 border-b border-slate-50 last:border-0"
-                     draggable="${!item.isCore}"
-                     ondragstart="handleItemDragStart(event, '${sid}', ${idx})"
+                     draggable="${isDragAllowed}"
+                     ondragstart="${isDragAllowed ? `handleItemDragStart(event, '${sid}', ${idx})` : ''}"
                      ondragover="handleDragOver(event)"
                      ondrop="handleItemDrop(event, '${sid}', ${idx})">
                     <div class="flex items-center gap-3">
-                        <span class="text-slate-300 ${item.isCore ? 'opacity-0' : 'cursor-move'}">::</span>
+                        <span class="text-slate-300 ${isDragAllowed ? 'cursor-move' : 'opacity-0'}">::</span>
                         <span class="text-xs font-bold text-slate-600">${item.label} ${amortLabel}</span>
                     </div>
                     <div class="flex items-center gap-2 no-drag" onmousedown="event.stopPropagation()">

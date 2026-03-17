@@ -1528,36 +1528,54 @@ function fastUpdateItemAmount(sid, idx, val) {
     if(percEl) percEl.innerText = perc + "%";
 
     if(item.label === 'Daily Food') {
-        const slider = document.getElementById('food-daily-slider');
-        const input = document.getElementById('food-base-input');
+        const slider = document.getElementById('food-daily-slider-' + sid + '-' + idx);
+        const input = document.querySelector('.budget-item-input[data-sid="' + sid + '"][data-idx="' + idx + '"]');
         if(slider) {
             const dailyRate = state.food.daysTotal > 0 ? (num / state.food.daysTotal) : 0;
             const dailyRounded = Math.round(dailyRate);
             if(slider.value !== String(dailyRounded)) slider.value = String(dailyRounded);
+            var label = document.getElementById('food-daily-slider-label-' + sid + '-' + idx);
+            if (label) label.textContent = String(dailyRounded) + ' ' + getCurrencyLabel();
         }
         if(input && input.value !== String(num)) input.value = String(num);
-        const badge = document.getElementById('food-base-daily-badge');
+        const badge = document.querySelector('.budget-item-badge[data-badge="food"][data-sid="' + sid + '"][data-idx="' + idx + '"]');
         if(badge) {
             const dailyRate = state.food.daysTotal > 0 ? (num / state.food.daysTotal) : 0;
             badge.innerText = `${formatMoney(dailyRate)}/day`;
         }
     } else if(item.label === 'Weekly Allowance') {
-        const slider = document.getElementById('weekly-amount-slider');
+        const slider = document.getElementById('weekly-amount-slider-' + sid + '-' + idx);
         if(slider) {
             const snapped = Math.round(num / WEEKLY_SLIDER_STEP) * WEEKLY_SLIDER_STEP;
             if(slider.value !== String(snapped)) slider.value = String(snapped);
+            var inputW = document.querySelector('.budget-item-input[data-sid="' + sid + '"][data-idx="' + idx + '"]');
+            if (inputW && inputW.value !== String(snapped)) inputW.value = String(snapped);
+            var badgeW = document.querySelector('.budget-item-badge[data-badge="weekly"][data-sid="' + sid + '"][data-idx="' + idx + '"]');
+            if (badgeW) badgeW.textContent = '~' + formatMoney(snapped / 4) + '/wk';
+            var labelW = document.getElementById('weekly-slider-label-' + sid + '-' + idx);
+            if (labelW) labelW.textContent = snapped + ' ' + getCurrencyLabel();
         }
     } else if(item.label === 'Savings') {
-        const slider = document.getElementById('general-savings-slider');
+        const slider = document.getElementById('general-savings-slider-' + sid + '-' + idx);
         if(slider) {
             const snapped = Math.round(num / SAVINGS_SLIDER_STEP) * SAVINGS_SLIDER_STEP;
             if(slider.value !== String(snapped)) slider.value = String(snapped);
+            var inputS = document.querySelector('.budget-item-input[data-sid="' + sid + '"][data-idx="' + idx + '"]');
+            if (inputS && inputS.value !== String(snapped)) inputS.value = String(snapped);
+            var labelS = document.getElementById('savings-slider-label-' + sid + '-' + idx);
+            if (labelS) labelS.textContent = snapped + ' ' + getCurrencyLabel();
         }
     } else if(item.label === 'Transportation') {
-        const slider = document.getElementById('car-fund-slider');
+        const slider = document.getElementById('car-fund-slider-' + sid + '-' + idx);
         if(slider) {
             const snapped = Math.round(num / CAR_SLIDER_STEP) * CAR_SLIDER_STEP;
             if(slider.value !== String(snapped)) slider.value = String(snapped);
+            var inputT = document.querySelector('.budget-item-input[data-sid="' + sid + '"][data-idx="' + idx + '"]');
+            if (inputT && inputT.value !== String(snapped)) inputT.value = String(snapped);
+            var badgeT = document.querySelector('.budget-item-badge[data-badge="transport"][data-sid="' + sid + '"][data-idx="' + idx + '"]');
+            if (badgeT) badgeT.textContent = '~' + formatMoney(snapped / 4) + '/wk';
+            var labelT = document.getElementById('car-slider-label-' + sid + '-' + idx);
+            if (labelT) labelT.textContent = snapped + ' ' + getCurrencyLabel();
         }
     }
     var obStep = document.getElementById('onboarding-step-categories');
@@ -1572,7 +1590,7 @@ function fastUpdateItemAmount(sid, idx, val) {
 
 function syncFoodBaseAmount(sid, idx, val) {
     const num = parseFloat(val) || 0;
-    const slider = document.getElementById('food-daily-slider');
+    const slider = document.getElementById('food-daily-slider-' + sid + '-' + idx);
     const input = document.querySelector('.budget-item-input[data-sid="' + sid + '"][data-idx="' + idx + '"]');
     if(slider) {
         const dailyRate = state.food.daysTotal > 0 ? (num / state.food.daysTotal) : 0;
