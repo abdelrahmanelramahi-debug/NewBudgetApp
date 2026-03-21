@@ -370,7 +370,6 @@ function applyTransaction(tx) {
             if (!sec) break;
             const item = sec.items[tx.idx];
             if (!item) break;
-            const oldVal = item.amount;
             const newVal = tx.amount;
             item.amount = newVal;
             delete item.amortData;
@@ -382,13 +381,7 @@ function applyTransaction(tx) {
                 }
                 break;
             }
-            const delta = newVal - oldVal;
-            state.accounts.surplus -= delta;
-            if (state.balances[item.label] !== undefined) {
-                adjustItemBalance(item.label, delta);
-            } else {
-                setItemBalance(item.label, newVal);
-            }
+            // Budget Plan is plan-only: editing amounts must not touch live ledger balances or Extra.
             break;
         }
         case 'weekly_adjust':
