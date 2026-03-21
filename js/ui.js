@@ -190,12 +190,6 @@ function renderSettings() {
     const showFoodPlan = document.getElementById('settings-show-food-plan');
     if (showFoodPlan) showFoodPlan.checked = state.settings?.showFoodPlan !== false;
 
-    // Admin-only controls
-    var adminBtn = document.getElementById('admin-bug-reports-btn');
-    if (adminBtn) {
-        var isAdmin = (typeof isAdminAccount === 'function') ? isAdminAccount() : false;
-        adminBtn.classList.toggle('hidden', !isAdmin);
-    }
 }
 
 function switchPage(page, options) {
