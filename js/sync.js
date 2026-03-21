@@ -444,6 +444,7 @@
     global.flushCloudSave = flushCloudSave;
     global.pullFromCloudWhenVisible = pullFromCloudWhenVisible;
     global.scheduleSyncPush = schedulePush;
+    global.SYNC_PROTOCOL_VERSION = SYNC_PROTOCOL_VERSION;
     global.startRealtimeSync = startRealtimeSync;
     global.stopRealtimeSync = stopRealtimeSync;
 

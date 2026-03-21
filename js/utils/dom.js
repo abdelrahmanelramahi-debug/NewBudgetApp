@@ -29,6 +29,7 @@ function escapeAttr(s) {
     var str = String(s);
     return str
         .replace(/&/g, '&amp;')
+        .replace(/'/g, '&#39;')
         .replace(/"/g, '&quot;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');

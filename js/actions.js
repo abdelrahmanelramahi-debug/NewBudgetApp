@@ -3176,12 +3176,16 @@ async function submitBugReport() {
     if (!subject) return setErr('Please enter a subject.');
     if (!details) return setErr('Please enter details.');
     if (!window.firebaseDb || !window.firebase) return setErr('Cloud not available right now.');
+    var user = (typeof window !== 'undefined') ? window.currentUser : null;
+    if (!user || !user.uid) return setErr('Please sign in to send a bug report.');
+    if (subject.length > 140) return setErr('Subject is too long (max 140 chars).');
+    if (details.length > 4000) return setErr('Details are too long (max 4000 chars).');
+    if (name.length > 80) return setErr('Name is too long (max 80 chars).');
 
     var submitBtn = document.getElementById('bug-report-submit');
     if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Sending…'; }
 
     try {
-        var user = (typeof window !== 'undefined') ? window.currentUser : null;
         var email = user && user.email ? String(user.email) : null;
         var uid = user && user.uid ? String(user.uid) : null;
 
@@ -3194,7 +3198,7 @@ async function submitBugReport() {
             reporterEmail: email,
             reporterUid: uid,
             userAgent: (typeof navigator !== 'undefined' ? navigator.userAgent : null),
-            appVersion: (typeof SYNC_PROTOCOL_VERSION !== 'undefined' ? ('sync-v' + SYNC_PROTOCOL_VERSION) : null)
+            appVersion: (typeof window !== 'undefined' && typeof window.SYNC_PROTOCOL_VERSION !== 'undefined') ? ('sync-v' + window.SYNC_PROTOCOL_VERSION) : null
         };
 
         var docRef = await window.firebaseDb.collection('bugReports').add(report);
@@ -3203,6 +3207,8 @@ async function submitBugReport() {
         if (file && window.firebaseStorage) {
             // Lightweight size guard (Firestore/Storage rules aside)
             if (file.size > 8 * 1024 * 1024) throw new Error('Attachment too large (max 8MB).');
+            var allowedTypes = ['image/png', 'image/jpeg', 'image/webp', 'text/plain', 'application/pdf'];
+            if (file.type && allowedTypes.indexOf(file.type) === -1) throw new Error('Unsupported attachment type.');
             var safeName = String(file.name || 'attachment').replace(/[^\w.\-]+/g, '_').slice(0, 80);
             var path = 'bugReports/' + docRef.id + '/' + safeName;
             var ref = window.firebaseStorage.ref().child(path);
@@ -3254,6 +3260,17 @@ function fmtAdminTime(ts) {
     } catch (e) { return ''; }
 }
 
+function sanitizeAttachmentUrl(rawUrl) {
+    if (!rawUrl) return '';
+    try {
+        var parsed = new URL(String(rawUrl), window.location && window.location.origin ? window.location.origin : undefined);
+        if (parsed.protocol !== 'https:') return '';
+        return parsed.href;
+    } catch (e) {
+        return '';
+    }
+}
+
 async function loadAdminBugReports() {
     if (!isAdminAccount()) return;
     var list = document.getElementById('admin-bug-reports-list');
@@ -3271,13 +3288,13 @@ async function loadAdminBugReports() {
         }
         list.innerHTML = snap.docs.map(function (doc) {
             var d = doc.data() || {};
-            var subject = String(d.subject || '(no subject)').replace(/</g, '&lt;');
-            var name = String(d.reporterName || 'Anon').replace(/</g, '&lt;');
-            var email = d.reporterEmail ? String(d.reporterEmail).replace(/</g, '&lt;') : '';
+            var subject = escapeHtml(d.subject || '(no subject)');
+            var name = escapeHtml(d.reporterName || 'Anon');
+            var email = d.reporterEmail ? escapeHtml(d.reporterEmail) : '';
             var when = fmtAdminTime(d.createdAt);
-            var details = String(d.details || '').replace(/</g, '&lt;');
-            var attach = (d.attachment && d.attachment.downloadURL) ? String(d.attachment.downloadURL).replace(/"/g, '&quot;') : '';
-            var attachHtml = attach ? ('<a class="text-[11px] font-bold text-indigo-600 underline" href="' + attach + '" target="_blank" rel="noopener">Attachment</a>') : '<span class="text-[11px] text-slate-400">No attachment</span>';
+            var details = escapeHtml(d.details || '');
+            var attach = sanitizeAttachmentUrl(d.attachment && d.attachment.downloadURL ? d.attachment.downloadURL : '');
+            var attachHtml = attach ? ('<a class="text-[11px] font-bold text-indigo-600 underline" href="' + escapeAttr(attach) + '" target="_blank" rel="noopener noreferrer">Attachment</a>') : '<span class="text-[11px] text-slate-400">No attachment</span>';
             return (
                 '<div class="rounded-xl border border-slate-200 bg-white p-4">' +
                     '<div class="flex items-start justify-between gap-3">' +

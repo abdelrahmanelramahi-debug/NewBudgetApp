@@ -912,6 +912,7 @@ function renderLedger() {
             const pct = Math.min(100, Math.max(0, (bal / planned) * 100));
             const safeLabel = escapeAttr(item.label);
             const safeLabelAttr = escapeAttr(item.label);
+            const safeLabelText = escapeHtml(item.label);
 
             let actionBtn = '';
             if (sec.isSingleAction && bal !== 0) {
@@ -921,7 +922,7 @@ function renderLedger() {
             barsHtml += `
                 <div class="ledger-bar flex items-center gap-2 sm:gap-3 w-full py-2.5 px-3 sm:px-4 rounded-xl border border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm transition-all group ${bal === 0 ? 'opacity-70' : ''}">
                     <div class="flex-1 min-w-0 flex flex-col gap-0.5">
-                        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 truncate" title="${safeLabelAttr}">${item.label}</span>
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 truncate" title="${safeLabelAttr}">${safeLabelText}</span>
                         <div class="h-1.5 w-full max-w-[100px] rounded-full bg-slate-100 overflow-hidden">
                             <div class="ledger-bar-fill h-full rounded-full transition-all duration-300" style="width:${pct}%"></div>
                         </div>
@@ -946,10 +947,11 @@ function renderLedger() {
         // Section HTML with Toggle + category total (left / allocated)
         var expandedMap = getLedgerExpandedSections();
         var isExpanded = !!expandedMap[secId];
+        var safeSectionLabel = escapeHtml(sec.label);
         const sectionHtml = `
             <div class="mb-4">
                 <button onclick="toggleLedgerSection('${secId}')" class="flex justify-between items-center w-full py-2.5 px-1 hover:bg-slate-50 rounded-lg transition group">
-                    <span class="text-[11px] font-black text-slate-800 uppercase tracking-widest">${sec.label}</span>
+                    <span class="text-[11px] font-black text-slate-800 uppercase tracking-widest">${safeSectionLabel}</span>
                     <span class="flex items-center gap-2">
                         <span class="text-[10px] font-bold text-slate-500">${formatMoney(sumLeft)} / ${formatMoney(sumAllocated)} <span class="text-slate-400">${getCurrencyLabel()}</span></span>
                         <svg id="icon-${secId}" class="w-4 h-4 text-slate-400 transform ${isExpanded ? '' : '-rotate-90'} transition-transform group-hover:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
