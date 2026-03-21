@@ -475,21 +475,22 @@ function renderStrategy(opts) {
 
         function buildBudgetPlanRowHtml(sid, idx, item, optsRow) {
             optsRow = optsRow || {};
+            const itemLabel = item.label === 'Food Base' ? 'Daily Food' : item.label;
             let amortLabel = item.amortData ? `<span class="text-[9px] bg-indigo-50 text-indigo-600 px-1 rounded font-bold ml-2">${item.amortData.total}/${item.amortData.months}mo</span>` : '';
-            const isFoodBase = item.label === 'Daily Food';
+            const isFoodBase = itemLabel === 'Daily Food';
             const isFoodPlanOff = isFoodBase && state.settings && state.settings.showFoodPlan === false;
-            const isSavings = item.label === 'Savings';
+            const isSavings = itemLabel === 'Savings';
             const isDragAllowed = (!item.isCore) && !isSavings;
 
             // SMART BADGES FOR CORE ITEMS
-            if (item.label === 'Daily Food') {
+            if (itemLabel === 'Daily Food') {
                 const foodAmount = isFoodPlanOff ? 0 : item.amount;
                 const dailyRate = foodAmount / state.food.daysTotal;
                 amortLabel = `<span class="budget-item-badge text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold ml-2" data-sid="${sid}" data-idx="${idx}" data-badge="food">${formatMoney(dailyRate)}/day</span>`;
-            } else if (item.label === 'Weekly Allowance') {
+            } else if (itemLabel === 'Weekly Allowance') {
                 const weeklyRate = item.amount / 4;
                 amortLabel = `<span class="budget-item-badge text-[9px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-bold ml-2" data-sid="${sid}" data-idx="${idx}" data-badge="weekly">~${formatMoney(weeklyRate)}/wk</span>`;
-            } else if (item.label === 'Transportation') {
+            } else if (itemLabel === 'Transportation') {
                 const weeklyRate = item.amount / 4;
                 amortLabel = `<span class="budget-item-badge text-[9px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-bold ml-2" data-sid="${sid}" data-idx="${idx}" data-badge="transport">~${formatMoney(weeklyRate)}/wk</span>`;
             }
@@ -529,7 +530,7 @@ function renderStrategy(opts) {
                     </div>
                 </div>
             ` : '';
-            const isWeeklyMisc = item.label === 'Weekly Allowance';
+            const isWeeklyMisc = itemLabel === 'Weekly Allowance';
             const WEEKLY_SLIDER_STEP = 20;
             const weeklyBudgetCap = totalBudget > 0
                 ? Math.ceil(totalBudget / WEEKLY_SLIDER_STEP) * WEEKLY_SLIDER_STEP
@@ -553,7 +554,7 @@ function renderStrategy(opts) {
                     </div>
                 </div>
             ` : '';
-            const isGeneralSavings = item.label === 'Savings';
+            const isGeneralSavings = itemLabel === 'Savings';
             const SAVINGS_SLIDER_STEP = 50;
             const savingsBudgetCap = totalBudget > 0
                 ? Math.ceil(totalBudget / SAVINGS_SLIDER_STEP) * SAVINGS_SLIDER_STEP
@@ -577,7 +578,7 @@ function renderStrategy(opts) {
                     </div>
                 </div>
             ` : '';
-            const isCarFund = item.label === 'Transportation';
+            const isCarFund = itemLabel === 'Transportation';
             const CAR_SLIDER_STEP = 20;
             const carBudgetCap = totalBudget > 0
                 ? Math.ceil(totalBudget / CAR_SLIDER_STEP) * CAR_SLIDER_STEP
@@ -610,7 +611,7 @@ function renderStrategy(opts) {
                      ondrop="handleItemDrop(event, '${sid}', ${idx})">
                     <div class="flex items-center gap-3">
                         <span class="text-slate-300 ${isDragAllowed ? 'cursor-move' : 'opacity-0'}">::</span>
-                        <span class="text-xs font-bold text-slate-600">${item.label} ${amortLabel}</span>
+                        <span class="text-xs font-bold text-slate-600">${itemLabel} ${amortLabel}</span>
                     </div>
                     <div class="flex items-center gap-2 no-drag" onmousedown="event.stopPropagation()">
                         ${isFoodBase ? `<input type="checkbox" id="budget-show-food-plan" class="w-4 h-4 accent-amber-500 rounded" ${(state.settings && state.settings.showFoodPlan === false) ? '' : 'checked'} onchange="toggleBudgetFoodPlan(this, '${sid}', ${idx})">` : ''}
@@ -693,7 +694,7 @@ function toggleBudgetFoodPlan(el, sid, idx) {
     if (!enabled) {
         var sec = (state.categories || []).find(function (s) { return s && s.id === sid; });
         var item = sec && sec.items ? sec.items[idx] : null;
-        if (item && item.label === 'Daily Food') {
+        if (item && (item.label === 'Daily Food' || item.label === 'Food Base')) {
             item.amount = 0;
         }
     }

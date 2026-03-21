@@ -289,6 +289,7 @@ function migrateLabelRename() {
             if (item.label === 'General Savings') item.label = 'Savings';
             if (item.label === 'Weekly Misc') item.label = 'Weekly Allowance';
             if (item.label === 'Car Fund') item.label = 'Transportation';
+            if (item.label === 'Food Base') item.label = 'Daily Food';
         });
     });
 }
