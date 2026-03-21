@@ -427,12 +427,15 @@ function renderStrategy(opts) {
         if (includeSavingsInMustHaves) {
             if (typeof ensureGeneralSavingsBudgetConfig === 'function') ensureGeneralSavingsBudgetConfig();
             var savingsBuckets = Object.keys((state.accounts && state.accounts.savingsBuckets) || {});
-            var savingsTotal = typeof getSavingsTotal === 'function' ? getSavingsTotal() : 0;
+            var savingsPlannedTotal = 0;
+            savingsBuckets.forEach(function (bucketName) {
+                savingsPlannedTotal += Number((state.accounts && state.accounts.savingsBudgetPlan && state.accounts.savingsBudgetPlan[bucketName]) || 0);
+            });
             rowsHtml += `
                 <div class="budget-savings-section border-b border-slate-100 pb-3 mb-2">
                     <div class="budget-savings-title-row flex items-center justify-between gap-2">
                         <span class="budget-savings-title">Savings</span>
-                        <span class="budget-savings-total">${formatMoney(savingsTotal)} ${getCurrencyLabel()}</span>
+                        <span class="budget-savings-total">${formatMoney(savingsPlannedTotal)} ${getCurrencyLabel()}</span>
                     </div>
                     <div class="flex items-center gap-2 mt-2 mb-3">
                         <input id="budget-plan-savings-bucket-name" type="text" maxlength="80" class="input-pill text-left flex-1" placeholder="New savings bucket">
@@ -449,6 +452,7 @@ function renderStrategy(opts) {
                     : Math.ceil((state.monthlyIncome || 10000) * 1.2 / step) * step;
                 var max = Math.max(step, Math.ceil((planned || 0) / step) * step + step * 2, budgetCap);
                 var snapped = Math.round((planned || 0) / step) * step;
+                var bucketArg = '\'' + String(bucketName).replace(/\\/g, '\\\\').replace(/'/g, '\\\'') + '\'';
                 rowsHtml += `
                     <div class="pb-2 budget-savings-bucket-row">
                         <div class="draggable-row flex justify-between items-center py-2">
@@ -456,7 +460,7 @@ function renderStrategy(opts) {
                                 <span class="text-xs font-bold text-slate-600">${escapeHtml(bucketName)}</span>
                             </div>
                             <div class="flex items-center gap-2 no-drag" onmousedown="event.stopPropagation()">
-                                <input type="text" inputmode="decimal" value="${planned.toFixed(0)}" class="input-pill text-slate-900 budget-item-input" onfocus="pushToUndo()" oninput="budgetPlanSavingsBucketInput(${JSON.stringify(bucketName)}, this)" onblur="budgetPlanSavingsBucketCommit(${JSON.stringify(bucketName)}, this)" onkeydown="budgetPlanSavingsBucketKeydown(event, ${JSON.stringify(bucketName)}, this)" autocomplete="off">
+                                <input id="savings-bucket-input-${bucketIdx}" type="text" inputmode="decimal" value="${planned.toFixed(0)}" class="input-pill text-slate-900 budget-item-input" onfocus="pushToUndo()" oninput="budgetPlanSavingsBucketInput(${bucketArg}, ${bucketIdx}, this)" onblur="budgetPlanSavingsBucketCommit(${bucketArg}, ${bucketIdx}, this)" onkeydown="budgetPlanSavingsBucketKeydown(event, ${bucketArg}, ${bucketIdx}, this)" autocomplete="off">
                                 <button onclick="openSavingsBuckets()" class="p-1.5 text-slate-300 hover:text-slate-600 hover:bg-slate-50 rounded">⋯</button>
                             </div>
                         </div>
@@ -465,7 +469,7 @@ function renderStrategy(opts) {
                                 <span>Monthly</span>
                                 <span id="savings-bucket-slider-label-${bucketIdx}">${Math.round(planned)} ${getCurrencyLabel()}</span>
                             </div>
-                            <input type="range" id="savings-bucket-slider-${bucketIdx}" min="0" max="${max}" step="${step}" value="${snapped}" oninput="syncSavingsBucketBudgetAmount(${JSON.stringify(bucketName)}, this.value); budgetPlanSavingsBucketSyncLabel(${bucketIdx}, this.value)" class="w-full">
+                            <input type="range" id="savings-bucket-slider-${bucketIdx}" min="0" max="${max}" step="${step}" value="${snapped}" oninput="budgetPlanSavingsBucketSliderInput(${bucketArg}, ${bucketIdx}, this)" class="w-full">
                             <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mt-1">
                                 <span>0</span>
                                 <span>${max}</span>

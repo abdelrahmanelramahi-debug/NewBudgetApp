@@ -1686,14 +1686,21 @@ function budgetPlanAmountKeydown(e, sid, idx, el) {
 }
 window.budgetPlanAmountKeydown = budgetPlanAmountKeydown;
 
-function budgetPlanSavingsBucketInput(bucketKey, el) {
+function budgetPlanSavingsBucketInput(bucketKey, bucketIdx, el) {
     if (!el) return;
     var raw = String(el.value ?? '');
     if (!isProbablyPartialNumber(raw)) return;
+    if (raw.trim() === '' || raw === '-' || raw === '.' || raw === '-.') return;
+    var num = parseFloat(raw);
+    if (Number.isNaN(num) || num < 0) num = 0;
+    syncSavingsBucketBudgetAmount(bucketKey, num);
+    var slider = document.getElementById('savings-bucket-slider-' + bucketIdx);
+    if (slider) slider.value = String(Math.round(num / 50) * 50);
+    budgetPlanSavingsBucketSyncLabel(bucketIdx, num);
 }
 window.budgetPlanSavingsBucketInput = budgetPlanSavingsBucketInput;
 
-function budgetPlanSavingsBucketCommit(bucketKey, el) {
+function budgetPlanSavingsBucketCommit(bucketKey, bucketIdx, el) {
     if (!el) return;
     var raw = String(el.value ?? '').trim();
     var num = 0;
@@ -1703,13 +1710,16 @@ function budgetPlanSavingsBucketCommit(bucketKey, el) {
         num = parseFloat(raw);
         if (Number.isNaN(num)) num = 0;
     }
-    el.value = raw === '' ? '0' : raw;
+    el.value = String(Math.max(0, num));
     syncSavingsBucketBudgetAmount(bucketKey, num);
-    if (typeof renderStrategy === 'function') renderStrategy();
+    var slider = document.getElementById('savings-bucket-slider-' + bucketIdx);
+    if (slider) slider.value = String(Math.round(num / 50) * 50);
+    budgetPlanSavingsBucketSyncLabel(bucketIdx, num);
+    if (typeof updateBudgetPlanAllocated === 'function') updateBudgetPlanAllocated();
 }
 window.budgetPlanSavingsBucketCommit = budgetPlanSavingsBucketCommit;
 
-function budgetPlanSavingsBucketKeydown(e, bucketKey, el) {
+function budgetPlanSavingsBucketKeydown(e, bucketKey, bucketIdx, el) {
     if (!e) return;
     if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) return;
     if (e.key === 'Enter') {
@@ -1726,6 +1736,17 @@ function budgetPlanSavingsBucketSyncLabel(bucketIdx, rawValue) {
     if (label) label.textContent = Math.round(num) + ' ' + getCurrencyLabel();
 }
 window.budgetPlanSavingsBucketSyncLabel = budgetPlanSavingsBucketSyncLabel;
+
+function budgetPlanSavingsBucketSliderInput(bucketKey, bucketIdx, sliderEl) {
+    if (!sliderEl) return;
+    var num = parseFloat(sliderEl.value);
+    if (Number.isNaN(num) || num < 0) num = 0;
+    syncSavingsBucketBudgetAmount(bucketKey, num);
+    var input = document.getElementById('savings-bucket-input-' + bucketIdx);
+    if (input && document.activeElement !== input) input.value = String(Math.round(num));
+    budgetPlanSavingsBucketSyncLabel(bucketIdx, num);
+}
+window.budgetPlanSavingsBucketSliderInput = budgetPlanSavingsBucketSliderInput;
 
 function syncFoodBaseAmount(sid, idx, val) {
     const num = parseFloat(val) || 0;
