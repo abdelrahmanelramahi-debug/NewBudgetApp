@@ -92,6 +92,57 @@ function showAppConfirm(message, onConfirm, onCancel, options) {
     _showAppAlertModal(true);
 }
 
+function updateEditLockUI(lockState) {
+    var statusEl = getEl('edit-lock-status');
+    if (!statusEl) return;
+    lockState = lockState || {};
+    if (!window.currentUser) {
+        statusEl.textContent = '';
+        statusEl.className = 'hidden';
+        return;
+    }
+    if (!lockState.known) {
+        statusEl.textContent = 'View-only: checking lock...';
+        statusEl.className = 'text-[10px] text-amber-600 mt-0.5';
+        return;
+    }
+    if (lockState.canEdit) {
+        statusEl.textContent = 'Editing enabled on this device';
+        statusEl.className = 'text-[10px] text-emerald-600 mt-0.5';
+        return;
+    }
+    var holder = lockState.holderLabel || 'another device';
+    statusEl.textContent = 'View-only: active on ' + holder;
+    statusEl.className = 'text-[10px] text-amber-600 mt-0.5';
+}
+if (typeof window !== 'undefined') window.updateEditLockUI = updateEditLockUI;
+
+function promptEditLockTakeover() {
+    var lockState = (typeof window.getEditLockState === 'function') ? window.getEditLockState() : {};
+    var holder = lockState && lockState.holderLabel ? lockState.holderLabel : 'another device';
+    var msg = 'This budget is currently being edited on ' + holder + '.\n\nTo make changes here, click Resume control. The other session becomes view-only.';
+    showAppConfirm(msg, function () {
+        if (typeof window.takeOverEditLock !== 'function') {
+            showAppAlert('Takeover is unavailable right now.');
+            return;
+        }
+        window.takeOverEditLock().then(function (ok) {
+            if (ok) {
+                if (typeof window.updateSyncStatus === 'function') window.updateSyncStatus('Control resumed on this device', true, false);
+                if (typeof window.updateEditLockUI === 'function' && typeof window.getEditLockState === 'function') {
+                    window.updateEditLockUI(window.getEditLockState());
+                }
+            } else {
+                showAppAlert('Unable to resume control right now. Please check connection and try again.');
+            }
+        });
+    }, null, {
+        title: 'View-only mode',
+        confirmLabel: 'Resume control'
+    });
+}
+if (typeof window !== 'undefined') window.promptEditLockTakeover = promptEditLockTakeover;
+
 function updateCurrencyLabels() {
     const label = getCurrencyLabel();
     document.querySelectorAll('[data-currency]').forEach(el => {

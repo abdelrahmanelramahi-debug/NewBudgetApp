@@ -13,6 +13,9 @@
     var MIN_SAVED_AGO_MS = 20000;
     var RETRY_DELAYS_MS = [2000, 4000, 8000];
     var MAX_RETRIES = 3;
+    var EDIT_LOCK_TTL_MS = 45000;
+    var EDIT_LOCK_HEARTBEAT_MS = 12000;
+    var EDIT_LOCK_POLL_MS = 10000;
 
     var syncInProgress = false;
     var lastSyncTime = null;
@@ -25,6 +28,19 @@
     var loadRetryCount = 0;
     var realtimeUnsubscribe = null;
     var realtimePullTimeoutId = null;
+    var lockHeartbeatInterval = null;
+    var lockPollInterval = null;
+    var deviceId = '';
+    var deviceLabel = '';
+    var editLockState = {
+        known: false,
+        canEdit: false,
+        holderId: '',
+        holderLabel: '',
+        expiresAt: 0,
+        reason: 'unknown'
+    };
+    var hasShownViewOnlyPrompt = false;
     // Prevent stale-tab overwrites on refresh/close:
     // don't allow any forced "flush" save until we've successfully pulled cloud at least once this session.
     var hasCompletedInitialCloudLoad = false;
@@ -78,10 +94,283 @@
         return h + ':' + (m < 10 ? '0' : '') + m + (am ? 'a' : 'p');
     }
 
+    function getUserDocRef() {
+        var user = getCurrentUser();
+        if (!user || !global.firebaseDb) return null;
+        return global.firebaseDb.collection('users').doc(user.uid);
+    }
+
+    function randomId() {
+        return 'dev_' + Math.random().toString(36).slice(2, 10) + '_' + Date.now().toString(36);
+    }
+
+    function initDeviceIdentity() {
+        if (!global.localStorage) return;
+        if (!deviceId) {
+            try {
+                deviceId = global.localStorage.getItem(STORAGE_KEYS.DEVICE_ID) || '';
+            } catch (e) {}
+            if (!deviceId) {
+                deviceId = randomId();
+                try { global.localStorage.setItem(STORAGE_KEYS.DEVICE_ID, deviceId); } catch (e2) {}
+            }
+        }
+        if (!deviceLabel) {
+            try {
+                deviceLabel = global.localStorage.getItem(STORAGE_KEYS.DEVICE_LABEL) || '';
+            } catch (e3) {}
+            if (!deviceLabel) {
+                var ua = (global.navigator && global.navigator.userAgent) ? global.navigator.userAgent : '';
+                deviceLabel = /Mobile|Android|iPhone|iPad/i.test(ua) ? 'Mobile device' : 'Desktop device';
+                try { global.localStorage.setItem(STORAGE_KEYS.DEVICE_LABEL, deviceLabel); } catch (e4) {}
+            }
+        }
+    }
+
+    function normalizeLock(lock) {
+        lock = lock || {};
+        var now = Date.now();
+        var expiresAt = Number(lock.expiresAt) || 0;
+        var holderId = lock.holderId || '';
+        var holderLabel = lock.holderLabel || 'another device';
+        var active = !!holderId && expiresAt > now;
+        return {
+            holderId: holderId,
+            holderLabel: holderLabel,
+            expiresAt: expiresAt,
+            active: active
+        };
+    }
+
+    function setEditLockState(next) {
+        var prevCanEdit = !!editLockState.canEdit;
+        var prevHolderId = editLockState.holderId || '';
+        editLockState = {
+            known: !!next.known,
+            canEdit: !!next.canEdit,
+            holderId: next.holderId || '',
+            holderLabel: next.holderLabel || '',
+            expiresAt: Number(next.expiresAt) || 0,
+            reason: next.reason || 'unknown'
+        };
+        try {
+            global.localStorage.setItem(STORAGE_KEYS.EDIT_LOCK_CACHE, JSON.stringify(editLockState));
+        } catch (e) {}
+        if (typeof global.updateEditLockUI === 'function') global.updateEditLockUI(editLockState);
+        if (editLockState.canEdit) {
+            hasShownViewOnlyPrompt = false;
+        } else if (
+            editLockState.known &&
+            editLockState.reason === 'locked_by_other' &&
+            typeof document !== 'undefined' &&
+            document.visibilityState === 'visible' &&
+            typeof global.promptEditLockTakeover === 'function' &&
+            (!hasShownViewOnlyPrompt || prevCanEdit || prevHolderId !== editLockState.holderId)
+        ) {
+            hasShownViewOnlyPrompt = true;
+            global.promptEditLockTakeover();
+        }
+    }
+
+    function applyLockFromDoc(docData) {
+        initDeviceIdentity();
+        var lock = normalizeLock(docData && docData.editLock);
+        if (!lock.active) {
+            setEditLockState({
+                known: true,
+                canEdit: true,
+                holderId: deviceId,
+                holderLabel: deviceLabel,
+                expiresAt: 0,
+                reason: 'unlocked'
+            });
+            return;
+        }
+        if (lock.holderId === deviceId) {
+            setEditLockState({
+                known: true,
+                canEdit: true,
+                holderId: lock.holderId,
+                holderLabel: lock.holderLabel,
+                expiresAt: lock.expiresAt,
+                reason: 'owner'
+            });
+            return;
+        }
+        setEditLockState({
+            known: true,
+            canEdit: false,
+            holderId: lock.holderId,
+            holderLabel: lock.holderLabel,
+            expiresAt: lock.expiresAt,
+            reason: 'locked_by_other'
+        });
+    }
+
+    function fetchEditLock() {
+        var userDocRef = getUserDocRef();
+        if (!userDocRef) return Promise.resolve(editLockState);
+        return userDocRef.get({ source: 'server' }).then(function (snap) {
+            var data = (snap && snap.exists) ? (snap.data() || {}) : {};
+            applyLockFromDoc(data);
+            return editLockState;
+        }).catch(function (err) {
+            console.warn('Edit lock fetch failed:', err);
+            setEditLockState({
+                known: false,
+                canEdit: false,
+                holderId: editLockState.holderId,
+                holderLabel: editLockState.holderLabel,
+                expiresAt: editLockState.expiresAt,
+                reason: 'lock_check_failed'
+            });
+            return editLockState;
+        });
+    }
+
+    function writeLock(forceTakeover) {
+        initDeviceIdentity();
+        var userDocRef = getUserDocRef();
+        if (!userDocRef || !global.firebaseDb) return Promise.resolve(false);
+        var expiresAt = Date.now() + EDIT_LOCK_TTL_MS;
+        var nextLock = {
+            holderId: deviceId,
+            holderLabel: deviceLabel,
+            heartbeatAt: Date.now(),
+            expiresAt: expiresAt,
+            updatedAt: Date.now()
+        };
+        return global.firebaseDb.runTransaction(function (tx) {
+            return tx.get(userDocRef).then(function (snap) {
+                var data = (snap && snap.exists) ? (snap.data() || {}) : {};
+                var current = normalizeLock(data.editLock);
+                if (current.active && current.holderId !== deviceId && !forceTakeover) {
+                    return false;
+                }
+                tx.set(userDocRef, { editLock: nextLock }, { merge: true });
+                return true;
+            });
+        }).then(function (acquired) {
+            if (acquired) {
+                setEditLockState({
+                    known: true,
+                    canEdit: true,
+                    holderId: deviceId,
+                    holderLabel: deviceLabel,
+                    expiresAt: expiresAt,
+                    reason: forceTakeover ? 'takeover' : 'owner'
+                });
+            }
+            return acquired;
+        }).catch(function (err) {
+            console.warn('Edit lock write failed:', err);
+            setEditLockState({
+                known: false,
+                canEdit: false,
+                holderId: editLockState.holderId,
+                holderLabel: editLockState.holderLabel,
+                expiresAt: editLockState.expiresAt,
+                reason: 'lock_write_failed'
+            });
+            return false;
+        });
+    }
+
+    function renewEditLock() {
+        if (!editLockState.canEdit) return Promise.resolve(false);
+        return writeLock(true);
+    }
+
+    function acquireEditLock() {
+        return writeLock(false);
+    }
+
+    function takeOverEditLock() {
+        return writeLock(true);
+    }
+
+    function releaseEditLock() {
+        initDeviceIdentity();
+        var userDocRef = getUserDocRef();
+        if (!userDocRef) return Promise.resolve();
+        return userDocRef.get({ source: 'server' }).then(function (snap) {
+            var data = (snap && snap.exists) ? (snap.data() || {}) : {};
+            var current = normalizeLock(data.editLock);
+            if (!current.holderId || current.holderId !== deviceId) return;
+            return userDocRef.set({
+                editLock: {
+                    holderId: '',
+                    holderLabel: '',
+                    heartbeatAt: 0,
+                    expiresAt: 0,
+                    updatedAt: Date.now()
+                }
+            }, { merge: true });
+        }).catch(function () {}).finally(function () {
+            setEditLockState({
+                known: true,
+                canEdit: false,
+                holderId: '',
+                holderLabel: '',
+                expiresAt: 0,
+                reason: 'released'
+            });
+        });
+    }
+
+    function canEditNow() {
+        if (!getCurrentUser()) return true;
+        return !!(editLockState.known && editLockState.canEdit);
+    }
+
+    function refreshEditLock() {
+        return fetchEditLock().then(function (current) {
+            if (current.canEdit) return renewEditLock();
+            return false;
+        });
+    }
+
+    function startEditLockLifecycle() {
+        if (!getCurrentUser()) return;
+        initDeviceIdentity();
+        fetchEditLock().then(function (current) {
+            if (!current.canEdit) return acquireEditLock();
+            return renewEditLock();
+        });
+        if (!lockHeartbeatInterval) {
+            lockHeartbeatInterval = setInterval(function () {
+                if (!getCurrentUser()) return;
+                if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+                refreshEditLock();
+            }, EDIT_LOCK_HEARTBEAT_MS);
+        }
+        if (!lockPollInterval) {
+            lockPollInterval = setInterval(function () {
+                if (!getCurrentUser()) return;
+                fetchEditLock();
+            }, EDIT_LOCK_POLL_MS);
+        }
+    }
+
+    function stopEditLockLifecycle() {
+        if (lockHeartbeatInterval) {
+            clearInterval(lockHeartbeatInterval);
+            lockHeartbeatInterval = null;
+        }
+        if (lockPollInterval) {
+            clearInterval(lockPollInterval);
+            lockPollInterval = null;
+        }
+    }
+
     // --- SAVE TO CLOUD ---
     function saveStateToCloud() {
         var user = getCurrentUser();
         if (!user) return;
+        if (!canEditNow()) {
+            updateSyncStatus('View-only on this device', false, false);
+            return Promise.resolve();
+        }
         if (syncInProgress) {
             pendingPush = true;
             return;
@@ -371,6 +660,7 @@
 
     function startAutoSync() {
         if (autoSyncInterval) return;
+        startEditLockLifecycle();
         autoSyncInterval = setInterval(function () {
             if (!getCurrentUser() || syncInProgress) return;
             var now = Date.now();
@@ -404,6 +694,10 @@
         if (realtimeUnsubscribe) return;
         var userDocRef = global.firebaseDb.collection('users').doc(user.uid);
         realtimeUnsubscribe = userDocRef.onSnapshot(function (snapshot) {
+            try {
+                var snapData = snapshot && snapshot.exists ? (snapshot.data() || {}) : {};
+                applyLockFromDoc(snapData);
+            } catch (e) {}
             if (syncInProgress) return;
             if (realtimePullTimeoutId) clearTimeout(realtimePullTimeoutId);
             realtimePullTimeoutId = setTimeout(function () {
@@ -433,6 +727,7 @@
             clearTimeout(pushTimeoutId);
             pushTimeoutId = null;
         }
+        stopEditLockLifecycle();
         stopRealtimeSync();
     }
 
@@ -447,5 +742,14 @@
     global.SYNC_PROTOCOL_VERSION = SYNC_PROTOCOL_VERSION;
     global.startRealtimeSync = startRealtimeSync;
     global.stopRealtimeSync = stopRealtimeSync;
+    global.fetchEditLock = fetchEditLock;
+    global.acquireEditLock = acquireEditLock;
+    global.takeOverEditLock = takeOverEditLock;
+    global.releaseEditLock = releaseEditLock;
+    global.canEditNow = canEditNow;
+    global.getEditLockState = function () { return editLockState; };
+    global.refreshEditLock = refreshEditLock;
+    global.startEditLockLifecycle = startEditLockLifecycle;
+    global.stopEditLockLifecycle = stopEditLockLifecycle;
 
 })(typeof window !== 'undefined' ? window : this);

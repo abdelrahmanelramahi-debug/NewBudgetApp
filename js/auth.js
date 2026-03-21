@@ -56,12 +56,16 @@ function initAuth() {
                         requestAnimationFrame(updateGlobalUI);
                     } else if (typeof updateGlobalUI === 'function') updateGlobalUI();
                     startAutoSync();
+                    if (typeof startEditLockLifecycle === 'function') startEditLockLifecycle();
+                    if (typeof refreshEditLock === 'function') refreshEditLock();
                     if (typeof startRealtimeSync === 'function') startRealtimeSync();
                 }).finally(runAuthReadyCallbacks);
             }).catch(function() {
                 loadStateFromCloud().then(function() {
                     if (typeof updateGlobalUI === 'function') updateGlobalUI();
                     startAutoSync();
+                    if (typeof startEditLockLifecycle === 'function') startEditLockLifecycle();
+                    if (typeof refreshEditLock === 'function') refreshEditLock();
                     if (typeof startRealtimeSync === 'function') startRealtimeSync();
                 }).finally(runAuthReadyCallbacks);
             });
@@ -70,6 +74,7 @@ function initAuth() {
             window.currentUser = null;
             updateAuthUI();
             stopAutoSync();
+            if (typeof stopEditLockLifecycle === 'function') stopEditLockLifecycle();
             runAuthReadyCallbacks();
         }
     });
@@ -142,6 +147,7 @@ async function signIn(email, password) {
 // Sign Out
 async function signOut() {
     try {
+        if (typeof releaseEditLock === 'function') await releaseEditLock();
         await window.firebaseAuth.signOut();
         currentUser = null;
         updateAuthUI();
@@ -158,10 +164,12 @@ async function signOut() {
 /** Call when app is ready to show (after cloud load if logged in). Use so first paint has correct state and no surplus flash. */
 const originalSaveState = window.saveState;
 window.saveState = function() {
-    originalSaveState();
+    var didSave = originalSaveState();
+    if (didSave === false) return false;
     if (currentUser && typeof scheduleSyncPush === 'function') {
         scheduleSyncPush();
     }
+    return true;
 };
 
 // flushCloudSave, pullFromCloudWhenVisible: from sync.js (throttled pull, debounced push)
@@ -174,6 +182,7 @@ if (typeof document !== 'undefined') {
         }
         if (document.visibilityState === 'visible') {
             var hiddenDuration = _lastHiddenAt ? (Date.now() - _lastHiddenAt) : 0;
+            if (typeof refreshEditLock === 'function') refreshEditLock();
             if (hiddenDuration >= 10000 && typeof loadStateFromCloud === 'function') {
                 loadStateFromCloud(0);
             } else {

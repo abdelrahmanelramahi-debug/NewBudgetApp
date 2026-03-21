@@ -5,7 +5,16 @@
  */
 
 // --- INCOME LOGIC ---
+function ensureEditControlBeforeMutation() {
+    if (!window.currentUser) return true;
+    if (typeof window.canEditNow === 'function' && window.canEditNow()) return true;
+    if (typeof window.promptEditLockTakeover === 'function') window.promptEditLockTakeover();
+    else if (typeof window.showAppAlert === 'function') window.showAppAlert('This device is in view-only mode. Resume control to edit.');
+    return false;
+}
+
 function updateIncome(val) {
+    if (!ensureEditControlBeforeMutation()) return;
     const num = parseFloat(val);
     if(!isNaN(num)) {
         state.monthlyIncome = num;
@@ -286,6 +295,7 @@ function getPlanAmount(label) {
 }
 
 function applyTransaction(tx) {
+    if (!ensureEditControlBeforeMutation()) return false;
     ensureAccountsState();
 
     switch (tx.type) {
@@ -435,6 +445,7 @@ function applyTransaction(tx) {
         default:
             break;
     }
+    return true;
 }
 
 // --- REALITY CHECK ---

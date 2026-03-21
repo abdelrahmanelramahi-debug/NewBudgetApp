@@ -231,11 +231,25 @@ function getExampleBudget() {
 
 // PERSISTENCE
 function saveState() {
+    if (window.currentUser && typeof window.canEditNow === 'function' && !window.canEditNow()) {
+        if (typeof window.promptEditLockTakeover === 'function') window.promptEditLockTakeover();
+        try {
+            var restoreKey = STORAGE_KEYS.STATE;
+            var restoreRaw = localStorage.getItem(restoreKey);
+            if (restoreRaw) {
+                var restored = JSON.parse(restoreRaw);
+                state = { ...state, ...restored };
+                if (typeof refreshUI === 'function') refreshUI();
+            }
+        } catch (restoreErr) {}
+        return false;
+    }
     var stateKey = STORAGE_KEYS.STATE;
     var modKey = STORAGE_KEYS.MODIFIED;
     localStorage.setItem(stateKey, JSON.stringify(state));
     try { localStorage.setItem(modKey, String(Date.now())); } catch (e) {}
     // Cloud sync will be handled by auth.js if user is logged in
+    return true;
 }
 window.saveState = saveState; // Make it globally accessible
 
