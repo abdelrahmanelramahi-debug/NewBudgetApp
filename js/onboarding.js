@@ -488,6 +488,42 @@ function initAndRenderOnboardingCategories() {
                 ]}
             );
         }
+
+        // On onboarding, keep the full default category/subcategory structure but start
+        // planning from zero so users allocate intentionally from scratch.
+        (state.categories || []).forEach(function (sec) {
+            (sec.items || []).forEach(function (item) {
+                item.amount = 0;
+                if (item.amortData) delete item.amortData;
+            });
+        });
+
+        // Seed helpful default savings buckets for first-time users.
+        // General Savings stays first and acts as the required protected bucket.
+        if (!state.accounts) state.accounts = {};
+        var existingSavings = state.accounts.savingsBuckets || {};
+        var existingKeys = Object.keys(existingSavings);
+        var shouldSeedDefaultBuckets =
+            !existingKeys.length ||
+            (existingKeys.length === 1 && (existingKeys[0] === 'General Savings' || existingKeys[0] === 'Main'));
+        if (shouldSeedDefaultBuckets) {
+            state.accounts.savingsBuckets = {
+                'General Savings': 0,
+                'Emergency Fund': 0,
+                'Travel': 0,
+                'Big Purchase': 0
+            };
+            state.accounts.savingsDefaultBucket = 'General Savings';
+        }
+        if (!state.accounts.savingsBudgetPlan || typeof state.accounts.savingsBudgetPlan !== 'object') {
+            state.accounts.savingsBudgetPlan = {};
+        }
+        var seededPlan = {};
+        Object.keys(state.accounts.savingsBuckets || {}).forEach(function (bucketName) {
+            seededPlan[bucketName] = 0;
+        });
+        state.accounts.savingsBudgetPlan = seededPlan;
+        if (typeof syncSavingsBudgetPlanItemAmount === 'function') syncSavingsBudgetPlanItemAmount();
     }
     var obInc = document.getElementById('onboarding-income');
     if (obInc && obInc.value.trim() !== '' && typeof state !== 'undefined') {
