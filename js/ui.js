@@ -413,7 +413,7 @@ function renderStrategy(opts) {
 
         let rowsHtml = '';
 
-        // Must Haves: show Savings as its own bucketed section, then subtitle "Essentials" for existing core items.
+        // Must Haves: show Savings as its own bucketed section, then subtitle "Must Haves" for existing core items.
         if (includeSavingsInMustHaves) {
             if (typeof ensureGeneralSavingsBudgetConfig === 'function') ensureGeneralSavingsBudgetConfig();
             var savingsBuckets = Object.keys((state.accounts && state.accounts.savingsBuckets) || {});
@@ -469,7 +469,7 @@ function renderStrategy(opts) {
                 `;
             });
             rowsHtml += `</div>`;
-            rowsHtml += `<div class="pt-4 pb-2 text-[9px] font-black uppercase tracking-widest text-slate-400">Essentials</div>`;
+            rowsHtml += `<div class="pt-4 pb-2 text-[9px] font-black uppercase tracking-widest text-slate-400">Must Haves</div>`;
         }
 
         sec.items.forEach((item, idx) => {
@@ -664,7 +664,7 @@ function renderStrategy(opts) {
            </div>`
         : '';
 
-    container.innerHTML = systemHtml + miniBudgetsHeading + toolBarHtml + customHtml;
+    container.innerHTML = systemHtml + miniBudgetsHeading + customHtml + toolBarHtml;
 
     if(!systemHtml && !customHtml) {
          container.innerHTML = toolBarHtml + '<div class="text-center py-10 text-slate-300 font-bold uppercase tracking-widest">No Strategies Yet</div>';

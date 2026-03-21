@@ -548,7 +548,7 @@ function updateOnboardingSummary() {
     var cat = 'Custom';
     if (typeof state !== 'undefined' && state.categories && state.categories.length) {
         var customCount = state.categories.filter(function (s) { return !s.isSystem; }).length;
-        cat = customCount ? customCount + ' categories' : 'Essentials only';
+        cat = customCount ? customCount + ' categories' : 'Must Haves only';
     }
     var sumCur = document.getElementById('onboarding-summary-currency');
     var sumInc = document.getElementById('onboarding-summary-income');
