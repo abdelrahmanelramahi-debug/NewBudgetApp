@@ -83,6 +83,7 @@ const WEEKLY_MAX_WEEKS = 4;
 
 let pendingDangerAction = null;
 let requiredDangerPhrase = "";
+var GENERAL_SAVINGS_BUCKET_NAME = 'General Savings';
 
 // Hard-suppression helpers for payables buckets that must never resurrect once deleted
 function markPayablesBucketDeleted(name) {
@@ -126,6 +127,44 @@ function purgeDeletedSavingsBuckets() {
 function unmarkSavingsBucketDeleted(name) {
     if (!name || !Array.isArray(state._deletedSavingsBuckets)) return;
     state._deletedSavingsBuckets = state._deletedSavingsBuckets.filter(function (n) { return n !== name; });
+}
+
+function ensureGeneralSavingsBucketState() {
+    if (!state.accounts) state.accounts = {};
+    if (!state.accounts.savingsBuckets || typeof state.accounts.savingsBuckets !== 'object') {
+        state.accounts.savingsBuckets = {};
+    }
+    var buckets = state.accounts.savingsBuckets;
+    var migratedAmount = 0;
+    if (buckets['Main'] !== undefined) {
+        migratedAmount += Number(buckets['Main']) || 0;
+        delete buckets['Main'];
+    }
+    if (buckets[GENERAL_SAVINGS_BUCKET_NAME] !== undefined) {
+        migratedAmount += Number(buckets[GENERAL_SAVINGS_BUCKET_NAME]) || 0;
+    }
+    buckets[GENERAL_SAVINGS_BUCKET_NAME] = migratedAmount;
+    var ordered = {};
+    ordered[GENERAL_SAVINGS_BUCKET_NAME] = Number(buckets[GENERAL_SAVINGS_BUCKET_NAME]) || 0;
+    Object.keys(buckets).forEach(function (key) {
+        if (key === GENERAL_SAVINGS_BUCKET_NAME) return;
+        ordered[key] = Number(buckets[key]) || 0;
+    });
+    state.accounts.savingsBuckets = ordered;
+    state.accounts.savingsDefaultBucket = GENERAL_SAVINGS_BUCKET_NAME;
+    if (!state.accounts.savingsBudgetPlan || typeof state.accounts.savingsBudgetPlan !== 'object') {
+        state.accounts.savingsBudgetPlan = {};
+    }
+    var planMap = {};
+    planMap[GENERAL_SAVINGS_BUCKET_NAME] = Number(state.accounts.savingsBudgetPlan[GENERAL_SAVINGS_BUCKET_NAME]) || Number(state.accounts.savingsBudgetPlan['Main']) || 0;
+    Object.keys(ordered).forEach(function (key) {
+        if (key === GENERAL_SAVINGS_BUCKET_NAME) return;
+        planMap[key] = Number(state.accounts.savingsBudgetPlan[key]) || 0;
+    });
+    state.accounts.savingsBudgetPlan = planMap;
+    if (typeof unmarkSavingsBucketDeleted === 'function') {
+        unmarkSavingsBucketDeleted(GENERAL_SAVINGS_BUCKET_NAME);
+    }
 }
 
 function markTransportationBucketDeleted(name) {
@@ -274,11 +313,12 @@ function migrateState() {
         migrateLabelRename();
         if (!state.accounts.savingsBuckets) {
             const seed = state.accounts.buckets['Savings'] ?? 0;
-            state.accounts.savingsBuckets = { Main: seed };
+            state.accounts.savingsBuckets = { 'General Savings': seed };
         }
         if (!state.accounts.savingsDefaultBucket) {
-            state.accounts.savingsDefaultBucket = 'Main';
+            state.accounts.savingsDefaultBucket = 'General Savings';
         }
+        ensureGeneralSavingsBucketState();
         if (!state.accounts.payablesBuckets) {
             const seed = state.accounts.buckets['Payables'] ?? 0;
             state.accounts.payablesBuckets = { Main: seed };
@@ -333,9 +373,12 @@ function migrateState() {
             weekly: legacyWeekly,
             buckets: buckets,
             savingsBuckets: {
-                Main: buckets['Savings']
+                'General Savings': buckets['Savings']
             },
-            savingsDefaultBucket: 'Main',
+            savingsDefaultBucket: 'General Savings',
+            savingsBudgetPlan: {
+                'General Savings': buckets['Savings']
+            },
             payablesBuckets: {
                 Main: buckets['Payables'] ?? 0
             },
@@ -355,6 +398,7 @@ function migrateState() {
     if (!Array.isArray(state._deletedPayablesBuckets)) state._deletedPayablesBuckets = [];
     if (!Array.isArray(state._deletedSavingsBuckets)) state._deletedSavingsBuckets = [];
     if (!Array.isArray(state._deletedTransportationBuckets)) state._deletedTransportationBuckets = [];
+    ensureGeneralSavingsBucketState();
 }
 
 function isAccountLabel(label) {
@@ -534,11 +578,12 @@ function initSurplusFromOpening() {
     }
     if (!state.accounts.buckets) state.accounts.buckets = {};
     if (!state.accounts.savingsBuckets) {
-        state.accounts.savingsBuckets = { Main: state.accounts.buckets['Savings'] ?? 0 };
+        state.accounts.savingsBuckets = { 'General Savings': state.accounts.buckets['Savings'] ?? 0 };
     }
     if (!state.accounts.savingsDefaultBucket) {
-        state.accounts.savingsDefaultBucket = 'Main';
+        state.accounts.savingsDefaultBucket = 'General Savings';
     }
+    ensureGeneralSavingsBucketState();
     if (!state.accounts.payablesBuckets) {
         state.accounts.payablesBuckets = { Main: state.accounts.buckets['Payables'] ?? 0 };
     }

@@ -16,6 +16,37 @@ function updateIncome(val) {
 }
 
 // --- STATE TRANSACTIONS ---
+function ensureGeneralSavingsBudgetConfig() {
+    if (!state.accounts) return;
+    var fixedName = 'General Savings';
+    var buckets = state.accounts.savingsBuckets || {};
+    var moved = 0;
+    if (buckets.Main !== undefined) {
+        moved += Number(buckets.Main) || 0;
+        delete buckets.Main;
+    }
+    if (buckets[fixedName] !== undefined) moved += Number(buckets[fixedName]) || 0;
+    buckets[fixedName] = moved;
+    var ordered = {};
+    ordered[fixedName] = Number(buckets[fixedName]) || 0;
+    Object.keys(buckets).forEach(function (k) {
+        if (k === fixedName) return;
+        ordered[k] = Number(buckets[k]) || 0;
+    });
+    state.accounts.savingsBuckets = ordered;
+    state.accounts.savingsDefaultBucket = fixedName;
+    if (!state.accounts.savingsBudgetPlan || typeof state.accounts.savingsBudgetPlan !== 'object') {
+        state.accounts.savingsBudgetPlan = {};
+    }
+    var plans = {};
+    plans[fixedName] = Number(state.accounts.savingsBudgetPlan[fixedName]) || Number(state.accounts.savingsBudgetPlan.Main) || 0;
+    Object.keys(ordered).forEach(function (k) {
+        if (k === fixedName) return;
+        plans[k] = Number(state.accounts.savingsBudgetPlan[k]) || 0;
+    });
+    state.accounts.savingsBudgetPlan = plans;
+}
+
 function ensureAccountsState() {
     if (!state.accounts) {
         state.accounts = { surplus: 0, weekly: { balance: getWeeklyConfigAmount(), week: 1 }, buckets: {} };
@@ -26,10 +57,13 @@ function ensureAccountsState() {
     if (!state.accounts.buckets) state.accounts.buckets = {};
     if (!state.accounts.savingsBuckets) {
         const seed = state.accounts.buckets['Savings'] ?? 0;
-        state.accounts.savingsBuckets = { Main: seed };
+        state.accounts.savingsBuckets = { 'General Savings': seed };
     }
     if (!state.accounts.savingsDefaultBucket) {
-        state.accounts.savingsDefaultBucket = 'Main';
+        state.accounts.savingsDefaultBucket = 'General Savings';
+    }
+    if (!state.accounts.savingsBudgetPlan) {
+        state.accounts.savingsBudgetPlan = { 'General Savings': 0 };
     }
     if (!state.accounts.payablesBuckets) {
         const seed = state.accounts.buckets['Payables'] ?? 0;
@@ -45,12 +79,13 @@ function ensureAccountsState() {
     if (!state.accounts.transportationDefaultBucket) {
         state.accounts.transportationDefaultBucket = 'Main';
     }
+    ensureGeneralSavingsBudgetConfig();
 }
 
 function setItemBalance(label, value) {
     ensureAccountsState();
     if (label === 'Savings') {
-        const target = state.accounts.savingsDefaultBucket || 'Main';
+        const target = state.accounts.savingsDefaultBucket || 'General Savings';
         if (state.accounts.savingsBuckets[target] === undefined) {
             state.accounts.savingsBuckets[target] = 0;
         }
@@ -182,7 +217,7 @@ function adjustSavingsTotal(delta) {
 
 function creditSavings(amount) {
     ensureAccountsState();
-    const target = state.accounts.savingsDefaultBucket || 'Main';
+    const target = state.accounts.savingsDefaultBucket || 'General Savings';
     if (state.accounts.savingsBuckets[target] === undefined) {
         state.accounts.savingsBuckets[target] = 0;
     }
@@ -193,7 +228,7 @@ function creditSavings(amount) {
 function debitSavings(amount) {
     ensureAccountsState();
     let remaining = amount;
-    const target = state.accounts.savingsDefaultBucket || 'Main';
+    const target = state.accounts.savingsDefaultBucket || 'General Savings';
     const keys = Object.keys(state.accounts.savingsBuckets);
     const order = [target, ...keys.filter(k => k !== target)];
     order.forEach(key => {
@@ -340,6 +375,11 @@ function applyTransaction(tx) {
             item.amount = newVal;
             delete item.amortData;
             if (isAccountLabel(item.label)) {
+                if (item.label === 'Savings') {
+                    ensureGeneralSavingsBudgetConfig();
+                    state.accounts.savingsBudgetPlan['General Savings'] = newVal;
+                    syncSavingsBudgetPlanItemAmount();
+                }
                 break;
             }
             const delta = newVal - oldVal;
@@ -1646,6 +1686,47 @@ function budgetPlanAmountKeydown(e, sid, idx, el) {
 }
 window.budgetPlanAmountKeydown = budgetPlanAmountKeydown;
 
+function budgetPlanSavingsBucketInput(bucketKey, el) {
+    if (!el) return;
+    var raw = String(el.value ?? '');
+    if (!isProbablyPartialNumber(raw)) return;
+}
+window.budgetPlanSavingsBucketInput = budgetPlanSavingsBucketInput;
+
+function budgetPlanSavingsBucketCommit(bucketKey, el) {
+    if (!el) return;
+    var raw = String(el.value ?? '').trim();
+    var num = 0;
+    if (raw === '' || raw === '-' || raw === '.' || raw === '-.') {
+        num = 0;
+    } else {
+        num = parseFloat(raw);
+        if (Number.isNaN(num)) num = 0;
+    }
+    el.value = raw === '' ? '0' : raw;
+    syncSavingsBucketBudgetAmount(bucketKey, num);
+    if (typeof renderStrategy === 'function') renderStrategy();
+}
+window.budgetPlanSavingsBucketCommit = budgetPlanSavingsBucketCommit;
+
+function budgetPlanSavingsBucketKeydown(e, bucketKey, el) {
+    if (!e) return;
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) return;
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        try { el && el.blur && el.blur(); } catch (err) {}
+    }
+}
+window.budgetPlanSavingsBucketKeydown = budgetPlanSavingsBucketKeydown;
+
+function budgetPlanSavingsBucketSyncLabel(bucketIdx, rawValue) {
+    var num = Number(rawValue);
+    if (Number.isNaN(num) || num < 0) num = 0;
+    var label = document.getElementById('savings-bucket-slider-label-' + bucketIdx);
+    if (label) label.textContent = Math.round(num) + ' ' + getCurrencyLabel();
+}
+window.budgetPlanSavingsBucketSyncLabel = budgetPlanSavingsBucketSyncLabel;
+
 function syncFoodBaseAmount(sid, idx, val) {
     const num = parseFloat(val) || 0;
     const slider = document.getElementById('food-daily-slider-' + sid + '-' + idx);
@@ -1723,6 +1804,14 @@ function getAllocatableItems() {
     state.categories.forEach(sec => {
         sec.items.forEach(item => {
             if ((state.settings && state.settings.showFoodPlan === false) && (item.label === 'Daily Food' || item.label === 'Food Base')) return;
+            if (item.label === 'Savings') {
+                ensureGeneralSavingsBudgetConfig();
+                Object.keys(state.accounts.savingsBudgetPlan || {}).forEach(function (bucketName) {
+                    var amount = Number(state.accounts.savingsBudgetPlan[bucketName]) || 0;
+                    if (amount > 0) items.push({ label: 'Savings', amount: amount, savingsBucket: bucketName });
+                });
+                return;
+            }
             if (item.amount > 0) {
                 items.push({ label: item.label, amount: item.amount });
             }
@@ -1763,10 +1852,14 @@ function applyPaycheckDistribute() {
                 : 0;
         } else if (isFood) {
             current = getItemBalance(foodLabelCanonical, 0);
+        } else if (item.label === 'Savings' && item.savingsBucket) {
+            current = getSavingsBucketAmount(item.savingsBucket);
         } else {
             current = getItemBalance(item.label, 0);
         }
-        const deficit = Math.max(0, item.amount - current);
+        const deficit = (item.label === 'Savings' && item.savingsBucket)
+            ? Math.max(0, item.amount)
+            : Math.max(0, item.amount - current);
         return { ...item, deficit };
     }).filter(item => item.deficit > 0);
 
@@ -1798,6 +1891,10 @@ function applyPaycheckDistribute() {
                 var sumWeeks = (state.accounts.weekly.balances[0] || 0) + (state.accounts.weekly.balances[1] || 0) + (state.accounts.weekly.balances[2] || 0) + (state.accounts.weekly.balances[3] || 0);
                 if (state.accounts.buckets) state.accounts.buckets['Weekly Allowance'] = sumWeeks;
                 logHistory(item.label, item.deficit, 'Distribute');
+            } else if (item.label === 'Savings' && item.savingsBucket) {
+                adjustSavingsBucket(item.savingsBucket, item.deficit);
+                applyTransaction({ type: 'adjust_surplus', delta: -item.deficit });
+                logHistory('Savings: ' + item.savingsBucket, item.deficit, 'Distribute');
             } else {
                 applyTransaction({ type: 'transfer', from: 'Surplus', to: transferTo, amount: item.deficit });
                 logHistory(transferTo, item.deficit, 'Distribute');
@@ -1896,6 +1993,7 @@ function doSavingsTransfer(fromKey, toKey, amount) {
     saveState();
     renderSavingsBuckets();
     updateGlobalUI();
+    if (typeof renderStrategy === 'function') renderStrategy();
 }
 
 function doSavingsAddFromWeekly(toBucketKey, amount) {
@@ -1911,6 +2009,7 @@ function doSavingsAddFromWeekly(toBucketKey, amount) {
     saveState();
     renderSavingsBuckets();
     updateGlobalUI();
+    if (typeof renderStrategy === 'function') renderStrategy();
 }
 
 function doSavingsSendToWeekly(fromBucketKey, amount) {
@@ -1925,10 +2024,11 @@ function doSavingsSendToWeekly(fromBucketKey, amount) {
     saveState();
     renderSavingsBuckets();
     updateGlobalUI();
+    if (typeof renderStrategy === 'function') renderStrategy();
 }
 
 function renderSavingsBuckets() {
-    ensureAccountsState();
+    ensureGeneralSavingsBudgetConfig();
     var entries = Object.entries(state.accounts.savingsBuckets);
     var esc = function (s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); };
     var bucketOpts = entries.map(function (e) { return '<option value="' + esc(e[0]) + '">' + esc(e[0]) + '</option>'; }).join('');
@@ -1947,9 +2047,10 @@ function renderSavingsBuckets() {
     }
     list.innerHTML = entries.map(function (e) {
         var key = e[0], amount = e[1];
+        var isGeneral = key === 'General Savings';
         return '<div class="bucket-row bucket-row-card ledger-bar flex items-center gap-2 sm:gap-3 w-full py-2.5 px-3 sm:px-4 rounded-xl border border-slate-100 bg-white hover:border-slate-200 transition-all" data-bucket-key="' + esc(key) + '" data-context="savings">' +
             '<div class="flex-1 min-w-0 flex flex-col gap-0.5">' +
-            '<div class="bucket-row-label-wrap" role="button" tabindex="0" title="Tap to rename">' +
+            '<div class="bucket-row-label-wrap ' + (isGeneral ? 'bucket-row-label-wrap-locked' : '') + '" role="button" tabindex="0" title="' + (isGeneral ? 'General Savings is locked' : 'Tap to rename') + '">' +
             '<span class="bucket-row-label text-[11px] font-bold uppercase tracking-wider text-slate-500 truncate">' + esc(key) + '</span>' +
             '<input type="text" class="bucket-row-name-edit" maxlength="80" aria-label="Rename bucket" autocomplete="off">' +
             '<span class="bucket-row-label-line" aria-hidden="true"></span>' +
@@ -1980,6 +2081,7 @@ function renderSavingsBuckets() {
 
             var labelWrap = e.target.closest('.bucket-row-label-wrap');
             if (labelWrap && !e.target.closest('.bucket-row-name-edit')) {
+                if (key === 'General Savings') return;
                 e.preventDefault();
                 var editInput = labelWrap.querySelector('.bucket-row-name-edit');
                 if (editInput) {
@@ -2082,6 +2184,7 @@ function applySavingsBucketDelta(bucketKey, dir, amountEl) {
     saveState();
     updateSavingsBucketRowAmount(bucketKey);
     updateGlobalUI();
+    if (typeof renderStrategy === 'function') renderStrategy();
 }
 
 function updateSavingsBucketRowAmount(bucketKey) {
@@ -2109,11 +2212,13 @@ function createSavingsBucket() {
     pushToUndo();
     if (typeof unmarkSavingsBucketDeleted === 'function') unmarkSavingsBucketDeleted(name);
     state.accounts.savingsBuckets[name] = 0;
+    state.accounts.savingsBudgetPlan[name] = 0;
     syncSavingsTotal();
     input.value = '';
     saveState();
     renderSavingsBuckets();
     updateGlobalUI();
+    if (typeof renderStrategy === 'function') renderStrategy();
 }
 
 function updateSavingsDefaultBucket(value) {
@@ -2126,6 +2231,10 @@ function updateSavingsDefaultBucket(value) {
 function renameSavingsBucket(oldName, newNameFromInline) {
     const newName = newNameFromInline !== undefined ? String(newNameFromInline).trim() : prompt('Rename bucket:', oldName);
     if (!newName || newName === oldName) return;
+    if (oldName === 'General Savings') {
+        showAppAlert('"General Savings" name is locked.');
+        return;
+    }
     ensureAccountsState();
     if (state.accounts.savingsBuckets[newName] !== undefined) {
         showAppAlert('Bucket already exists.');
@@ -2136,6 +2245,8 @@ function renameSavingsBucket(oldName, newNameFromInline) {
     if (typeof unmarkSavingsBucketDeleted === 'function') unmarkSavingsBucketDeleted(newName);
     state.accounts.savingsBuckets[newName] = state.accounts.savingsBuckets[oldName] || 0;
     delete state.accounts.savingsBuckets[oldName];
+    state.accounts.savingsBudgetPlan[newName] = Number(state.accounts.savingsBudgetPlan[oldName]) || 0;
+    delete state.accounts.savingsBudgetPlan[oldName];
     if (state.accounts.savingsDefaultBucket === oldName) {
         state.accounts.savingsDefaultBucket = newName;
     }
@@ -2143,9 +2254,14 @@ function renameSavingsBucket(oldName, newNameFromInline) {
     saveState();
     renderSavingsBuckets();
     updateGlobalUI();
+    if (typeof renderStrategy === 'function') renderStrategy();
 }
 
 function deleteSavingsBucket(name) {
+    if (name === 'General Savings') {
+        showAppAlert('"General Savings" cannot be deleted.');
+        return;
+    }
     ensureAccountsState();
     const remaining = Object.keys(state.accounts.savingsBuckets).length;
     if (remaining <= 1) {
@@ -2157,6 +2273,7 @@ function deleteSavingsBucket(name) {
         pushToUndo();
         if (typeof markSavingsBucketDeleted === 'function') markSavingsBucketDeleted(name);
         delete state.accounts.savingsBuckets[name];
+        delete state.accounts.savingsBudgetPlan[name];
         if (state.accounts.savingsDefaultBucket === name) {
             state.accounts.savingsDefaultBucket = Object.keys(state.accounts.savingsBuckets)[0];
         }
@@ -2165,8 +2282,46 @@ function deleteSavingsBucket(name) {
         saveState();
         renderSavingsBuckets();
         updateGlobalUI();
+        if (typeof renderStrategy === 'function') renderStrategy();
     }, null, { confirmLabel: 'Delete' });
 }
+
+function syncSavingsBudgetPlanItemAmount() {
+    var sec = state.categories.find(function (s) { return s && s.id === 'sys_savings'; });
+    if (!sec) return;
+    var item = (sec.items || []).find(function (i) { return i && i.label === 'Savings'; });
+    if (!item) return;
+    var total = 0;
+    Object.keys(state.accounts.savingsBudgetPlan || {}).forEach(function (k) {
+        total += Number(state.accounts.savingsBudgetPlan[k]) || 0;
+    });
+    item.amount = total;
+}
+
+function syncSavingsBucketBudgetAmount(bucketKey, rawValue) {
+    ensureGeneralSavingsBudgetConfig();
+    if (!bucketKey || state.accounts.savingsBuckets[bucketKey] === undefined) return;
+    var amount = Number(rawValue);
+    if (Number.isNaN(amount) || amount < 0) amount = 0;
+    state.accounts.savingsBudgetPlan[bucketKey] = amount;
+    syncSavingsBudgetPlanItemAmount();
+    saveState();
+    if (typeof updateBudgetPlanAllocated === 'function') updateBudgetPlanAllocated();
+}
+window.syncSavingsBucketBudgetAmount = syncSavingsBucketBudgetAmount;
+
+function createSavingsBucketFromBudgetPlan() {
+    var input = document.getElementById('budget-plan-savings-bucket-name');
+    if (!input) return;
+    var value = String(input.value || '').trim();
+    if (!value) return;
+    var legacyInput = document.getElementById('savings-bucket-name');
+    if (legacyInput) legacyInput.value = value;
+    createSavingsBucket();
+    input.value = '';
+    if (typeof renderStrategy === 'function') renderStrategy();
+}
+window.createSavingsBucketFromBudgetPlan = createSavingsBucketFromBudgetPlan;
 
 // Transportation Buckets (same interface as Savings / Payables)
 var TRANSPORTATION_EXTRA = '__extra__';
@@ -3137,8 +3292,8 @@ function rebuildTotals() {
         sec.items.forEach(item => {
             if (isAccountLabel(item.label)) {
                 if (item.label === 'Savings') {
-                    if (state.accounts.savingsBuckets.Main === undefined) {
-                        state.accounts.savingsBuckets.Main = item.amount;
+                    if (state.accounts.savingsBuckets['General Savings'] === undefined) {
+                        state.accounts.savingsBuckets['General Savings'] = item.amount;
                     }
                     syncSavingsTotal();
                 } else if (item.label === 'Payables') {

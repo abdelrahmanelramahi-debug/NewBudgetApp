@@ -1862,6 +1862,42 @@ body.theme-dark .food-day-action-popover .food-day-action-transfer span:first-of
     cursor: not-allowed;
 }
 
+.budget-savings-section {
+    background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+    border-radius: 12px;
+    padding: 10px 10px 2px;
+}
+.budget-savings-title-row {
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 6px;
+}
+.budget-savings-title {
+    font-size: 14px;
+    font-weight: 900;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: #0f172a;
+}
+.budget-savings-total {
+    font-size: 12px;
+    font-weight: 900;
+    color: #4338ca;
+}
+.bucket-row-label-wrap-locked {
+    cursor: not-allowed;
+    opacity: 0.85;
+}
+body.theme-dark .budget-savings-section {
+    background: linear-gradient(180deg, #0f172a 0%, #111827 100%);
+    border-color: #334155;
+}
+body.theme-dark .budget-savings-title {
+    color: #e2e8f0;
+}
+body.theme-dark .budget-savings-total {
+    color: #a5b4fc;
+}
+
 /* Onboarding tips overlay + tip card (overlay must sit below highlight so highlighted area stays ungreyed) */
 #onboarding-budget-tips-overlay {
     pointer-events: auto;
