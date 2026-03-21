@@ -135,14 +135,17 @@ function ensureGeneralSavingsBucketState() {
         state.accounts.savingsBuckets = {};
     }
     var buckets = state.accounts.savingsBuckets;
+    // Idempotent migration: if both legacy "Main" and canonical bucket exist,
+    // trust the canonical value to avoid re-adding legacy amount on each sync pull.
+    var hasGeneral = buckets[GENERAL_SAVINGS_BUCKET_NAME] !== undefined;
+    var hasMain = buckets['Main'] !== undefined;
     var migratedAmount = 0;
-    if (buckets['Main'] !== undefined) {
-        migratedAmount += Number(buckets['Main']) || 0;
-        delete buckets['Main'];
+    if (hasGeneral) {
+        migratedAmount = Number(buckets[GENERAL_SAVINGS_BUCKET_NAME]) || 0;
+    } else if (hasMain) {
+        migratedAmount = Number(buckets['Main']) || 0;
     }
-    if (buckets[GENERAL_SAVINGS_BUCKET_NAME] !== undefined) {
-        migratedAmount += Number(buckets[GENERAL_SAVINGS_BUCKET_NAME]) || 0;
-    }
+    if (hasMain) delete buckets['Main'];
     buckets[GENERAL_SAVINGS_BUCKET_NAME] = migratedAmount;
     var ordered = {};
     ordered[GENERAL_SAVINGS_BUCKET_NAME] = Number(buckets[GENERAL_SAVINGS_BUCKET_NAME]) || 0;

@@ -20,12 +20,13 @@ function ensureGeneralSavingsBudgetConfig() {
     if (!state.accounts) return;
     var fixedName = 'General Savings';
     var buckets = state.accounts.savingsBuckets || {};
+    // Keep migration idempotent: do not sum legacy Main + canonical values repeatedly.
+    var hasGeneral = buckets[fixedName] !== undefined;
+    var hasMain = buckets.Main !== undefined;
     var moved = 0;
-    if (buckets.Main !== undefined) {
-        moved += Number(buckets.Main) || 0;
-        delete buckets.Main;
-    }
-    if (buckets[fixedName] !== undefined) moved += Number(buckets[fixedName]) || 0;
+    if (hasGeneral) moved = Number(buckets[fixedName]) || 0;
+    else if (hasMain) moved = Number(buckets.Main) || 0;
+    if (hasMain) delete buckets.Main;
     buckets[fixedName] = moved;
     var ordered = {};
     ordered[fixedName] = Number(buckets[fixedName]) || 0;
