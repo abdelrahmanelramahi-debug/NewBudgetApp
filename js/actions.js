@@ -1506,13 +1506,9 @@ function toggleSurplusControls() {
     if(el.classList.contains('hidden')) el.classList.remove('hidden'); else el.classList.add('hidden');
 }
 function shouldConfirmSurplusEdit() {
-    return state.settings?.confirmSurplusEdits !== false;
+    return true;
 }
 function canApplySurplusDelta(delta) {
-    if(state.settings?.allowNegativeSurplus === false && (state.accounts.surplus + delta) < 0) {
-        showAppAlert('This would make Extra negative. Enable "Allow negative Extra" in Settings to proceed.');
-        return false;
-    }
     return true;
 }
 function adjustGlobalSurplus(dir) {
@@ -3091,9 +3087,7 @@ function deletePayablesBucket(name) {
 function saveSettingsFromUI() {
     const currencyInput = document.getElementById('settings-currency');
     const decimalsSelect = document.getElementById('settings-decimals');
-    const confirmSurplus = document.getElementById('settings-confirm-surplus');
-    const allowNegative = document.getElementById('settings-allow-negative');
-    const showFoodPlanToggle = document.getElementById('settings-show-food-plan');
+    const showFoodPlanToggle = document.getElementById('budget-show-food-plan') || document.getElementById('settings-show-food-plan');
     const themeSelect = document.getElementById('settings-theme');
     const compactToggle = document.getElementById('settings-compact');
     const firstDaySelect = document.getElementById('settings-first-day-of-week');
@@ -3108,8 +3102,8 @@ function saveSettingsFromUI() {
         ...state.settings,
         currency,
         decimals: Number.isNaN(decimals) ? 2 : decimals,
-        confirmSurplusEdits: !!confirmSurplus?.checked,
-        allowNegativeSurplus: !!allowNegative?.checked,
+        confirmSurplusEdits: true,
+        allowNegativeSurplus: true,
         showFoodPlan: showFoodPlanToggle ? !!showFoodPlanToggle.checked : (state.settings?.showFoodPlan !== false),
         theme: themeSelect?.value || 'light',
         compact: !!compactToggle?.checked,

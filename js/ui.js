@@ -175,10 +175,6 @@ function renderSettings() {
     if (currencyInput) currencyInput.value = getCurrencyLabel();
     const decimalsSelect = document.getElementById('settings-decimals');
     if(decimalsSelect) decimalsSelect.value = String(state.settings?.decimals ?? 2);
-    const confirmSurplus = document.getElementById('settings-confirm-surplus');
-    if(confirmSurplus) confirmSurplus.checked = !!state.settings?.confirmSurplusEdits;
-    const allowNegative = document.getElementById('settings-allow-negative');
-    if(allowNegative) allowNegative.checked = !!state.settings?.allowNegativeSurplus;
     const themeSelect = document.getElementById('settings-theme');
     if(themeSelect) themeSelect.value = state.settings?.theme || 'sepia';
     const compactToggle = document.getElementById('settings-compact');
@@ -187,8 +183,8 @@ function renderSettings() {
     if(firstDaySelect) firstDaySelect.value = String(state.settings?.firstDayOfWeek ?? 3);
     const payDateSelect = document.getElementById('settings-pay-date');
     if(payDateSelect) payDateSelect.value = String(state.settings?.payDate ?? 28);
-    const showFoodPlan = document.getElementById('settings-show-food-plan');
-    if (showFoodPlan) showFoodPlan.checked = state.settings?.showFoodPlan !== false;
+    const budgetShowFoodPlan = document.getElementById('budget-show-food-plan');
+    if (budgetShowFoodPlan) budgetShowFoodPlan.checked = state.settings?.showFoodPlan !== false;
 
 }
 

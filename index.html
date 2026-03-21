@@ -767,6 +767,10 @@
                     <span id="budget-plan-overallocated-amount">0</span> <span data-currency>AED</span> over-allocated. Reduce allocations to match your total.
                 </div>
                 <span id="reality-total-sr" class="hidden" aria-hidden="true">0</span>
+                <label class="flex items-center gap-3 bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl">
+                    <input type="checkbox" id="budget-show-food-plan" class="w-5 h-5 accent-amber-500 rounded" onchange="saveSettingsFromUI()">
+                    <span class="text-xs font-bold text-amber-800">Show Food Plan in Budget Plan</span>
+                </label>
             </header>
             <div class="budget-plan-page-body flex-1 min-h-0 overflow-y-auto space-y-6 py-4">
                 <div class="grid grid-cols-2 gap-4 hidden" aria-hidden="true">
@@ -913,21 +917,17 @@
             <div class="premium-card p-6 space-y-4">
                 <div>
                     <h3 class="text-sm font-black text-slate-800 uppercase tracking-widest">Behavior</h3>
-                    <p class="text-xs text-slate-500 mt-1">Confirmations and extra rules.</p>
+                    <p class="text-xs text-slate-500 mt-1">Core protection rules are always on.</p>
                 </div>
                 <div class="space-y-3">
-                    <label class="flex items-center gap-3 bg-slate-50 p-3 rounded-xl">
-                        <input type="checkbox" id="settings-confirm-surplus" class="w-5 h-5 accent-indigo-600 rounded" onchange="saveSettingsFromUI()">
-                        <span class="text-xs font-bold text-slate-600">Confirm direct Extra edits</span>
-                    </label>
-                    <label class="flex items-center gap-3 bg-slate-50 p-3 rounded-xl">
-                        <input type="checkbox" id="settings-allow-negative" class="w-5 h-5 accent-indigo-600 rounded" onchange="saveSettingsFromUI()">
-                        <span class="text-xs font-bold text-slate-600">Allow negative Extra on manual edits</span>
-                    </label>
-                    <label class="flex items-center gap-3 bg-slate-50 p-3 rounded-xl">
-                        <input type="checkbox" id="settings-show-food-plan" class="w-5 h-5 accent-amber-500 rounded" onchange="saveSettingsFromUI()">
-                        <span class="text-xs font-bold text-slate-600">Show Food Plan in Budget Plan</span>
-                    </label>
+                    <div class="flex items-center gap-3 bg-slate-50 p-3 rounded-xl">
+                        <span class="w-5 h-5 rounded bg-indigo-600 text-white text-xs font-black flex items-center justify-center">✓</span>
+                        <span class="text-xs font-bold text-slate-600">Confirm direct Extra edits (always on)</span>
+                    </div>
+                    <div class="flex items-center gap-3 bg-slate-50 p-3 rounded-xl">
+                        <span class="w-5 h-5 rounded bg-indigo-600 text-white text-xs font-black flex items-center justify-center">✓</span>
+                        <span class="text-xs font-bold text-slate-600">Allow negative Extra on manual edits (always on)</span>
+                    </div>
                 </div>
             </div>
 

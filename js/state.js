@@ -430,6 +430,9 @@ function ensureSettings() {
     if (typeof pd !== 'number' || pd < 1 || pd > 31) {
         state.settings.payDate = 28;
     }
+    // These protections are now fixed on.
+    state.settings.confirmSurplusEdits = true;
+    state.settings.allowNegativeSurplus = true;
 }
 
 function ensureFoodConsumedDays() {
