@@ -376,21 +376,10 @@ function renderStrategy(opts) {
     let systemHtml = '';
     let customHtml = '';
 
-    var sysSavingsSec = state.categories.find(function (s) { return s && s.id === 'sys_savings'; }) || null;
-    var savingsIdxInSys = -1;
-    var savingsItemInSys = null;
-    if (sysSavingsSec && Array.isArray(sysSavingsSec.items)) {
-        savingsIdxInSys = sysSavingsSec.items.findIndex(function (i) { return i && i.label === 'Savings'; });
-        if (savingsIdxInSys >= 0) savingsItemInSys = sysSavingsSec.items[savingsIdxInSys];
-    }
-
     state.categories.forEach((sec, secIdx) => {
-        // Hide "Savings" section in Budget Plan; Savings will be shown inside Must Haves.
-        if (sec && sec.id === 'sys_savings') return;
         const budgetPlanItems = sec.items.filter(i => i.label !== 'Payables');
-        const includeSavingsInMustHaves = sec && sec.id === 'core_essentials' && savingsItemInSys;
         const secTotalBase = budgetPlanItems.reduce((a, b) => a + b.amount, 0);
-        const secTotal = secTotalBase + (includeSavingsInMustHaves ? (savingsItemInSys.amount || 0) : 0);
+        const secTotal = secTotalBase;
         const perc = state.monthlyIncome > 0 ? Math.round((secTotal/state.monthlyIncome)*100) : 0;
 
         let controls;
@@ -413,8 +402,8 @@ function renderStrategy(opts) {
 
         let rowsHtml = '';
 
-        // Must Haves: show Savings as its own bucketed section, then subtitle "Must Haves" for existing core items.
-        if (includeSavingsInMustHaves) {
+        // Savings: render as its own card with bucket controls.
+        if (sec && sec.id === 'sys_savings') {
             if (typeof ensureGeneralSavingsBudgetConfig === 'function') ensureGeneralSavingsBudgetConfig();
             var savingsBuckets = Object.keys((state.accounts && state.accounts.savingsBuckets) || {});
             var savingsPlannedTotal = 0;
@@ -469,7 +458,14 @@ function renderStrategy(opts) {
                 `;
             });
             rowsHtml += `</div>`;
-            rowsHtml += `<div class="pt-4 pb-2 text-[9px] font-black uppercase tracking-widest text-slate-400">Must Haves</div>`;
+        } else if (sec && sec.id === 'core_essentials') {
+            // Keep Food Plan toggle inside Must Haves content area instead of page header.
+            rowsHtml += `
+                <label class="flex items-center gap-2 pb-2 text-[11px] font-semibold text-slate-600">
+                    <input type="checkbox" id="budget-show-food-plan" class="w-4 h-4 accent-amber-500 rounded" ${(state.settings && state.settings.showFoodPlan === false) ? '' : 'checked'} onchange="saveSettingsFromUI(); renderStrategy(); updateBudgetPlanAllocated();">
+                    <span>Show Food Plan in Budget Plan</span>
+                </label>
+            `;
         }
 
         sec.items.forEach((item, idx) => {
