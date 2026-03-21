@@ -331,7 +331,7 @@ function updateBudgetPlanAllocated() {
         state.categories.forEach(function (sec) {
             sec.items.forEach(function (item) {
                 if (item.label === 'Payables') return;
-                if ((state.settings && state.settings.showFoodPlan === false) && (item.label === 'Daily Food' || item.label === 'Food Base')) return;
+                if ((state.settings && state.settings.showFoodPlan === false) && item.label === 'Daily Food') return;
                 allocated += (typeof item.amount === 'number' ? item.amount : 0);
             });
         });
@@ -376,10 +376,19 @@ function renderStrategy(opts) {
     let systemHtml = '';
     let customHtml = '';
 
+    var sysSavingsSec = state.categories.find(function (s) { return s && s.id === 'sys_savings'; }) || null;
+    var savingsItemInSys = null;
+    if (sysSavingsSec && Array.isArray(sysSavingsSec.items)) {
+        var savingsIdxInSys = sysSavingsSec.items.findIndex(function (i) { return i && i.label === 'Savings'; });
+        if (savingsIdxInSys >= 0) savingsItemInSys = sysSavingsSec.items[savingsIdxInSys];
+    }
+
     state.categories.forEach((sec, secIdx) => {
+        if (sec && sec.id === 'sys_savings') return;
         const budgetPlanItems = sec.items.filter(i => i.label !== 'Payables');
+        const includeSavingsInMustHaves = sec && sec.id === 'core_essentials' && savingsItemInSys;
         const secTotalBase = budgetPlanItems.reduce((a, b) => a + b.amount, 0);
-        const secTotal = secTotalBase;
+        const secTotal = secTotalBase + (includeSavingsInMustHaves ? (savingsItemInSys.amount || 0) : 0);
         const perc = state.monthlyIncome > 0 ? Math.round((secTotal/state.monthlyIncome)*100) : 0;
 
         let controls;
@@ -402,8 +411,7 @@ function renderStrategy(opts) {
 
         let rowsHtml = '';
 
-        // Savings: render as its own card with bucket controls.
-        if (sec && sec.id === 'sys_savings') {
+        if (includeSavingsInMustHaves) {
             if (typeof ensureGeneralSavingsBudgetConfig === 'function') ensureGeneralSavingsBudgetConfig();
             var savingsBuckets = Object.keys((state.accounts && state.accounts.savingsBuckets) || {});
             var savingsPlannedTotal = 0;
@@ -458,32 +466,25 @@ function renderStrategy(opts) {
                 `;
             });
             rowsHtml += `</div>`;
-        } else if (sec && sec.id === 'core_essentials') {
-            // Keep Food Plan toggle inside Must Haves content area instead of page header.
-            rowsHtml += `
-                <label class="flex items-center gap-2 pb-2 text-[11px] font-semibold text-slate-600">
-                    <input type="checkbox" id="budget-show-food-plan" class="w-4 h-4 accent-amber-500 rounded" ${(state.settings && state.settings.showFoodPlan === false) ? '' : 'checked'} onchange="saveSettingsFromUI(); renderStrategy(); updateBudgetPlanAllocated();">
-                    <span>Show Food Plan in Budget Plan</span>
-                </label>
-            `;
         }
 
         sec.items.forEach((item, idx) => {
             if (item.label === 'Payables') return;
-            if ((state.settings && state.settings.showFoodPlan === false) && (item.label === 'Daily Food' || item.label === 'Food Base')) return;
             rowsHtml += buildBudgetPlanRowHtml(sec.id, idx, item, { hideFoodWhenOff: true });
         });
 
         function buildBudgetPlanRowHtml(sid, idx, item, optsRow) {
             optsRow = optsRow || {};
             let amortLabel = item.amortData ? `<span class="text-[9px] bg-indigo-50 text-indigo-600 px-1 rounded font-bold ml-2">${item.amortData.total}/${item.amortData.months}mo</span>` : '';
-            const isFoodBase = item.label === 'Daily Food' || item.label === 'Food Base';
+            const isFoodBase = item.label === 'Daily Food';
+            const isFoodPlanOff = isFoodBase && state.settings && state.settings.showFoodPlan === false;
             const isSavings = item.label === 'Savings';
             const isDragAllowed = (!item.isCore) && !isSavings;
 
             // SMART BADGES FOR CORE ITEMS
-            if (item.label === 'Daily Food' || item.label === 'Food Base') {
-                const dailyRate = item.amount / state.food.daysTotal;
+            if (item.label === 'Daily Food') {
+                const foodAmount = isFoodPlanOff ? 0 : item.amount;
+                const dailyRate = foodAmount / state.food.daysTotal;
                 amortLabel = `<span class="budget-item-badge text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold ml-2" data-sid="${sid}" data-idx="${idx}" data-badge="food">${formatMoney(dailyRate)}/day</span>`;
             } else if (item.label === 'Weekly Allowance') {
                 const weeklyRate = item.amount / 4;
@@ -506,8 +507,9 @@ function renderStrategy(opts) {
                 <button ${deleteAction} class="p-1.5 ${deleteBtnClass} rounded">×</button>
             `;
 
-            const displayAmount = item.amount.toFixed(0);
-            const dailyRateVal = state.food.daysTotal > 0 ? (item.amount / state.food.daysTotal) : 0;
+            const effectiveAmount = isFoodPlanOff ? 0 : item.amount;
+            const displayAmount = effectiveAmount.toFixed(0);
+            const dailyRateVal = state.food.daysTotal > 0 ? (effectiveAmount / state.food.daysTotal) : 0;
             const dailyRateDisplay = dailyRateVal.toFixed(0);
             var totalBudget = state.monthlyIncome || 0;
             const dailyBudgetCap = (totalBudget > 0 && state.food.daysTotal > 0)
@@ -520,7 +522,7 @@ function renderStrategy(opts) {
                         <span>Daily Rate</span>
                         <span id="food-daily-slider-label-${sid}-${idx}">${dailyRateDisplay} ${getCurrencyLabel()}</span>
                     </div>
-                    <input type="range" id="food-daily-slider-${sid}-${idx}" min="0" max="${dailyRateMax}" step="1" value="${dailyRateDisplay}" oninput="syncFoodDailyRate('${sid}', ${idx}, this.value)" class="w-full">
+                    <input type="range" id="food-daily-slider-${sid}-${idx}" min="0" max="${dailyRateMax}" step="1" value="${dailyRateDisplay}" oninput="syncFoodDailyRate('${sid}', ${idx}, this.value)" class="w-full" ${isFoodPlanOff ? 'disabled' : ''}>
                     <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mt-1">
                         <span>0</span>
                         <span>${dailyRateMax}</span>
@@ -601,7 +603,7 @@ function renderStrategy(opts) {
             ` : '';
 
             return `
-                <div class="draggable-row flex justify-between items-center py-3 border-b border-slate-50 last:border-0"
+                <div class="draggable-row flex justify-between items-center py-3 border-b border-slate-50 last:border-0 ${isFoodPlanOff ? 'opacity-50 grayscale' : ''}"
                      draggable="${isDragAllowed}"
                      ondragstart="${isDragAllowed ? `handleItemDragStart(event, '${sid}', ${idx})` : ''}"
                      ondragover="handleDragOver(event)"
@@ -611,7 +613,8 @@ function renderStrategy(opts) {
                         <span class="text-xs font-bold text-slate-600">${item.label} ${amortLabel}</span>
                     </div>
                     <div class="flex items-center gap-2 no-drag" onmousedown="event.stopPropagation()">
-                        <input type="text" inputmode="decimal" value="${displayAmount}" class="input-pill text-slate-900 budget-item-input" data-sid="${sid}" data-idx="${idx}" autocomplete="off" ${inputAttr}>
+                        ${isFoodBase ? `<input type="checkbox" id="budget-show-food-plan" class="w-4 h-4 accent-amber-500 rounded" ${(state.settings && state.settings.showFoodPlan === false) ? '' : 'checked'} onchange="toggleBudgetFoodPlan(this, '${sid}', ${idx})">` : ''}
+                        <input type="text" inputmode="decimal" value="${displayAmount}" class="input-pill text-slate-900 budget-item-input" data-sid="${sid}" data-idx="${idx}" autocomplete="off" ${inputAttr} ${isFoodPlanOff ? 'disabled' : ''}>
                         ${actions}
                     </div>
                 </div>
@@ -681,6 +684,24 @@ function renderStrategy(opts) {
         }
     }
 }
+
+function toggleBudgetFoodPlan(el, sid, idx) {
+    if (typeof state === 'undefined') return;
+    if (!state.settings) state.settings = {};
+    var enabled = !!(el && el.checked);
+    state.settings.showFoodPlan = enabled;
+    if (!enabled) {
+        var sec = (state.categories || []).find(function (s) { return s && s.id === sid; });
+        var item = sec && sec.items ? sec.items[idx] : null;
+        if (item && item.label === 'Daily Food') {
+            item.amount = 0;
+        }
+    }
+    if (typeof saveState === 'function') saveState();
+    renderStrategy();
+    updateBudgetPlanAllocated();
+}
+if (typeof window !== 'undefined') window.toggleBudgetFoodPlan = toggleBudgetFoodPlan;
 
 // --- LEDGER RENDER: builds ledger-categories (weekly, major funds, category sections with bars). Calls updateFoodUI, updateGlobalUI, clearDomCache. ---
 function renderLedger() {
@@ -802,7 +823,7 @@ function renderLedger() {
                         <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                     </div>
                     <div class="flex-shrink-0">
-                        <span class="text-[12px] font-black uppercase tracking-[0.18em] text-indigo-100">Savings</span>
+                        <span class="text-[12px] font-black uppercase tracking-[0.18em] text-slate-900">Savings</span>
                         <div class="text-2xl font-black mt-0.5 major-fund-amount">${formatMoney(savBal)} <span class="text-xs text-indigo-300">${getCurrencyLabel()}</span></div>
                     </div>
                     <button onclick="openSavingsBuckets()" class="w-full py-2 mt-2 bg-white text-slate-900 hover:bg-indigo-50 rounded-lg text-[10px] font-black uppercase transition text-center">Manage</button>
@@ -858,7 +879,7 @@ function renderLedger() {
 
     // Create categorical dropdowns matching the strategy structure
     var majorLabels = typeof MAJOR_FUND_LABELS !== 'undefined' ? MAJOR_FUND_LABELS : ['Weekly Allowance', 'Daily Food', 'Savings', 'Transportation', 'Payables'];
-    var skipLabels = majorLabels.concat(['Food Base']);
+    var skipLabels = majorLabels.slice();
     var hideEmpty = !!state.settings?.hideEmptyCategories;
     var sortBy = state.settings?.categorySort || 'default';
 
@@ -1065,8 +1086,8 @@ function updateFoodUI() {
     var fid = SECTION_IDS.FOUNDATIONS;
     var flabel = ITEM_LABELS.FOOD_BASE;
     var fSec = state.categories.find(s=>s.id===cid) || state.categories.find(s=>s.id===fid);
-    // Match same item as getFoodRemainderInfo (Daily Food or Food Base) so rate and remainder stay in sync
-    var fItem = fSec ? fSec.items.find(i=>i.label===flabel || i.label==='Food Base') : null;
+    // Match same item as getFoodRemainderInfo (Daily Food) so rate and remainder stay in sync
+    var fItem = fSec ? fSec.items.find(i=>i.label===flabel) : null;
     var foodBase = fItem ? fItem.amount : 600;
     var daily = foodBase / (state.food.daysTotal || 28);
     if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
@@ -1452,7 +1473,7 @@ function getBankBalanceBarSegments() {
     if (locked > 0) segments.push({ label: 'Food Buffer', amount: locked, meta: 'Locked', group: 'food' });
 
     // One segment per category section (Health, Groceries, Misc, Subscriptions, etc.) – not per item.
-    var skipLabels = [foodLabel, 'Food Base', weeklyLabel, gsLabel, payLabel, carLabel];
+    var skipLabels = [foodLabel, weeklyLabel, gsLabel, payLabel, carLabel];
     (state.categories || []).forEach(function (sec) {
         if (!sec.items || !sec.items.length) return;
         var sectionSum = 0;

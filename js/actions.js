@@ -1813,7 +1813,7 @@ function getAllocatableItems() {
     const items = [];
     state.categories.forEach(sec => {
         sec.items.forEach(item => {
-            if ((state.settings && state.settings.showFoodPlan === false) && (item.label === 'Daily Food' || item.label === 'Food Base')) return;
+            if ((state.settings && state.settings.showFoodPlan === false) && item.label === 'Daily Food') return;
             if (item.label === 'Savings') {
                 ensureGeneralSavingsBudgetConfig();
                 Object.keys(state.accounts.savingsBudgetPlan || {}).forEach(function (bucketName) {
@@ -1855,7 +1855,7 @@ function applyPaycheckDistribute() {
     const foodLabelCanonical = 'Daily Food'; // getFoodRemainderInfo() always reads state.balances['Daily Food']
     const items = getAllocatableItems().map(item => {
         let current;
-        const isFood = item.label === foodLabelCanonical || item.label === 'Food Base';
+        const isFood = item.label === foodLabelCanonical;
         if (item.label === 'Weekly Allowance') {
             current = (state.accounts.weekly.balances && state.accounts.weekly.balances.length >= 4)
                 ? (state.accounts.weekly.balances[0] || 0) + (state.accounts.weekly.balances[1] || 0) + (state.accounts.weekly.balances[2] || 0) + (state.accounts.weekly.balances[3] || 0)
@@ -1888,7 +1888,7 @@ function applyPaycheckDistribute() {
 
     items.forEach(item => {
         if (item.deficit > 0) {
-            const isFood = item.label === foodLabelCanonical || item.label === 'Food Base';
+            const isFood = item.label === foodLabelCanonical;
             const transferTo = isFood ? foodLabelCanonical : item.label;
             if (item.label === 'Weekly Allowance') {
                 // Spread across all 4 weeks so it doesn't all land in the current week

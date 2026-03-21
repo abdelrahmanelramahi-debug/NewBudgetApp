@@ -561,8 +561,8 @@ function getFoodRemainderInfo() {
     var fid = SECTION_IDS.FOUNDATIONS;
     var flabel = ITEM_LABELS.FOOD_BASE;
     const fSec = state.categories.find(s=>s.id===cid) || state.categories.find(s=>s.id===fid);
-    // Support both "Daily Food" and "Food Base" so we always find the food budget line
-    const fItem = fSec ? fSec.items.find(i=>i.label===flabel || i.label==='Food Base') : null;
+    // Use "Daily Food" for the food budget line.
+    const fItem = fSec ? fSec.items.find(i=>i.label===flabel) : null;
     const foodBase = fItem ? fItem.amount : 0;
     const daysLeft = state.food.daysTotal - state.food.daysUsed;
     const dailyRate = state.food.daysTotal > 0 ? (foodBase / state.food.daysTotal) : 0;
