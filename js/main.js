@@ -111,23 +111,87 @@ window.onload = function() {
             clearTimeout(resizeTid);
             resizeTid = setTimeout(function() { if (typeof updateGlobalUI === 'function') updateGlobalUI(); }, 100);
         });
-        // Auto-backup after 5 min idle (last 5 versions in localStorage)
+        // Auto-backup + "refresh recommended" after 5 min idle.
+        // Goal: when you return after laptop sleep / tab idling, refresh so we pull latest cloud state
+        // and avoid accidental stale-session edits overwriting other device inputs.
         var idleBackupTimer;
+        var idleRefreshTimer;
         var activityDebounceTimer;
+        var lastInteractionAt = Date.now();
+        var refreshPromptRecentlyShown = false;
+        var IDLE_MS = 5 * 60 * 1000;
+        var REFRESH_PROMPT_KEY = 'bubudget_refresh_prompt_shown_at_v1';
         function resetIdleBackupTimer() {
             clearTimeout(idleBackupTimer);
             idleBackupTimer = setTimeout(function() {
                 if (typeof pushAutoBackup === 'function') pushAutoBackup();
-            }, 5 * 60 * 1000);
+            }, IDLE_MS);
         }
+
+        function maybeShowRefreshPrompt(source) {
+            if (refreshPromptRecentlyShown) return;
+            if (typeof showAppConfirm !== 'function') return;
+            if (typeof document === 'undefined') return;
+            if (document.visibilityState !== 'visible') return;
+
+            var now = Date.now();
+            var lastShown = 0;
+            try {
+                lastShown = parseInt((sessionStorage && sessionStorage.getItem(REFRESH_PROMPT_KEY)) || '0', 10) || 0;
+            } catch (e) {}
+
+            // Avoid spamming when user cancels.
+            if (lastShown && (now - lastShown) < IDLE_MS) return;
+
+            refreshPromptRecentlyShown = true;
+            try { sessionStorage && sessionStorage.setItem(REFRESH_PROMPT_KEY, String(now)); } catch (e2) {}
+
+            var msg = 'It looks like you have been away for a while (' + source + '). Refresh to pull the latest budget and clear any stale input state.';
+            showAppConfirm(
+                msg,
+                function onConfirm() {
+                    try { window.location.reload(); } catch (e) {}
+                },
+                function onCancel() {
+                    // Safety-first: also reload on cancel so we don't continue with a potentially stale edit lock.
+                    try { window.location.reload(); } catch (e2) {}
+                },
+                {
+                    title: 'Refresh recommended',
+                    confirmLabel: 'Refresh now',
+                    hideIcon: true
+                }
+            );
+        }
+
+        function resetIdleRefreshTimer() {
+            clearTimeout(idleRefreshTimer);
+            idleRefreshTimer = setTimeout(function() {
+                maybeShowRefreshPrompt('idle');
+            }, IDLE_MS);
+        }
+
         function onIdleActivity() {
+            lastInteractionAt = Date.now();
             clearTimeout(activityDebounceTimer);
-            activityDebounceTimer = setTimeout(resetIdleBackupTimer, 1000);
+            activityDebounceTimer = setTimeout(function() {
+                resetIdleBackupTimer();
+                resetIdleRefreshTimer();
+            }, 1000);
         }
         ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(function(ev) {
             document.addEventListener(ev, onIdleActivity);
         });
+        document.addEventListener('visibilitychange', function() {
+            if (document.visibilityState !== 'visible') return;
+            if (refreshPromptRecentlyShown) return;
+            var idleMs = Date.now() - lastInteractionAt;
+            if (idleMs >= IDLE_MS) {
+                maybeShowRefreshPrompt('return');
+            }
+        });
         resetIdleBackupTimer();
+        resetIdleRefreshTimer();
     }
 
     // Onboarding complete: ensure app is visible
