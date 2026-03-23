@@ -1361,6 +1361,35 @@
     <script src="js/onboarding.js"></script>
     <script src="js/sync.js"></script>
     <script src="js/auth.js"></script>
+    <script>
+        // Prevent the onboarding overlay flash on refresh for returning users.
+        // If they've already completed onboarding locally, hide it before main.js runs.
+        (function () {
+            try {
+                var ob = document.getElementById('onboarding');
+                var app = document.getElementById('app-shell');
+                if (!ob || !app) return;
+
+                var onboardingDoneKey = (typeof STORAGE_KEYS !== 'undefined' && STORAGE_KEYS.ONBOARDING_DONE) ? STORAGE_KEYS.ONBOARDING_DONE : 'financeCmd_onboarding_done';
+                var stateKey = (typeof STORAGE_KEYS !== 'undefined' && STORAGE_KEYS.STATE) ? STORAGE_KEYS.STATE : 'financeCmd_state';
+
+                var onboardingDone = localStorage.getItem(onboardingDoneKey) === '1';
+                var stateRaw = localStorage.getItem(stateKey);
+                var stateOnboardingComplete = false;
+                if (stateRaw) {
+                    try {
+                        var parsed = JSON.parse(stateRaw);
+                        stateOnboardingComplete = !!parsed.onboardingComplete;
+                    } catch (e2) {}
+                }
+
+                if (onboardingDone || stateOnboardingComplete) {
+                    ob.classList.add('hidden');
+                    app.classList.remove('hidden');
+                }
+            } catch (e) {}
+        })();
+    </script>
     <script src="js/main.js"></script>
 </body>
 </html>
