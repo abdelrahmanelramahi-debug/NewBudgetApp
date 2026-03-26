@@ -460,6 +460,15 @@ function ensureFoodConsumedDays() {
         state.food.consumedDays = [];
         for (var i = 1; i <= n; i++) state.food.consumedDays.push(i);
     }
+    if (!state.food.overflowUsage || typeof state.food.overflowUsage !== 'object') {
+        state.food.overflowUsage = {};
+    }
+    if (typeof state.food.redistributedExtraDays !== 'number' || Number.isNaN(state.food.redistributedExtraDays)) {
+        state.food.redistributedExtraDays = 0;
+    }
+    if (typeof state.food.lastCycleStartKey !== 'string') {
+        state.food.lastCycleStartKey = '';
+    }
     state.food.daysUsed = state.food.consumedDays.length;
 }
 
@@ -557,6 +566,12 @@ function ensureWeeklyState() {
         state.accounts.weekly.week = 1;
     }
     state.accounts.weekly.week = Math.min(WEEKLY_MAX_WEEKS, Math.max(1, Math.round(state.accounts.weekly.week)));
+    if (typeof state.accounts.weekly.lastAutoWeekKey !== 'string') {
+        state.accounts.weekly.lastAutoWeekKey = '';
+    }
+    if (!state.accounts.weekly.pendingRolloverNotice || typeof state.accounts.weekly.pendingRolloverNotice !== 'object') {
+        state.accounts.weekly.pendingRolloverNotice = null;
+    }
 }
 
 /** Current or specified week balance (week 1–4). */
@@ -582,8 +597,10 @@ function getFoodRemainderInfo() {
     // Use "Daily Food" for the food budget line.
     const fItem = fSec ? fSec.items.find(i=>i.label===flabel) : null;
     const foodBase = fItem ? fItem.amount : 0;
-    const daysLeft = state.food.daysTotal - state.food.daysUsed;
-    const dailyRate = state.food.daysTotal > 0 ? (foodBase / state.food.daysTotal) : 0;
+    var redistributed = Math.max(0, Math.floor((state.food && state.food.redistributedExtraDays) || 0));
+    var effectiveDaysTotal = (state.food.daysTotal || 28) + redistributed;
+    const daysLeft = Math.max(0, effectiveDaysTotal - state.food.daysUsed);
+    const dailyRate = effectiveDaysTotal > 0 ? (foodBase / effectiveDaysTotal) : 0;
     const theoreticalRemainder = daysLeft * dailyRate;
     // Cap by actual Daily Food balance so we don't show "money" until salary has been distributed
     var foodBalance = (state.balances && state.balances['Daily Food'] !== undefined) ? Number(state.balances['Daily Food']) : 0;

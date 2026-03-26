@@ -1728,6 +1728,33 @@ body.theme-dark .food-day-action-popover .food-day-action-transfer span:first-of
     border: 2px solid #6366f1;
     background: rgba(99, 102, 241, 0.12);
 }
+.food-overflow-row {
+    margin-top: 0.25rem;
+}
+.food-overflow-cell {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+.food-overflow-cell:hover {
+    background: #fecaca;
+}
+.food-overflow-cell-used {
+    background: #fca5a5;
+    color: #7f1d1d;
+    border-color: #ef4444;
+}
+body.theme-dark .food-overflow-cell {
+    background: #7f1d1d;
+    color: #fee2e2;
+    border-color: #b91c1c;
+}
+body.theme-dark .food-overflow-cell:hover {
+    background: #991b1b;
+}
+body.theme-dark .food-overflow-cell-used {
+    background: #b91c1c;
+}
 /* Current day cell: strong ring so it’s unmistakable */
 .food-cell-today-wrapper {
     box-shadow: 0 0 0 3px #4338ca;

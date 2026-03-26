@@ -1245,6 +1245,58 @@ function deductFromBufferSource(sourceId, amount) {
     }
 }
 
+function isOverflowDayUsed(dayKey) {
+    if (!state.food || !state.food.overflowUsage) return false;
+    return !!state.food.overflowUsage[dayKey];
+}
+
+function markOverflowDayUsage(dayKey, mode) {
+    if (!state.food) state.food = { daysTotal: 28, daysUsed: 0, lockedAmount: 0, history: [], viewWeek: 0 };
+    if (!state.food.overflowUsage || typeof state.food.overflowUsage !== 'object') state.food.overflowUsage = {};
+    state.food.overflowUsage[dayKey] = mode;
+}
+
+function applyOverflowDayFromSource(dayKey, sourceId) {
+    if (!dayKey) return;
+    if (isOverflowDayUsed(dayKey)) {
+        if (typeof showAppAlert === 'function') showAppAlert('This extra day is already accounted for.');
+        return;
+    }
+    var info = typeof getFoodRemainderInfo === 'function' ? getFoodRemainderInfo() : null;
+    var dailyRate = (info && info.dailyRate > 0) ? info.dailyRate : (600 / 28);
+    var available = getBufferSourceBalance(sourceId || 'surplus');
+    if (available < dailyRate) {
+        if (typeof showAppAlert === 'function') showAppAlert('Not enough in selected source for 1 extra day.');
+        return;
+    }
+    pushToUndo();
+    deductFromBufferSource(sourceId || 'surplus', dailyRate);
+    applyTransaction({ type: 'food_lock', amount: dailyRate, label: '+1 Extra Day' });
+    markOverflowDayUsage(dayKey, 'source');
+    saveState();
+    if (typeof renderLedger === 'function') renderLedger();
+    if (typeof updateGlobalUI === 'function') updateGlobalUI();
+}
+window.applyOverflowDayFromSource = applyOverflowDayFromSource;
+
+function applyOverflowDayRedistribution(dayKey) {
+    if (!dayKey) return;
+    if (isOverflowDayUsed(dayKey)) {
+        if (typeof showAppAlert === 'function') showAppAlert('This extra day is already accounted for.');
+        return;
+    }
+    pushToUndo();
+    markOverflowDayUsage(dayKey, 'redistributed');
+    if (typeof state.food.redistributedExtraDays !== 'number' || Number.isNaN(state.food.redistributedExtraDays)) {
+        state.food.redistributedExtraDays = 0;
+    }
+    state.food.redistributedExtraDays += 1;
+    saveState();
+    if (typeof renderLedger === 'function') renderLedger();
+    if (typeof updateGlobalUI === 'function') updateGlobalUI();
+}
+window.applyOverflowDayRedistribution = applyOverflowDayRedistribution;
+
 function buyFoodDay() {
     const daysInput = parseFloat(document.getElementById('food-lock-val').value);
     if(!daysInput || daysInput <= 0) return;
@@ -1414,6 +1466,66 @@ function nextWeek() {
     renderLedger();
 }
 
+function maybeAutoAdvanceWeeklyWeek(payCycleInfo) {
+    if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
+    if (typeof getCurrentPayCycleDay !== 'function') return false;
+    var day = getCurrentPayCycleDay();
+    if (typeof day !== 'number' || day < 1 || day > 28) return false;
+    var targetWeek = Math.max(1, Math.min(4, Math.floor((day - 1) / 7) + 1));
+    var cycleKey = getPayCycleStartKey(payCycleInfo || (typeof getPayCycleInfo === 'function' ? getPayCycleInfo() : null));
+    var weekKey = cycleKey ? (cycleKey + ':W' + targetWeek) : ('W' + targetWeek);
+
+    if (!state.accounts || !state.accounts.weekly) return false;
+    if (!state.accounts.weekly.lastAutoWeekKey) {
+        state.accounts.weekly.week = targetWeek;
+        state.accounts.weekly.balance = getWeeklyBalance(targetWeek);
+        state.accounts.weekly.lastAutoWeekKey = weekKey;
+        saveState();
+        return false;
+    }
+    if (state.accounts.weekly.lastAutoWeekKey === weekKey && state.accounts.weekly.week === targetWeek) return false;
+
+    var currentWeek = Math.max(1, Math.min(4, Math.round(state.accounts.weekly.week || 1)));
+    var moved = 0;
+    var hops = 0;
+    while (currentWeek !== targetWeek && hops < 6) {
+        var next = currentWeek >= 4 ? 1 : (currentWeek + 1);
+        var carry = Math.max(0, getWeeklyBalance(currentWeek) || 0);
+        if (carry > 0) {
+            setWeeklyBalance(next, getWeeklyBalance(next) + carry);
+            setWeeklyBalance(currentWeek, 0);
+            moved += carry;
+        }
+        currentWeek = next;
+        hops += 1;
+    }
+    state.accounts.weekly.week = targetWeek;
+    state.accounts.weekly.balance = getWeeklyBalance(targetWeek);
+    state.accounts.weekly.lastAutoWeekKey = weekKey;
+    if (moved > 0) {
+        state.accounts.weekly.pendingRolloverNotice = {
+            amount: moved,
+            toWeek: targetWeek
+        };
+    } else {
+        state.accounts.weekly.pendingRolloverNotice = null;
+    }
+    saveState();
+    return true;
+}
+window.maybeAutoAdvanceWeeklyWeek = maybeAutoAdvanceWeeklyWeek;
+
+function showWeeklyRolloverNotice() {
+    if (!state.accounts || !state.accounts.weekly || !state.accounts.weekly.pendingRolloverNotice) return;
+    var notice = state.accounts.weekly.pendingRolloverNotice;
+    var msg = formatMoney(notice.amount || 0) + ' ' + getCurrencyLabel() + ' rolled into Week ' + (notice.toWeek || state.accounts.weekly.week || 1) + '.';
+    if (typeof showAppAlert === 'function') showAppAlert(msg, 'Weekly rollover');
+    state.accounts.weekly.pendingRolloverNotice = null;
+    saveState();
+    if (typeof updateGlobalUI === 'function') updateGlobalUI();
+}
+window.showWeeklyRolloverNotice = showWeeklyRolloverNotice;
+
 // Weekly-only "new month": roll Week 4 leftover into Week 1 and reset Weeks 2–4 to 0. No new money.
 function startNewMonthWeeklyRollover() {
     pushToUndo();
@@ -1435,14 +1547,23 @@ function startNewMonthWeeklyRollover() {
 }
 window.startNewMonthWeeklyRollover = startNewMonthWeeklyRollover;
 
-// Food-only "new month": move unconsumed food value to buffer, then clear the food calendar.
-function startNewMonthFoodReset() {
-    pushToUndo();
+function getPayCycleStartKey(payCycleInfo) {
+    var info = payCycleInfo || (typeof getPayCycleInfo === 'function' ? getPayCycleInfo() : null);
+    if (!info || !info.cycleStart) return '';
+    var d = info.cycleStart;
+    return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
+}
+
+// Food cycle rollover: move unconsumed Daily Food value to Extra, then reset cycle tracking.
+function startNewMonthFoodReset(options) {
+    options = options || {};
+    if (!options.skipUndo) pushToUndo();
     if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
 
     var daysUsed = state.food.daysUsed || 0;
     var daysTotal = state.food.daysTotal || 28;
     var unconsumed = Math.max(0, daysTotal - daysUsed);
+    var movedToExtra = 0;
     if (unconsumed > 0) {
         var info = typeof getFoodRemainderInfo === 'function' ? getFoodRemainderInfo() : null;
         var dailyRate = (info && info.dailyRate > 0) ? info.dailyRate : (600 / 28);
@@ -1452,18 +1573,61 @@ function startNewMonthFoodReset() {
         if (takeFromFood > 0) {
             state.balances['Daily Food'] = (state.balances['Daily Food'] || 0) - takeFromFood;
             if (state.balances['Daily Food'] <= 0) delete state.balances['Daily Food'];
-            state.food.lockedAmount = (state.food.lockedAmount || 0) + takeFromFood;
+            if (!state.accounts) state.accounts = {};
+            state.accounts.surplus = (state.accounts && typeof state.accounts.surplus === 'number' ? state.accounts.surplus : 0) + takeFromFood;
+            movedToExtra = takeFromFood;
         }
     }
     state.food.consumedDays = [];
     state.food.daysUsed = 0;
     state.food.history = [];
+    state.food.overflowUsage = {};
+    state.food.redistributedExtraDays = 0;
+    state.food.lastCycleStartKey = getPayCycleStartKey(options.payCycleInfo);
+    if (movedToExtra > 0) {
+        state.food.pendingUnusedTransferNotice = {
+            amount: movedToExtra,
+            days: unconsumed
+        };
+    } else {
+        delete state.food.pendingUnusedTransferNotice;
+    }
     saveState();
-    if (typeof renderLedger === 'function') renderLedger();
-    if (typeof refreshUI === 'function') refreshUI();
-    if (typeof updateGlobalUI === 'function') updateGlobalUI();
+    if (!options.silent) {
+        if (typeof renderLedger === 'function') renderLedger();
+        if (typeof refreshUI === 'function') refreshUI();
+        if (typeof updateGlobalUI === 'function') updateGlobalUI();
+    }
+    return movedToExtra;
 }
 window.startNewMonthFoodReset = startNewMonthFoodReset;
+
+function maybeAutoAdvanceFoodCycle(payCycleInfo) {
+    if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
+    var currentKey = getPayCycleStartKey(payCycleInfo);
+    if (!currentKey) return false;
+    if (!state.food.lastCycleStartKey) {
+        state.food.lastCycleStartKey = currentKey;
+        saveState();
+        return false;
+    }
+    if (state.food.lastCycleStartKey === currentKey) return false;
+    startNewMonthFoodReset({ skipUndo: true, silent: true, payCycleInfo: payCycleInfo });
+    return true;
+}
+window.maybeAutoAdvanceFoodCycle = maybeAutoAdvanceFoodCycle;
+
+function showFoodUnusedTransferNotice() {
+    var notice = state.food && state.food.pendingUnusedTransferNotice;
+    if (!notice || !notice.amount || notice.amount <= 0) return;
+    var days = Math.max(0, Math.floor(notice.days || 0));
+    var msg = formatMoney(notice.amount) + ' ' + getCurrencyLabel() + ' from ' + days + ' unused Daily Food day' + (days === 1 ? '' : 's') + ' was moved to Extra.';
+    if (typeof showAppAlert === 'function') showAppAlert(msg, 'Food cycle updated');
+    delete state.food.pendingUnusedTransferNotice;
+    saveState();
+    if (typeof updateGlobalUI === 'function') updateGlobalUI();
+}
+window.showFoodUnusedTransferNotice = showFoodUnusedTransferNotice;
 
 // Legacy combined action (kept for compatibility): weekly rollover + food reset.
 function startNewMonth() {
@@ -1473,23 +1637,11 @@ function startNewMonth() {
 window.startNewMonth = startNewMonth;
 
 function openWeeklyNewMonthConfirm() {
-    showAppConfirm(
-        'Move Week 4 leftover into Week 1 and reset Weeks 2–4 to zero. Total balance stays the same.',
-        function () { startNewMonthWeeklyRollover(); },
-        null,
-        { confirmLabel: 'Roll to new month', hideIcon: true }
-    );
+    return;
 }
 window.openWeeklyNewMonthConfirm = openWeeklyNewMonthConfirm;
 
-function openFoodNewMonthConfirm() {
-    showAppConfirm(
-        'Reset the food calendar for a new cycle. Unused food value moves to Buffer.',
-        function () { startNewMonthFoodReset(); },
-        null,
-        { confirmLabel: 'Reset food cycle', hideIcon: true }
-    );
-}
+function openFoodNewMonthConfirm() {}
 window.openFoodNewMonthConfirm = openFoodNewMonthConfirm;
 
 // Old header button entrypoint (now unused)

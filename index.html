@@ -574,7 +574,7 @@
                             <div class="flex items-baseline gap-2 flex-wrap">
                                 <span class="text-[10px] font-bold uppercase tracking-widest text-indigo-200">Weekly Allowance</span>
                                 <span id="weekly-mini-totals" class="text-[9px] font-bold text-indigo-200/90">—</span>
-                                <button type="button" id="weekly-newmonth-btn" onclick="openWeeklyNewMonthConfirm()" class="hidden ml-1 px-2 py-1 rounded-lg bg-white/15 hover:bg-white/25 text-[9px] font-black uppercase tracking-wider transition" title="End-of-cycle rollover">New month</button>
+                                <button type="button" id="weekly-rollover-notice-btn" onclick="showWeeklyRolloverNotice()" class="hidden ml-1 px-2 py-1 rounded-lg bg-white/20 hover:bg-white/30 text-[9px] font-black uppercase tracking-wider transition" title="See weekly rollover details">Rollover</button>
                             </div>
                             <span class="text-[9px] font-bold uppercase tracking-widest text-indigo-300 block mt-1.5">Week <span id="weekly-week-count">1</span>/4</span>
                             <div class="flex items-baseline gap-2 mt-3">
@@ -631,7 +631,7 @@
                 <div>
                     <div class="flex items-center justify-between gap-2">
                         <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Daily Food</span>
-                        <button type="button" id="food-newmonth-btn" onclick="openFoodNewMonthConfirm()" class="hidden px-2 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-[9px] font-black uppercase tracking-wider text-slate-600 transition" title="End-of-cycle reset">New month</button>
+                        <button type="button" id="food-unused-transfer-btn" onclick="showFoodUnusedTransferNotice()" class="hidden px-2 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-[9px] font-black uppercase tracking-wider text-amber-700 transition" title="See rollover details">Unused moved</button>
                     </div>
                     <p class="text-[10px] font-bold text-slate-400 mt-1"><span id="daily-food-rate">0.00</span> <span data-currency>AED</span>/Day</p>
                 </div>
@@ -671,6 +671,22 @@
                             <span>Transfer day to…</span>
                         </button>
                     </div>
+                    <div id="food-overflow-popover" class="hidden fixed z-40 w-[220px] p-3 bg-white border border-red-200 rounded-xl shadow-xl shadow-red-100/60 ring-1 ring-red-900/5" role="dialog" aria-label="Extra day options">
+                        <p class="text-[10px] font-black uppercase tracking-wider text-red-600">Extra day</p>
+                        <p class="text-[10px] font-semibold text-slate-500 mt-1">Choose how to account for this overflow day.</p>
+                        <div class="mt-2">
+                            <label class="text-[9px] font-bold uppercase tracking-wider text-slate-500">Source</label>
+                            <select id="food-overflow-source" class="mt-1 w-full bg-white border border-red-200 rounded-lg px-2 py-2 text-[11px] font-bold outline-none focus:ring-2 focus:ring-red-300">
+                                <option value="surplus">Extra</option>
+                                <option value="savings">Savings</option>
+                                <option value="weekly">Weekly Allowance</option>
+                            </select>
+                        </div>
+                        <div class="mt-3 space-y-2">
+                            <button type="button" id="food-overflow-source-add-btn" class="w-full py-2 rounded-lg bg-red-500 text-white text-[10px] font-black uppercase tracking-wider hover:bg-red-600 transition">Use source for +1 day</button>
+                            <button type="button" id="food-overflow-redistribute-btn" class="w-full py-2 rounded-lg bg-red-50 border border-red-200 text-red-700 text-[10px] font-black uppercase tracking-wider hover:bg-red-100 transition">Redistribute Daily Food</button>
+                        </div>
+                    </div>
 
                     <!-- Mobile full-screen day modal (used on small/touch screens instead of tiny popover) -->
                     <div id="food-day-mobile-modal" class="modal-overlay hidden fixed inset-0 z-[80]">
@@ -704,36 +720,6 @@
                 </div>
 
                 <button type="button" id="food-mark-day-btn" onclick="spendFoodDay()" class="w-full py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-800 transition">Mark Day Consumed</button>
-
-                <!-- Buffer card (collapsible dropdown) -->
-                <div id="food-buffer-dropdown" class="rounded-xl bg-emerald-50 border border-emerald-100 overflow-hidden">
-                    <button type="button" id="food-buffer-dropdown-header" onclick="toggleBufferDropdown()" class="w-full p-4 flex justify-between items-center gap-2 text-left hover:bg-emerald-100/50 transition focus:outline-none focus:ring-2 focus:ring-emerald-300 focus:ring-inset rounded-xl">
-                        <div>
-                            <span class="text-[10px] font-bold uppercase tracking-widest text-emerald-600">Buffer</span>
-                            <p class="text-[9px] text-emerald-600/80 mt-0.5">Extra days; choose source below. Release returns to Surplus.</p>
-                        </div>
-                        <div class="flex items-center gap-2 flex-shrink-0">
-                            <span id="locked-funds-display" class="text-xl font-black text-emerald-700">0.00</span>
-                            <span class="text-[10px] font-bold text-emerald-600" data-currency></span>
-                            <span id="food-buffer-chevron" class="text-emerald-600 transition-transform duration-200" aria-hidden="true">▼</span>
-                        </div>
-                    </button>
-                    <div id="food-buffer-dropdown-body" class="hidden border-t border-emerald-100 p-4 pt-3 space-y-3">
-                        <div class="space-y-2">
-                            <label class="text-[9px] font-bold uppercase text-emerald-700/80">Fund from</label>
-                            <select id="food-buffer-source" class="w-full bg-white border border-emerald-200 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-300">
-                                <option value="surplus">Extra</option>
-                                <option value="savings">Savings</option>
-                                <option value="weekly">Weekly Allowance</option>
-                            </select>
-                        </div>
-                        <div class="flex flex-wrap gap-2 min-w-0">
-                            <input type="number" id="food-lock-val" placeholder="Days to add..." class="flex-1 min-w-0 bg-white border border-emerald-200 rounded-lg px-3 py-2 text-sm font-bold outline-none focus:ring-2 focus:ring-emerald-300" min="1" autocomplete="off">
-                            <button type="button" onclick="buyFoodDay()" class="bg-emerald-500 text-white px-4 py-2 rounded-lg text-[10px] font-black uppercase hover:bg-emerald-600 transition shrink-0">Extend</button>
-                            <button type="button" onclick="handleBufferRelease()" class="px-4 py-2 rounded-lg text-[10px] font-black uppercase bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition shrink-0" title="Release buffer days back to Extra">Release</button>
-                        </div>
-                    </div>
-                </div>
             </div>
             </div><!-- /ledger-top-grid -->
 

@@ -140,26 +140,24 @@ window.onload = function() {
                 lastShown = parseInt((sessionStorage && sessionStorage.getItem(REFRESH_PROMPT_KEY)) || '0', 10) || 0;
             } catch (e) {}
 
-            // Avoid spamming when user cancels.
+            // Avoid showing the prompt repeatedly right after it was shown.
             if (lastShown && (now - lastShown) < IDLE_MS) return;
 
             refreshPromptRecentlyShown = true;
             try { sessionStorage && sessionStorage.setItem(REFRESH_PROMPT_KEY, String(now)); } catch (e2) {}
 
-            var msg = 'It looks like you have been away for a while (' + source + '). Refresh to pull the latest budget and clear any stale input state.';
+            var msg = 'You have been away for a while. Refresh to load the latest budget and clear any saved draft changes.';
             showAppConfirm(
                 msg,
                 function onConfirm() {
                     try { window.location.reload(); } catch (e) {}
                 },
-                function onCancel() {
-                    // Safety-first: also reload on cancel so we don't continue with a potentially stale edit lock.
-                    try { window.location.reload(); } catch (e2) {}
-                },
+                null,
                 {
-                    title: 'Refresh recommended',
-                    confirmLabel: 'Refresh now',
-                    hideIcon: true
+                    title: 'Refresh needed',
+                    confirmLabel: 'Refresh',
+                    hideIcon: true,
+                    hideCancel: true
                 }
             );
         }

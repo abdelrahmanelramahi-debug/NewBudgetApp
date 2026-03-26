@@ -55,12 +55,13 @@ function showAppAlert(message, title) {
     _showAppAlertModal(true);
 }
 
-/** Show an in-app confirm (Cancel + primary button). Replaces confirm(message). Callbacks are called when user clicks. */
+/** Show an in-app confirm (Cancel + primary button, unless hidden). Replaces confirm(message). Callbacks are called when user clicks. */
 function showAppConfirm(message, onConfirm, onCancel, options) {
     options = options || {};
     var title = options.title;
     var confirmLabel = options.confirmLabel || 'Continue';
     var hideIcon = options.hideIcon === true;
+    var hideCancel = options.hideCancel === true;
     var titleEl = getEl('app-alert-title');
     var messageEl = getEl('app-alert-message');
     var iconWrap = getEl('app-alert-icon');
@@ -76,7 +77,10 @@ function showAppConfirm(message, onConfirm, onCancel, options) {
     }
     messageEl.textContent = message || '';
     okBtn.textContent = confirmLabel;
-    if (cancelBtn) cancelBtn.classList.remove('hidden');
+    if (cancelBtn) {
+        if (hideCancel) cancelBtn.classList.add('hidden');
+        else cancelBtn.classList.remove('hidden');
+    }
     _appAlertConfirmCallback = onConfirm || null;
     _appAlertCancelCallback = onCancel || null;
     okBtn.onclick = function () {
@@ -762,6 +766,7 @@ function renderLedger() {
 
     // WEEKLY: ensure synced then show current week's balance
     if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
+    if (typeof maybeAutoAdvanceWeeklyWeek === 'function') maybeAutoAdvanceWeeklyWeek();
     document.getElementById('bal-weekly').innerText = formatMoney(state.accounts.weekly.balance || 0);
     const weekCount = document.getElementById('weekly-week-count');
     if (weekCount) weekCount.innerText = state.accounts.weekly?.week || 1;
@@ -1103,7 +1108,38 @@ function getPayCycleInfo() {
             month: d.getMonth()
         });
     }
-    return { cycleStart: cycleStart, dates: dates, monthNames: monthNames };
+    var nextCycleMonth = cycleStartMonth + 1;
+    var nextCycleYear = cycleStartYear;
+    if (nextCycleMonth > 11) {
+        nextCycleMonth = 0;
+        nextCycleYear += 1;
+    }
+    var nextCycleStartDay = Math.min(payDate, lastDayOfMonth(nextCycleYear, nextCycleMonth));
+    var nextCycleStart = new Date(nextCycleYear, nextCycleMonth, nextCycleStartDay);
+    var overflowDates = [];
+    var dayAfterCore = new Date(cycleStartYear, cycleStartMonth, cycleStartDay + 28);
+    for (var od = new Date(dayAfterCore); od < nextCycleStart; od = new Date(od.getFullYear(), od.getMonth(), od.getDate() + 1)) {
+        overflowDates.push({
+            key: od.getFullYear() + '-' + (od.getMonth() + 1) + '-' + od.getDate(),
+            date: od.getDate(),
+            monthName: monthNames[od.getMonth()],
+            dayOfWeek: od.getDay(),
+            year: od.getFullYear(),
+            month: od.getMonth()
+        });
+    }
+    return { cycleStart: cycleStart, dates: dates, overflowDates: overflowDates, monthNames: monthNames };
+}
+
+function getOverflowFundingSources() {
+    var options = [{ id: 'surplus', label: 'Extra' }, { id: 'savings', label: 'Savings' }, { id: 'weekly', label: 'Weekly Allowance' }];
+    var buckets = state.accounts && state.accounts.buckets ? Object.keys(state.accounts.buckets) : [];
+    buckets.forEach(function(label) {
+        if (label === 'Savings') return;
+        var bal = typeof getItemBalance === 'function' ? getItemBalance(label, 0) : 0;
+        if (bal > 0) options.push({ id: label, label: label });
+    });
+    return options;
 }
 
 function getTodayCycleDay() {
@@ -1141,32 +1177,27 @@ function updateFoodUI() {
     // Match same item as getFoodRemainderInfo (Daily Food) so rate and remainder stay in sync
     var fItem = fSec ? fSec.items.find(i=>i.label===flabel) : null;
     var foodBase = fItem ? fItem.amount : 600;
-    var daily = foodBase / (state.food.daysTotal || 28);
+    var redistributedDays = Math.max(0, Math.floor((state.food && state.food.redistributedExtraDays) || 0));
     if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
+    var payCycle = getPayCycleInfo();
+    if (typeof maybeAutoAdvanceFoodCycle === 'function') {
+        var didAutoAdvance = maybeAutoAdvanceFoodCycle(payCycle);
+        if (didAutoAdvance) {
+            if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
+        }
+    }
+    redistributedDays = Math.max(0, Math.floor((state.food && state.food.redistributedExtraDays) || 0));
+    var daily = foodBase / ((state.food.daysTotal || 28) + redistributedDays);
     var consumedDays = state.food.consumedDays || [];
     var daysUsed = consumedDays.length;
     var daysTotal = state.food.daysTotal || 28;
     var lockedAmount = state.food.lockedAmount || 0;
-    var bufferCount = daily > 0 ? Math.floor(lockedAmount / daily) : 0;
     var currentDayInCycle = daysUsed + 1;
 
     document.getElementById('daily-food-rate').innerText = formatMoney(daily);
-    document.getElementById('locked-funds-display').innerText = formatMoney(lockedAmount);
+    var lockedDisplayEl = document.getElementById('locked-funds-display');
+    if (lockedDisplayEl) lockedDisplayEl.innerText = formatMoney(lockedAmount);
     document.getElementById('food-days-count').innerText = (daysTotal - daysUsed) + ' Days Left';
-
-    var bufferSourceSel = document.getElementById('food-buffer-source');
-    if (bufferSourceSel) {
-        var currentVal = bufferSourceSel.value;
-        var opts = '<option value="surplus">Extra</option><option value="savings">Savings</option><option value="weekly">Weekly Allowance</option>';
-        var buckets = state.accounts && state.accounts.buckets ? Object.keys(state.accounts.buckets) : [];
-        buckets.forEach(function(label) {
-            if (label === 'Savings') return;
-            var bal = typeof getItemBalance === 'function' ? getItemBalance(label, 0) : 0;
-            if (bal > 0) opts += '<option value="' + String(label).replace(/"/g, '&quot;') + '">' + String(label).replace(/</g, '&lt;') + '</option>';
-        });
-        bufferSourceSel.innerHTML = opts;
-        if (currentVal) bufferSourceSel.value = currentVal;
-    }
     var macroUsed = document.getElementById('food-macro-used');
     if (macroUsed) macroUsed.textContent = daysUsed + ' of 28 used';
     var weekDayLabel = document.getElementById('food-week-day-label');
@@ -1187,7 +1218,6 @@ function updateFoodUI() {
     var progressBar = document.getElementById('food-progress-bar');
     if (progressBar) progressBar.style.width = (daysUsed / 28 * 100) + '%';
 
-    var payCycle = getPayCycleInfo();
     var dayNamesLong = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     var headerRow = document.getElementById('food-overview-header');
     if (headerRow) {
@@ -1261,45 +1291,29 @@ function updateFoodUI() {
         coreWrapper.innerHTML = coreHtml;
         rowsContainer.appendChild(coreWrapper);
 
-        // Buffer row: only when at least 1 day extended; only show extended days (no unfunded slots)
-        if (bufferCount > 0) {
-            var cycleStart = payCycle.cycleStart;
-            var bMonthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-            var bufferDates = [];
-            for (var b = 0; b < bufferCount; b++) {
-                var bd = new Date(cycleStart.getFullYear(), cycleStart.getMonth(), cycleStart.getDate() + 28 + b);
-                bufferDates.push({
-                    date: bd.getDate(),
-                    monthName: bMonthNames[bd.getMonth()]
-                });
-            }
-            var bufferWrapper = document.createElement('div');
-            bufferWrapper.className = 'food-calendar-buffer';
-            var bufHtml = '';
-            for (var br = 0; br < Math.ceil(bufferDates.length / 7); br++) {
-                var bufRow = '<div class="food-buffer-row flex gap-2 items-stretch rounded-lg"><div class="w-12 flex-shrink-0 flex items-center text-[9px] font-bold text-emerald-600 uppercase">' + (br === 0 ? 'Buffer' : '') + '</div><div class="grid grid-cols-7 gap-1 flex-1">';
-                for (var c = 0; c < 7; c++) {
-                    var idx = br * 7 + c;
-                    if (idx < bufferDates.length) {
-                        var b = bufferDates[idx];
-                        var bufCellCls = 'food-overview-cell rounded-md flex items-center justify-center text-[10px] font-black min-h-[2rem] bg-emerald-500 text-white border border-emerald-600 cursor-pointer transition';
-                        var bufCellContent = '<div class="' + bufCellCls + '" data-date="' + b.date + '" title="' + b.monthName + ' ' + b.date + '">' + b.date + '</div>';
-                        var bufHover = '<div class="food-day-hover-actions absolute inset-0 flex rounded-md overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto">' +
-                            '<span class="pointer-events-auto flex-1 flex items-center justify-center min-w-0 food-day-consume-panel" title="Consume" onclick="event.stopPropagation(); consumeBufferDay()" role="button" aria-label="Consume">' +
-                            '<span class="text-white text-[10px] font-black">✓</span></span>' +
-                            '<span class="pointer-events-auto flex-1 flex items-center justify-center min-w-0 food-day-transfer-panel" title="Transfer day to..." onclick="event.stopPropagation(); openBufferDayTransferPopover(this)" role="button" aria-label="Transfer">' +
-                            '<span class="text-white text-[10px] font-black">↗</span></span>' +
-                            '</div>';
-                        bufRow += '<div class="food-overview-cell-wrapper group relative overflow-hidden" data-buffer="true">' + bufCellContent + bufHover + '</div>';
-                    } else {
-                        bufRow += '<div class="food-overview-cell rounded-md min-h-[2rem] bg-transparent"></div>';
-                    }
+        var overflowDates = payCycle.overflowDates || [];
+        if (overflowDates.length > 0) {
+            var overflowUsage = (state.food && state.food.overflowUsage) ? state.food.overflowUsage : {};
+            var extraHtml = '<div class="food-week-row food-overflow-row flex gap-2 items-stretch rounded-lg">' +
+                '<div class="w-12 flex-shrink-0 flex items-center text-[10px] font-black uppercase tracking-wider text-red-500">Extra</div>' +
+                '<div class="grid grid-cols-7 gap-1 flex-1">';
+            for (var ec = 0; ec < 7; ec++) {
+                if (ec < overflowDates.length) {
+                    var ex = overflowDates[ec];
+                    var usageMode = overflowUsage[ex.key] || '';
+                    var usedClass = usageMode ? ' food-overflow-cell-used' : '';
+                    var badge = usageMode ? '<span class="absolute top-0.5 right-1 text-[8px] font-black uppercase tracking-wide text-red-700">' + (usageMode === 'redistributed' ? 'R' : 'S') + '</span>' : '';
+                    extraHtml += '<div class="food-overview-cell-wrapper group relative overflow-hidden" data-overflow-day="true" data-overflow-key="' + ex.key + '">' +
+                        '<div class="food-overview-cell food-overflow-cell rounded-md flex items-center justify-center text-[10px] font-black min-h-[2rem] cursor-pointer transition' + usedClass + '" onclick="event.stopPropagation(); openOverflowDayPopover(\'' + ex.key + '\', this.closest(\'.food-overview-cell-wrapper\'))" role="button" title="' + ex.monthName + ' ' + ex.date + '">' +
+                        ex.date + badge + '</div></div>';
+                } else {
+                    extraHtml += '<div class="food-overview-cell rounded-md min-h-[2rem] bg-transparent"></div>';
                 }
-                bufRow += '</div></div>';
-                bufHtml += bufRow;
             }
-            bufferWrapper.innerHTML = bufHtml;
-            rowsContainer.appendChild(bufferWrapper);
+            extraHtml += '</div></div>';
+            var extraWrap = document.createElement('div');
+            extraWrap.innerHTML = extraHtml;
+            rowsContainer.appendChild(extraWrap.firstChild);
         }
 
         if (!rowsContainer._foodDayActionWired) {
@@ -1308,10 +1322,10 @@ function updateFoodUI() {
                 if (!isTouchOrSmall()) return;
                 var wrapper = e.target.closest('.food-overview-cell-wrapper');
                 if (!wrapper) return;
-                if (wrapper.getAttribute('data-buffer') === 'true') {
+                if (wrapper.getAttribute('data-overflow-day') === 'true') {
                     e.preventDefault();
                     e.stopPropagation();
-                    openBufferDayActionPopover(wrapper);
+                    openOverflowDayPopover(wrapper.getAttribute('data-overflow-key'), wrapper);
                     return;
                 }
                 var cycleDay = wrapper.getAttribute('data-cycle-day');
@@ -1323,8 +1337,9 @@ function updateFoodUI() {
                 }
             }, true);
             document.addEventListener('click', function(e) {
-                if (e.target.closest('#food-day-action-popover')) return;
+                if (e.target.closest('#food-day-action-popover') || e.target.closest('#food-overflow-popover')) return;
                 closeFoodDayActionPopover();
+                closeOverflowDayPopover();
             });
         }
     }
@@ -1333,14 +1348,52 @@ function updateFoodUI() {
     if (markBtn) markBtn.disabled = daysUsed >= daysTotal;
 }
 
-function toggleBufferDropdown() {
-    var body = document.getElementById('food-buffer-dropdown-body');
-    var chevron = document.getElementById('food-buffer-chevron');
-    if (!body) return;
-    body.classList.toggle('hidden');
-    if (chevron) chevron.classList.toggle('rotate-180', !body.classList.contains('hidden'));
+var _overflowDayPopoverAnchor = null;
+
+function openOverflowDayPopover(dayKey, anchorEl) {
+    var pop = document.getElementById('food-overflow-popover');
+    var sourceSel = document.getElementById('food-overflow-source');
+    var sourceBtn = document.getElementById('food-overflow-source-add-btn');
+    var redistributeBtn = document.getElementById('food-overflow-redistribute-btn');
+    if (!pop || !sourceSel || !sourceBtn || !redistributeBtn || !dayKey) return;
+    closeFoodDayActionPopover();
+    _overflowDayPopoverAnchor = anchorEl;
+    pop.setAttribute('data-overflow-key', dayKey);
+
+    var currentVal = sourceSel.value;
+    var options = getOverflowFundingSources();
+    sourceSel.innerHTML = options.map(function(opt) {
+        return '<option value="' + String(opt.id).replace(/"/g, '&quot;') + '">' + String(opt.label).replace(/</g, '&lt;') + '</option>';
+    }).join('');
+    if (currentVal && options.some(function(opt) { return opt.id === currentVal; })) sourceSel.value = currentVal;
+
+    sourceBtn.onclick = function() {
+        var key = pop.getAttribute('data-overflow-key');
+        if (!key) return;
+        if (typeof applyOverflowDayFromSource === 'function') applyOverflowDayFromSource(key, sourceSel.value || 'surplus');
+        closeOverflowDayPopover();
+    };
+    redistributeBtn.onclick = function() {
+        var key = pop.getAttribute('data-overflow-key');
+        if (!key) return;
+        if (typeof applyOverflowDayRedistribution === 'function') applyOverflowDayRedistribution(key);
+        closeOverflowDayPopover();
+    };
+    if (anchorEl && anchorEl.getBoundingClientRect) {
+        var rect = anchorEl.getBoundingClientRect();
+        pop.style.left = rect.left + 'px';
+        pop.style.top = (rect.bottom + 4) + 'px';
+    }
+    pop.classList.remove('hidden');
 }
-window.toggleBufferDropdown = toggleBufferDropdown;
+window.openOverflowDayPopover = openOverflowDayPopover;
+
+function closeOverflowDayPopover() {
+    var pop = document.getElementById('food-overflow-popover');
+    if (pop) pop.classList.add('hidden');
+    _overflowDayPopoverAnchor = null;
+}
+window.closeOverflowDayPopover = closeOverflowDayPopover;
 
 function isTouchOrSmall() {
     return (typeof window !== 'undefined' && window.matchMedia && (window.matchMedia('(max-width: 768px)').matches || window.matchMedia('(pointer: coarse)').matches));
@@ -1443,35 +1496,6 @@ function openFoodDayActionPopover(cycleDay, consumed, anchorEl) {
     transferBtn.onclick = function() {
         closeFoodDayActionPopover();
         if (typeof openFoodDayTransferPopover === 'function') openFoodDayTransferPopover(cycleDay, _foodDayActionPopoverAnchor);
-    };
-    if (anchorEl && anchorEl.getBoundingClientRect) {
-        var rect = anchorEl.getBoundingClientRect();
-        pop.style.left = rect.left + 'px';
-        pop.style.top = (rect.bottom + 4) + 'px';
-    }
-    pop.classList.remove('hidden');
-}
-
-function openBufferDayActionPopover(anchorEl) {
-    var pop = document.getElementById('food-day-action-popover');
-    var consumeBtn = document.getElementById('food-day-action-consume');
-    var transferBtn = document.getElementById('food-day-action-transfer');
-    if (!pop || !consumeBtn || !transferBtn) return;
-    _foodDayActionPopoverAnchor = anchorEl;
-    pop.setAttribute('data-buffer', 'true');
-    pop.removeAttribute('data-cycle-day');
-    var consumeLabel = consumeBtn.querySelector('.food-day-action-consume-label');
-    if (consumeLabel) consumeLabel.textContent = 'Consume'; else consumeBtn.textContent = 'Consume';
-    consumeBtn.onclick = function() {
-        if (typeof consumeBufferDay === 'function') consumeBufferDay();
-        closeFoodDayActionPopover();
-        if (typeof updateFoodUI === 'function') updateFoodUI();
-        if (typeof renderLedger === 'function') renderLedger();
-        if (typeof updateGlobalUI === 'function') updateGlobalUI();
-    };
-    transferBtn.onclick = function() {
-        closeFoodDayActionPopover();
-        if (typeof openBufferDayTransferPopover === 'function') openBufferDayTransferPopover(_foodDayActionPopoverAnchor);
     };
     if (anchorEl && anchorEl.getBoundingClientRect) {
         var rect = anchorEl.getBoundingClientRect();
@@ -1849,12 +1873,13 @@ function updateGlobalUI() {
     })();
     if (headerDateEl) headerDateEl.textContent = dateStr;
 
-    // End-of-cycle actions: show New month buttons only in last week of pay cycle
-    var showEndCycle = isLastWeekOfPayCycle();
-    var wBtn = getEl('weekly-newmonth-btn');
-    var fBtn = getEl('food-newmonth-btn');
-    if (wBtn) wBtn.classList.toggle('hidden', !showEndCycle);
-    if (fBtn) fBtn.classList.toggle('hidden', !showEndCycle);
+    // End-of-cycle actions: weekly + food rollovers are automatic.
+    var wBtn = getEl('weekly-rollover-notice-btn');
+    var fBtn = getEl('food-unused-transfer-btn');
+    var pendingWeeklyNotice = !!(state.accounts && state.accounts.weekly && state.accounts.weekly.pendingRolloverNotice && state.accounts.weekly.pendingRolloverNotice.amount > 0);
+    if (wBtn) wBtn.classList.toggle('hidden', !pendingWeeklyNotice);
+    var pendingFoodNotice = !!(state.food && state.food.pendingUnusedTransferNotice && state.food.pendingUnusedTransferNotice.amount > 0);
+    if (fBtn) fBtn.classList.toggle('hidden', !pendingFoodNotice);
 }
 
 function renderCategoryHistory() {
