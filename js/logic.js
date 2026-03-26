@@ -80,7 +80,7 @@ function getLiquidityBreakdown() {
                 return;
             }
 
-            const currentVal = getItemBalance(item.label, item.amount);
+            const currentVal = getItemBalance(item.label, 0);
             items.push({ label: item.label, amount: currentVal });
             totalLiquid += currentVal;
         });

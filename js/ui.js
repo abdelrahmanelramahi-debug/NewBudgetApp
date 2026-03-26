@@ -945,12 +945,12 @@ function renderLedger() {
 
         let items = relevantItems.slice();
         if (hideEmpty) {
-            items = items.filter(item => getItemBalance(item.label, item.amount) !== 0);
+            items = items.filter(item => getItemBalance(item.label, 0) !== 0);
         }
         if (sortBy !== 'default') {
             items = items.slice().sort(function (a, b) {
-                var balA = getItemBalance(a.label, a.amount);
-                var balB = getItemBalance(b.label, b.amount);
+                var balA = getItemBalance(a.label, 0);
+                var balB = getItemBalance(b.label, 0);
                 if (sortBy === 'balanceDesc') return balB - balA;
                 if (sortBy === 'balanceAsc') return balA - balB;
                 if (sortBy === 'nameAsc') return String(a.label).localeCompare(b.label);
@@ -965,13 +965,13 @@ function renderLedger() {
         let sumLeft = 0;
         let sumAllocated = 0;
         items.forEach(item => {
-            sumLeft += getItemBalance(item.label, item.amount);
+            sumLeft += getItemBalance(item.label, 0);
             sumAllocated += (typeof item.amount === 'number' ? item.amount : 0);
         });
 
         let barsHtml = '';
         items.forEach(item => {
-            let bal = getItemBalance(item.label, item.amount);
+            let bal = getItemBalance(item.label, 0);
             const planned = typeof item.amount === 'number' && item.amount > 0 ? item.amount : 1;
             const pct = Math.min(100, Math.max(0, (bal / planned) * 100));
             const safeLabel = escapeAttr(item.label);

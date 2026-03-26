@@ -306,14 +306,6 @@ function debitTransportation(amount) {
     syncTransportationTotal();
 }
 
-function getPlanAmount(label) {
-    for (let s of state.categories) {
-        const it = s.items.find(i => i.label === label);
-        if (it) return it.amount;
-    }
-    return 0;
-}
-
 function applyTransaction(tx) {
     if (!ensureEditControlBeforeMutation()) return false;
     ensureAccountsState();
@@ -622,7 +614,7 @@ function openDeficitModal() {
         sec.items.forEach(item => {
             if(['Weekly Allowance', 'Daily Food'].includes(item.label)) return;
 
-            const bal = getItemBalance(item.label, item.amount);
+            const bal = getItemBalance(item.label, 0);
             if(bal > 0) {
                 const safeLabel = String(item.label).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
                 list.innerHTML += `
@@ -982,14 +974,7 @@ function executeTransfer(targetId) {
     if(!val || val <= 0) return;
 
     pushToUndo();
-
-    if (activeCat !== 'Surplus' && !String(activeCat).startsWith('weekly_week_') && getItemBalance(activeCat, undefined) === undefined) {
-        setItemBalance(activeCat, getPlanAmount(activeCat));
-    }
     const isTransferToWeek = String(targetId).startsWith('weekly_week_');
-    if (targetId !== 'Surplus' && !isTransferToWeek && getItemBalance(targetId, undefined) === undefined) {
-        setItemBalance(targetId, getPlanAmount(targetId));
-    }
 
     applyTransaction({ type: 'transfer', from: activeCat, to: targetId, amount: val });
 
@@ -1029,9 +1014,6 @@ function applySurplusOrItemFromTool(type, val) {
     if (activeCat === 'Surplus') {
         applyTransaction({ type: 'adjust_surplus', delta: mod });
     } else {
-        if (getItemBalance(activeCat, undefined) === undefined) {
-            setItemBalance(activeCat, getPlanAmount(activeCat));
-        }
         applyTransaction({ type: 'adjust_item_balance', label: activeCat, delta: mod });
     }
     logHistory(activeCat, mod, 'Manual');
@@ -1045,9 +1027,6 @@ function applyItemAdjustment(label, amountStr, type) {
     if (!val || val <= 0) return;
     var mod = type === 'deduct' ? -val : val;
     pushToUndo();
-    if (getItemBalance(label, undefined) === undefined) {
-        setItemBalance(label, getPlanAmount(label));
-    }
     applyTransaction({ type: 'adjust_item_balance', label: label, delta: mod });
     logHistory(label, mod, 'Manual');
     saveState();
@@ -1056,10 +1035,6 @@ function applyItemAdjustment(label, amountStr, type) {
 
 function completeTask(label) {
     pushToUndo();
-    if (getItemBalance(label, undefined) === undefined) {
-         setItemBalance(label, getPlanAmount(label));
-    }
-
     const current = getItemBalance(label, 0);
     setItemBalance(label, 0);
     logHistory(label, -current, 'Completed');
