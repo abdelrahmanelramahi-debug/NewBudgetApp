@@ -622,6 +622,111 @@ function applyOnboardingValues(skipAll) {
     state._onboardingReality = reality;
 }
 
+function seedBalancesFromOnboardingPlan() {
+    if (typeof state === 'undefined') return;
+    if (!state.accounts) state.accounts = {};
+    if (!state.accounts.buckets) state.accounts.buckets = {};
+    if (!state.balances || typeof state.balances !== 'object') state.balances = {};
+
+    // On first-run completion, live balances should mirror the plan the user just set.
+    state.balances = {};
+
+    var plannedWeekly = 0;
+    var plannedSavings = 0;
+    var plannedPayables = 0;
+    var plannedTransportation = 0;
+
+    (state.categories || []).forEach(function (sec) {
+        (sec.items || []).forEach(function (item) {
+            var amount = Number(item && item.amount) || 0;
+            if (!item || !item.label) return;
+            if (item.label === 'Weekly Allowance') {
+                plannedWeekly = amount;
+                return;
+            }
+            if (item.label === 'Savings') {
+                plannedSavings = amount;
+                return;
+            }
+            if (item.label === 'Payables') {
+                plannedPayables = amount;
+                return;
+            }
+            if (item.label === 'Transportation') {
+                plannedTransportation = amount;
+                return;
+            }
+            state.balances[item.label] = amount;
+        });
+    });
+
+    state.accounts.buckets['Weekly Allowance'] = plannedWeekly;
+    state.accounts.buckets['Savings'] = plannedSavings;
+    state.accounts.buckets['Payables'] = plannedPayables;
+    state.accounts.buckets['Transportation'] = plannedTransportation;
+
+    if (!state.accounts.savingsBuckets || typeof state.accounts.savingsBuckets !== 'object') {
+        state.accounts.savingsBuckets = {};
+    }
+    if (!state.accounts.savingsDefaultBucket) state.accounts.savingsDefaultBucket = 'General Savings';
+    var savingsPlan = state.accounts.savingsBudgetPlan || {};
+    var savingsPlanKeys = Object.keys(savingsPlan);
+    if (savingsPlanKeys.length) {
+        var nextSavings = {};
+        savingsPlanKeys.forEach(function (key) {
+            nextSavings[key] = Math.max(0, Number(savingsPlan[key]) || 0);
+        });
+        if (nextSavings[state.accounts.savingsDefaultBucket] === undefined) {
+            nextSavings[state.accounts.savingsDefaultBucket] = 0;
+        }
+        state.accounts.savingsBuckets = nextSavings;
+    } else {
+        Object.keys(state.accounts.savingsBuckets).forEach(function (key) {
+            state.accounts.savingsBuckets[key] = 0;
+        });
+        state.accounts.savingsBuckets[state.accounts.savingsDefaultBucket] = plannedSavings;
+    }
+
+    if (!state.accounts.payablesBuckets || typeof state.accounts.payablesBuckets !== 'object') {
+        state.accounts.payablesBuckets = {};
+    }
+    if (!state.accounts.payablesDefaultBucket) state.accounts.payablesDefaultBucket = 'Main';
+    Object.keys(state.accounts.payablesBuckets).forEach(function (key) {
+        state.accounts.payablesBuckets[key] = 0;
+    });
+    state.accounts.payablesBuckets[state.accounts.payablesDefaultBucket] = plannedPayables;
+
+    if (!state.accounts.transportationBuckets || typeof state.accounts.transportationBuckets !== 'object') {
+        state.accounts.transportationBuckets = {};
+    }
+    if (!state.accounts.transportationDefaultBucket) state.accounts.transportationDefaultBucket = 'Main';
+    Object.keys(state.accounts.transportationBuckets).forEach(function (key) {
+        state.accounts.transportationBuckets[key] = 0;
+    });
+    state.accounts.transportationBuckets[state.accounts.transportationDefaultBucket] = plannedTransportation;
+
+    if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
+    var weeklyPerBucket = plannedWeekly / 4;
+    if (state.accounts.weekly && Array.isArray(state.accounts.weekly.balances)) {
+        for (var w = 0; w < 4; w++) state.accounts.weekly.balances[w] = weeklyPerBucket;
+        var activeWeek = Math.max(1, Math.min(4, Math.round(state.accounts.weekly.week || 1)));
+        state.accounts.weekly.balance = state.accounts.weekly.balances[activeWeek - 1];
+    }
+
+    if (!state.food || typeof state.food !== 'object') state.food = {};
+    state.food.daysTotal = state.food.daysTotal || 28;
+    state.food.consumedDays = [];
+    state.food.daysUsed = 0;
+    state.food.history = [];
+    state.food.lockedAmount = 0;
+    state.food.overflowUsage = {};
+    state.food.redistributedExtraDays = 0;
+
+    if (typeof syncSavingsTotal === 'function') syncSavingsTotal();
+    if (typeof syncPayablesTotal === 'function') syncPayablesTotal();
+    if (typeof syncTransportationTotal === 'function') syncTransportationTotal();
+}
+
 function finishOnboarding() {
     state.onboardingComplete = true;
     try {
@@ -633,6 +738,7 @@ function finishOnboarding() {
     if (typeof ensureSystemSavings === 'function') ensureSystemSavings();
     if (typeof ensureCoreItems === 'function') ensureCoreItems();
     if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
+    seedBalancesFromOnboardingPlan();
     if (typeof initSurplusFromOpening === 'function') initSurplusFromOpening();
     // #region agent log
     fetch('http://127.0.0.1:7853/ingest/84e116a3-552a-4446-9ad4-b17912da8656',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9bd46d'},body:JSON.stringify({sessionId:'9bd46d',runId:'pre-fix',hypothesisId:'H2_H3',location:'onboarding.js:finishOnboarding:post-initSurplusFromOpening',message:'onboarding finished balances snapshot',data:{transportPlan:((state.categories||[]).find(function(s){return s&&s.id==='core_essentials';})||{items:[]}).items.find(function(i){return i&&i.label==='Transportation';}),foodPlan:((state.categories||[]).find(function(s){return s&&s.id==='core_essentials';})||{items:[]}).items.find(function(i){return i&&i.label==='Daily Food';}),transportBucket:state.accounts&&state.accounts.buckets?state.accounts.buckets['Transportation']:null,transportBuckets:state.accounts?state.accounts.transportationBuckets:null,dailyFoodBalance:state.balances?state.balances['Daily Food']:null,surplus:state.accounts?state.accounts.surplus:null},timestamp:Date.now()})}).catch(()=>{});
