@@ -1480,7 +1480,6 @@ function maybeAutoAdvanceWeeklyWeek(payCycleInfo) {
         state.accounts.weekly.week = targetWeek;
         state.accounts.weekly.balance = getWeeklyBalance(targetWeek);
         state.accounts.weekly.lastAutoWeekKey = weekKey;
-        saveState();
         return false;
     }
     if (state.accounts.weekly.lastAutoWeekKey === weekKey && state.accounts.weekly.week === targetWeek) return false;
@@ -1608,7 +1607,6 @@ function maybeAutoAdvanceFoodCycle(payCycleInfo) {
     if (!currentKey) return false;
     if (!state.food.lastCycleStartKey) {
         state.food.lastCycleStartKey = currentKey;
-        saveState();
         return false;
     }
     if (state.food.lastCycleStartKey === currentKey) return false;
