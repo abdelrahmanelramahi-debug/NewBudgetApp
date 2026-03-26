@@ -20,6 +20,9 @@ window.onload = function() {
         try { localStorage.setItem(STORAGE_KEYS.ONBOARDING_DONE, '1'); onboardingDoneFlag = '1'; } catch (e) {}
     }
     var shouldShowOnboarding = !onboardingDoneFlag || !state.onboardingComplete || forceOnboarding;
+    // #region agent log
+    fetch('http://127.0.0.1:7853/ingest/84e116a3-552a-4446-9ad4-b17912da8656',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9bd46d'},body:JSON.stringify({sessionId:'9bd46d',runId:'pre-fix',hypothesisId:'H5',location:'main.js:window.onload',message:'app bootstrap state',data:{hasSavedState:hasSavedState,onboardingDoneFlag:onboardingDoneFlag,stateOnboardingComplete:state.onboardingComplete,shouldShowOnboarding:shouldShowOnboarding,path:(typeof window!=='undefined'&&window.location)?window.location.pathname:null,search:(typeof window!=='undefined'&&window.location)?window.location.search:null},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
     if (shouldShowOnboarding) {
         if (typeof showOnboarding === 'function') {
             showOnboarding(runAppInit);
