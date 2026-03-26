@@ -466,6 +466,9 @@ window.skipHomeTour = skipHomeTour;
 
 function initAndRenderOnboardingCategories() {
     if (!onboardingCategoriesInitialized && typeof state !== 'undefined') {
+        // #region agent log
+        fetch('http://127.0.0.1:7853/ingest/84e116a3-552a-4446-9ad4-b17912da8656',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9bd46d'},body:JSON.stringify({sessionId:'9bd46d',runId:'pre-fix',hypothesisId:'H1',location:'onboarding.js:initAndRenderOnboardingCategories:entry',message:'onboarding categories init start',data:{initialized:onboardingCategoriesInitialized,core:(state.categories||[]).find(function(s){return s&&s.id==='core_essentials';})},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
         onboardingCategoriesInitialized = true;
         // Keep preset categories (Health, Groceries, Misc, Subscriptions with their sub-items); only ensure system sections exist
         if (typeof ensureSystemSavings === 'function') ensureSystemSavings();
@@ -497,6 +500,9 @@ function initAndRenderOnboardingCategories() {
                 if (item.amortData) delete item.amortData;
             });
         });
+        // #region agent log
+        fetch('http://127.0.0.1:7853/ingest/84e116a3-552a-4446-9ad4-b17912da8656',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9bd46d'},body:JSON.stringify({sessionId:'9bd46d',runId:'pre-fix',hypothesisId:'H1',location:'onboarding.js:initAndRenderOnboardingCategories:post-zero',message:'onboarding categories zeroed',data:{core:(state.categories||[]).find(function(s){return s&&s.id==='core_essentials';}),health:(state.categories||[]).find(function(s){return s&&s.id==='health';}),groceries:(state.categories||[]).find(function(s){return s&&s.id==='groceries';})},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
 
         // Seed helpful default savings buckets for first-time users.
         // General Savings stays first and acts as the required protected bucket.
@@ -628,6 +634,9 @@ function finishOnboarding() {
     if (typeof ensureCoreItems === 'function') ensureCoreItems();
     if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
     if (typeof initSurplusFromOpening === 'function') initSurplusFromOpening();
+    // #region agent log
+    fetch('http://127.0.0.1:7853/ingest/84e116a3-552a-4446-9ad4-b17912da8656',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9bd46d'},body:JSON.stringify({sessionId:'9bd46d',runId:'pre-fix',hypothesisId:'H2_H3',location:'onboarding.js:finishOnboarding:post-initSurplusFromOpening',message:'onboarding finished balances snapshot',data:{transportPlan:((state.categories||[]).find(function(s){return s&&s.id==='core_essentials';})||{items:[]}).items.find(function(i){return i&&i.label==='Transportation';}),foodPlan:((state.categories||[]).find(function(s){return s&&s.id==='core_essentials';})||{items:[]}).items.find(function(i){return i&&i.label==='Daily Food';}),transportBucket:state.accounts&&state.accounts.buckets?state.accounts.buckets['Transportation']:null,transportBuckets:state.accounts?state.accounts.transportationBuckets:null,dailyFoodBalance:state.balances?state.balances['Daily Food']:null,surplus:state.accounts?state.accounts.surplus:null},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
     var reality = state._onboardingReality;
     if (typeof reality === 'number' && reality >= 0 && typeof getLiquidityBreakdown === 'function') {
         var lb = getLiquidityBreakdown();
