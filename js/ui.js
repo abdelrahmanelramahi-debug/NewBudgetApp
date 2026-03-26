@@ -844,7 +844,7 @@ function renderLedger() {
                         <span class="text-[12px] font-black uppercase tracking-[0.18em] truncate">Savings</span>
                     </div>
                     <div class="flex items-center gap-2 flex-shrink-0">
-                        <span class="text-base font-black">${formatMoney(savBal)}</span>
+                        <span class="text-base font-black" data-major-fund="savings">${formatMoney(savBal)}</span>
                         <button onclick="openSavingsBuckets()" class="py-1.5 px-2.5 rounded-lg bg-white/20 hover:bg-white/30 text-[10px] font-black uppercase">Manage</button>
                     </div>
                 </div>
@@ -856,7 +856,7 @@ function renderLedger() {
                         <span class="text-[11px] font-bold uppercase tracking-wider truncate">Transportation</span>
                     </div>
                     <div class="flex items-center gap-2 flex-shrink-0">
-                        <span class="text-base font-black">${formatMoney(carBal)}</span>
+                        <span class="text-base font-black" data-major-fund="transportation">${formatMoney(carBal)}</span>
                         <button onclick="openTransportationBuckets()" class="py-1.5 px-2.5 rounded-lg bg-white text-slate-800 hover:bg-slate-100 text-[10px] font-black uppercase">Manage</button>
                     </div>
                 </div>
@@ -868,7 +868,7 @@ function renderLedger() {
                         <span class="text-[11px] font-bold uppercase tracking-wider truncate">Payables</span>
                     </div>
                     <div class="flex items-center gap-2 flex-shrink-0">
-                        <span class="text-base font-black">${formatMoney(payBal)}</span>
+                        <span class="text-base font-black" data-major-fund="payables">${formatMoney(payBal)}</span>
                         <button onclick="openPayablesBuckets()" class="py-1.5 px-2.5 rounded-lg bg-white text-amber-900 hover:bg-amber-50 text-[10px] font-black uppercase">Manage</button>
                     </div>
                 </div>
@@ -881,7 +881,7 @@ function renderLedger() {
                     </div>
                     <div class="flex-shrink-0">
                         <span class="text-[12px] font-black uppercase tracking-[0.18em] text-slate-900">Savings</span>
-                        <div class="text-2xl font-black mt-0.5 major-fund-amount">${formatMoney(savBal)} <span class="text-xs text-indigo-300">${getCurrencyLabel()}</span></div>
+                        <div class="text-2xl font-black mt-0.5 major-fund-amount"><span data-major-fund="savings">${formatMoney(savBal)}</span> <span class="text-xs text-indigo-300">${getCurrencyLabel()}</span></div>
                     </div>
                     <button onclick="openSavingsBuckets()" class="w-full py-2 mt-2 bg-white text-slate-900 hover:bg-indigo-50 rounded-lg text-[10px] font-black uppercase transition text-center">Manage</button>
                 </div>
@@ -891,7 +891,7 @@ function renderLedger() {
                     </div>
                     <div class="flex-shrink-0">
                         <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Transportation</span>
-                        <div class="text-2xl font-black mt-0.5 major-fund-amount">${formatMoney(carBal)} <span class="text-xs text-slate-500">${getCurrencyLabel()}</span></div>
+                        <div class="text-2xl font-black mt-0.5 major-fund-amount"><span data-major-fund="transportation">${formatMoney(carBal)}</span> <span class="text-xs text-slate-500">${getCurrencyLabel()}</span></div>
                     </div>
                     <button onclick="openTransportationBuckets()" class="w-full py-2 mt-2 bg-white text-slate-800 hover:bg-slate-100 rounded-lg text-[10px] font-black uppercase transition text-center">Manage</button>
                 </div>
@@ -901,7 +901,7 @@ function renderLedger() {
                     </div>
                     <div class="flex-shrink-0">
                         <span class="text-[10px] font-bold uppercase tracking-widest text-amber-100">Payables</span>
-                        <div class="text-2xl font-black mt-0.5 major-fund-amount">${formatMoney(payBal)} <span class="text-xs text-amber-100">${getCurrencyLabel()}</span></div>
+                        <div class="text-2xl font-black mt-0.5 major-fund-amount"><span data-major-fund="payables">${formatMoney(payBal)}</span> <span class="text-xs text-amber-100">${getCurrencyLabel()}</span></div>
                     </div>
                     <button onclick="openPayablesBuckets()" class="w-full py-2 mt-2 bg-white text-amber-900 hover:bg-amber-50 rounded-lg text-[10px] font-black uppercase transition text-center">Manage</button>
                 </div>
@@ -1880,6 +1880,23 @@ function updateGlobalUI() {
     if (wBtn) wBtn.classList.toggle('hidden', !pendingWeeklyNotice);
     var pendingFoodNotice = !!(state.food && state.food.pendingUnusedTransferNotice && state.food.pendingUnusedTransferNotice.amount > 0);
     if (fBtn) fBtn.classList.toggle('hidden', !pendingFoodNotice);
+    updateMajorFundTotalsUI();
+}
+
+function updateMajorFundTotalsUI() {
+    var root = document.getElementById('ledger-categories');
+    if (!root) return;
+    var map = {
+        savings: 'Savings',
+        transportation: 'Transportation',
+        payables: 'Payables'
+    };
+    Object.keys(map).forEach(function (key) {
+        var amount = getItemBalance(map[key], 0);
+        root.querySelectorAll('[data-major-fund="' + key + '"]').forEach(function (el) {
+            el.textContent = formatMoney(amount);
+        });
+    });
 }
 
 function renderCategoryHistory() {
