@@ -1224,6 +1224,191 @@ window.closeFoodDayTransferPopover = closeFoodDayTransferPopover;
     });
 })();
 
+var _dailyFoodBulkSelectedDays = [];
+
+function openDailyFoodActionsMenu() {
+    toggleModal('daily-food-actions-modal', true);
+}
+window.openDailyFoodActionsMenu = openDailyFoodActionsMenu;
+
+function closeDailyFoodActionsMenu() {
+    toggleModal('daily-food-actions-modal', false);
+}
+window.closeDailyFoodActionsMenu = closeDailyFoodActionsMenu;
+
+function openDailyFoodBulkRefillModal() {
+    if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
+    closeDailyFoodActionsMenu();
+    _dailyFoodBulkSelectedDays = [];
+    renderDailyFoodBulkSourceOptions();
+    renderDailyFoodBulkDaysGrid();
+    toggleModal('daily-food-bulk-refill-modal', true);
+}
+window.openDailyFoodBulkRefillModal = openDailyFoodBulkRefillModal;
+
+function closeDailyFoodBulkRefillModal() {
+    toggleModal('daily-food-bulk-refill-modal', false);
+}
+window.closeDailyFoodBulkRefillModal = closeDailyFoodBulkRefillModal;
+
+function getDailyFoodBulkSourceOptions() {
+    ensureAccountsState();
+    var out = [];
+    Object.keys(state.accounts.savingsBuckets || {}).forEach(function (key) {
+        out.push({ value: 'savings::' + encodeURIComponent(key), label: 'Savings - ' + key, amount: Number(state.accounts.savingsBuckets[key]) || 0 });
+    });
+    Object.keys(state.accounts.transportationBuckets || {}).forEach(function (key) {
+        out.push({ value: 'transportation::' + encodeURIComponent(key), label: 'Transportation - ' + key, amount: Number(state.accounts.transportationBuckets[key]) || 0 });
+    });
+    Object.keys(state.accounts.payablesBuckets || {}).forEach(function (key) {
+        out.push({ value: 'payables::' + encodeURIComponent(key), label: 'Payables - ' + key, amount: Number(state.accounts.payablesBuckets[key]) || 0 });
+    });
+    return out;
+}
+
+function renderDailyFoodBulkSourceOptions() {
+    var sel = document.getElementById('daily-food-bulk-source');
+    if (!sel) return;
+    var options = getDailyFoodBulkSourceOptions();
+    sel.innerHTML = options.map(function (o) {
+        return '<option value="' + o.value + '">' + o.label + ' (' + formatMoney(o.amount) + ' ' + getCurrencyLabel() + ')</option>';
+    }).join('');
+}
+
+function renderDailyFoodBulkDaysGrid() {
+    if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
+    var grid = document.getElementById('daily-food-bulk-days-grid');
+    if (!grid) return;
+    var consumed = (state.food && state.food.consumedDays) ? state.food.consumedDays.slice().sort(function (a, b) { return a - b; }) : [];
+    if (!consumed.length) {
+        grid.innerHTML = '<p class="col-span-7 text-center text-[11px] font-bold text-slate-400 py-4">No consumed days available.</p>';
+        updateDailyFoodBulkSelectedCount();
+        return;
+    }
+    var info = (typeof getPayCycleInfo === 'function') ? getPayCycleInfo() : null;
+    grid.innerHTML = consumed.map(function (day) {
+        var dateLabel = 'Day ' + day;
+        if (info && Array.isArray(info.dates) && info.dates[day - 1]) {
+            var d = info.dates[day - 1];
+            dateLabel = d.monthName + ' ' + d.date;
+        }
+        var active = _dailyFoodBulkSelectedDays.indexOf(day) !== -1;
+        var cls = active ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-700 border-slate-200';
+        return '<button type="button" onclick="toggleDailyFoodBulkDay(' + day + ')" class="h-11 rounded-lg border text-[10px] font-black transition ' + cls + '" title="' + dateLabel + '">' + day + '</button>';
+    }).join('');
+    updateDailyFoodBulkSelectedCount();
+}
+
+function toggleDailyFoodBulkDay(day) {
+    var n = Math.max(1, Math.min(28, Math.floor(day)));
+    var idx = _dailyFoodBulkSelectedDays.indexOf(n);
+    if (idx === -1) _dailyFoodBulkSelectedDays.push(n);
+    else _dailyFoodBulkSelectedDays.splice(idx, 1);
+    _dailyFoodBulkSelectedDays.sort(function (a, b) { return a - b; });
+    renderDailyFoodBulkDaysGrid();
+}
+window.toggleDailyFoodBulkDay = toggleDailyFoodBulkDay;
+
+function selectAllConsumedDaysForBulkRefill() {
+    if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
+    _dailyFoodBulkSelectedDays = (state.food.consumedDays || []).slice().sort(function (a, b) { return a - b; });
+    renderDailyFoodBulkDaysGrid();
+}
+window.selectAllConsumedDaysForBulkRefill = selectAllConsumedDaysForBulkRefill;
+
+function updateDailyFoodBulkSelectedCount() {
+    var el = document.getElementById('daily-food-bulk-selected-count');
+    if (!el) return;
+    el.textContent = _dailyFoodBulkSelectedDays.length + ' selected';
+}
+
+function getDailyFoodBulkSourceAvailable(sourceValue) {
+    if (!sourceValue) return 0;
+    var parts = sourceValue.split('::');
+    if (parts.length !== 2) return 0;
+    var group = parts[0];
+    var key = decodeURIComponent(parts[1]);
+    if (group === 'savings') return Number((state.accounts && state.accounts.savingsBuckets && state.accounts.savingsBuckets[key]) || 0);
+    if (group === 'transportation') return Number((state.accounts && state.accounts.transportationBuckets && state.accounts.transportationBuckets[key]) || 0);
+    if (group === 'payables') return Number((state.accounts && state.accounts.payablesBuckets && state.accounts.payablesBuckets[key]) || 0);
+    return 0;
+}
+
+function deductDailyFoodBulkSource(sourceValue, amount) {
+    var parts = sourceValue.split('::');
+    if (parts.length !== 2) return false;
+    var group = parts[0];
+    var key = decodeURIComponent(parts[1]);
+    var take = Math.max(0, Number(amount) || 0);
+    if (take <= 0) return false;
+    if (group === 'savings') {
+        adjustSavingsBucket(key, -take);
+        return true;
+    }
+    if (group === 'transportation') {
+        adjustTransportationBucket(key, -take);
+        return true;
+    }
+    if (group === 'payables') {
+        adjustPayablesBucket(key, -take);
+        return true;
+    }
+    return false;
+}
+
+function applyDailyFoodBulkRefill() {
+    if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
+    var selected = _dailyFoodBulkSelectedDays.slice().sort(function (a, b) { return a - b; }).filter(function (d) {
+        return (state.food.consumedDays || []).indexOf(d) !== -1;
+    });
+    if (!selected.length) {
+        if (typeof showAppAlert === 'function') showAppAlert('Select at least one consumed day.');
+        return;
+    }
+    var sourceSel = document.getElementById('daily-food-bulk-source');
+    var sourceValue = sourceSel ? sourceSel.value : '';
+    if (!sourceValue) {
+        if (typeof showAppAlert === 'function') showAppAlert('Choose a source bucket.');
+        return;
+    }
+    var info = (typeof getFoodRemainderInfo === 'function') ? getFoodRemainderInfo() : null;
+    var daysTotal = Math.max(1, Math.floor((state.food && state.food.daysTotal) || 28));
+    var dailyRate = (info && info.dailyRate > 0) ? info.dailyRate : ((Number(info && info.foodBase) || 600) / daysTotal);
+    if (dailyRate <= 0) {
+        if (typeof showAppAlert === 'function') showAppAlert('Daily Food plan amount is zero.');
+        return;
+    }
+    var available = getDailyFoodBulkSourceAvailable(sourceValue);
+    var fundedDays = Math.max(0, Math.min(selected.length, Math.floor(available / dailyRate)));
+    if (fundedDays <= 0) {
+        if (typeof showAppAlert === 'function') showAppAlert('Selected source does not have enough funds.');
+        return;
+    }
+    var daysToApply = selected.slice(0, fundedDays);
+    var appliedAmount = daysToApply.length * dailyRate;
+    pushToUndo();
+    if (!deductDailyFoodBulkSource(sourceValue, appliedAmount)) return;
+    adjustItemBalance('Daily Food', appliedAmount);
+    state.food.consumedDays = (state.food.consumedDays || []).filter(function (d) {
+        return daysToApply.indexOf(d) === -1;
+    }).sort(function (a, b) { return a - b; });
+    state.food.daysUsed = state.food.consumedDays.length;
+    if (typeof logHistory === 'function') logHistory('Daily Food', appliedAmount, 'Bulk refill from source');
+    saveState();
+    renderLedger();
+    updateGlobalUI();
+    _dailyFoodBulkSelectedDays = [];
+    renderDailyFoodBulkSourceOptions();
+    renderDailyFoodBulkDaysGrid();
+    if (fundedDays < selected.length) {
+        var left = selected.length - fundedDays;
+        if (typeof showAppAlert === 'function') showAppAlert('Applied ' + fundedDays + ' day(s). ' + left + ' day(s) could not be funded from this source.');
+    } else if (typeof showAppAlert === 'function') {
+        showAppAlert('Funded ' + fundedDays + ' consumed day(s) from selected source.');
+    }
+}
+window.applyDailyFoodBulkRefill = applyDailyFoodBulkRefill;
+
 function getBufferSourceBalance(sourceId) {
     if (sourceId === 'surplus') return (state.accounts && typeof state.accounts.surplus === 'number') ? state.accounts.surplus : 0;
     if (sourceId === 'savings') return getSavingsTotal();
@@ -1652,6 +1837,18 @@ function showFoodUnusedTransferNotice() {
 }
 window.showFoodUnusedTransferNotice = showFoodUnusedTransferNotice;
 
+function showFoodDistributionExtraNotice() {
+    var notice = state.food && state.food.pendingDistributionExtraNotice;
+    if (!notice || !notice.amount || notice.amount <= 0) return;
+    var days = Math.max(0, Math.floor(notice.days || 0));
+    var msg = formatMoney(notice.amount) + ' ' + getCurrencyLabel() + ' stayed in Extra because ' + days + ' consumed Daily Food day' + (days === 1 ? '' : 's') + ' could not be funded by distribution.';
+    if (typeof showAppAlert === 'function') showAppAlert(msg, 'Daily Food distribution');
+    delete state.food.pendingDistributionExtraNotice;
+    saveState();
+    if (typeof updateGlobalUI === 'function') updateGlobalUI();
+}
+window.showFoodDistributionExtraNotice = showFoodDistributionExtraNotice;
+
 // Legacy combined action (kept for compatibility): weekly rollover + food reset.
 function startNewMonth() {
     startNewMonthWeeklyRollover();
@@ -2041,6 +2238,8 @@ function applyPaycheckDistribute() {
     if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
 
     const foodLabelCanonical = 'Daily Food'; // getFoodRemainderInfo() always reads state.balances['Daily Food']
+    var excludedFoodAmount = 0;
+    var excludedFoodDays = 0;
     const items = getAllocatableItems().map(item => {
         let current;
         const isFood = item.label === foodLabelCanonical;
@@ -2055,9 +2254,26 @@ function applyPaycheckDistribute() {
         } else {
             current = getItemBalance(item.label, 0);
         }
-        const deficit = (item.label === 'Savings' && item.savingsBucket)
-            ? Math.max(0, item.amount)
-            : Math.max(0, item.amount - current);
+        let deficit = 0;
+        if (item.label === 'Savings' && item.savingsBucket) {
+            deficit = Math.max(0, item.amount);
+        } else if (isFood) {
+            var info = (typeof getFoodRemainderInfo === 'function') ? getFoodRemainderInfo() : null;
+            var daysTotal = Math.max(1, Math.floor((state.food && state.food.daysTotal) || 28));
+            var daysUsed = Math.max(0, Math.floor((state.food && state.food.daysUsed) || 0));
+            var daysLeft = Math.max(0, daysTotal - daysUsed);
+            var dailyRate = (info && info.dailyRate > 0) ? info.dailyRate : ((Number(item.amount) || 0) / daysTotal);
+            var maxFundablePlanAmount = dailyRate * daysLeft;
+            var cappedPlannedAmount = Math.min(Number(item.amount) || 0, maxFundablePlanAmount);
+            var excludedAmountForItem = Math.max(0, (Number(item.amount) || 0) - cappedPlannedAmount);
+            if (excludedAmountForItem > 0) {
+                excludedFoodAmount += excludedAmountForItem;
+                excludedFoodDays += Math.max(0, Math.floor(excludedAmountForItem / (dailyRate || 1)));
+            }
+            deficit = Math.max(0, cappedPlannedAmount - current);
+        } else {
+            deficit = Math.max(0, item.amount - current);
+        }
         return { ...item, deficit };
     }).filter(item => item.deficit > 0);
 
@@ -2065,6 +2281,17 @@ function applyPaycheckDistribute() {
 
     pushToUndo();
     applyTransaction({ type: 'adjust_surplus', delta: val });
+    if (!state.food || typeof state.food !== 'object') state.food = {};
+    if (excludedFoodAmount > 0) {
+        state.food.pendingDistributionExtraNotice = {
+            amount: excludedFoodAmount,
+            days: excludedFoodDays,
+            source: 'paycheck',
+            at: Date.now()
+        };
+    } else if (state.food.pendingDistributionExtraNotice) {
+        delete state.food.pendingDistributionExtraNotice;
+    }
 
     if (totalDeficit <= 0) {
         showAppAlert('All planned categories are already funded. The paycheck was added to Extra.');

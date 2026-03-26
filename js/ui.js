@@ -1876,10 +1876,13 @@ function updateGlobalUI() {
     // End-of-cycle actions: weekly + food rollovers are automatic.
     var wBtn = getEl('weekly-rollover-notice-btn');
     var fBtn = getEl('food-unused-transfer-btn');
+    var fdBtn = getEl('food-distribution-extra-btn');
     var pendingWeeklyNotice = !!(state.accounts && state.accounts.weekly && state.accounts.weekly.pendingRolloverNotice && state.accounts.weekly.pendingRolloverNotice.amount > 0);
     if (wBtn) wBtn.classList.toggle('hidden', !pendingWeeklyNotice);
     var pendingFoodNotice = !!(state.food && state.food.pendingUnusedTransferNotice && state.food.pendingUnusedTransferNotice.amount > 0);
     if (fBtn) fBtn.classList.toggle('hidden', !pendingFoodNotice);
+    var pendingDistributionFoodNotice = !!(state.food && state.food.pendingDistributionExtraNotice && state.food.pendingDistributionExtraNotice.amount > 0);
+    if (fdBtn) fdBtn.classList.toggle('hidden', !pendingDistributionFoodNotice);
     updateMajorFundTotalsUI();
 }
 
