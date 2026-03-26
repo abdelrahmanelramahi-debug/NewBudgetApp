@@ -1488,12 +1488,32 @@ function nextWeek() {
 
 function maybeAutoAdvanceWeeklyWeek(payCycleInfo) {
     if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
-    if (typeof getCurrentPayCycleDay !== 'function') return false;
-    var day = getCurrentPayCycleDay();
-    if (typeof day !== 'number' || day < 1 || day > 28) return false;
-    var targetWeek = Math.max(1, Math.min(4, Math.floor((day - 1) / 7) + 1));
-    var cycleKey = getPayCycleStartKey(payCycleInfo || (typeof getPayCycleInfo === 'function' ? getPayCycleInfo() : null));
-    var weekKey = cycleKey ? (cycleKey + ':W' + targetWeek) : ('W' + targetWeek);
+    var info = payCycleInfo || (typeof getPayCycleInfo === 'function' ? getPayCycleInfo() : null);
+    if (!info || !Array.isArray(info.dates) || !info.dates.length) return false;
+    // Match Daily Food week buckets exactly:
+    // Week 1 = cycle slots 1-7 from settings payDate start, then +7 day buckets.
+    var today = new Date();
+    var tDate = today.getDate();
+    var tMonth = today.getMonth();
+    var tYear = today.getFullYear();
+    var todaySlot = info.dates.findIndex(function (p) {
+        return p && p.date === tDate && p.month === tMonth && p.year === tYear;
+    });
+    var targetWeek = 0;
+    if (todaySlot >= 0) {
+        targetWeek = Math.max(1, Math.min(4, Math.floor(todaySlot / 7) + 1));
+    } else {
+        // Overflow days (after day 28 and before next cycle start) stay on Week 4.
+        var overflow = Array.isArray(info.overflowDates) ? info.overflowDates : [];
+        var isOverflowDay = overflow.some(function (p) {
+            return p && p.date === tDate && p.month === tMonth && p.year === tYear;
+        });
+        if (!isOverflowDay) return false;
+        targetWeek = 4;
+    }
+    var cycleKey = getPayCycleStartKey(info);
+    var weekPhase = todaySlot >= 0 ? 'core' : 'overflow';
+    var weekKey = cycleKey ? (cycleKey + ':W' + targetWeek + ':' + weekPhase) : ('W' + targetWeek + ':' + weekPhase);
 
     if (!state.accounts || !state.accounts.weekly) return false;
     if (!state.accounts.weekly.lastAutoWeekKey) {
@@ -1502,7 +1522,9 @@ function maybeAutoAdvanceWeeklyWeek(payCycleInfo) {
         state.accounts.weekly.lastAutoWeekKey = weekKey;
         return false;
     }
-    if (state.accounts.weekly.lastAutoWeekKey === weekKey && state.accounts.weekly.week === targetWeek) return false;
+    // Only auto-advance when the derived calendar week key changes.
+    // This keeps manual arrow navigation usable within the current week.
+    if (state.accounts.weekly.lastAutoWeekKey === weekKey) return false;
 
     var currentWeek = Math.max(1, Math.min(4, Math.round(state.accounts.weekly.week || 1)));
     var moved = 0;
