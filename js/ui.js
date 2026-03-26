@@ -165,20 +165,20 @@ function applySettings() {
     body.classList.toggle('theme-sepia', theme === 'sepia');
     body.classList.toggle('compact', !!state.settings?.compact);
     updateCurrencyLabels();
-    var hideEmpty = document.getElementById('ledger-hide-empty');
+    var hideEmpty = getEl('ledger-hide-empty');
     if (hideEmpty) hideEmpty.checked = !!state.settings?.hideEmptyCategories;
-    var sortSelect = document.getElementById('ledger-sort');
+    var sortSelect = getEl('ledger-sort');
     if (sortSelect) sortSelect.value = state.settings?.categorySort || 'default';
 
     // Sync sidebar toggle thumb position (simple visual cue)
-    var thumb = document.getElementById('sidebar-theme-thumb');
-    var thumbMobile = document.getElementById('mobile-sidebar-theme-thumb');
+    var thumb = getEl('sidebar-theme-thumb');
+    var thumbMobile = getEl('mobile-sidebar-theme-thumb');
     var isDark = theme === 'dark';
     // Update sidebar theme chips (desktop + mobile)
-    var chipLight = document.getElementById('theme-chip-light');
-    var chipDark = document.getElementById('theme-chip-dark');
-    var chipSepia = document.getElementById('theme-chip-sepia');
-    var mobileChips = [document.getElementById('mobile-theme-chip-light'), document.getElementById('mobile-theme-chip-dark'), document.getElementById('mobile-theme-chip-sepia')];
+    var chipLight = getEl('theme-chip-light');
+    var chipDark = getEl('theme-chip-dark');
+    var chipSepia = getEl('theme-chip-sepia');
+    var mobileChips = [getEl('mobile-theme-chip-light'), getEl('mobile-theme-chip-dark'), getEl('mobile-theme-chip-sepia')];
     [chipLight, chipDark, chipSepia].forEach(function (chip) {
         if (!chip) return;
         chip.classList.remove('bg-slate-200', 'bg-indigo-600', 'bg-amber-500', 'text-white', 'text-slate-600');
@@ -194,7 +194,7 @@ function applySettings() {
         activeChip.classList.remove('bg-slate-100', 'text-slate-600');
         activeChip.classList.add(theme === 'sepia' ? 'bg-amber-500' : 'bg-indigo-600', 'text-white');
     }
-    var activeMobile = theme === 'dark' ? document.getElementById('mobile-theme-chip-dark') : theme === 'sepia' ? document.getElementById('mobile-theme-chip-sepia') : document.getElementById('mobile-theme-chip-light');
+    var activeMobile = theme === 'dark' ? getEl('mobile-theme-chip-dark') : theme === 'sepia' ? getEl('mobile-theme-chip-sepia') : getEl('mobile-theme-chip-light');
     if (activeMobile) {
         activeMobile.classList.remove('bg-slate-100', 'text-slate-800');
         activeMobile.classList.add(theme === 'sepia' ? 'bg-amber-500' : 'bg-indigo-600', 'text-white');
@@ -226,19 +226,19 @@ function setThemeFromSidebar(theme) {
 if (typeof window !== 'undefined') window.setThemeFromSidebar = setThemeFromSidebar;
 
 function renderSettings() {
-    const currencyInput = document.getElementById('settings-currency');
+    const currencyInput = getEl('settings-currency');
     if (currencyInput) currencyInput.value = getCurrencyLabel();
-    const decimalsSelect = document.getElementById('settings-decimals');
+    const decimalsSelect = getEl('settings-decimals');
     if(decimalsSelect) decimalsSelect.value = String(state.settings?.decimals ?? 2);
-    const themeSelect = document.getElementById('settings-theme');
+    const themeSelect = getEl('settings-theme');
     if(themeSelect) themeSelect.value = state.settings?.theme || 'sepia';
-    const compactToggle = document.getElementById('settings-compact');
+    const compactToggle = getEl('settings-compact');
     if(compactToggle) compactToggle.checked = !!state.settings?.compact;
-    const firstDaySelect = document.getElementById('settings-first-day-of-week');
+    const firstDaySelect = getEl('settings-first-day-of-week');
     if(firstDaySelect) firstDaySelect.value = String(state.settings?.firstDayOfWeek ?? 3);
-    const payDateSelect = document.getElementById('settings-pay-date');
+    const payDateSelect = getEl('settings-pay-date');
     if(payDateSelect) payDateSelect.value = String(state.settings?.payDate ?? 28);
-    const budgetShowFoodPlan = document.getElementById('budget-show-food-plan');
+    const budgetShowFoodPlan = getEl('budget-show-food-plan');
     if (budgetShowFoodPlan) budgetShowFoodPlan.checked = state.settings?.showFoodPlan !== false;
 
 }
@@ -399,11 +399,11 @@ window.updateBudgetPlanAllocated = updateBudgetPlanAllocated;
 window.updateAllocatedTotalUI = updateAllocatedTotalUI;
 
 function toggleSideMenu() {
-    const el = document.getElementById('side-menu');
+    const el = getEl('side-menu');
     if (el) el.classList.toggle('hidden');
 }
 function closeSideMenu() {
-    const el = document.getElementById('side-menu');
+    const el = getEl('side-menu');
     if (el) el.classList.add('hidden');
 }
 window.toggleSideMenu = toggleSideMenu;

@@ -24,6 +24,26 @@ function updateIncome(val) {
     }
 }
 
+// Refactor hotspot notes:
+// - Many actions repeat save -> render/update chains.
+// - Savings/Transportation/Payables share near-identical bucket mutations.
+// Keep wrapper/global API names stable and centralize shared internals only.
+function commitUI(profile) {
+    saveState();
+    if (profile === 'ledger') return renderLedger();
+    if (profile === 'strategy') return renderStrategy();
+    if (profile === 'global') return updateGlobalUI();
+    if (profile === 'ledgerGlobal') {
+        renderLedger();
+        return updateGlobalUI();
+    }
+    if (profile === 'strategyGlobal') {
+        renderStrategy();
+        return updateGlobalUI();
+    }
+    if (profile === 'refresh' && typeof refreshUI === 'function') return refreshUI();
+}
+
 // --- STATE TRANSACTIONS ---
 function ensureGeneralSavingsBudgetConfig() {
     if (!state.accounts) return;
@@ -1634,12 +1654,13 @@ function startNewMonth() {
 }
 window.startNewMonth = startNewMonth;
 
-function openWeeklyNewMonthConfirm() {
-    return;
-}
+function _noopLegacyMonthConfirm() {}
+
+// Legacy global entrypoints retained as no-op shims for backward HTML compatibility.
+function openWeeklyNewMonthConfirm() { _noopLegacyMonthConfirm(); }
 window.openWeeklyNewMonthConfirm = openWeeklyNewMonthConfirm;
 
-function openFoodNewMonthConfirm() {}
+function openFoodNewMonthConfirm() { _noopLegacyMonthConfirm(); }
 window.openFoodNewMonthConfirm = openFoodNewMonthConfirm;
 
 // Old header button entrypoint (now unused)
@@ -2108,6 +2129,113 @@ var SAVINGS_EXTRA = '__extra__';
 var SAVINGS_WEEKLY = '__weekly__';
 function getWeeklyLabel() { return ITEM_LABELS.WEEKLY_MISC; }
 
+function getBucketContext(contextName) {
+    if (contextName === 'savings') {
+        return {
+            bucketsKey: 'savingsBuckets',
+            defaultKey: 'savingsDefaultBucket',
+            defaultName: 'General Savings',
+            extraKey: SAVINGS_EXTRA,
+            weeklyKey: SAVINGS_WEEKLY,
+            syncTotal: syncSavingsTotal
+        };
+    }
+    if (contextName === 'transportation') {
+        return {
+            bucketsKey: 'transportationBuckets',
+            defaultKey: 'transportationDefaultBucket',
+            defaultName: 'Main',
+            extraKey: TRANSPORTATION_EXTRA,
+            weeklyKey: TRANSPORTATION_WEEKLY,
+            syncTotal: syncTransportationTotal
+        };
+    }
+    return {
+        bucketsKey: 'payablesBuckets',
+        defaultKey: 'payablesDefaultBucket',
+        defaultName: 'Main',
+        extraKey: PAYABLES_EXTRA,
+        weeklyKey: PAYABLES_WEEKLY,
+        syncTotal: syncPayablesTotal
+    };
+}
+
+function getBucketStore(ctx) {
+    ensureAccountsState();
+    if (!state.accounts[ctx.bucketsKey]) state.accounts[ctx.bucketsKey] = {};
+    return state.accounts[ctx.bucketsKey];
+}
+
+function adjustBucketValue(ctx, bucketKey, delta) {
+    var store = getBucketStore(ctx);
+    if (store[bucketKey] === undefined) store[bucketKey] = 0;
+    store[bucketKey] += delta;
+    if (store[bucketKey] < 0) store[bucketKey] = 0;
+    ctx.syncTotal();
+}
+
+function getBucketValue(ctx, bucketKey) {
+    var store = getBucketStore(ctx);
+    return store[bucketKey] || 0;
+}
+
+function transferBetweenBuckets(ctx, fromKey, toKey, amount) {
+    if (!fromKey || !toKey || fromKey === toKey) return false;
+    var val = parseFloat(amount);
+    if (!val || val <= 0) return false;
+    ensureAccountsState();
+    var store = getBucketStore(ctx);
+    if (fromKey === ctx.extraKey && toKey !== ctx.extraKey) {
+        if (!canApplySurplusDelta(-val)) return false;
+        pushToUndo();
+        adjustBucketValue(ctx, toKey, val);
+        applyTransaction({ type: 'adjust_surplus', delta: -val });
+        return true;
+    }
+    if (fromKey !== ctx.extraKey && toKey === ctx.extraKey) {
+        var availableToExtra = getBucketValue(ctx, fromKey);
+        var takeToExtra = Math.min(val, availableToExtra);
+        if (takeToExtra <= 0) return false;
+        pushToUndo();
+        adjustBucketValue(ctx, fromKey, -takeToExtra);
+        applyTransaction({ type: 'adjust_surplus', delta: takeToExtra });
+        return true;
+    }
+    var available = getBucketValue(ctx, fromKey);
+    var take = Math.min(val, available);
+    if (take <= 0) return false;
+    pushToUndo();
+    store[fromKey] = available - take;
+    store[toKey] = (store[toKey] || 0) + take;
+    ctx.syncTotal();
+    return true;
+}
+
+function transferWeeklyToBucket(ctx, toBucketKey, amount) {
+    var val = parseFloat(amount);
+    if (!val || val <= 0) return false;
+    var wlabel = getWeeklyLabel();
+    var available = getItemBalance(wlabel, 0);
+    var take = Math.min(val, available);
+    if (take <= 0) return false;
+    pushToUndo();
+    adjustItemBalance(wlabel, -take);
+    adjustBucketValue(ctx, toBucketKey, take);
+    return true;
+}
+
+function transferBucketToWeekly(ctx, fromBucketKey, amount) {
+    var val = parseFloat(amount);
+    if (!val || val <= 0) return false;
+    var available = getBucketValue(ctx, fromBucketKey);
+    var take = Math.min(val, available);
+    if (take <= 0) return false;
+    pushToUndo();
+    adjustBucketValue(ctx, fromBucketKey, -take);
+    adjustItemBalance(getWeeklyLabel(), take);
+    return true;
+}
+
 function openSavingsBuckets() {
     renderSavingsBuckets();
     toggleModal('savings-buckets-modal', true);
@@ -2120,82 +2248,31 @@ function closeSavingsBuckets() {
 window.closeSavingsBuckets = closeSavingsBuckets;
 
 function adjustSavingsBucket(bucketKey, delta) {
-    ensureAccountsState();
-    if (state.accounts.savingsBuckets[bucketKey] === undefined) {
-        state.accounts.savingsBuckets[bucketKey] = 0;
-    }
-    state.accounts.savingsBuckets[bucketKey] += delta;
-    if (state.accounts.savingsBuckets[bucketKey] < 0) {
-        state.accounts.savingsBuckets[bucketKey] = 0;
-    }
-    syncSavingsTotal();
+    adjustBucketValue(getBucketContext('savings'), bucketKey, delta);
 }
 
 function getSavingsBucketAmount(bucketKey) {
-    ensureAccountsState();
-    return state.accounts.savingsBuckets[bucketKey] || 0;
+    return getBucketValue(getBucketContext('savings'), bucketKey);
 }
 
 function doSavingsTransfer(fromKey, toKey, amount) {
-    if (!fromKey || !toKey || fromKey === toKey) return;
-    var val = parseFloat(amount);
-    if (!val || val <= 0) return;
-    ensureAccountsState();
-    if (fromKey === SAVINGS_EXTRA && toKey !== SAVINGS_EXTRA) {
-        if (!canApplySurplusDelta(-val)) return;
-        pushToUndo();
-        adjustSavingsBucket(toKey, val);
-        applyTransaction({ type: 'adjust_surplus', delta: -val });
-    } else if (fromKey !== SAVINGS_EXTRA && toKey === SAVINGS_EXTRA) {
-        var available = getSavingsBucketAmount(fromKey);
-        var take = Math.min(val, available);
-        if (take <= 0) return;
-        pushToUndo();
-        adjustSavingsBucket(fromKey, -take);
-        applyTransaction({ type: 'adjust_surplus', delta: take });
-    } else {
-        var available = getSavingsBucketAmount(fromKey);
-        var take = Math.min(val, available);
-        if (take <= 0) return;
-        pushToUndo();
-        state.accounts.savingsBuckets[fromKey] = available - take;
-        state.accounts.savingsBuckets[toKey] = (state.accounts.savingsBuckets[toKey] || 0) + take;
-        syncSavingsTotal();
-    }
-    saveState();
+    if (!transferBetweenBuckets(getBucketContext('savings'), fromKey, toKey, amount)) return;
+    commitUI('global');
     renderSavingsBuckets();
-    updateGlobalUI();
     if (typeof renderStrategy === 'function') renderStrategy();
 }
 
 function doSavingsAddFromWeekly(toBucketKey, amount) {
-    var val = parseFloat(amount);
-    if (!val || val <= 0) return;
-    var wlabel = getWeeklyLabel();
-    var available = getItemBalance(wlabel, 0);
-    var take = Math.min(val, available);
-    if (take <= 0) return;
-    pushToUndo();
-    adjustItemBalance(wlabel, -take);
-    adjustSavingsBucket(toBucketKey, take);
-    saveState();
+    if (!transferWeeklyToBucket(getBucketContext('savings'), toBucketKey, amount)) return;
+    commitUI('global');
     renderSavingsBuckets();
-    updateGlobalUI();
     if (typeof renderStrategy === 'function') renderStrategy();
 }
 
 function doSavingsSendToWeekly(fromBucketKey, amount) {
-    var val = parseFloat(amount);
-    if (!val || val <= 0) return;
-    var available = getSavingsBucketAmount(fromBucketKey);
-    var take = Math.min(val, available);
-    if (take <= 0) return;
-    pushToUndo();
-    adjustSavingsBucket(fromBucketKey, -take);
-    adjustItemBalance(getWeeklyLabel(), take);
-    saveState();
+    if (!transferBucketToWeekly(getBucketContext('savings'), fromBucketKey, amount)) return;
+    commitUI('global');
     renderSavingsBuckets();
-    updateGlobalUI();
     if (typeof renderStrategy === 'function') renderStrategy();
 }
 
@@ -2511,80 +2588,29 @@ function closeTransportationBuckets() {
 window.closeTransportationBuckets = closeTransportationBuckets;
 
 function adjustTransportationBucket(bucketKey, delta) {
-    ensureAccountsState();
-    if (state.accounts.transportationBuckets[bucketKey] === undefined) {
-        state.accounts.transportationBuckets[bucketKey] = 0;
-    }
-    state.accounts.transportationBuckets[bucketKey] += delta;
-    if (state.accounts.transportationBuckets[bucketKey] < 0) {
-        state.accounts.transportationBuckets[bucketKey] = 0;
-    }
-    syncTransportationTotal();
+    adjustBucketValue(getBucketContext('transportation'), bucketKey, delta);
 }
 
 function getTransportationBucketAmount(bucketKey) {
-    ensureAccountsState();
-    return state.accounts.transportationBuckets[bucketKey] || 0;
+    return getBucketValue(getBucketContext('transportation'), bucketKey);
 }
 
 function doTransportationTransfer(fromKey, toKey, amount) {
-    if (!fromKey || !toKey || fromKey === toKey) return;
-    var val = parseFloat(amount);
-    if (!val || val <= 0) return;
-    ensureAccountsState();
-    if (fromKey === TRANSPORTATION_EXTRA && toKey !== TRANSPORTATION_EXTRA) {
-        if (!canApplySurplusDelta(-val)) return;
-        pushToUndo();
-        adjustTransportationBucket(toKey, val);
-        applyTransaction({ type: 'adjust_surplus', delta: -val });
-    } else if (fromKey !== TRANSPORTATION_EXTRA && toKey === TRANSPORTATION_EXTRA) {
-        var available = getTransportationBucketAmount(fromKey);
-        var take = Math.min(val, available);
-        if (take <= 0) return;
-        pushToUndo();
-        adjustTransportationBucket(fromKey, -take);
-        applyTransaction({ type: 'adjust_surplus', delta: take });
-    } else {
-        var available = getTransportationBucketAmount(fromKey);
-        var take = Math.min(val, available);
-        if (take <= 0) return;
-        pushToUndo();
-        state.accounts.transportationBuckets[fromKey] = available - take;
-        state.accounts.transportationBuckets[toKey] = (state.accounts.transportationBuckets[toKey] || 0) + take;
-        syncTransportationTotal();
-    }
-    saveState();
+    if (!transferBetweenBuckets(getBucketContext('transportation'), fromKey, toKey, amount)) return;
+    commitUI('global');
     renderTransportationBuckets();
-    updateGlobalUI();
 }
 
 function doTransportationAddFromWeekly(toBucketKey, amount) {
-    var val = parseFloat(amount);
-    if (!val || val <= 0) return;
-    var wlabel = getWeeklyLabel();
-    var available = getItemBalance(wlabel, 0);
-    var take = Math.min(val, available);
-    if (take <= 0) return;
-    pushToUndo();
-    adjustItemBalance(wlabel, -take);
-    adjustTransportationBucket(toBucketKey, take);
-    saveState();
+    if (!transferWeeklyToBucket(getBucketContext('transportation'), toBucketKey, amount)) return;
+    commitUI('global');
     renderTransportationBuckets();
-    updateGlobalUI();
 }
 
 function doTransportationSendToWeekly(fromBucketKey, amount) {
-    var val = parseFloat(amount);
-    if (!val || val <= 0) return;
-    var available = getTransportationBucketAmount(fromBucketKey);
-    var take = Math.min(val, available);
-    if (take <= 0) return;
-    pushToUndo();
-    adjustTransportationBucket(fromBucketKey, -take);
-    adjustItemBalance(getWeeklyLabel(), take);
-    saveState();
+    if (!transferBucketToWeekly(getBucketContext('transportation'), fromBucketKey, amount)) return;
+    commitUI('global');
     renderTransportationBuckets();
-    updateGlobalUI();
 }
 
 function renderTransportationBuckets() {
@@ -2923,80 +2949,29 @@ function deleteBucketFromTransferModal() {
 window.deleteBucketFromTransferModal = deleteBucketFromTransferModal;
 
 function adjustPayablesBucket(bucketKey, delta) {
-    ensureAccountsState();
-    if (state.accounts.payablesBuckets[bucketKey] === undefined) {
-        state.accounts.payablesBuckets[bucketKey] = 0;
-    }
-    state.accounts.payablesBuckets[bucketKey] += delta;
-    if (state.accounts.payablesBuckets[bucketKey] < 0) {
-        state.accounts.payablesBuckets[bucketKey] = 0;
-    }
-    syncPayablesTotal();
+    adjustBucketValue(getBucketContext('payables'), bucketKey, delta);
 }
 
 function getPayablesBucketAmount(bucketKey) {
-    ensureAccountsState();
-    return state.accounts.payablesBuckets[bucketKey] || 0;
+    return getBucketValue(getBucketContext('payables'), bucketKey);
 }
 
 function doPayablesTransfer(fromKey, toKey, amount) {
-    if (!fromKey || !toKey || fromKey === toKey) return;
-    var val = parseFloat(amount);
-    if (!val || val <= 0) return;
-    ensureAccountsState();
-    if (fromKey === PAYABLES_EXTRA && toKey !== PAYABLES_EXTRA) {
-        if (!canApplySurplusDelta(-val)) return;
-        pushToUndo();
-        adjustPayablesBucket(toKey, val);
-        applyTransaction({ type: 'adjust_surplus', delta: -val });
-    } else if (fromKey !== PAYABLES_EXTRA && toKey === PAYABLES_EXTRA) {
-        var available = getPayablesBucketAmount(fromKey);
-        var take = Math.min(val, available);
-        if (take <= 0) return;
-        pushToUndo();
-        adjustPayablesBucket(fromKey, -take);
-        applyTransaction({ type: 'adjust_surplus', delta: take });
-    } else {
-        var available = getPayablesBucketAmount(fromKey);
-        var take = Math.min(val, available);
-        if (take <= 0) return;
-        pushToUndo();
-        state.accounts.payablesBuckets[fromKey] = available - take;
-        state.accounts.payablesBuckets[toKey] = (state.accounts.payablesBuckets[toKey] || 0) + take;
-        syncPayablesTotal();
-    }
-    saveState();
+    if (!transferBetweenBuckets(getBucketContext('payables'), fromKey, toKey, amount)) return;
+    commitUI('global');
     renderPayablesBuckets();
-    updateGlobalUI();
 }
 
 function doPayablesAddFromWeekly(toBucketKey, amount) {
-    var val = parseFloat(amount);
-    if (!val || val <= 0) return;
-    var wlabel = getWeeklyLabel();
-    var available = getItemBalance(wlabel, 0);
-    var take = Math.min(val, available);
-    if (take <= 0) return;
-    pushToUndo();
-    adjustItemBalance(wlabel, -take);
-    adjustPayablesBucket(toBucketKey, take);
-    saveState();
+    if (!transferWeeklyToBucket(getBucketContext('payables'), toBucketKey, amount)) return;
+    commitUI('global');
     renderPayablesBuckets();
-    updateGlobalUI();
 }
 
 function doPayablesSendToWeekly(fromBucketKey, amount) {
-    var val = parseFloat(amount);
-    if (!val || val <= 0) return;
-    var available = getPayablesBucketAmount(fromBucketKey);
-    var take = Math.min(val, available);
-    if (take <= 0) return;
-    pushToUndo();
-    adjustPayablesBucket(fromBucketKey, -take);
-    adjustItemBalance(getWeeklyLabel(), take);
-    saveState();
+    if (!transferBucketToWeekly(getBucketContext('payables'), fromBucketKey, amount)) return;
+    commitUI('global');
     renderPayablesBuckets();
-    updateGlobalUI();
 }
 
 function renderPayablesBuckets() {

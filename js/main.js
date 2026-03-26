@@ -1,5 +1,8 @@
 // INIT
 window.onload = function() {
+    var byId = (typeof getEl === 'function')
+        ? getEl
+        : function(id) { return document.getElementById(id); };
     loadState();
     if (typeof applySettings === 'function') applySettings();
     // Decide onboarding: use device-local flag so we don't skip onboarding when state was restored from elsewhere
@@ -62,15 +65,7 @@ window.onload = function() {
         initSurplusFromOpening();
     }
 
-    function runAppInit() {
-        if (typeof initHistoryRouting === 'function') initHistoryRouting();
-        var page = (typeof getPageFromHash === 'function') ? getPageFromHash() : 'ledger';
-        if (page !== 'ledger' && typeof switchPage === 'function') switchPage(page, { skipHistory: true });
-        if (typeof history !== 'undefined' && history.replaceState) {
-            var hash = (page === 'ledger') ? '' : '#' + page;
-            var url = (window.location.pathname || '/') + (window.location.search || '') + hash;
-            history.replaceState({ page: page }, '', url);
-        }
+    function renderInitialShell() {
         renderLedger();
         renderStrategy();
         updateUndoButtonUI();
@@ -83,34 +78,45 @@ window.onload = function() {
         });
         setTimeout(function() { requestAnimationFrame(updateGlobalUI); }, 0);
         setTimeout(function() { requestAnimationFrame(updateGlobalUI); }, 450);
-        const amortTotal = document.getElementById('amort-total');
-        const amortMonths = document.getElementById('amort-months');
+    }
+
+    function wireAmortizationInputs() {
+        var amortTotal = byId('amort-total');
+        var amortMonths = byId('amort-months');
         if (amortTotal) amortTotal.oninput = updateAmortCalc;
         if (amortMonths) amortMonths.oninput = updateAmortCalc;
-        // First-action prompt: only shown once after new-user onboarding (existing users never have _showFirstActionPrompt)
-        if (state._showFirstActionPrompt) {
-            var banner = document.getElementById('first-action-prompt');
-            var dismissBtn = document.getElementById('first-action-dismiss');
-            if (banner) banner.classList.remove('hidden');
-            if (dismissBtn) {
-                dismissBtn.onclick = function() {
-                    state._showFirstActionPrompt = false;
-                    state.sawFirstActionPrompt = true;
-                    if (banner) banner.classList.add('hidden');
-                    if (typeof saveState === 'function') saveState();
-                };
-            }
+    }
+
+    function wireFirstActionPrompt() {
+        if (!state._showFirstActionPrompt) return;
+        var banner = byId('first-action-prompt');
+        var dismissBtn = byId('first-action-dismiss');
+        if (banner) banner.classList.remove('hidden');
+        if (dismissBtn) {
+            dismissBtn.onclick = function() {
+                state._showFirstActionPrompt = false;
+                state.sawFirstActionPrompt = true;
+                if (banner) banner.classList.add('hidden');
+                if (typeof saveState === 'function') saveState();
+            };
         }
-        // Home page introductory tour: show once for new users (after onboarding)
-        setTimeout(function() {
-            if (state && !state._sawHomePageTour && typeof startHomeTour === 'function') startHomeTour();
-        }, 600);
-        // Reformat header surplus on resize (compact vs full)
+    }
+
+    function wireResizeRefresh() {
         var resizeTid;
         window.addEventListener('resize', function() {
             clearTimeout(resizeTid);
             resizeTid = setTimeout(function() { if (typeof updateGlobalUI === 'function') updateGlobalUI(); }, 100);
         });
+    }
+
+    function scheduleHomeTour() {
+        setTimeout(function() {
+            if (state && !state._sawHomePageTour && typeof startHomeTour === 'function') startHomeTour();
+        }, 600);
+    }
+
+    function wireIdleRefreshAndBackup() {
         // Auto-backup + "refresh recommended" after 5 min idle.
         // Goal: when you return after laptop sleep / tab idling, refresh so we pull latest cloud state
         // and avoid accidental stale-session edits overwriting other device inputs.
@@ -121,6 +127,7 @@ window.onload = function() {
         var refreshPromptRecentlyShown = false;
         var IDLE_MS = 5 * 60 * 1000;
         var REFRESH_PROMPT_KEY = 'bubudget_refresh_prompt_shown_at_v1';
+
         function resetIdleBackupTimer() {
             clearTimeout(idleBackupTimer);
             idleBackupTimer = setTimeout(function() {
@@ -128,7 +135,7 @@ window.onload = function() {
             }, IDLE_MS);
         }
 
-        function maybeShowRefreshPrompt(source) {
+        function maybeShowRefreshPrompt() {
             if (refreshPromptRecentlyShown) return;
             if (typeof showAppConfirm !== 'function') return;
             if (typeof document === 'undefined') return;
@@ -140,15 +147,12 @@ window.onload = function() {
                 lastShown = parseInt((sessionStorage && sessionStorage.getItem(REFRESH_PROMPT_KEY)) || '0', 10) || 0;
             } catch (e) {}
 
-            // Avoid showing the prompt repeatedly right after it was shown.
             if (lastShown && (now - lastShown) < IDLE_MS) return;
-
             refreshPromptRecentlyShown = true;
             try { sessionStorage && sessionStorage.setItem(REFRESH_PROMPT_KEY, String(now)); } catch (e2) {}
 
-            var msg = 'You have been away for a while. Refresh to load the latest budget and clear any saved draft changes.';
             showAppConfirm(
-                msg,
+                'You have been away for a while. Refresh to load the latest budget and clear any saved draft changes.',
                 function onConfirm() {
                     try { window.location.reload(); } catch (e) {}
                 },
@@ -165,7 +169,7 @@ window.onload = function() {
         function resetIdleRefreshTimer() {
             clearTimeout(idleRefreshTimer);
             idleRefreshTimer = setTimeout(function() {
-                maybeShowRefreshPrompt('idle');
+                maybeShowRefreshPrompt();
             }, IDLE_MS);
         }
 
@@ -177,6 +181,7 @@ window.onload = function() {
                 resetIdleRefreshTimer();
             }, 1000);
         }
+
         ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'].forEach(function(ev) {
             document.addEventListener(ev, onIdleActivity);
         });
@@ -184,17 +189,32 @@ window.onload = function() {
             if (document.visibilityState !== 'visible') return;
             if (refreshPromptRecentlyShown) return;
             var idleMs = Date.now() - lastInteractionAt;
-            if (idleMs >= IDLE_MS) {
-                maybeShowRefreshPrompt('return');
-            }
+            if (idleMs >= IDLE_MS) maybeShowRefreshPrompt();
         });
         resetIdleBackupTimer();
         resetIdleRefreshTimer();
     }
 
+    function runAppInit() {
+        if (typeof initHistoryRouting === 'function') initHistoryRouting();
+        var page = (typeof getPageFromHash === 'function') ? getPageFromHash() : 'ledger';
+        if (page !== 'ledger' && typeof switchPage === 'function') switchPage(page, { skipHistory: true });
+        if (typeof history !== 'undefined' && history.replaceState) {
+            var hash = (page === 'ledger') ? '' : '#' + page;
+            var url = (window.location.pathname || '/') + (window.location.search || '') + hash;
+            history.replaceState({ page: page }, '', url);
+        }
+        renderInitialShell();
+        wireAmortizationInputs();
+        wireFirstActionPrompt();
+        scheduleHomeTour();
+        wireResizeRefresh();
+        wireIdleRefreshAndBackup();
+    }
+
     // Onboarding complete: ensure app is visible
-    var ob = document.getElementById('onboarding');
-    var app = document.getElementById('app-shell');
+    var ob = byId('onboarding');
+    var app = byId('app-shell');
     if (ob) ob.classList.add('hidden');
     if (app) app.classList.remove('hidden');
     // Defer first paint until auth (and cloud load if logged in) so we don't flash stale surplus (e.g. -1175) from localStorage
