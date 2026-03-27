@@ -633,7 +633,11 @@
                     if (typeof ensureSystemSavings === 'function') ensureSystemSavings();
                     if (typeof ensureCoreItems === 'function') ensureCoreItems();
                     if (typeof ensureSettings === 'function') ensureSettings();
-                    if (state.accounts && state.accounts.surplus === 0 && hasMeaningfulData(state) && typeof recalculateSurplusFromReality === 'function') {
+                    if ((state.schemaVersion || 1) < 2 &&
+                        state.accounts &&
+                        state.accounts.surplus === 0 &&
+                        hasMeaningfulData(state) &&
+                        typeof recalculateSurplusFromReality === 'function') {
                         recalculateSurplusFromReality();
                     }
                     global.localStorage.setItem(stateKey, JSON.stringify(state));

@@ -119,6 +119,21 @@ function getCurrentBalance() {
 /** Derive surplus from "reality" (sum of ledger balances) so total liquid matches. Call when surplus is 0 but we have balances/buckets. */
 function recalculateSurplusFromReality() {
     if (!state.accounts) return;
+    // In schema v2+, liquid funds are spread across multiple stores
+    // (balances + savings/payables/transportation buckets + weekly + food).
+    // Rebuilding surplus from only state.balances causes a fixed negative offset
+    // on every recovery/load for users with funds in those stores.
+    if ((state.schemaVersion || 1) >= 2) {
+        var current = Number(state.accounts.surplus || 0);
+        if (Number.isFinite(current)) {
+            state.accounts.surplus = current;
+        } else {
+            state.accounts.surplus = 0;
+        }
+        return;
+    }
+
+    // Legacy fallback for older schema data.
     var balances = state.balances || {};
     var reality = Object.values(balances).reduce(function (sum, v) { return sum + (Number(v) || 0); }, 0);
     var lb = getLiquidityBreakdown();
