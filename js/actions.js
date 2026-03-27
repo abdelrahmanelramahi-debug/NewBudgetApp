@@ -2517,6 +2517,14 @@ function applyPaycheckDistribute() {
             // Use canonical bucket total for comparison so paycheck math matches UI totals.
             return getItemBalance('Weekly Allowance', 0);
         }
+        if (label === 'Daily Food') {
+            // Compare against cycle-available food remainder, not raw stored balance.
+            // Raw food balance can contain stale carryover that is not actually usable this cycle.
+            var info = (typeof getFoodRemainderInfo === 'function') ? getFoodRemainderInfo() : null;
+            if (info && typeof info.remainder === 'number' && !Number.isNaN(info.remainder)) {
+                return Math.max(0, info.remainder);
+            }
+        }
         return getItemBalance(label, 0);
     }
     function getDeficitForLabel(label, plannedAmount, recordExcluded) {
