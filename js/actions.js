@@ -52,10 +52,13 @@ function ensureGeneralSavingsBudgetConfig() {
     // Keep migration idempotent: do not sum legacy Main + canonical values repeatedly.
     var hasGeneral = buckets[fixedName] !== undefined;
     var hasMain = buckets.Main !== undefined;
+    var hasLegacySavingsAlias = buckets.Savings !== undefined;
     var moved = 0;
     if (hasGeneral) moved = Number(buckets[fixedName]) || 0;
     else if (hasMain) moved = Number(buckets.Main) || 0;
+    else if (hasLegacySavingsAlias) moved = Number(buckets.Savings) || 0;
     if (hasMain) delete buckets.Main;
+    if (hasLegacySavingsAlias) delete buckets.Savings;
     buckets[fixedName] = moved;
     var ordered = {};
     ordered[fixedName] = Number(buckets[fixedName]) || 0;
@@ -69,7 +72,11 @@ function ensureGeneralSavingsBudgetConfig() {
         state.accounts.savingsBudgetPlan = {};
     }
     var plans = {};
-    plans[fixedName] = Number(state.accounts.savingsBudgetPlan[fixedName]) || Number(state.accounts.savingsBudgetPlan.Main) || 0;
+    plans[fixedName] =
+        Number(state.accounts.savingsBudgetPlan[fixedName]) ||
+        Number(state.accounts.savingsBudgetPlan.Main) ||
+        Number(state.accounts.savingsBudgetPlan.Savings) ||
+        0;
     Object.keys(ordered).forEach(function (k) {
         if (k === fixedName) return;
         plans[k] = Number(state.accounts.savingsBudgetPlan[k]) || 0;
@@ -2608,10 +2615,18 @@ function applyPaycheckDistribute() {
     var unfunded = Math.max(0, totalRequested - distributedTotal);
     var extraAfter = Number(state.accounts.surplus) || 0;
     var paycheckUnallocated = Math.max(0, val - distributedTotal);
+    var epsilon = 0.005;
     var resultMessage = 'Distributed ' + formatMoney(distributedTotal) + ' ' + getCurrencyLabel() +
         ' from a paycheck of ' + formatMoney(val) + ' ' + getCurrencyLabel() + '.';
-    resultMessage += '\nRemaining for selected cycle targets: ' + formatMoney(unfunded) + ' ' + getCurrencyLabel() + '.';
-    resultMessage += '\nPaycheck not allocated: ' + formatMoney(paycheckUnallocated) + ' ' + getCurrencyLabel() + '.';
+    if (val + epsilon < totalRequested) {
+        resultMessage += '\nPaycheck is below this cycle plan by ' + formatMoney(unfunded) + ' ' + getCurrencyLabel() + '.';
+        resultMessage += '\nDistributed according to Funding Priority order.';
+    } else if (Math.abs(val - totalRequested) <= epsilon) {
+        resultMessage += '\nSuccess: all planned targets for this cycle were fully funded.';
+    } else {
+        resultMessage += '\nSuccess: all planned targets for this cycle were fully funded.';
+        resultMessage += '\nExtra above plan kept in Extra: ' + formatMoney(paycheckUnallocated) + ' ' + getCurrencyLabel() + '.';
+    }
     resultMessage += '\nExtra left: ' + formatMoney(extraAfter) + ' ' + getCurrencyLabel() + '.';
     showAppAlert(resultMessage);
 

@@ -139,13 +139,17 @@ function ensureGeneralSavingsBucketState() {
     // trust the canonical value to avoid re-adding legacy amount on each sync pull.
     var hasGeneral = buckets[GENERAL_SAVINGS_BUCKET_NAME] !== undefined;
     var hasMain = buckets['Main'] !== undefined;
+    var hasLegacySavingsAlias = buckets['Savings'] !== undefined;
     var migratedAmount = 0;
     if (hasGeneral) {
         migratedAmount = Number(buckets[GENERAL_SAVINGS_BUCKET_NAME]) || 0;
     } else if (hasMain) {
         migratedAmount = Number(buckets['Main']) || 0;
+    } else if (hasLegacySavingsAlias) {
+        migratedAmount = Number(buckets['Savings']) || 0;
     }
     if (hasMain) delete buckets['Main'];
+    if (hasLegacySavingsAlias) delete buckets['Savings'];
     buckets[GENERAL_SAVINGS_BUCKET_NAME] = migratedAmount;
     var ordered = {};
     ordered[GENERAL_SAVINGS_BUCKET_NAME] = Number(buckets[GENERAL_SAVINGS_BUCKET_NAME]) || 0;
@@ -159,7 +163,11 @@ function ensureGeneralSavingsBucketState() {
         state.accounts.savingsBudgetPlan = {};
     }
     var planMap = {};
-    planMap[GENERAL_SAVINGS_BUCKET_NAME] = Number(state.accounts.savingsBudgetPlan[GENERAL_SAVINGS_BUCKET_NAME]) || Number(state.accounts.savingsBudgetPlan['Main']) || 0;
+    planMap[GENERAL_SAVINGS_BUCKET_NAME] =
+        Number(state.accounts.savingsBudgetPlan[GENERAL_SAVINGS_BUCKET_NAME]) ||
+        Number(state.accounts.savingsBudgetPlan['Main']) ||
+        Number(state.accounts.savingsBudgetPlan['Savings']) ||
+        0;
     Object.keys(ordered).forEach(function (key) {
         if (key === GENERAL_SAVINGS_BUCKET_NAME) return;
         planMap[key] = Number(state.accounts.savingsBudgetPlan[key]) || 0;
@@ -176,6 +184,8 @@ function buildPaycheckPriorityCatalog() {
     var savingsBuckets = (state.accounts && state.accounts.savingsBuckets) ? state.accounts.savingsBuckets : {};
     Object.keys(savingsBuckets).forEach(function (bucketName) {
         if (!bucketName) return;
+        // Legacy alias that should be normalized into "General Savings"
+        if (bucketName === 'Savings') return;
         var entryId = 'savingsBucket:' + bucketName;
         if (seen[entryId]) return;
         seen[entryId] = true;
