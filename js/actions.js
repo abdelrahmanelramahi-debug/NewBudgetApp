@@ -2317,6 +2317,21 @@ function syncGeneralSavingsAmount(sid, idx, val) {
     const num = parseFloat(val) || 0;
     const snapped = Math.round(num / SAVINGS_SLIDER_STEP) * SAVINGS_SLIDER_STEP;
     fastUpdateItemAmount(sid, idx, snapped);
+    // Keep paycheck distribution source-of-truth (savingsBudgetPlan) aligned with
+    // the Savings plan slider. Otherwise distribute can use stale bucket plan totals.
+    ensureGeneralSavingsBudgetConfig();
+    var defaultBucket = state.accounts.savingsDefaultBucket || 'General Savings';
+    if (state.accounts.savingsBudgetPlan[defaultBucket] === undefined) {
+        state.accounts.savingsBudgetPlan[defaultBucket] = 0;
+    }
+    var currentDefault = Number(state.accounts.savingsBudgetPlan[defaultBucket]) || 0;
+    var totalPlan = 0;
+    Object.keys(state.accounts.savingsBudgetPlan || {}).forEach(function (k) {
+        totalPlan += Number(state.accounts.savingsBudgetPlan[k]) || 0;
+    });
+    var othersTotal = Math.max(0, totalPlan - currentDefault);
+    state.accounts.savingsBudgetPlan[defaultBucket] = Math.max(0, snapped - othersTotal);
+    syncSavingsBudgetPlanItemAmount();
     try {
         var input = document.querySelector('.budget-item-input[data-sid="' + sid + '"][data-idx="' + idx + '"]');
         if (input && input.value !== String(snapped)) input.value = String(snapped);
@@ -2425,6 +2440,30 @@ function applyPaycheckDistribute() {
     if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
     ensureAccountsState();
     if (typeof normalizePaycheckPriorityOrder === 'function') normalizePaycheckPriorityOrder();
+    // One-time self-heal for older states where Savings slider changed item.amount
+    // but did not update savingsBudgetPlan used by paycheck distribution.
+    (function reconcileSavingsPlanBeforeDistribution() {
+        ensureGeneralSavingsBudgetConfig();
+        var sec = (state.categories || []).find(function (s) { return s && s.id === 'sys_savings'; });
+        var savingsItem = sec && Array.isArray(sec.items)
+            ? sec.items.find(function (i) { return i && i.label === 'Savings'; })
+            : null;
+        if (!savingsItem) return;
+        var savingsPlanTotal = 0;
+        Object.keys(state.accounts.savingsBudgetPlan || {}).forEach(function (k) {
+            savingsPlanTotal += Number(state.accounts.savingsBudgetPlan[k]) || 0;
+        });
+        var savingsItemAmount = Number(savingsItem.amount) || 0;
+        if (Math.abs(savingsItemAmount - savingsPlanTotal) < 0.01) return;
+        var defaultBucket = state.accounts.savingsDefaultBucket || 'General Savings';
+        if (state.accounts.savingsBudgetPlan[defaultBucket] === undefined) {
+            state.accounts.savingsBudgetPlan[defaultBucket] = 0;
+        }
+        var currentDefault = Number(state.accounts.savingsBudgetPlan[defaultBucket]) || 0;
+        var othersTotal = Math.max(0, savingsPlanTotal - currentDefault);
+        state.accounts.savingsBudgetPlan[defaultBucket] = Math.max(0, savingsItemAmount - othersTotal);
+        syncSavingsBudgetPlanItemAmount();
+    })();
 
     var excludedFoodAmount = 0;
     var excludedFoodDays = 0;
