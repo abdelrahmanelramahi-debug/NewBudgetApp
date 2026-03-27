@@ -432,15 +432,15 @@ function renderFundingPriorityCard() {
 
     var empty = '<div class="text-[10px] text-slate-400 py-3 px-3">No priority targets yet. Add savings buckets, must-haves, or mini-budgets.</div>';
     return `
-        <div class="premium-card p-4 mb-5 funding-priority-card">
+        <section class="funding-priority-section mb-5">
             <div class="flex items-center justify-between mb-3">
                 <span class="text-[11px] font-black text-slate-900 uppercase tracking-widest">Funding Priority</span>
                 <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Drag to reorder</span>
             </div>
-            <div class="rounded-xl border border-slate-100 bg-white overflow-hidden">
+            <div class="funding-priority-list rounded-xl border border-slate-100 bg-white overflow-hidden">
                 ${rows || empty}
             </div>
-        </div>
+        </section>
     `;
 }
 
@@ -775,8 +775,8 @@ function renderStrategy(opts) {
             : '';
         container.innerHTML = mustHavesBlock + miniBudgetsBlock + toolBarHtml;
     } else {
-        // Keep Funding Priority as a separate section after Mini-Budgets.
-        container.innerHTML = systemHtml + miniBudgetsHeading + customHtml + fundingPriorityHtml + toolBarHtml;
+        // Toolbar belongs to Mini-Budgets; Funding Priority is a separate section below it.
+        container.innerHTML = systemHtml + miniBudgetsHeading + customHtml + toolBarHtml + fundingPriorityHtml;
     }
 
     if(!systemHtml && !customHtml) {

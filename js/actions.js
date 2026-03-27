@@ -2565,20 +2565,13 @@ function applyPaycheckDistribute() {
 
     var unfunded = Math.max(0, totalRequested - distributedTotal);
     var extraAfter = Number(state.accounts.surplus) || 0;
-    var resultMessage = [
-        'Paycheck distributed by your Funding Priority order.',
-        'Paycheck added: ' + formatMoney(val) + ' ' + getCurrencyLabel(),
-        'Requested by plan: ' + formatMoney(totalRequested) + ' ' + getCurrencyLabel(),
-        'Distributed now: ' + formatMoney(distributedTotal) + ' ' + getCurrencyLabel(),
-        'Left in Extra: ' + formatMoney(extraAfter) + ' ' + getCurrencyLabel()
-    ];
+    var resultMessage = 'Distributed ' + formatMoney(distributedTotal) + ' ' + getCurrencyLabel() +
+        ' from a paycheck of ' + formatMoney(val) + ' ' + getCurrencyLabel() + '.';
     if (unfunded > 0) {
-        resultMessage.push('Still unfunded: ' + formatMoney(unfunded) + ' ' + getCurrencyLabel());
-        resultMessage.push('Some targets were partially funded because available Extra ran out.');
-    } else {
-        resultMessage.push('All prioritized targets were funded.');
+        resultMessage += '\nUnfunded: ' + formatMoney(unfunded) + ' ' + getCurrencyLabel() + '.';
     }
-    showAppAlert(resultMessage.join('\n'));
+    resultMessage += '\nExtra left: ' + formatMoney(extraAfter) + ' ' + getCurrencyLabel() + '.';
+    showAppAlert(resultMessage);
 
     document.getElementById('paycheck-amount').value = '';
     saveState();
