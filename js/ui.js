@@ -232,6 +232,8 @@ function renderSettings() {
     if(decimalsSelect) decimalsSelect.value = String(state.settings?.decimals ?? 2);
     const compactToggle = getEl('settings-compact');
     if(compactToggle) compactToggle.checked = !!state.settings?.compact;
+    const paycheckBreakdownToggle = getEl('settings-paycheck-breakdown');
+    if (paycheckBreakdownToggle) paycheckBreakdownToggle.checked = !!state.settings?.showPaycheckBreakdown;
     const firstDaySelect = getEl('settings-first-day-of-week');
     if(firstDaySelect) firstDaySelect.value = String(state.settings?.firstDayOfWeek ?? 3);
     const payDateSelect = getEl('settings-pay-date');

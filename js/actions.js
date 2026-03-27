@@ -2483,7 +2483,7 @@ function applyPaycheckDistribute() {
     var savingsPlanByBucket = {};
     var mustHavePlanByLabel = {};
     var debugRows = [];
-    var debugEnabled = !!window.__PAYCHECK_DEBUG;
+    var debugEnabled = !!(state.settings && state.settings.showPaycheckBreakdown);
     function pushDebugRow(kind, label, planned, current, deficit) {
         if (!debugEnabled) return;
         debugRows.push({
@@ -2642,8 +2642,8 @@ function applyPaycheckDistribute() {
             return row.kind + ' | ' + row.label + ' | plan=' + formatMoney(row.planned) +
                 ' | current=' + formatMoney(row.current) + ' | deficit=' + formatMoney(row.deficit);
         });
-        resultMessage += '\n\n[Debug] Requested=' + formatMoney(totalRequested) + ', Distributed=' + formatMoney(distributedTotal) + '.';
-        if (debugLines.length) resultMessage += '\n[Debug] ' + debugLines.join('\n[Debug] ');
+        resultMessage += '\n\nBreakdown: requested=' + formatMoney(totalRequested) + ', distributed=' + formatMoney(distributedTotal) + '.';
+        if (debugLines.length) resultMessage += '\n- ' + debugLines.join('\n- ');
     }
     resultMessage += '\nExtra left: ' + formatMoney(extraAfter) + ' ' + getCurrencyLabel() + '.';
     showAppAlert(resultMessage);
@@ -3787,6 +3787,7 @@ function saveSettingsFromUI() {
     const decimalsSelect = document.getElementById('settings-decimals');
     const showFoodPlanToggle = document.getElementById('budget-show-food-plan') || document.getElementById('settings-show-food-plan');
     const compactToggle = document.getElementById('settings-compact');
+    const paycheckBreakdownToggle = document.getElementById('settings-paycheck-breakdown');
     const firstDaySelect = document.getElementById('settings-first-day-of-week');
     const payDateSelect = document.getElementById('settings-pay-date');
 
@@ -3804,6 +3805,7 @@ function saveSettingsFromUI() {
         showFoodPlan: showFoodPlanToggle ? !!showFoodPlanToggle.checked : (state.settings?.showFoodPlan !== false),
         theme: state.settings?.theme || 'sepia',
         compact: !!compactToggle?.checked,
+        showPaycheckBreakdown: !!paycheckBreakdownToggle?.checked,
         firstDayOfWeek: Number.isNaN(firstDayOfWeek) ? 3 : firstDayOfWeek,
         payDate: Number.isNaN(payDate) ? 28 : payDate
     };

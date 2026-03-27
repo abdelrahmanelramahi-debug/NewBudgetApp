@@ -13,6 +13,7 @@ let state = {
         theme: 'sepia',
         compact: false,
         firstDayOfWeek: 3,
+        showPaycheckBreakdown: false,
         payDate: 28
     },
     categories: [
@@ -548,6 +549,7 @@ function ensureSettings() {
         allowNegativeSurplus: true,
         theme: 'sepia',
         compact: false,
+        showPaycheckBreakdown: false,
         firstDayOfWeek: 3,
         payDate: 28,
         hideEmptyCategories: false,
