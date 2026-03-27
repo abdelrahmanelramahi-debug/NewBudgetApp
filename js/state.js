@@ -173,18 +173,18 @@ function ensureGeneralSavingsBucketState() {
 function buildPaycheckPriorityCatalog() {
     var catalog = [];
     var seen = {};
-    var fixedName = GENERAL_SAVINGS_BUCKET_NAME || 'General Savings';
     var savingsBuckets = (state.accounts && state.accounts.savingsBuckets) ? state.accounts.savingsBuckets : {};
     Object.keys(savingsBuckets).forEach(function (bucketName) {
-        if (!bucketName || bucketName === fixedName) return;
+        if (!bucketName) return;
         var entryId = 'savingsBucket:' + bucketName;
         if (seen[entryId]) return;
         seen[entryId] = true;
+        var isDefaultSavings = bucketName === (GENERAL_SAVINGS_BUCKET_NAME || 'General Savings');
         catalog.push({
             id: entryId,
             type: 'savingsBucket',
             label: bucketName,
-            title: bucketName,
+            title: isDefaultSavings ? 'Savings' : bucketName,
             groupLabel: 'Savings Bucket',
             bucketName: bucketName
         });
