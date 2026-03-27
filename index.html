@@ -1278,12 +1278,12 @@
 
     <!-- In-app Alert / Confirm Modal (replaces browser alert/confirm) -->
     <div id="app-alert-modal" class="modal-overlay hidden">
-        <div class="modal-content text-center max-w-sm">
+        <div id="app-alert-modal-body" class="modal-content text-center max-w-sm">
             <div id="app-alert-icon" class="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4 bg-indigo-50 text-indigo-500">
                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
             </div>
             <h3 id="app-alert-title" class="text-lg font-black text-slate-900 mb-2 hidden"></h3>
-            <p id="app-alert-message" class="text-sm text-slate-600 mb-6 leading-relaxed"></p>
+            <div id="app-alert-message" class="text-sm text-slate-600 mb-6 leading-relaxed max-h-[60vh] overflow-auto pr-1"></div>
             <div id="app-alert-buttons" class="flex gap-3">
                 <button type="button" id="app-alert-ok" class="flex-1 py-3.5 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-wider hover:bg-indigo-700 transition">OK</button>
                 <button type="button" id="app-alert-cancel" class="flex-1 py-3.5 bg-slate-100 text-slate-600 rounded-2xl font-black text-[10px] uppercase tracking-wider hover:bg-slate-200 transition hidden">Cancel</button>

@@ -2634,27 +2634,71 @@ function applyPaycheckDistribute() {
     var extraAfter = Number(state.accounts.surplus) || 0;
     var paycheckUnallocated = Math.max(0, val - distributedTotal);
     var epsilon = 0.005;
-    var resultMessage = 'Distributed ' + formatMoney(distributedTotal) + ' ' + getCurrencyLabel() +
-        ' from a paycheck of ' + formatMoney(val) + ' ' + getCurrencyLabel() + '.';
+    var statusLine = '';
     if (val + epsilon < totalRequested) {
-        resultMessage += '\nPaycheck is below this cycle plan by ' + formatMoney(unfunded) + ' ' + getCurrencyLabel() + '.';
-        resultMessage += '\nDistributed according to Funding Priority order.';
-    } else if (Math.abs(val - totalRequested) <= epsilon) {
-        resultMessage += '\nSuccess: all planned targets for this cycle were fully funded.';
+        statusLine = 'Paycheck is below this cycle plan by ' + formatMoney(unfunded) + ' ' + getCurrencyLabel() + '.';
     } else {
-        resultMessage += '\nSuccess: all planned targets for this cycle were fully funded.';
-        resultMessage += '\nExtra above plan kept in Extra: ' + formatMoney(paycheckUnallocated) + ' ' + getCurrencyLabel() + '.';
+        statusLine = 'All planned targets for this cycle were fully funded.';
     }
+    var statusToneClass = (val + epsilon < totalRequested) ? 'text-amber-700 bg-amber-50 border-amber-100' : 'text-emerald-700 bg-emerald-50 border-emerald-100';
+    function esc(str) {
+        return String(str == null ? '' : str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+    var summaryHtml =
+        '<div class="space-y-3 text-left">' +
+            '<div class="p-3 rounded-xl border ' + statusToneClass + '">' +
+                '<div class="text-[11px] font-black uppercase tracking-wider mb-1">Distribution Result</div>' +
+                '<div class="text-sm font-semibold">' + esc(statusLine) + '</div>' +
+            '</div>' +
+            '<div class="grid grid-cols-2 gap-2 text-xs">' +
+                '<div class="p-2 rounded-lg bg-slate-50 border border-slate-100"><div class="text-slate-400 uppercase font-bold text-[10px]">Paycheck</div><div class="text-slate-800 font-black">' + esc(formatMoney(val)) + ' ' + esc(getCurrencyLabel()) + '</div></div>' +
+                '<div class="p-2 rounded-lg bg-slate-50 border border-slate-100"><div class="text-slate-400 uppercase font-bold text-[10px]">Distributed</div><div class="text-slate-800 font-black">' + esc(formatMoney(distributedTotal)) + ' ' + esc(getCurrencyLabel()) + '</div></div>' +
+                '<div class="p-2 rounded-lg bg-slate-50 border border-slate-100"><div class="text-slate-400 uppercase font-bold text-[10px]">Cycle Requested</div><div class="text-slate-800 font-black">' + esc(formatMoney(totalRequested)) + ' ' + esc(getCurrencyLabel()) + '</div></div>' +
+                '<div class="p-2 rounded-lg bg-slate-50 border border-slate-100"><div class="text-slate-400 uppercase font-bold text-[10px]">Extra Left</div><div class="text-slate-800 font-black">' + esc(formatMoney(extraAfter)) + ' ' + esc(getCurrencyLabel()) + '</div></div>' +
+            '</div>';
+    if (paycheckUnallocated > epsilon) {
+        summaryHtml += '<div class="text-xs text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg p-2">Extra above plan kept in Extra: <span class="font-black">' + esc(formatMoney(paycheckUnallocated)) + ' ' + esc(getCurrencyLabel()) + '</span>.</div>';
+    }
+    summaryHtml += '<div class="text-[11px] text-slate-500">Funding follows your current priority order. Edit priorities on the <span class="font-semibold">Budget Plan</span> page.</div>';
     if (debugEnabled) {
-        var debugLines = debugRows.map(function (row) {
-            return row.kind + ' | ' + row.label + ' | plan=' + formatMoney(row.planned) +
-                ' | current=' + formatMoney(row.current) + ' | deficit=' + formatMoney(row.deficit);
+        var grouped = { savings: [], deficit: [], other: [] };
+        debugRows.forEach(function (row) {
+            var key = row.kind === 'savings' ? 'savings' : (row.kind === 'deficit' ? 'deficit' : 'other');
+            grouped[key].push(row);
         });
-        resultMessage += '\n\nBreakdown: requested=' + formatMoney(totalRequested) + ', distributed=' + formatMoney(distributedTotal) + '.';
-        if (debugLines.length) resultMessage += '\n- ' + debugLines.join('\n- ');
+        function renderRows(rows) {
+            if (!rows.length) return '<div class="text-xs text-slate-400 italic">No rows</div>';
+            var lines = rows.map(function (row) {
+                return '<tr class="border-b border-slate-100">' +
+                    '<td class="py-1.5 pr-2 font-semibold text-slate-700">' + esc(row.label) + '</td>' +
+                    '<td class="py-1.5 pr-2 text-right text-slate-600">' + esc(formatMoney(row.planned)) + '</td>' +
+                    '<td class="py-1.5 pr-2 text-right text-slate-600">' + esc(formatMoney(row.current)) + '</td>' +
+                    '<td class="py-1.5 text-right font-black text-slate-800">' + esc(formatMoney(row.deficit)) + '</td>' +
+                '</tr>';
+            }).join('');
+            return '<div class="overflow-auto"><table class="w-full text-xs"><thead><tr class="text-slate-400 uppercase text-[10px] text-left"><th class="py-1.5 pr-2">Item</th><th class="py-1.5 pr-2 text-right">Planned</th><th class="py-1.5 pr-2 text-right">Current</th><th class="py-1.5 text-right">Deficit</th></tr></thead><tbody>' + lines + '</tbody></table></div>';
+        }
+        summaryHtml +=
+            '<div class="mt-1 p-3 rounded-xl border border-slate-200 bg-white">' +
+                '<div class="text-[11px] font-black uppercase tracking-wider text-slate-500 mb-2">Breakdown By Priority Type</div>' +
+                '<div class="space-y-3">' +
+                    '<div><div class="text-[11px] font-bold text-slate-700 mb-1">1) Savings Contributions</div>' + renderRows(grouped.savings) + '</div>' +
+                    '<div><div class="text-[11px] font-bold text-slate-700 mb-1">2) Other Category Top-ups</div>' + renderRows(grouped.deficit) + '</div>' +
+                '</div>' +
+            '</div>';
     }
-    resultMessage += '\nExtra left: ' + formatMoney(extraAfter) + ' ' + getCurrencyLabel() + '.';
-    showAppAlert(resultMessage);
+    summaryHtml += '</div>';
+    showAppAlert({
+        title: 'Paycheck Distribution',
+        html: summaryHtml,
+        wide: debugEnabled,
+        leftAligned: true
+    });
 
     document.getElementById('paycheck-amount').value = '';
     saveState();

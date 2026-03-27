@@ -39,14 +39,33 @@ function _closeAppAlertModal() {
 function showAppAlert(message, title) {
     var titleEl = getEl('app-alert-title');
     var messageEl = getEl('app-alert-message');
+    var modalBody = getEl('app-alert-modal-body');
+    var modalEl = getEl('app-alert-modal');
     var okBtn = getEl('app-alert-ok');
     var cancelBtn = getEl('app-alert-cancel');
     if (!messageEl || !okBtn) return;
-    if (titleEl) {
-        titleEl.textContent = title || '';
-        titleEl.classList.toggle('hidden', !title);
+    var payload = {};
+    if (message && typeof message === 'object') payload = message;
+    var finalTitle = payload.title || title || '';
+    var useHtml = typeof payload.html === 'string';
+    var textMessage = useHtml ? '' : (payload.message || message || '');
+    var isWide = !!payload.wide;
+    var isLeftAligned = !!payload.leftAligned;
+    if (modalBody) {
+        modalBody.classList.toggle('max-w-sm', !isWide);
+        modalBody.classList.toggle('max-w-4xl', isWide);
+        modalBody.classList.toggle('text-center', !isLeftAligned);
+        modalBody.classList.toggle('text-left', isLeftAligned);
     }
-    messageEl.textContent = message || '';
+    if (modalEl) {
+        modalEl.classList.toggle('app-alert-rich', useHtml);
+    }
+    if (titleEl) {
+        titleEl.textContent = finalTitle;
+        titleEl.classList.toggle('hidden', !finalTitle);
+    }
+    if (useHtml) messageEl.innerHTML = payload.html;
+    else messageEl.textContent = textMessage;
     okBtn.textContent = 'OK';
     if (cancelBtn) cancelBtn.classList.add('hidden');
     _appAlertConfirmCallback = null;
