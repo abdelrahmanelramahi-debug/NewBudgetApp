@@ -2382,7 +2382,6 @@ function getAllocatableItems() {
     const items = [];
     state.categories.forEach(sec => {
         sec.items.forEach(item => {
-            if ((state.settings && state.settings.showFoodPlan === false) && item.label === 'Daily Food') return;
             if (item.label === 'Savings') {
                 ensureGeneralSavingsBudgetConfig();
                 Object.keys(state.accounts.savingsBudgetPlan || {}).forEach(function (bucketName) {
@@ -2483,6 +2482,18 @@ function applyPaycheckDistribute() {
     var allocatableItems = getAllocatableItems();
     var savingsPlanByBucket = {};
     var mustHavePlanByLabel = {};
+    var debugRows = [];
+    var debugEnabled = !!window.__PAYCHECK_DEBUG;
+    function pushDebugRow(kind, label, planned, current, deficit) {
+        if (!debugEnabled) return;
+        debugRows.push({
+            kind: kind,
+            label: label,
+            planned: Number(planned) || 0,
+            current: Number(current) || 0,
+            deficit: Number(deficit) || 0
+        });
+    }
     allocatableItems.forEach(function (item) {
         if (!item) return;
         if (item.label === 'Savings' && item.savingsBucket) {
@@ -2503,9 +2514,8 @@ function applyPaycheckDistribute() {
 
     function getCurrentForLabel(label) {
         if (label === 'Weekly Allowance') {
-            return (state.accounts.weekly.balances && state.accounts.weekly.balances.length >= 4)
-                ? (state.accounts.weekly.balances[0] || 0) + (state.accounts.weekly.balances[1] || 0) + (state.accounts.weekly.balances[2] || 0) + (state.accounts.weekly.balances[3] || 0)
-                : 0;
+            // Use canonical bucket total for comparison so paycheck math matches UI totals.
+            return getItemBalance('Weekly Allowance', 0);
         }
         return getItemBalance(label, 0);
     }
@@ -2513,7 +2523,9 @@ function applyPaycheckDistribute() {
         var planned = Number(plannedAmount) || 0;
         if (planned <= 0) return 0;
         var current = getCurrentForLabel(label);
-        return Math.max(0, planned - current);
+        var deficit = Math.max(0, planned - current);
+        if (recordExcluded) pushDebugRow('deficit', label, planned, current, deficit);
+        return deficit;
     }
 
     var priorityEntries = (typeof getPaycheckPriorityEntries === 'function') ? getPaycheckPriorityEntries() : [];
@@ -2525,6 +2537,7 @@ function applyPaycheckDistribute() {
             // Savings plan is a cycle contribution target, not a top-up target.
             // Do not subtract existing bucket balance here.
             var deficit = Math.max(0, planned);
+            pushDebugRow('savings', entry.bucketName, planned, 0, deficit);
             totalRequested += deficit;
             return;
         }
@@ -2623,6 +2636,14 @@ function applyPaycheckDistribute() {
     } else {
         resultMessage += '\nSuccess: all planned targets for this cycle were fully funded.';
         resultMessage += '\nExtra above plan kept in Extra: ' + formatMoney(paycheckUnallocated) + ' ' + getCurrencyLabel() + '.';
+    }
+    if (debugEnabled) {
+        var debugLines = debugRows.map(function (row) {
+            return row.kind + ' | ' + row.label + ' | plan=' + formatMoney(row.planned) +
+                ' | current=' + formatMoney(row.current) + ' | deficit=' + formatMoney(row.deficit);
+        });
+        resultMessage += '\n\n[Debug] Requested=' + formatMoney(totalRequested) + ', Distributed=' + formatMoney(distributedTotal) + '.';
+        if (debugLines.length) resultMessage += '\n[Debug] ' + debugLines.join('\n[Debug] ');
     }
     resultMessage += '\nExtra left: ' + formatMoney(extraAfter) + ' ' + getCurrencyLabel() + '.';
     showAppAlert(resultMessage);
