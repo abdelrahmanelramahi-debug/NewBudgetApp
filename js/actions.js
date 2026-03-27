@@ -2518,7 +2518,9 @@ function applyPaycheckDistribute() {
         if (!entry || !entry.type) return;
         if (entry.type === 'savingsBucket') {
             var planned = Number(savingsPlanByBucket[entry.bucketName]) || 0;
-            var deficit = Math.max(0, planned - getSavingsBucketAmount(entry.bucketName));
+            // Savings plan is a cycle contribution target, not a top-up target.
+            // Do not subtract existing bucket balance here.
+            var deficit = Math.max(0, planned);
             totalRequested += deficit;
             return;
         }
@@ -2565,7 +2567,8 @@ function applyPaycheckDistribute() {
         if (!entry || remainingAvailable <= 0) return;
         if (entry.type === 'savingsBucket') {
             var bucketPlanned = Number(savingsPlanByBucket[entry.bucketName]) || 0;
-            var bucketDeficit = Math.max(0, bucketPlanned - getSavingsBucketAmount(entry.bucketName));
+            // Savings contribution per cycle should ignore current stored balance.
+            var bucketDeficit = Math.max(0, bucketPlanned);
             var bucketTake = Math.min(bucketDeficit, remainingAvailable);
             if (bucketTake > 0) {
                 adjustSavingsBucket(entry.bucketName, bucketTake);
@@ -2604,11 +2607,11 @@ function applyPaycheckDistribute() {
 
     var unfunded = Math.max(0, totalRequested - distributedTotal);
     var extraAfter = Number(state.accounts.surplus) || 0;
+    var paycheckUnallocated = Math.max(0, val - distributedTotal);
     var resultMessage = 'Distributed ' + formatMoney(distributedTotal) + ' ' + getCurrencyLabel() +
         ' from a paycheck of ' + formatMoney(val) + ' ' + getCurrencyLabel() + '.';
-    if (unfunded > 0) {
-        resultMessage += '\nUnfunded: ' + formatMoney(unfunded) + ' ' + getCurrencyLabel() + '.';
-    }
+    resultMessage += '\nRemaining for selected cycle targets: ' + formatMoney(unfunded) + ' ' + getCurrencyLabel() + '.';
+    resultMessage += '\nPaycheck not allocated: ' + formatMoney(paycheckUnallocated) + ' ' + getCurrencyLabel() + '.';
     resultMessage += '\nExtra left: ' + formatMoney(extraAfter) + ' ' + getCurrencyLabel() + '.';
     showAppAlert(resultMessage);
 
