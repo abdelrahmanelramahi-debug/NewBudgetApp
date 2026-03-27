@@ -110,6 +110,7 @@ function ensureAccountsState() {
         state.accounts.transportationDefaultBucket = 'Main';
     }
     ensureGeneralSavingsBudgetConfig();
+    if (typeof normalizePaycheckPriorityOrder === 'function') normalizePaycheckPriorityOrder();
 }
 
 function setItemBalance(label, value) {
@@ -519,6 +520,7 @@ function renameCategory(sid) {
     if(newName && newName.trim() !== "") {
         pushToUndo();
         applyTransaction({ type: 'rename_category', sid, label: newName.trim() });
+        if (typeof normalizePaycheckPriorityOrder === 'function') normalizePaycheckPriorityOrder();
         saveState();
         renderStrategy();
         renderLedger();
@@ -533,6 +535,7 @@ function deleteCategory(sid) {
     showAppConfirm('Delete category "' + sec.label + '" and refund ' + sec.items.length + ' items to Extra?', function () {
         pushToUndo();
         applyTransaction({ type: 'delete_category', sid });
+        if (typeof normalizePaycheckPriorityOrder === 'function') normalizePaycheckPriorityOrder();
         saveState();
         renderStrategy();
         updateGlobalUI();
@@ -580,6 +583,47 @@ function handleCatDrop(e, targetIdx) {
         renderStrategy();
     }
     dragSrc = null; dragType = null;
+}
+
+function handlePriorityDragStart(e, priorityId) {
+    if (!priorityId) return;
+    dragType = 'priority';
+    dragSrc = { priorityId: priorityId };
+    if (e && e.target && e.target.style) e.target.style.opacity = '0.5';
+}
+
+function handlePriorityDragEnd(e) {
+    if (e && e.target && e.target.style) e.target.style.opacity = '';
+}
+
+function handlePriorityDrop(e, targetPriorityId) {
+    e.preventDefault();
+    if (dragType !== 'priority' || !dragSrc || !dragSrc.priorityId || !targetPriorityId || dragSrc.priorityId === targetPriorityId) {
+        dragSrc = null;
+        dragType = null;
+        return;
+    }
+    ensureAccountsState();
+    var order = Array.isArray(state.accounts.paycheckPriorityOrder) ? state.accounts.paycheckPriorityOrder.slice() : [];
+    if (!order.length) {
+        if (typeof normalizePaycheckPriorityOrder === 'function') normalizePaycheckPriorityOrder();
+        order = Array.isArray(state.accounts.paycheckPriorityOrder) ? state.accounts.paycheckPriorityOrder.slice() : [];
+    }
+    var fromIdx = order.indexOf(dragSrc.priorityId);
+    var toIdx = order.indexOf(targetPriorityId);
+    if (fromIdx === -1 || toIdx === -1) {
+        dragSrc = null;
+        dragType = null;
+        return;
+    }
+    pushToUndo();
+    var moved = order.splice(fromIdx, 1)[0];
+    order.splice(toIdx, 0, moved);
+    state.accounts.paycheckPriorityOrder = order;
+    saveState();
+    if (typeof renderStrategy === 'function') renderStrategy();
+    dragSrc = null;
+    dragType = null;
 }
 
 // --- DEFICIT MANAGEMENT ---
@@ -783,6 +827,7 @@ function confirmAddCategory() {
             isSingleAction: isSingle,
             items: []
         });
+        if (typeof normalizePaycheckPriorityOrder === 'function') normalizePaycheckPriorityOrder();
         saveState();
         renderStrategy();
         closeAddCategoryTool();
@@ -1226,19 +1271,59 @@ window.closeFoodDayTransferPopover = closeFoodDayTransferPopover;
 
 var _dailyFoodBulkSelectedDays = [];
 
-function openDailyFoodActionsMenu() {
-    toggleModal('daily-food-actions-modal', true);
+function syncDailyFoodStartDateInput() {
+    var input = document.getElementById('food-start-date-input');
+    if (!input) return;
+    var info = (typeof getPayCycleInfo === 'function') ? getPayCycleInfo() : null;
+    var start = info && info.cycleStart ? info.cycleStart : null;
+    if (!start || !start.getFullYear) return;
+    var y = start.getFullYear();
+    var m = String(start.getMonth() + 1).padStart(2, '0');
+    var d = String(start.getDate()).padStart(2, '0');
+    input.value = y + '-' + m + '-' + d;
 }
-window.openDailyFoodActionsMenu = openDailyFoodActionsMenu;
 
-function closeDailyFoodActionsMenu() {
-    toggleModal('daily-food-actions-modal', false);
+function toggleDailyFoodActionsInline() {
+    var panel = document.getElementById('daily-food-actions-inline');
+    if (!panel) return;
+    var willShow = panel.classList.contains('hidden');
+    panel.classList.toggle('hidden', !willShow);
+    if (willShow) syncDailyFoodStartDateInput();
 }
-window.closeDailyFoodActionsMenu = closeDailyFoodActionsMenu;
+window.toggleDailyFoodActionsInline = toggleDailyFoodActionsInline;
+
+function closeDailyFoodActionsInline() {
+    var panel = document.getElementById('daily-food-actions-inline');
+    if (panel) panel.classList.add('hidden');
+}
+window.closeDailyFoodActionsInline = closeDailyFoodActionsInline;
+window.openDailyFoodActionsMenu = toggleDailyFoodActionsInline;
+window.closeDailyFoodActionsMenu = closeDailyFoodActionsInline;
+
+function applyFoodStartDateFromInline() {
+    var input = document.getElementById('food-start-date-input');
+    if (!input || !input.value) {
+        if (typeof showAppAlert === 'function') showAppAlert('Pick a start date first.');
+        return;
+    }
+    var parsed = new Date(input.value + 'T00:00:00');
+    if (!parsed || Number.isNaN(parsed.getTime())) {
+        if (typeof showAppAlert === 'function') showAppAlert('Invalid date.');
+        return;
+    }
+    var dayOfMonth = parsed.getDate();
+    var payDateSelect = document.getElementById('settings-pay-date');
+    if (payDateSelect) payDateSelect.value = String(dayOfMonth);
+    saveSettingsFromUI();
+    if (typeof showAppAlert === 'function') {
+        showAppAlert('Daily Food start date synced. Pay date is now set to day ' + dayOfMonth + '.');
+    }
+}
+window.applyFoodStartDateFromInline = applyFoodStartDateFromInline;
 
 function openDailyFoodBulkRefillModal() {
     if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
-    closeDailyFoodActionsMenu();
+    closeDailyFoodActionsInline();
     _dailyFoodBulkSelectedDays = [];
     renderDailyFoodBulkSourceOptions();
     renderDailyFoodBulkDaysGrid();
@@ -2123,6 +2208,19 @@ function budgetPlanSavingsBucketSyncLabel(bucketIdx, rawValue) {
 }
 window.budgetPlanSavingsBucketSyncLabel = budgetPlanSavingsBucketSyncLabel;
 
+function refreshSavingsPlanTotalsUI() {
+    var total = 0;
+    Object.keys((state.accounts && state.accounts.savingsBudgetPlan) || {}).forEach(function (k) {
+        total += Number(state.accounts.savingsBudgetPlan[k]) || 0;
+    });
+    var nodes = document.querySelectorAll('.budget-savings-total');
+    if (!nodes || !nodes.length) return;
+    for (var i = 0; i < nodes.length; i++) {
+        nodes[i].textContent = formatMoney(total) + ' ' + getCurrencyLabel();
+    }
+}
+window.refreshSavingsPlanTotalsUI = refreshSavingsPlanTotalsUI;
+
 function budgetPlanSavingsBucketSliderInput(bucketKey, bucketIdx, sliderEl) {
     if (!sliderEl) return;
     var num = parseFloat(sliderEl.value);
@@ -2239,6 +2337,45 @@ function applyPaycheckAdd() {
     updateGlobalUI();
 }
 
+function getFoodPaycheckDeficitDetails(plannedAmount) {
+    var amount = Number(plannedAmount) || 0;
+    var info = (typeof getFoodRemainderInfo === 'function') ? getFoodRemainderInfo() : null;
+    var daysTotal = Math.max(1, Math.floor((state.food && state.food.daysTotal) || 28));
+    var daysUsed = Math.max(0, Math.floor((state.food && state.food.daysUsed) || 0));
+    var daysLeft = Math.max(0, daysTotal - daysUsed);
+    var dailyRate = (info && info.dailyRate > 0) ? info.dailyRate : (amount / daysTotal);
+    var maxFundablePlanAmount = dailyRate * daysLeft;
+    var cappedPlannedAmount = Math.min(amount, maxFundablePlanAmount);
+    var excludedAmount = Math.max(0, amount - cappedPlannedAmount);
+    var excludedDays = excludedAmount > 0 ? Math.max(0, Math.floor(excludedAmount / (dailyRate || 1))) : 0;
+    var current = getItemBalance('Daily Food', 0);
+    return {
+        deficit: Math.max(0, cappedPlannedAmount - current),
+        excludedAmount: excludedAmount,
+        excludedDays: excludedDays
+    };
+}
+
+function allocateFromSurplusToTarget(targetLabel, amount) {
+    var val = Number(amount) || 0;
+    if (val <= 0) return 0;
+    if (targetLabel === 'Weekly Allowance') {
+        ensureWeeklyState();
+        var perWeek = val / 4;
+        for (var w = 1; w <= WEEKLY_MAX_WEEKS; w++) {
+            setWeeklyBalance(w, getWeeklyBalance(w) + perWeek);
+        }
+        state.accounts.surplus -= val;
+        var sumWeeks = (state.accounts.weekly.balances[0] || 0) + (state.accounts.weekly.balances[1] || 0) + (state.accounts.weekly.balances[2] || 0) + (state.accounts.weekly.balances[3] || 0);
+        if (state.accounts.buckets) state.accounts.buckets['Weekly Allowance'] = sumWeeks;
+        logHistory(targetLabel, val, 'Distribute');
+        return val;
+    }
+    applyTransaction({ type: 'transfer', from: 'Surplus', to: targetLabel, amount: val });
+    logHistory(targetLabel, val, 'Distribute');
+    return val;
+}
+
 function applyPaycheckDistribute() {
     const raw = document.getElementById('paycheck-amount').value;
     const val = parseFloat(raw);
@@ -2248,48 +2385,80 @@ function applyPaycheckDistribute() {
     }
 
     if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
+    ensureAccountsState();
+    if (typeof normalizePaycheckPriorityOrder === 'function') normalizePaycheckPriorityOrder();
 
-    const foodLabelCanonical = 'Daily Food'; // getFoodRemainderInfo() always reads state.balances['Daily Food']
     var excludedFoodAmount = 0;
     var excludedFoodDays = 0;
-    const items = getAllocatableItems().map(item => {
-        let current;
-        const isFood = item.label === foodLabelCanonical;
-        if (item.label === 'Weekly Allowance') {
-            current = (state.accounts.weekly.balances && state.accounts.weekly.balances.length >= 4)
+
+    var allocatableItems = getAllocatableItems();
+    var savingsPlanByBucket = {};
+    var mustHavePlanByLabel = {};
+    allocatableItems.forEach(function (item) {
+        if (!item) return;
+        if (item.label === 'Savings' && item.savingsBucket) {
+            savingsPlanByBucket[item.savingsBucket] = Number(item.amount) || 0;
+            return;
+        }
+        mustHavePlanByLabel[item.label] = Number(item.amount) || 0;
+    });
+
+    var coreSec = state.categories.find(function (s) { return s && s.id === 'core_essentials'; });
+    var coreLabels = {};
+    (coreSec && coreSec.items ? coreSec.items : []).forEach(function (item) {
+        if (!item || !item.label) return;
+        var normalizedLabel = item.label === 'Food Base' ? 'Daily Food' : item.label;
+        if (normalizedLabel === 'Savings') return;
+        coreLabels[normalizedLabel] = true;
+    });
+
+    function getCurrentForLabel(label) {
+        if (label === 'Weekly Allowance') {
+            return (state.accounts.weekly.balances && state.accounts.weekly.balances.length >= 4)
                 ? (state.accounts.weekly.balances[0] || 0) + (state.accounts.weekly.balances[1] || 0) + (state.accounts.weekly.balances[2] || 0) + (state.accounts.weekly.balances[3] || 0)
                 : 0;
-        } else if (isFood) {
-            current = getItemBalance(foodLabelCanonical, 0);
-        } else if (item.label === 'Savings' && item.savingsBucket) {
-            current = getSavingsBucketAmount(item.savingsBucket);
-        } else {
-            current = getItemBalance(item.label, 0);
         }
-        let deficit = 0;
-        if (item.label === 'Savings' && item.savingsBucket) {
-            deficit = Math.max(0, item.amount);
-        } else if (isFood) {
-            var info = (typeof getFoodRemainderInfo === 'function') ? getFoodRemainderInfo() : null;
-            var daysTotal = Math.max(1, Math.floor((state.food && state.food.daysTotal) || 28));
-            var daysUsed = Math.max(0, Math.floor((state.food && state.food.daysUsed) || 0));
-            var daysLeft = Math.max(0, daysTotal - daysUsed);
-            var dailyRate = (info && info.dailyRate > 0) ? info.dailyRate : ((Number(item.amount) || 0) / daysTotal);
-            var maxFundablePlanAmount = dailyRate * daysLeft;
-            var cappedPlannedAmount = Math.min(Number(item.amount) || 0, maxFundablePlanAmount);
-            var excludedAmountForItem = Math.max(0, (Number(item.amount) || 0) - cappedPlannedAmount);
-            if (excludedAmountForItem > 0) {
-                excludedFoodAmount += excludedAmountForItem;
-                excludedFoodDays += Math.max(0, Math.floor(excludedAmountForItem / (dailyRate || 1)));
+        return getItemBalance(label, 0);
+    }
+    function getDeficitForLabel(label, plannedAmount, recordExcluded) {
+        var planned = Number(plannedAmount) || 0;
+        if (planned <= 0) return 0;
+        if (label === 'Daily Food') {
+            var foodDetails = getFoodPaycheckDeficitDetails(planned);
+            if (recordExcluded) {
+                excludedFoodAmount += foodDetails.excludedAmount;
+                excludedFoodDays += foodDetails.excludedDays;
             }
-            deficit = Math.max(0, cappedPlannedAmount - current);
-        } else {
-            deficit = Math.max(0, item.amount - current);
+            return foodDetails.deficit;
         }
-        return { ...item, deficit };
-    }).filter(item => item.deficit > 0);
+        var current = getCurrentForLabel(label);
+        return Math.max(0, planned - current);
+    }
 
-    const totalDeficit = items.reduce((sum, i) => sum + i.deficit, 0);
+    var priorityEntries = (typeof getPaycheckPriorityEntries === 'function') ? getPaycheckPriorityEntries() : [];
+    var totalRequested = 0;
+    priorityEntries.forEach(function (entry) {
+        if (!entry || !entry.type) return;
+        if (entry.type === 'savingsBucket') {
+            var planned = Number(savingsPlanByBucket[entry.bucketName]) || 0;
+            var deficit = Math.max(0, planned - getSavingsBucketAmount(entry.bucketName));
+            totalRequested += deficit;
+            return;
+        }
+        if (entry.type === 'mustHave') {
+            if (!coreLabels[entry.itemLabel]) return;
+            totalRequested += getDeficitForLabel(entry.itemLabel, mustHavePlanByLabel[entry.itemLabel], true);
+            return;
+        }
+        if (entry.type === 'mini') {
+            var sec = state.categories.find(function (s) { return s && s.id === entry.categoryId; });
+            if (!sec || !Array.isArray(sec.items)) return;
+            sec.items.forEach(function (item) {
+                if (!item || item.label === 'Payables' || item.label === 'Savings') return;
+                totalRequested += getDeficitForLabel(item.label, item.amount, true);
+            });
+        }
+    });
 
     pushToUndo();
     applyTransaction({ type: 'adjust_surplus', delta: val });
@@ -2305,7 +2474,7 @@ function applyPaycheckDistribute() {
         delete state.food.pendingDistributionExtraNotice;
     }
 
-    if (totalDeficit <= 0) {
+    if (totalRequested <= 0) {
         showAppAlert('All planned categories are already funded. The paycheck was added to Extra.');
         document.getElementById('paycheck-amount').value = '';
         saveState();
@@ -2313,39 +2482,65 @@ function applyPaycheckDistribute() {
         return;
     }
 
-    items.forEach(item => {
-        if (item.deficit > 0) {
-            const isFood = item.label === foodLabelCanonical;
-            const transferTo = isFood ? foodLabelCanonical : item.label;
-            if (item.label === 'Weekly Allowance') {
-                // Spread across all 4 weeks so it doesn't all land in the current week
-                ensureWeeklyState();
-                var perWeek = item.deficit / 4;
-                for (var w = 1; w <= WEEKLY_MAX_WEEKS; w++) {
-                    setWeeklyBalance(w, getWeeklyBalance(w) + perWeek);
-                }
-                state.accounts.surplus -= item.deficit;
-                var sumWeeks = (state.accounts.weekly.balances[0] || 0) + (state.accounts.weekly.balances[1] || 0) + (state.accounts.weekly.balances[2] || 0) + (state.accounts.weekly.balances[3] || 0);
-                if (state.accounts.buckets) state.accounts.buckets['Weekly Allowance'] = sumWeeks;
-                logHistory(item.label, item.deficit, 'Distribute');
-            } else if (item.label === 'Savings' && item.savingsBucket) {
-                adjustSavingsBucket(item.savingsBucket, item.deficit);
-                applyTransaction({ type: 'adjust_surplus', delta: -item.deficit });
-                logHistory('Savings: ' + item.savingsBucket, item.deficit, 'Distribute');
-            } else {
-                applyTransaction({ type: 'transfer', from: 'Surplus', to: transferTo, amount: item.deficit });
-                logHistory(transferTo, item.deficit, 'Distribute');
+    var distributedTotal = 0;
+    var remainingAvailable = Math.max(0, Number(state.accounts.surplus) || 0);
+    priorityEntries.forEach(function (entry) {
+        if (!entry || remainingAvailable <= 0) return;
+        if (entry.type === 'savingsBucket') {
+            var bucketPlanned = Number(savingsPlanByBucket[entry.bucketName]) || 0;
+            var bucketDeficit = Math.max(0, bucketPlanned - getSavingsBucketAmount(entry.bucketName));
+            var bucketTake = Math.min(bucketDeficit, remainingAvailable);
+            if (bucketTake > 0) {
+                adjustSavingsBucket(entry.bucketName, bucketTake);
+                applyTransaction({ type: 'adjust_surplus', delta: -bucketTake });
+                logHistory('Savings: ' + entry.bucketName, bucketTake, 'Distribute');
+                distributedTotal += bucketTake;
+                remainingAvailable -= bucketTake;
             }
+            return;
+        }
+        if (entry.type === 'mustHave') {
+            if (!coreLabels[entry.itemLabel]) return;
+            var mhDeficit = getDeficitForLabel(entry.itemLabel, mustHavePlanByLabel[entry.itemLabel], false);
+            var mhTake = Math.min(mhDeficit, remainingAvailable);
+            if (mhTake > 0) {
+                allocateFromSurplusToTarget(entry.itemLabel, mhTake);
+                distributedTotal += mhTake;
+                remainingAvailable -= mhTake;
+            }
+            return;
+        }
+        if (entry.type === 'mini') {
+            var sec = state.categories.find(function (s) { return s && s.id === entry.categoryId; });
+            if (!sec || !Array.isArray(sec.items)) return;
+            sec.items.forEach(function (item) {
+                if (!item || remainingAvailable <= 0 || item.label === 'Payables' || item.label === 'Savings') return;
+                var itemDeficit = getDeficitForLabel(item.label, item.amount, false);
+                var itemTake = Math.min(itemDeficit, remainingAvailable);
+                if (itemTake <= 0) return;
+                allocateFromSurplusToTarget(item.label, itemTake);
+                distributedTotal += itemTake;
+                remainingAvailable -= itemTake;
+            });
         }
     });
 
-    const leftoverFromPaycheck = Math.max(0, val - totalDeficit);
-    if (leftoverFromPaycheck > 0) {
-        showAppAlert('Fully funded all planned categories. ' + formatMoney(leftoverFromPaycheck) + ' ' + getCurrencyLabel() + ' stayed in Extra.');
-    } else if (totalDeficit > val) {
-        const shortfall = totalDeficit - val;
-        showAppAlert('Plan required more than this paycheck. ' + formatMoney(shortfall) + ' ' + getCurrencyLabel() + ' was taken from Extra.');
+    var unfunded = Math.max(0, totalRequested - distributedTotal);
+    var extraAfter = Number(state.accounts.surplus) || 0;
+    var resultMessage = [
+        'Paycheck distributed by your Funding Priority order.',
+        'Paycheck added: ' + formatMoney(val) + ' ' + getCurrencyLabel(),
+        'Requested by plan: ' + formatMoney(totalRequested) + ' ' + getCurrencyLabel(),
+        'Distributed now: ' + formatMoney(distributedTotal) + ' ' + getCurrencyLabel(),
+        'Left in Extra: ' + formatMoney(extraAfter) + ' ' + getCurrencyLabel()
+    ];
+    if (unfunded > 0) {
+        resultMessage.push('Still unfunded: ' + formatMoney(unfunded) + ' ' + getCurrencyLabel());
+        resultMessage.push('Some targets were partially funded because available Extra ran out.');
+    } else {
+        resultMessage.push('All prioritized targets were funded.');
     }
+    showAppAlert(resultMessage.join('\n'));
 
     document.getElementById('paycheck-amount').value = '';
     saveState();
@@ -2706,6 +2901,7 @@ function createSavingsBucket() {
     if (typeof unmarkSavingsBucketDeleted === 'function') unmarkSavingsBucketDeleted(name);
     state.accounts.savingsBuckets[name] = 0;
     state.accounts.savingsBudgetPlan[name] = 0;
+    if (typeof normalizePaycheckPriorityOrder === 'function') normalizePaycheckPriorityOrder();
     syncSavingsTotal();
     input.value = '';
     saveState();
@@ -2743,6 +2939,7 @@ function renameSavingsBucket(oldName, newNameFromInline) {
     if (state.accounts.savingsDefaultBucket === oldName) {
         state.accounts.savingsDefaultBucket = newName;
     }
+    if (typeof normalizePaycheckPriorityOrder === 'function') normalizePaycheckPriorityOrder();
     syncSavingsTotal();
     saveState();
     renderSavingsBuckets();
@@ -2770,6 +2967,7 @@ function deleteSavingsBucket(name) {
         if (state.accounts.savingsDefaultBucket === name) {
             state.accounts.savingsDefaultBucket = Object.keys(state.accounts.savingsBuckets)[0];
         }
+        if (typeof normalizePaycheckPriorityOrder === 'function') normalizePaycheckPriorityOrder();
         syncSavingsTotal();
         applyTransaction({ type: 'adjust_surplus', delta: amount });
         saveState();
@@ -2789,6 +2987,7 @@ function syncSavingsBudgetPlanItemAmount() {
         total += Number(state.accounts.savingsBudgetPlan[k]) || 0;
     });
     item.amount = total;
+    if (typeof refreshSavingsPlanTotalsUI === 'function') refreshSavingsPlanTotalsUI();
 }
 
 function syncSavingsBucketBudgetAmount(bucketKey, rawValue) {
@@ -2800,6 +2999,18 @@ function syncSavingsBucketBudgetAmount(bucketKey, rawValue) {
     syncSavingsBudgetPlanItemAmount();
     saveState();
     if (typeof updateBudgetPlanAllocated === 'function') updateBudgetPlanAllocated();
+    if (typeof updateAllocatedTotalUI === 'function') {
+        var total = typeof state.monthlyIncome === 'number' ? state.monthlyIncome : 0;
+        var allocated = 0;
+        (state.categories || []).forEach(function (sec) {
+            (sec.items || []).forEach(function (item) {
+                if (!item || item.label === 'Payables') return;
+                if ((state.settings && state.settings.showFoodPlan === false) && item.label === 'Daily Food') return;
+                allocated += (typeof item.amount === 'number' ? item.amount : 0);
+            });
+        });
+        updateAllocatedTotalUI({ total: total, allocated: allocated, prefix: 'onboarding-cat' });
+    }
 }
 window.syncSavingsBucketBudgetAmount = syncSavingsBucketBudgetAmount;
 

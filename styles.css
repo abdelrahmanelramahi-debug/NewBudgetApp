@@ -2053,6 +2053,9 @@ body.theme-dark .food-overflow-cell-used {
 .draggable-card:active { cursor: grabbing; }
 .dragging { opacity: 0.5; border: 2px dashed #cbd5e1; }
 .no-drag { cursor: default; pointer-events: auto; }
+.funding-priority-row { cursor: grab; user-select: none; transition: background-color 0.15s ease; }
+.funding-priority-row:hover { background: #f8fafc; }
+.funding-priority-row:active { cursor: grabbing; }
 
 /* Inputs */
 .input-pill {

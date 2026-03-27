@@ -408,6 +408,42 @@ window.toggleSideMenu = toggleSideMenu;
 window.closeSideMenu = closeSideMenu;
 
 // --- STRATEGY RENDER: budget plan cards (system + custom), sliders, allocated/total. Optional onboarding container. Calls clearDomCache. ---
+function renderFundingPriorityCard() {
+    if (typeof getPaycheckPriorityEntries !== 'function') return '';
+    var entries = getPaycheckPriorityEntries();
+    var rows = entries.map(function (entry) {
+        var safeId = String(entry.id || '').replace(/"/g, '&quot;');
+        return `
+            <div class="funding-priority-row flex justify-between items-center py-2 px-3 border-b border-slate-100 last:border-0"
+                 draggable="true"
+                 data-priority-id="${safeId}"
+                 ondragstart="handlePriorityDragStart(event, '${String(entry.id || '').replace(/\\/g, '\\\\').replace(/'/g, '\\\'')}')"
+                 ondragend="handlePriorityDragEnd(event)"
+                 ondragover="handleDragOver(event)"
+                 ondrop="handlePriorityDrop(event, '${String(entry.id || '').replace(/\\/g, '\\\\').replace(/'/g, '\\\'')}')">
+                <div class="flex items-center gap-2 min-w-0">
+                    <span class="text-slate-300 cursor-move text-xs">☰</span>
+                    <span class="text-[11px] font-bold text-slate-700 truncate">${escapeHtml(entry.title || entry.label || '')}</span>
+                </div>
+                <span class="text-[9px] font-black uppercase tracking-widest text-indigo-500 bg-indigo-50 px-2 py-1 rounded-lg">${escapeHtml(entry.groupLabel || 'Priority')}</span>
+            </div>
+        `;
+    }).join('');
+
+    var empty = '<div class="text-[10px] text-slate-400 py-3 px-3">No priority targets yet. Add savings buckets, must-haves, or mini-budgets.</div>';
+    return `
+        <div class="premium-card p-4 mb-5 funding-priority-card">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-[11px] font-black text-slate-900 uppercase tracking-widest">Funding Priority</span>
+                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Drag to reorder</span>
+            </div>
+            <div class="rounded-xl border border-slate-100 bg-white overflow-hidden">
+                ${rows || empty}
+            </div>
+        </div>
+    `;
+}
+
 function renderStrategy(opts) {
     opts = opts || {};
     var containerId = opts.containerId || 'strategy-sections';
@@ -717,7 +753,30 @@ function renderStrategy(opts) {
            </div>`
         : '';
 
-    container.innerHTML = systemHtml + miniBudgetsHeading + customHtml + toolBarHtml;
+    var fundingPriorityHtml = (!forOnboarding) ? renderFundingPriorityCard() : '';
+    if (forOnboarding) {
+        var mustHavesBlock = systemHtml
+            ? `<div id="onboarding-must-haves-block" class="space-y-2 mb-4">
+                    <div id="onboarding-must-haves-heading" class="px-1">
+                        <p class="text-[12px] font-black text-slate-900 uppercase tracking-[0.2em]">Must Haves</p>
+                        <p class="text-[10px] font-semibold text-slate-500 mt-1">Cover these essentials first each month.</p>
+                    </div>
+                    <div id="onboarding-must-haves-section">${systemHtml}</div>
+               </div>`
+            : '';
+        var miniBudgetsBlock = customHtml
+            ? `<div id="onboarding-mini-budgets-block" class="space-y-2 mb-2">
+                    <div id="onboarding-mini-budgets-heading" class="px-1">
+                        <p class="text-[12px] font-black text-slate-900 uppercase tracking-[0.2em]">Mini-Budgets</p>
+                        <p class="text-[10px] font-semibold text-slate-500 mt-1">Flexible categories you can fine-tune over time.</p>
+                    </div>
+                    <div id="onboarding-mini-budgets-section">${customHtml}</div>
+               </div>`
+            : '';
+        container.innerHTML = mustHavesBlock + miniBudgetsBlock + toolBarHtml;
+    } else {
+        container.innerHTML = systemHtml + miniBudgetsHeading + fundingPriorityHtml + customHtml + toolBarHtml;
+    }
 
     if(!systemHtml && !customHtml) {
          container.innerHTML = toolBarHtml + '<div class="text-center py-10 text-slate-300 font-bold uppercase tracking-widest">No Strategies Yet</div>';
@@ -1178,6 +1237,7 @@ function updateFoodUI() {
     var redistributedDays = Math.max(0, Math.floor((state.food && state.food.redistributedExtraDays) || 0));
     if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
     var payCycle = getPayCycleInfo();
+    if (typeof syncDailyFoodStartDateInput === 'function') syncDailyFoodStartDateInput();
     if (typeof maybeAutoAdvanceFoodCycle === 'function') {
         var didAutoAdvance = maybeAutoAdvanceFoodCycle(payCycle);
         if (didAutoAdvance) {

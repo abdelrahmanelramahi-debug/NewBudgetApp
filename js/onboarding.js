@@ -1,28 +1,51 @@
-/** Onboarding flow: welcome → currency → income → reality → categories → summary */
+/** Onboarding flow: welcome → currency → income → categories → priority → summary */
 
 function isMobileDevice() {
     return (typeof navigator !== 'undefined') &&
         /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
 }
 
-var ONBOARDING_STEPS = ['welcome', 'currency', 'income', 'reality', 'categories', 'summary'];
+var ONBOARDING_STEPS = ['welcome', 'currency', 'income', 'categories', 'priority', 'summary'];
 var onboardingStepIndex = 0;
 var onboardingCompleteCallback = null;
 var onboardingCategoriesInitialized = false;
 var onboardingBudgetTipIndex = 0;
+var onboardingBudgetTipPhase = 'must';
 
-var ONBOARDING_BUDGET_TIPS = [
+var ONBOARDING_BUDGET_TIPS_MUST_HAVES = [
+    {
+        title: 'Must Haves',
+        body: 'These are your essentials and should be funded before everything else.',
+        target: '#onboarding-must-haves-heading'
+    },
     {
         title: 'Total Budget',
         body: "See how much of your monthly income you've assigned. Stay within 100% for a balanced plan.",
         target: '#onboarding-cat-header'
     },
     {
-        title: 'Set Your Categories',
-        body: 'Use sliders or type amounts. Add new categories anytime and fine-tune later.',
-        target: '#onboarding-strategy-sections'
+        title: 'Set Must Haves',
+        body: 'Adjust Weekly Allowance, Daily Food, Transportation, and Savings buckets first.',
+        target: '#onboarding-must-haves-section'
     }
 ];
+
+var ONBOARDING_BUDGET_TIPS_MINI_BUDGETS = [
+    {
+        title: 'Mini-Budgets',
+        body: 'These categories are flexible and help you plan personal spending with control.',
+        target: '#onboarding-mini-budgets-heading'
+    },
+    {
+        title: 'Fine-tune Mini-Budgets',
+        body: 'Use sliders or type amounts. You can reorder and adjust these later anytime.',
+        target: '#onboarding-mini-budgets-section'
+    }
+];
+
+function getActiveOnboardingBudgetTips() {
+    return onboardingBudgetTipPhase === 'mini' ? ONBOARDING_BUDGET_TIPS_MINI_BUDGETS : ONBOARDING_BUDGET_TIPS_MUST_HAVES;
+}
 
 function getOnboardingEl() { return document.getElementById('onboarding'); }
 function getAppShellEl() { return document.getElementById('app-shell'); }
@@ -71,10 +94,8 @@ function prefillOnboardingFromState() {
     if (typeof state === 'undefined') return;
     var cur = document.getElementById('onboarding-currency');
     var inc = document.getElementById('onboarding-income');
-    var realityEl = document.getElementById('onboarding-reality');
     if (cur && state.settings && state.settings.currency) cur.value = state.settings.currency;
     if (inc && typeof state.monthlyIncome === 'number') inc.value = state.monthlyIncome > 0 ? state.monthlyIncome : '';
-    if (realityEl) realityEl.value = '';
 }
 
 function showOnboardingStep(index) {
@@ -86,6 +107,7 @@ function showOnboardingStep(index) {
     var panel = document.getElementById('onboarding-step-' + stepId);
     if (panel) panel.classList.remove('hidden');
     if (stepId === 'categories') initAndRenderOnboardingCategories();
+    if (stepId === 'priority') renderOnboardingPriorityStep();
     if (stepId === 'summary') {
         updateOnboardingSummary();
         var card = document.getElementById('onboarding-account-card');
@@ -98,8 +120,18 @@ function showOnboardingStep(index) {
     if (app) app.classList.add('hidden');
 }
 
+function renderOnboardingPriorityStep() {
+    var host = document.getElementById('onboarding-priority-content');
+    if (!host) return;
+    if (typeof normalizePaycheckPriorityOrder === 'function') normalizePaycheckPriorityOrder();
+    if (typeof renderFundingPriorityCard === 'function') {
+        host.innerHTML = renderFundingPriorityCard();
+    }
+}
+
 function startBudgetPlanTips() {
     if (typeof state !== 'undefined' && state._sawBudgetPlanTips) return;
+    onboardingBudgetTipPhase = 'must';
     onboardingBudgetTipIndex = 0;
     var overlay = document.getElementById('onboarding-budget-tips-overlay');
     var card = document.getElementById('onboarding-tip-card');
@@ -112,7 +144,8 @@ function startBudgetPlanTips() {
         window._onboardingTipResize = function () {
             var step = document.getElementById('onboarding-step-categories');
             if (!step) return;
-            var currentTip = ONBOARDING_BUDGET_TIPS[onboardingBudgetTipIndex];
+            var tips = getActiveOnboardingBudgetTips();
+            var currentTip = tips[onboardingBudgetTipIndex];
             if (!currentTip || !currentTip.target) return;
             var targetEl = step.querySelector(currentTip.target);
             if (targetEl) {
@@ -182,13 +215,21 @@ function showBudgetPlanTip(index) {
     var titleEl = document.getElementById('onboarding-tip-title');
     var bodyEl = document.getElementById('onboarding-tip-body');
     var nextBtn = document.getElementById('onboarding-tip-next');
+    var skipBtn = document.getElementById('onboarding-tip-skip');
     if (!titleEl || !bodyEl || !nextBtn) return;
-    var tip = ONBOARDING_BUDGET_TIPS[index];
+    var tips = getActiveOnboardingBudgetTips();
+    var tip = tips[index];
     if (!tip) return;
 
     titleEl.textContent = tip.title;
     bodyEl.textContent = tip.body;
-    nextBtn.textContent = index >= ONBOARDING_BUDGET_TIPS.length - 1 ? 'Got it' : 'Next';
+    var isLastInPhase = index >= tips.length - 1;
+    var hasMiniPhase = ONBOARDING_BUDGET_TIPS_MINI_BUDGETS.length > 0;
+    if (onboardingBudgetTipPhase === 'must' && isLastInPhase && hasMiniPhase) nextBtn.textContent = 'Mini-Budgets tips';
+    else nextBtn.textContent = isLastInPhase ? 'Got it' : 'Next';
+    if (skipBtn) {
+        skipBtn.textContent = onboardingBudgetTipPhase === 'must' ? 'Skip Must Haves tips' : 'Skip Mini-Budgets tips';
+    }
 
     var step = document.getElementById('onboarding-step-categories');
     if (!step) return;
@@ -238,14 +279,27 @@ function showBudgetPlanTip(index) {
     }
 }
 function nextBudgetPlanTip() {
+    var tips = getActiveOnboardingBudgetTips();
     onboardingBudgetTipIndex++;
-    if (onboardingBudgetTipIndex >= ONBOARDING_BUDGET_TIPS.length) {
+    if (onboardingBudgetTipIndex >= tips.length) {
+        if (onboardingBudgetTipPhase === 'must' && ONBOARDING_BUDGET_TIPS_MINI_BUDGETS.length > 0) {
+            onboardingBudgetTipPhase = 'mini';
+            onboardingBudgetTipIndex = 0;
+            showBudgetPlanTip(0);
+            return;
+        }
         finishBudgetPlanTips();
         return;
     }
     showBudgetPlanTip(onboardingBudgetTipIndex);
 }
 function skipBudgetPlanTips() {
+    if (onboardingBudgetTipPhase === 'must' && ONBOARDING_BUDGET_TIPS_MINI_BUDGETS.length > 0) {
+        onboardingBudgetTipPhase = 'mini';
+        onboardingBudgetTipIndex = 0;
+        showBudgetPlanTip(0);
+        return;
+    }
     finishBudgetPlanTips();
 }
 function finishBudgetPlanTips() {
@@ -547,10 +601,8 @@ function initAndRenderOnboardingCategories() {
 function updateOnboardingSummary() {
     var curEl = document.getElementById('onboarding-currency');
     var incEl = document.getElementById('onboarding-income');
-    var realityEl = document.getElementById('onboarding-reality');
     var cur = (curEl && curEl.value) ? curEl.value : 'AED';
     var inc = (incEl && incEl.value.trim() !== '') ? incEl.value : '5000';
-    var reality = (realityEl && realityEl.value.trim() !== '') ? realityEl.value : '0';
     var cat = 'Custom';
     if (typeof state !== 'undefined' && state.categories && state.categories.length) {
         var customCount = state.categories.filter(function (s) { return !s.isSystem; }).length;
@@ -558,11 +610,9 @@ function updateOnboardingSummary() {
     }
     var sumCur = document.getElementById('onboarding-summary-currency');
     var sumInc = document.getElementById('onboarding-summary-income');
-    var sumReality = document.getElementById('onboarding-summary-reality');
     var sumCat = document.getElementById('onboarding-summary-categories');
     if (sumCur) sumCur.textContent = cur;
     if (sumInc) sumInc.textContent = inc;
-    if (sumReality) sumReality.textContent = reality;
     if (sumCat) sumCat.textContent = cat;
 }
 
@@ -606,7 +656,6 @@ function applyOnboardingValues(skipAll) {
     if (typeof state === 'undefined') return;
     var currencyEl = document.getElementById('onboarding-currency');
     var incomeEl = document.getElementById('onboarding-income');
-    var realityEl = document.getElementById('onboarding-reality');
     if (state.settings) state.settings.currency = (currencyEl && currencyEl.value) ? currencyEl.value : 'AED';
     var income = 5000;
     if (!skipAll && incomeEl && incomeEl.value.trim() !== '') {
@@ -614,12 +663,7 @@ function applyOnboardingValues(skipAll) {
         if (!isNaN(parsed) && parsed >= 0) income = parsed;
     }
     state.monthlyIncome = income;
-    var reality = null;
-    if (!skipAll && realityEl && realityEl.value.trim() !== '') {
-        var ex = parseFloat(realityEl.value);
-        if (!isNaN(ex) && ex >= 0) reality = ex;
-    }
-    state._onboardingReality = reality;
+    delete state._onboardingReality;
 }
 
 function seedBalancesFromOnboardingPlan() {
@@ -743,14 +787,6 @@ function finishOnboarding() {
     // #region agent log
     fetch('http://127.0.0.1:7853/ingest/84e116a3-552a-4446-9ad4-b17912da8656',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9bd46d'},body:JSON.stringify({sessionId:'9bd46d',runId:'pre-fix',hypothesisId:'H2_H3',location:'onboarding.js:finishOnboarding:post-initSurplusFromOpening',message:'onboarding finished balances snapshot',data:{transportPlan:((state.categories||[]).find(function(s){return s&&s.id==='core_essentials';})||{items:[]}).items.find(function(i){return i&&i.label==='Transportation';}),foodPlan:((state.categories||[]).find(function(s){return s&&s.id==='core_essentials';})||{items:[]}).items.find(function(i){return i&&i.label==='Daily Food';}),transportBucket:state.accounts&&state.accounts.buckets?state.accounts.buckets['Transportation']:null,transportBuckets:state.accounts?state.accounts.transportationBuckets:null,dailyFoodBalance:state.balances?state.balances['Daily Food']:null,surplus:state.accounts?state.accounts.surplus:null},timestamp:Date.now()})}).catch(()=>{});
     // #endregion
-    var reality = state._onboardingReality;
-    if (typeof reality === 'number' && reality >= 0 && typeof getLiquidityBreakdown === 'function') {
-        var lb = getLiquidityBreakdown();
-        var allocated = lb.totalLiquid - (state.accounts.surplus || 0);
-        state.accounts.surplus = Math.max(0, reality - allocated);
-    } else if (typeof reality === 'number' && reality >= 0) {
-        state.accounts.surplus = reality;
-    }
     state._showFirstActionPrompt = true;
     delete state._onboardingReality;
     if (typeof saveState === 'function') saveState();

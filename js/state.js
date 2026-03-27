@@ -170,6 +170,92 @@ function ensureGeneralSavingsBucketState() {
     }
 }
 
+function buildPaycheckPriorityCatalog() {
+    var catalog = [];
+    var seen = {};
+    var fixedName = GENERAL_SAVINGS_BUCKET_NAME || 'General Savings';
+    var savingsBuckets = (state.accounts && state.accounts.savingsBuckets) ? state.accounts.savingsBuckets : {};
+    Object.keys(savingsBuckets).forEach(function (bucketName) {
+        if (!bucketName || bucketName === fixedName) return;
+        var entryId = 'savingsBucket:' + bucketName;
+        if (seen[entryId]) return;
+        seen[entryId] = true;
+        catalog.push({
+            id: entryId,
+            type: 'savingsBucket',
+            label: bucketName,
+            title: bucketName,
+            groupLabel: 'Savings Bucket',
+            bucketName: bucketName
+        });
+    });
+
+    var core = (state.categories || []).find(function (s) { return s && s.id === 'core_essentials'; });
+    var coreItems = (core && Array.isArray(core.items)) ? core.items : [];
+    coreItems.forEach(function (item) {
+        if (!item || !item.label || item.label === 'Savings') return;
+        var itemLabel = item.label === 'Food Base' ? 'Daily Food' : item.label;
+        var entryId = 'mustHave:' + itemLabel;
+        if (seen[entryId]) return;
+        seen[entryId] = true;
+        catalog.push({
+            id: entryId,
+            type: 'mustHave',
+            label: itemLabel,
+            title: itemLabel,
+            groupLabel: 'Must Have',
+            itemLabel: itemLabel
+        });
+    });
+
+    (state.categories || []).forEach(function (sec) {
+        if (!sec || sec.isSystem || sec.id === 'sys_savings' || sec.id === 'core_essentials') return;
+        var entryId = 'mini:' + sec.id;
+        if (seen[entryId]) return;
+        seen[entryId] = true;
+        catalog.push({
+            id: entryId,
+            type: 'mini',
+            label: sec.label || sec.id,
+            title: sec.label || sec.id,
+            groupLabel: 'Mini-Budget',
+            categoryId: sec.id
+        });
+    });
+    return catalog;
+}
+
+function normalizePaycheckPriorityOrder() {
+    if (!state.accounts || typeof state.accounts !== 'object') state.accounts = {};
+    var catalog = buildPaycheckPriorityCatalog();
+    var validIds = {};
+    catalog.forEach(function (entry) { validIds[entry.id] = true; });
+
+    var raw = Array.isArray(state.accounts.paycheckPriorityOrder) ? state.accounts.paycheckPriorityOrder : [];
+    var normalized = [];
+    var seen = {};
+    raw.forEach(function (id) {
+        if (typeof id !== 'string' || !validIds[id] || seen[id]) return;
+        seen[id] = true;
+        normalized.push(id);
+    });
+    catalog.forEach(function (entry) {
+        if (seen[entry.id]) return;
+        seen[entry.id] = true;
+        normalized.push(entry.id);
+    });
+    state.accounts.paycheckPriorityOrder = normalized;
+    return normalized;
+}
+
+function getPaycheckPriorityEntries() {
+    var catalog = buildPaycheckPriorityCatalog();
+    var byId = {};
+    catalog.forEach(function (entry) { byId[entry.id] = entry; });
+    var ordered = normalizePaycheckPriorityOrder();
+    return ordered.map(function (id) { return byId[id]; }).filter(Boolean);
+}
+
 function markTransportationBucketDeleted(name) {
     if (!name) return;
     if (!Array.isArray(state._deletedTransportationBuckets)) state._deletedTransportationBuckets = [];
@@ -290,6 +376,9 @@ function loadState() {
     migrateState();
     ensureSettings();
     ensureFoodConsumedDays();
+    ensureSystemSavings();
+    ensureCoreItems();
+    normalizePaycheckPriorityOrder();
 }
 
 function migrateLabelRename() {
@@ -370,6 +459,7 @@ function migrateState() {
         ACCOUNT_LABELS.forEach(label => {
             if (state.balances[label] !== undefined) delete state.balances[label];
         });
+        normalizePaycheckPriorityOrder();
         state.schemaVersion = 2;
         return;
     }
@@ -420,6 +510,7 @@ function migrateState() {
     if (!Array.isArray(state._deletedSavingsBuckets)) state._deletedSavingsBuckets = [];
     if (!Array.isArray(state._deletedTransportationBuckets)) state._deletedTransportationBuckets = [];
     ensureGeneralSavingsBucketState();
+    normalizePaycheckPriorityOrder();
 }
 
 function isAccountLabel(label) {
@@ -530,6 +621,7 @@ function ensureCoreItems() {
             );
         }
     });
+    normalizePaycheckPriorityOrder();
 }
 
 function getWeeklyConfigAmount() {
