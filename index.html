@@ -467,21 +467,21 @@
             </div>
             <div class="ledger-top-grid grid grid-cols-1 lg:grid-cols-1 gap-4">
             <!-- Paycheck / Distribute: long button opens amount form -->
-            <div class="paycheck-home-card premium-card border border-slate-200 rounded-xl bg-slate-50/50 overflow-hidden">
-                <button type="button" id="paycheck-trigger-btn" onclick="togglePaycheckPanel()" aria-expanded="false" aria-controls="paycheck-panel" class="w-full p-4 flex items-center justify-between gap-3 text-left hover:bg-slate-100/70 transition">
+            <div class="paycheck-home-card premium-card overflow-hidden">
+                <button type="button" id="paycheck-trigger-btn" onclick="togglePaycheckPanel()" aria-expanded="false" aria-controls="paycheck-panel" class="paycheck-trigger w-full flex items-center justify-between gap-3 text-left transition">
                     <div class="min-w-0">
-                        <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500 block">Paycheck</span>
-                        <p class="text-[10px] text-slate-400 mt-0.5">Distribute your paycheck across planned budgets.</p>
+                        <span class="paycheck-title block">Paycheck</span>
+                        <p class="paycheck-subtitle mt-0.5">Distribute your paycheck across planned budgets.</p>
                     </div>
-                    <span class="paycheck-chevron text-slate-400 shrink-0">▼</span>
+                    <span class="paycheck-chevron shrink-0">▼</span>
                 </button>
-                <div id="paycheck-panel" class="hidden border-t border-slate-200/80 bg-white/60 p-4" aria-hidden="true">
-                    <label for="paycheck-amount" class="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">Amount</label>
-                    <div class="flex flex-wrap gap-2 items-center">
-                        <input type="number" id="paycheck-amount" placeholder="Enter amount..." class="flex-1 min-w-[120px] max-w-[180px] bg-white border border-slate-200 rounded-lg px-3 py-2.5 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-300" autocomplete="off">
-                        <span class="text-sm font-bold text-slate-400" data-currency>AED</span>
-                        <button type="button" onclick="applyPaycheckDistribute()" class="bg-indigo-600 text-white px-5 py-2.5 rounded-lg text-[10px] font-black uppercase hover:bg-indigo-700 transition">Distribute</button>
-                        <button type="button" onclick="togglePaycheckPanel()" class="text-slate-500 text-[10px] font-bold hover:text-slate-700 px-2 py-1">Close</button>
+                <div id="paycheck-panel" class="paycheck-panel hidden" aria-hidden="true">
+                    <label for="paycheck-amount" class="paycheck-label block mb-2">Amount</label>
+                    <div class="paycheck-row">
+                        <input type="number" id="paycheck-amount" placeholder="Enter amount..." class="paycheck-input" autocomplete="off">
+                        <span class="paycheck-currency" data-currency>AED</span>
+                        <button type="button" onclick="applyPaycheckDistribute()" class="paycheck-cta">Distribute</button>
+                        <button type="button" onclick="togglePaycheckPanel()" class="paycheck-close-btn" aria-label="Close paycheck panel">Close</button>
                     </div>
                 </div>
             </div>
@@ -737,7 +737,7 @@
 
                 <div id="daily-food-bulk-refill-modal" class="modal-overlay hidden fixed inset-0 z-[96]">
                     <div class="absolute inset-0 bg-black/45" onclick="closeDailyFoodBulkRefillModal()"></div>
-                    <div class="absolute inset-0 sm:inset-auto sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:max-w-xl bg-white sm:rounded-2xl shadow-2xl border border-slate-200 flex flex-col">
+                    <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(92vw,42rem)] max-h-[88dvh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
                         <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
                             <div>
                                 <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Bulk action</p>
@@ -936,17 +936,9 @@
             <div class="premium-card p-6 space-y-4">
                 <div>
                     <h3 class="text-sm font-black text-slate-800 uppercase tracking-widest">Interface</h3>
-                    <p class="text-xs text-slate-500 mt-1">Theme and spacing.</p>
+                    <p class="text-xs text-slate-500 mt-1">Spacing options.</p>
                 </div>
                 <div class="space-y-3">
-                    <div class="bg-slate-50 p-4 rounded-xl">
-                        <label class="text-[9px] font-bold uppercase text-slate-400">Theme</label>
-                        <select id="settings-theme" class="w-full bg-transparent text-lg font-black outline-none mt-1" onchange="saveSettingsFromUI()">
-                            <option value="light">Light</option>
-                            <option value="dark">Dark</option>
-                            <option value="sepia">Sepia</option>
-                        </select>
-                    </div>
                     <label class="flex items-center gap-3 bg-slate-50 p-3 rounded-xl">
                         <input type="checkbox" id="settings-compact" class="w-5 h-5 accent-indigo-600 rounded" onchange="saveSettingsFromUI()">
                         <span class="text-xs font-bold text-slate-600">Compact spacing</span>

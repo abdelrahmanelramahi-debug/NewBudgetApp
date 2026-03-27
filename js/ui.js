@@ -230,8 +230,6 @@ function renderSettings() {
     if (currencyInput) currencyInput.value = getCurrencyLabel();
     const decimalsSelect = getEl('settings-decimals');
     if(decimalsSelect) decimalsSelect.value = String(state.settings?.decimals ?? 2);
-    const themeSelect = getEl('settings-theme');
-    if(themeSelect) themeSelect.value = state.settings?.theme || 'sepia';
     const compactToggle = getEl('settings-compact');
     if(compactToggle) compactToggle.checked = !!state.settings?.compact;
     const firstDaySelect = getEl('settings-first-day-of-week');

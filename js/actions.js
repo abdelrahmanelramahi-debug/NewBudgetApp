@@ -3469,7 +3469,6 @@ function saveSettingsFromUI() {
     const currencyInput = document.getElementById('settings-currency');
     const decimalsSelect = document.getElementById('settings-decimals');
     const showFoodPlanToggle = document.getElementById('budget-show-food-plan') || document.getElementById('settings-show-food-plan');
-    const themeSelect = document.getElementById('settings-theme');
     const compactToggle = document.getElementById('settings-compact');
     const firstDaySelect = document.getElementById('settings-first-day-of-week');
     const payDateSelect = document.getElementById('settings-pay-date');
@@ -3486,7 +3485,7 @@ function saveSettingsFromUI() {
         confirmSurplusEdits: true,
         allowNegativeSurplus: true,
         showFoodPlan: showFoodPlanToggle ? !!showFoodPlanToggle.checked : (state.settings?.showFoodPlan !== false),
-        theme: themeSelect?.value || 'light',
+        theme: state.settings?.theme || 'sepia',
         compact: !!compactToggle?.checked,
         firstDayOfWeek: Number.isNaN(firstDayOfWeek) ? 3 : firstDayOfWeek,
         payDate: Number.isNaN(payDate) ? 28 : payDate
