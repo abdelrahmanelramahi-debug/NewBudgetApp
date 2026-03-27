@@ -1272,36 +1272,61 @@ window.closeFoodDayTransferPopover = closeFoodDayTransferPopover;
 var _dailyFoodBulkSelectedDays = [];
 
 function syncDailyFoodStartDateInput() {
-    var input = document.getElementById('food-start-date-input');
-    if (!input) return;
     var info = (typeof getPayCycleInfo === 'function') ? getPayCycleInfo() : null;
     var start = info && info.cycleStart ? info.cycleStart : null;
     if (!start || !start.getFullYear) return;
     var y = start.getFullYear();
     var m = String(start.getMonth() + 1).padStart(2, '0');
     var d = String(start.getDate()).padStart(2, '0');
-    input.value = y + '-' + m + '-' + d;
+    var value = y + '-' + m + '-' + d;
+    var ids = ['food-start-date-menu-input', 'food-start-date-input'];
+    ids.forEach(function (id) {
+        var input = document.getElementById(id);
+        if (input) input.value = value;
+    });
 }
 
-function toggleDailyFoodActionsInline() {
-    var panel = document.getElementById('daily-food-actions-inline');
+function openDailyFoodActionsMenu(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    if (e && e.stopPropagation) e.stopPropagation();
+    var menu = document.getElementById('daily-food-actions-menu');
+    var btn = document.getElementById('food-actions-btn');
+    if (!menu || !btn) return;
+    var isOpen = !menu.classList.contains('hidden');
+    if (isOpen) {
+        closeDailyFoodActionsMenu();
+        return;
+    }
+    syncDailyFoodStartDateInput();
+    var rect = btn.getBoundingClientRect();
+    var menuWidth = 260;
+    var left = Math.max(10, rect.right - menuWidth);
+    var top = rect.bottom + 8;
+    menu.style.left = left + 'px';
+    menu.style.top = top + 'px';
+    menu.classList.remove('hidden');
+}
+window.openDailyFoodActionsMenu = openDailyFoodActionsMenu;
+
+function closeDailyFoodActionsMenu() {
+    var menu = document.getElementById('daily-food-actions-menu');
+    if (menu) menu.classList.add('hidden');
+    var panel = document.getElementById('daily-food-start-date-panel');
+    if (panel) panel.classList.add('hidden');
+}
+window.closeDailyFoodActionsMenu = closeDailyFoodActionsMenu;
+
+function toggleDailyFoodStartDateMenu() {
+    var panel = document.getElementById('daily-food-start-date-panel');
     if (!panel) return;
     var willShow = panel.classList.contains('hidden');
     panel.classList.toggle('hidden', !willShow);
     if (willShow) syncDailyFoodStartDateInput();
 }
-window.toggleDailyFoodActionsInline = toggleDailyFoodActionsInline;
+window.toggleDailyFoodStartDateMenu = toggleDailyFoodStartDateMenu;
 
-function closeDailyFoodActionsInline() {
-    var panel = document.getElementById('daily-food-actions-inline');
-    if (panel) panel.classList.add('hidden');
-}
-window.closeDailyFoodActionsInline = closeDailyFoodActionsInline;
-window.openDailyFoodActionsMenu = toggleDailyFoodActionsInline;
-window.closeDailyFoodActionsMenu = closeDailyFoodActionsInline;
-
-function applyFoodStartDateFromInline() {
-    var input = document.getElementById('food-start-date-input');
+function applyFoodStartDateFromMenu() {
+    var input = document.getElementById('food-start-date-menu-input') || document.getElementById('food-start-date-input');
     if (!input || !input.value) {
         if (typeof showAppAlert === 'function') showAppAlert('Pick a start date first.');
         return;
@@ -1315,15 +1340,17 @@ function applyFoodStartDateFromInline() {
     var payDateSelect = document.getElementById('settings-pay-date');
     if (payDateSelect) payDateSelect.value = String(dayOfMonth);
     saveSettingsFromUI();
+    closeDailyFoodActionsMenu();
     if (typeof showAppAlert === 'function') {
         showAppAlert('Daily Food start date synced. Pay date is now set to day ' + dayOfMonth + '.');
     }
 }
-window.applyFoodStartDateFromInline = applyFoodStartDateFromInline;
+window.applyFoodStartDateFromMenu = applyFoodStartDateFromMenu;
+window.applyFoodStartDateFromInline = applyFoodStartDateFromMenu;
 
 function openDailyFoodBulkRefillModal() {
     if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
-    closeDailyFoodActionsInline();
+    closeDailyFoodActionsMenu();
     _dailyFoodBulkSelectedDays = [];
     renderDailyFoodBulkSourceOptions();
     renderDailyFoodBulkDaysGrid();
@@ -1335,6 +1362,17 @@ function closeDailyFoodBulkRefillModal() {
     toggleModal('daily-food-bulk-refill-modal', false);
 }
 window.closeDailyFoodBulkRefillModal = closeDailyFoodBulkRefillModal;
+
+(function initDailyFoodActionsMenuDismiss() {
+    if (document._dailyFoodActionsDismissWired) return;
+    document._dailyFoodActionsDismissWired = true;
+    document.addEventListener('click', function (e) {
+        if (e.target.closest('#daily-food-actions-menu') || e.target.closest('#food-actions-btn')) return;
+        closeDailyFoodActionsMenu();
+    });
+    window.addEventListener('resize', function () { closeDailyFoodActionsMenu(); });
+    window.addEventListener('scroll', function () { closeDailyFoodActionsMenu(); }, true);
+})();
 
 function getDailyFoodBulkSourceOptions() {
     ensureAccountsState();

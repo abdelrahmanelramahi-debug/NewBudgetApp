@@ -775,7 +775,8 @@ function renderStrategy(opts) {
             : '';
         container.innerHTML = mustHavesBlock + miniBudgetsBlock + toolBarHtml;
     } else {
-        container.innerHTML = systemHtml + miniBudgetsHeading + fundingPriorityHtml + customHtml + toolBarHtml;
+        // Keep Funding Priority as a separate section after Mini-Budgets.
+        container.innerHTML = systemHtml + miniBudgetsHeading + customHtml + fundingPriorityHtml + toolBarHtml;
     }
 
     if(!systemHtml && !customHtml) {

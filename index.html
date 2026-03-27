@@ -634,20 +634,18 @@
                         <div class="flex items-center gap-1.5">
                             <button type="button" id="food-unused-transfer-btn" onclick="showFoodUnusedTransferNotice()" class="hidden px-2 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-[9px] font-black uppercase tracking-wider text-amber-700 transition" title="See rollover details">Unused moved</button>
                             <button type="button" id="food-distribution-extra-btn" onclick="showFoodDistributionExtraNotice()" class="hidden px-2 py-1 rounded-lg bg-indigo-100 hover:bg-indigo-200 text-[9px] font-black uppercase tracking-wider text-indigo-700 transition" title="See distribution details">Dist moved</button>
-                            <button type="button" id="food-actions-btn" onclick="toggleDailyFoodActionsInline()" class="h-7 w-7 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 transition font-black text-sm leading-none" title="Daily Food actions" aria-label="Daily Food actions">⋯</button>
+                            <button type="button" id="food-actions-btn" onclick="openDailyFoodActionsMenu(event)" class="h-7 w-7 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 transition font-black text-sm leading-none" title="Daily Food actions" aria-label="Daily Food actions">⋯</button>
                         </div>
                     </div>
                     <p class="text-[10px] font-bold text-slate-400 mt-1"><span id="daily-food-rate">0.00</span> <span data-currency>AED</span>/Day</p>
-                    <div id="daily-food-actions-inline" class="hidden mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3 space-y-3">
-                        <div class="grid sm:grid-cols-[1fr_auto] gap-2 items-end">
-                            <div>
-                                <label for="food-start-date-input" class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Set start date</label>
-                                <input type="date" id="food-start-date-input" class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-200" />
-                            </div>
-                            <button type="button" onclick="applyFoodStartDateFromInline()" class="h-[42px] px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-[10px] font-black uppercase tracking-wider text-white transition">Apply date</button>
-                        </div>
-                        <button type="button" onclick="openDailyFoodBulkRefillModal()" class="w-full py-2.5 rounded-xl bg-emerald-600 text-white text-[10px] font-black uppercase tracking-wider hover:bg-emerald-700 transition">Fund consumed days</button>
+                </div>
+                <div id="daily-food-actions-menu" class="hidden fixed z-[98] w-[260px] p-2 rounded-2xl bg-white border border-slate-200 shadow-xl shadow-slate-300/40 ring-1 ring-slate-900/5">
+                    <button type="button" onclick="toggleDailyFoodStartDateMenu()" class="w-full text-left px-3 py-2.5 rounded-xl text-[12px] font-black uppercase tracking-wider text-slate-700 hover:bg-slate-50 transition">Set start date</button>
+                    <div id="daily-food-start-date-panel" class="hidden px-2 pt-1 pb-2 space-y-2">
+                        <input type="date" id="food-start-date-menu-input" class="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-200" />
+                        <button type="button" onclick="applyFoodStartDateFromMenu()" class="w-full py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-[10px] font-black uppercase tracking-wider text-white transition">Apply date</button>
                     </div>
+                    <button type="button" onclick="openDailyFoodBulkRefillModal()" class="w-full text-left px-3 py-2.5 rounded-xl text-[12px] font-black uppercase tracking-wider text-emerald-700 hover:bg-emerald-50 transition">Refund Days</button>
                 </div>
 
                 <!-- Macro: days left, X of 28, progress bar, Week · Day -->
