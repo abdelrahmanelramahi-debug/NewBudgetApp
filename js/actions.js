@@ -2514,11 +2514,6 @@ function applyPaycheckDistribute() {
     function getDeficitForLabel(label, plannedAmount, recordExcluded) {
         var planned = Number(plannedAmount) || 0;
         if (planned <= 0) return 0;
-        if (label === 'Weekly Allowance') {
-            // Weekly Allowance is a cycle contribution target in paycheck distribution.
-            // Ignore current weekly balances here so planned cycle totals are honored.
-            return planned;
-        }
         if (label === 'Daily Food') {
             var foodDetails = getFoodPaycheckDeficitDetails(planned);
             if (recordExcluded) {
