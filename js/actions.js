@@ -2413,20 +2413,13 @@ function applyPaycheckAdd() {
 
 function getFoodPaycheckDeficitDetails(plannedAmount) {
     var amount = Number(plannedAmount) || 0;
-    var info = (typeof getFoodRemainderInfo === 'function') ? getFoodRemainderInfo() : null;
-    var daysTotal = Math.max(1, Math.floor((state.food && state.food.daysTotal) || 28));
-    var daysUsed = Math.max(0, Math.floor((state.food && state.food.daysUsed) || 0));
-    var daysLeft = Math.max(0, daysTotal - daysUsed);
-    var dailyRate = (info && info.dailyRate > 0) ? info.dailyRate : (amount / daysTotal);
-    var maxFundablePlanAmount = dailyRate * daysLeft;
-    var cappedPlannedAmount = Math.min(amount, maxFundablePlanAmount);
-    var excludedAmount = Math.max(0, amount - cappedPlannedAmount);
-    var excludedDays = excludedAmount > 0 ? Math.max(0, Math.floor(excludedAmount / (dailyRate || 1))) : 0;
     var current = getItemBalance('Daily Food', 0);
     return {
-        deficit: Math.max(0, cappedPlannedAmount - current),
-        excludedAmount: excludedAmount,
-        excludedDays: excludedDays
+        // Paycheck distribution should follow the configured cycle plan amount.
+        // Do not auto-cap Daily Food by days-left when calculating paycheck deficits.
+        deficit: Math.max(0, amount - current),
+        excludedAmount: 0,
+        excludedDays: 0
     };
 }
 
@@ -2521,6 +2514,11 @@ function applyPaycheckDistribute() {
     function getDeficitForLabel(label, plannedAmount, recordExcluded) {
         var planned = Number(plannedAmount) || 0;
         if (planned <= 0) return 0;
+        if (label === 'Weekly Allowance') {
+            // Weekly Allowance is a cycle contribution target in paycheck distribution.
+            // Ignore current weekly balances here so planned cycle totals are honored.
+            return planned;
+        }
         if (label === 'Daily Food') {
             var foodDetails = getFoodPaycheckDeficitDetails(planned);
             if (recordExcluded) {
