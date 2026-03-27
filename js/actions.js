@@ -2415,8 +2415,6 @@ function getFoodPaycheckDeficitDetails(plannedAmount) {
     var amount = Number(plannedAmount) || 0;
     var current = getItemBalance('Daily Food', 0);
     return {
-        // Paycheck distribution should follow the configured cycle plan amount.
-        // Do not auto-cap Daily Food by days-left when calculating paycheck deficits.
         deficit: Math.max(0, amount - current),
         excludedAmount: 0,
         excludedDays: 0
@@ -2514,14 +2512,6 @@ function applyPaycheckDistribute() {
     function getDeficitForLabel(label, plannedAmount, recordExcluded) {
         var planned = Number(plannedAmount) || 0;
         if (planned <= 0) return 0;
-        if (label === 'Daily Food') {
-            var foodDetails = getFoodPaycheckDeficitDetails(planned);
-            if (recordExcluded) {
-                excludedFoodAmount += foodDetails.excludedAmount;
-                excludedFoodDays += foodDetails.excludedDays;
-            }
-            return foodDetails.deficit;
-        }
         var current = getCurrentForLabel(label);
         return Math.max(0, planned - current);
     }
