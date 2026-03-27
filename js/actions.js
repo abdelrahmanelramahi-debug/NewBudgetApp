@@ -48,17 +48,25 @@ function commitUI(profile) {
 function ensureGeneralSavingsBudgetConfig() {
     if (!state.accounts) return;
     var fixedName = 'General Savings';
+    var isAlias = function (name) {
+        return String(name || '').trim().toLowerCase() === 'savings';
+    };
     var buckets = state.accounts.savingsBuckets || {};
     // Keep migration idempotent: do not sum legacy Main + canonical values repeatedly.
     var hasGeneral = buckets[fixedName] !== undefined;
     var hasMain = buckets.Main !== undefined;
-    var hasLegacySavingsAlias = buckets.Savings !== undefined;
+    var aliasKey = null;
+    Object.keys(buckets).forEach(function (key) {
+        if (aliasKey) return;
+        if (isAlias(key)) aliasKey = key;
+    });
+    var hasLegacySavingsAlias = aliasKey !== null;
     var moved = 0;
     if (hasGeneral) moved = Number(buckets[fixedName]) || 0;
     else if (hasMain) moved = Number(buckets.Main) || 0;
-    else if (hasLegacySavingsAlias) moved = Number(buckets.Savings) || 0;
+    else if (hasLegacySavingsAlias) moved = Number(buckets[aliasKey]) || 0;
     if (hasMain) delete buckets.Main;
-    if (hasLegacySavingsAlias) delete buckets.Savings;
+    if (hasLegacySavingsAlias) delete buckets[aliasKey];
     buckets[fixedName] = moved;
     var ordered = {};
     ordered[fixedName] = Number(buckets[fixedName]) || 0;
@@ -77,6 +85,12 @@ function ensureGeneralSavingsBudgetConfig() {
         Number(state.accounts.savingsBudgetPlan.Main) ||
         Number(state.accounts.savingsBudgetPlan.Savings) ||
         0;
+    Object.keys(state.accounts.savingsBudgetPlan || {}).forEach(function (key) {
+        if (!isAlias(key)) return;
+        if (key === fixedName) return;
+        if (plans[fixedName] > 0) return;
+        plans[fixedName] = Number(state.accounts.savingsBudgetPlan[key]) || 0;
+    });
     Object.keys(ordered).forEach(function (k) {
         if (k === fixedName) return;
         plans[k] = Number(state.accounts.savingsBudgetPlan[k]) || 0;

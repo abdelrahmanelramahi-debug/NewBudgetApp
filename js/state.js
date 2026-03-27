@@ -84,6 +84,9 @@ const WEEKLY_MAX_WEEKS = 4;
 let pendingDangerAction = null;
 let requiredDangerPhrase = "";
 var GENERAL_SAVINGS_BUCKET_NAME = 'General Savings';
+function isLegacySavingsBucketAlias(name) {
+    return String(name || '').trim().toLowerCase() === 'savings';
+}
 
 // Hard-suppression helpers for payables buckets that must never resurrect once deleted
 function markPayablesBucketDeleted(name) {
@@ -139,17 +142,22 @@ function ensureGeneralSavingsBucketState() {
     // trust the canonical value to avoid re-adding legacy amount on each sync pull.
     var hasGeneral = buckets[GENERAL_SAVINGS_BUCKET_NAME] !== undefined;
     var hasMain = buckets['Main'] !== undefined;
-    var hasLegacySavingsAlias = buckets['Savings'] !== undefined;
+    var aliasKey = null;
+    Object.keys(buckets).forEach(function (key) {
+        if (aliasKey) return;
+        if (isLegacySavingsBucketAlias(key)) aliasKey = key;
+    });
+    var hasLegacySavingsAlias = aliasKey !== null;
     var migratedAmount = 0;
     if (hasGeneral) {
         migratedAmount = Number(buckets[GENERAL_SAVINGS_BUCKET_NAME]) || 0;
     } else if (hasMain) {
         migratedAmount = Number(buckets['Main']) || 0;
     } else if (hasLegacySavingsAlias) {
-        migratedAmount = Number(buckets['Savings']) || 0;
+        migratedAmount = Number(buckets[aliasKey]) || 0;
     }
     if (hasMain) delete buckets['Main'];
-    if (hasLegacySavingsAlias) delete buckets['Savings'];
+    if (hasLegacySavingsAlias) delete buckets[aliasKey];
     buckets[GENERAL_SAVINGS_BUCKET_NAME] = migratedAmount;
     var ordered = {};
     ordered[GENERAL_SAVINGS_BUCKET_NAME] = Number(buckets[GENERAL_SAVINGS_BUCKET_NAME]) || 0;
@@ -168,6 +176,12 @@ function ensureGeneralSavingsBucketState() {
         Number(state.accounts.savingsBudgetPlan['Main']) ||
         Number(state.accounts.savingsBudgetPlan['Savings']) ||
         0;
+    Object.keys(state.accounts.savingsBudgetPlan || {}).forEach(function (key) {
+        if (!isLegacySavingsBucketAlias(key)) return;
+        if (key === GENERAL_SAVINGS_BUCKET_NAME) return;
+        if (planMap[GENERAL_SAVINGS_BUCKET_NAME] > 0) return;
+        planMap[GENERAL_SAVINGS_BUCKET_NAME] = Number(state.accounts.savingsBudgetPlan[key]) || 0;
+    });
     Object.keys(ordered).forEach(function (key) {
         if (key === GENERAL_SAVINGS_BUCKET_NAME) return;
         planMap[key] = Number(state.accounts.savingsBudgetPlan[key]) || 0;
@@ -184,19 +198,18 @@ function buildPaycheckPriorityCatalog() {
     var savingsBuckets = (state.accounts && state.accounts.savingsBuckets) ? state.accounts.savingsBuckets : {};
     Object.keys(savingsBuckets).forEach(function (bucketName) {
         if (!bucketName) return;
-        // Legacy alias that should be normalized into "General Savings"
-        if (bucketName === 'Savings') return;
-        var entryId = 'savingsBucket:' + bucketName;
+        var canonicalName = isLegacySavingsBucketAlias(bucketName) ? (GENERAL_SAVINGS_BUCKET_NAME || 'General Savings') : bucketName;
+        var entryId = 'savingsBucket:' + canonicalName;
         if (seen[entryId]) return;
         seen[entryId] = true;
-        var isDefaultSavings = bucketName === (GENERAL_SAVINGS_BUCKET_NAME || 'General Savings');
         catalog.push({
             id: entryId,
             type: 'savingsBucket',
-            label: bucketName,
-            title: isDefaultSavings ? 'Savings' : bucketName,
+            label: canonicalName,
+            // Show real bucket name to avoid confusion with the parent Savings account.
+            title: canonicalName,
             groupLabel: 'Savings Bucket',
-            bucketName: bucketName
+            bucketName: canonicalName
         });
     });
 
