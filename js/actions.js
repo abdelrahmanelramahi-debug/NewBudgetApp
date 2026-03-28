@@ -1676,10 +1676,6 @@ function applyOverflowDayRedistribution(dayKey) {
     }
     pushToUndo();
     markOverflowDayUsage(dayKey, 'redistributed');
-    if (typeof state.food.redistributedExtraDays !== 'number' || Number.isNaN(state.food.redistributedExtraDays)) {
-        state.food.redistributedExtraDays = 0;
-    }
-    state.food.redistributedExtraDays += 1;
     saveState();
     if (typeof renderLedger === 'function') renderLedger();
     if (typeof updateGlobalUI === 'function') updateGlobalUI();
@@ -2052,14 +2048,11 @@ function showFoodUnusedTransferNotice() {
 window.showFoodUnusedTransferNotice = showFoodUnusedTransferNotice;
 
 function showFoodDistributionExtraNotice() {
-    var notice = state.food && state.food.pendingDistributionExtraNotice;
-    if (!notice || !notice.amount || notice.amount <= 0) return;
-    var days = Math.max(0, Math.floor(notice.days || 0));
-    var msg = formatMoney(notice.amount) + ' ' + getCurrencyLabel() + ' stayed in Extra because ' + days + ' consumed Daily Food day' + (days === 1 ? '' : 's') + ' could not be funded by distribution.';
-    if (typeof showAppAlert === 'function') showAppAlert(msg, 'Daily Food distribution');
-    delete state.food.pendingDistributionExtraNotice;
-    saveState();
-    if (typeof updateGlobalUI === 'function') updateGlobalUI();
+    if (state.food && state.food.pendingDistributionExtraNotice) {
+        delete state.food.pendingDistributionExtraNotice;
+        saveState();
+        if (typeof updateGlobalUI === 'function') updateGlobalUI();
+    }
 }
 window.showFoodDistributionExtraNotice = showFoodDistributionExtraNotice;
 
@@ -2542,9 +2535,6 @@ function applyPaycheckDistribute() {
         syncSavingsBudgetPlanItemAmount();
     })();
 
-    var excludedFoodAmount = 0;
-    var excludedFoodDays = 0;
-
     var allocatableItems = getAllocatableItems();
     var savingsPlanByBucket = {};
     var mustHavePlanByLabel = {};
@@ -2642,14 +2632,7 @@ function applyPaycheckDistribute() {
     pushToUndo();
     applyTransaction({ type: 'adjust_surplus', delta: val });
     if (!state.food || typeof state.food !== 'object') state.food = {};
-    if (excludedFoodAmount > 0) {
-        state.food.pendingDistributionExtraNotice = {
-            amount: excludedFoodAmount,
-            days: excludedFoodDays,
-            source: 'paycheck',
-            at: Date.now()
-        };
-    } else if (state.food.pendingDistributionExtraNotice) {
+    if (state.food.pendingDistributionExtraNotice) {
         delete state.food.pendingDistributionExtraNotice;
     }
 

@@ -588,6 +588,17 @@ function ensureFoodConsumedDays() {
     state.food.daysUsed = state.food.consumedDays.length;
 }
 
+/** Extra days between core 28 and next pay — from calendar, not user "redistribute" clicks. Defined in ui.js getPayCycleInfo(). */
+function getPayCycleOverflowDayCount() {
+    if (typeof getPayCycleInfo !== 'function') return 0;
+    try {
+        var info = getPayCycleInfo();
+        return Array.isArray(info.overflowDates) ? info.overflowDates.length : 0;
+    } catch (e) {
+        return 0;
+    }
+}
+
 /** Daily Food plan rates without touching funding migration (avoid recursion). */
 function computeFoodPlanCore() {
     var cid = SECTION_IDS.CORE_ESSENTIALS;
@@ -596,8 +607,9 @@ function computeFoodPlanCore() {
     const fSec = state.categories.find(s => s.id === cid) || state.categories.find(s => s.id === fid);
     const fItem = fSec ? fSec.items.find(i => i.label === flabel) : null;
     const foodBase = fItem ? fItem.amount : 0;
-    var redistributed = Math.max(0, Math.floor((state.food && state.food.redistributedExtraDays) || 0));
-    var effectiveDaysTotal = (state.food && state.food.daysTotal || 28) + redistributed;
+    var coreDays = (state.food && state.food.daysTotal) ? state.food.daysTotal : 28;
+    var overflowCalendarDays = typeof getPayCycleOverflowDayCount === 'function' ? getPayCycleOverflowDayCount() : 0;
+    var effectiveDaysTotal = coreDays + overflowCalendarDays;
     const daysUsed = (state.food && state.food.consumedDays) ? state.food.consumedDays.length : 0;
     const daysLeft = Math.max(0, effectiveDaysTotal - daysUsed);
     const dailyRate = effectiveDaysTotal > 0 ? (foodBase / effectiveDaysTotal) : 0;
@@ -736,6 +748,10 @@ function reconcileFoodFundingWithLedger() {
 
 function ensureFoodFundingState() {
     ensureFoodConsumedDays();
+    // Legacy field: distribution never incremented excludedFood*; stale saves showed bogus "Dist moved" alerts.
+    if (state.food && state.food.pendingDistributionExtraNotice) {
+        delete state.food.pendingDistributionExtraNotice;
+    }
     getFoodFundingMap();
     if (!state.food._foodFundingMigrated) {
         migrateLegacyFoodFunding();

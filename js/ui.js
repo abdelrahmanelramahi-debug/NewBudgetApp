@@ -1282,7 +1282,6 @@ function updateFoodUI() {
     // Match same item as getFoodRemainderInfo (Daily Food) so rate and remainder stay in sync
     var fItem = fSec ? fSec.items.find(i=>i.label===flabel) : null;
     var foodBase = fItem ? fItem.amount : 600;
-    var redistributedDays = Math.max(0, Math.floor((state.food && state.food.redistributedExtraDays) || 0));
     if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
     var payCycle = getPayCycleInfo();
     if (typeof syncDailyFoodStartDateInput === 'function') syncDailyFoodStartDateInput();
@@ -1292,8 +1291,9 @@ function updateFoodUI() {
             if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
         }
     }
-    redistributedDays = Math.max(0, Math.floor((state.food && state.food.redistributedExtraDays) || 0));
-    var daily = foodBase / ((state.food.daysTotal || 28) + redistributedDays);
+    var overflowDayCount = Array.isArray(payCycle.overflowDates) ? payCycle.overflowDates.length : 0;
+    var effectiveDaysForRate = (state.food.daysTotal || 28) + overflowDayCount;
+    var daily = effectiveDaysForRate > 0 ? foodBase / effectiveDaysForRate : 0;
     if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
     var fundedBalEl = document.getElementById('daily-food-funded-balance');
     if (fundedBalEl && typeof getFoodRemainderInfo === 'function') {
@@ -1303,15 +1303,17 @@ function updateFoodUI() {
     var consumedDays = state.food.consumedDays || [];
     var daysUsed = consumedDays.length;
     var daysTotal = state.food.daysTotal || 28;
+    var effectiveDaysTotal = daysTotal + overflowDayCount;
+    var daysLeftEffective = Math.max(0, effectiveDaysTotal - daysUsed);
     var lockedAmount = state.food.lockedAmount || 0;
     var currentDayInCycle = daysUsed + 1;
 
     document.getElementById('daily-food-rate').innerText = formatMoney(daily);
     var lockedDisplayEl = document.getElementById('locked-funds-display');
     if (lockedDisplayEl) lockedDisplayEl.innerText = formatMoney(lockedAmount);
-    document.getElementById('food-days-count').innerText = (daysTotal - daysUsed) + ' Days Left';
+    document.getElementById('food-days-count').innerText = daysLeftEffective + ' Days Left';
     var macroUsed = document.getElementById('food-macro-used');
-    if (macroUsed) macroUsed.textContent = daysUsed + ' of 28 used';
+    if (macroUsed) macroUsed.textContent = daysUsed + ' of ' + effectiveDaysTotal + ' used';
     var weekDayLabel = document.getElementById('food-week-day-label');
     if (weekDayLabel) {
         var today = new Date();
@@ -1328,7 +1330,10 @@ function updateFoodUI() {
         }
     }
     var progressBar = document.getElementById('food-progress-bar');
-    if (progressBar) progressBar.style.width = (daysUsed / 28 * 100) + '%';
+    if (progressBar) {
+        var denom = effectiveDaysTotal > 0 ? effectiveDaysTotal : 28;
+        progressBar.style.width = (Math.min(1, daysUsed / denom) * 100) + '%';
+    }
 
     var dayNamesLong = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     var headerRow = document.getElementById('food-overview-header');
@@ -2020,13 +2025,10 @@ function updateGlobalUI() {
     // End-of-cycle actions: weekly + food rollovers are automatic.
     var wBtn = getEl('weekly-rollover-notice-btn');
     var fBtn = getEl('food-unused-transfer-btn');
-    var fdBtn = getEl('food-distribution-extra-btn');
     var pendingWeeklyNotice = !!(state.accounts && state.accounts.weekly && state.accounts.weekly.pendingRolloverNotice && state.accounts.weekly.pendingRolloverNotice.amount > 0);
     if (wBtn) wBtn.classList.toggle('hidden', !pendingWeeklyNotice);
     var pendingFoodNotice = !!(state.food && state.food.pendingUnusedTransferNotice && state.food.pendingUnusedTransferNotice.amount > 0);
     if (fBtn) fBtn.classList.toggle('hidden', !pendingFoodNotice);
-    var pendingDistributionFoodNotice = !!(state.food && state.food.pendingDistributionExtraNotice && state.food.pendingDistributionExtraNotice.amount > 0);
-    if (fdBtn) fdBtn.classList.toggle('hidden', !pendingDistributionFoodNotice);
     updateMajorFundTotalsUI();
 }
 
