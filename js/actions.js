@@ -1647,13 +1647,65 @@ function applyOverflowDayFromSource(dayKey, sourceId) {
     }
     pushToUndo();
     deductFromBufferSource(sourceId || 'surplus', dailyRate);
-    applyTransaction({ type: 'food_lock', amount: dailyRate, label: '+1 Extra Day' });
+    adjustItemBalance('Daily Food', dailyRate);
+    if (!state.food.overflowFunded || typeof state.food.overflowFunded !== 'object') state.food.overflowFunded = {};
+    state.food.overflowFunded[dayKey] = dailyRate;
     markOverflowDayUsage(dayKey, 'source');
+    if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
     saveState();
     if (typeof renderLedger === 'function') renderLedger();
     if (typeof updateGlobalUI === 'function') updateGlobalUI();
 }
 window.applyOverflowDayFromSource = applyOverflowDayFromSource;
+
+function _anyOverflowDayFromSource() {
+    var u = state.food && state.food.overflowUsage;
+    if (!u || typeof u !== 'object') return false;
+    return Object.keys(u).some(function (k) {
+        return u[k] === 'source';
+    });
+}
+
+function _recomputeOverflowRedistributionSplit() {
+    var pool = typeof getItemBalance === 'function' ? getItemBalance('Daily Food', 0) : 0;
+    if (pool < 0) pool = 0;
+    var U = typeof countUnconsumedCoreDays === 'function' ? countUnconsumedCoreDays() : 0;
+    var usage = (state.food && state.food.overflowUsage) || {};
+    var redistKeys = Object.keys(usage).filter(function (k) {
+        return usage[k] === 'redistributed';
+    });
+    var R = redistKeys.length;
+    var slots = U + R;
+    if (slots <= 0) return;
+    var perSlot = pool / slots;
+    var consumed = {};
+    ((state.food && state.food.consumedDays) || []).forEach(function (cd) {
+        consumed[cd] = true;
+    });
+    for (var d = 1; d <= 28; d++) {
+        if (consumed[d]) continue;
+        if (typeof setFoodFundedForDay === 'function') setFoodFundedForDay(d, perSlot);
+    }
+    if (!state.food.overflowFunded || typeof state.food.overflowFunded !== 'object') state.food.overflowFunded = {};
+    Object.keys(usage).forEach(function (k) {
+        if (usage[k] === 'redistributed' && state.food.overflowFunded) delete state.food.overflowFunded[k];
+    });
+    redistKeys.forEach(function (k) {
+        state.food.overflowFunded[k] = perSlot;
+    });
+    var sumAfter =
+        (typeof sumFoodFundedUnconsumed === 'function' ? sumFoodFundedUnconsumed() : 0) +
+        (typeof sumOverflowFunded === 'function' ? sumOverflowFunded() : 0);
+    var drift = pool - sumAfter;
+    if (Math.abs(drift) > 0.05 && typeof setFoodFundedForDay === 'function' && typeof getFoodFundedForDay === 'function') {
+        for (var d2 = 1; d2 <= 28; d2++) {
+            if (!consumed[d2]) {
+                setFoodFundedForDay(d2, getFoodFundedForDay(d2) + drift);
+                break;
+            }
+        }
+    }
+}
 
 function applyOverflowDayRedistribution(dayKey) {
     if (!dayKey) return;
@@ -1661,13 +1713,47 @@ function applyOverflowDayRedistribution(dayKey) {
         if (typeof showAppAlert === 'function') showAppAlert('This extra day is already accounted for.');
         return;
     }
+    if (_anyOverflowDayFromSource()) {
+        if (typeof showAppAlert === 'function') {
+            showAppAlert('Redistribute is not available while an extra day is funded from Extra/Savings/Weekly. Finish the cycle or use only redistributed extras first.');
+        }
+        return;
+    }
+    var pool = typeof getItemBalance === 'function' ? getItemBalance('Daily Food', 0) : 0;
+    if (pool <= 0.001) {
+        if (typeof showAppAlert === 'function') showAppAlert('No Daily Food balance to spread.');
+        return;
+    }
+    var U = typeof countUnconsumedCoreDays === 'function' ? countUnconsumedCoreDays() : 0;
+    var R = typeof countRedistributedOverflowKeys === 'function' ? countRedistributedOverflowKeys() : 0;
+    if (U + R <= 0) {
+        if (typeof showAppAlert === 'function') showAppAlert('Nothing to spread across.');
+        return;
+    }
     pushToUndo();
     markOverflowDayUsage(dayKey, 'redistributed');
+    _recomputeOverflowRedistributionSplit();
+    if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
     saveState();
     if (typeof renderLedger === 'function') renderLedger();
     if (typeof updateGlobalUI === 'function') updateGlobalUI();
 }
 window.applyOverflowDayRedistribution = applyOverflowDayRedistribution;
+
+function applyOverflowRedistributionUndo(dayKey) {
+    if (!dayKey) return;
+    var usage = state.food && state.food.overflowUsage;
+    if (!usage || usage[dayKey] !== 'redistributed') return;
+    pushToUndo();
+    delete usage[dayKey];
+    if (state.food.overflowFunded) delete state.food.overflowFunded[dayKey];
+    _recomputeOverflowRedistributionSplit();
+    if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
+    saveState();
+    if (typeof renderLedger === 'function') renderLedger();
+    if (typeof updateGlobalUI === 'function') updateGlobalUI();
+}
+window.applyOverflowRedistributionUndo = applyOverflowRedistributionUndo;
 
 function buyFoodDay() {
     const daysInput = parseFloat(document.getElementById('food-lock-val').value);
@@ -1947,7 +2033,8 @@ function getPayCycleStartKey(payCycleInfo) {
     return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate();
 }
 
-// Food cycle rollover: move unconsumed Daily Food value to Extra, then reset cycle tracking.
+// Food cycle rollover: move remaining Daily Food ledger to Extra, then reset cycle tracking.
+// Rollover never injects income; only Paycheck Distribute (and explicit transfers) fund categories.
 function startNewMonthFoodReset(options) {
     options = options || {};
     if (!options.skipUndo) pushToUndo();
@@ -1958,25 +2045,12 @@ function startNewMonthFoodReset(options) {
     var unconsumed = Math.max(0, daysTotal - daysUsed);
     var movedToExtra = 0;
     if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
-    var consumedSet = {};
-    (state.food.consumedDays || []).forEach(function (cd) {
-        consumedSet[cd] = true;
-    });
-    var fundedUnconsumedTotal = 0;
-    for (var fd = 1; fd <= 28; fd++) {
-        if (consumedSet[fd]) continue;
-        fundedUnconsumedTotal += (typeof getFoodFundedForDay === 'function') ? getFoodFundedForDay(fd) : 0;
-    }
-    if (fundedUnconsumedTotal > 0) {
-        var foodBal = (state.balances && state.balances['Daily Food'] !== undefined) ? Number(state.balances['Daily Food']) : 0;
-        var takeFromFood = Math.min(fundedUnconsumedTotal, Math.max(0, foodBal));
-        if (takeFromFood > 0) {
-            state.balances['Daily Food'] = (state.balances['Daily Food'] || 0) - takeFromFood;
-            if (state.balances['Daily Food'] <= 0) delete state.balances['Daily Food'];
-            if (!state.accounts) state.accounts = {};
-            state.accounts.surplus = (state.accounts && typeof state.accounts.surplus === 'number' ? state.accounts.surplus : 0) + takeFromFood;
-            movedToExtra = takeFromFood;
-        }
+    var foodBal = (state.balances && state.balances['Daily Food'] !== undefined) ? Number(state.balances['Daily Food']) : 0;
+    if (foodBal > 0.001) {
+        if (!state.accounts) state.accounts = {};
+        state.accounts.surplus = (state.accounts && typeof state.accounts.surplus === 'number' ? state.accounts.surplus : 0) + foodBal;
+        delete state.balances['Daily Food'];
+        movedToExtra = foodBal;
     }
     if (typeof getFoodFundingMap === 'function') {
         var fm = getFoodFundingMap();
@@ -1988,6 +2062,7 @@ function startNewMonthFoodReset(options) {
     state.food.daysUsed = 0;
     state.food.history = [];
     state.food.overflowUsage = {};
+    state.food.overflowFunded = {};
     state.food.redistributedExtraDays = 0;
     state.food.lastCycleStartKey = getPayCycleStartKey(options.payCycleInfo);
     if (movedToExtra > 0) {
@@ -2023,6 +2098,10 @@ function maybeAutoAdvanceFoodCycle(payCycleInfo) {
 window.maybeAutoAdvanceFoodCycle = maybeAutoAdvanceFoodCycle;
 
 function showFoodUnusedTransferNotice() {
+    if (typeof openFoodRolloverNoticePopover === 'function') {
+        openFoodRolloverNoticePopover();
+        return;
+    }
     var notice = state.food && state.food.pendingUnusedTransferNotice;
     if (!notice || !notice.amount || notice.amount <= 0) return;
     var days = Math.max(0, Math.floor(notice.days || 0));
@@ -2525,18 +2604,6 @@ function applyPaycheckDistribute() {
     var allocatableItems = getAllocatableItems();
     var savingsPlanByBucket = {};
     var mustHavePlanByLabel = {};
-    var debugRows = [];
-    var debugEnabled = !!(state.settings && state.settings.showPaycheckBreakdown);
-    function pushDebugRow(kind, label, planned, current, deficit) {
-        if (!debugEnabled) return;
-        debugRows.push({
-            kind: kind,
-            label: label,
-            planned: Number(planned) || 0,
-            current: Number(current) || 0,
-            deficit: Number(deficit) || 0
-        });
-    }
     allocatableItems.forEach(function (item) {
         if (!item) return;
         if (item.label === 'Savings' && item.savingsBucket) {
@@ -2570,7 +2637,7 @@ function applyPaycheckDistribute() {
         }
         return getItemBalance(label, 0);
     }
-    function getDeficitForLabel(label, plannedAmount, recordExcluded) {
+    function getDeficitForLabel(label, plannedAmount) {
         var planned = Number(plannedAmount) || 0;
         if (planned <= 0) return 0;
         if (label === 'Daily Food') {
@@ -2578,14 +2645,10 @@ function applyPaycheckDistribute() {
             var finfo = (typeof getFoodRemainderInfo === 'function') ? getFoodRemainderInfo() : null;
             var targetAmt = finfo && typeof finfo.theoreticalRemainder === 'number' ? finfo.theoreticalRemainder : 0;
             var currentAmt = finfo && typeof finfo.remainder === 'number' ? finfo.remainder : 0;
-            var deficitFd = Math.max(0, targetAmt - currentAmt);
-            if (recordExcluded) pushDebugRow('deficit', label, targetAmt, currentAmt, deficitFd);
-            return deficitFd;
+            return Math.max(0, targetAmt - currentAmt);
         }
         var current = getCurrentForLabel(label);
-        var deficit = Math.max(0, planned - current);
-        if (recordExcluded) pushDebugRow('deficit', label, planned, current, deficit);
-        return deficit;
+        return Math.max(0, planned - current);
     }
 
     var priorityEntries = (typeof getPaycheckPriorityEntries === 'function') ? getPaycheckPriorityEntries() : [];
@@ -2597,13 +2660,12 @@ function applyPaycheckDistribute() {
             // Savings plan is a cycle contribution target, not a top-up target.
             // Do not subtract existing bucket balance here.
             var deficit = Math.max(0, planned);
-            pushDebugRow('savings', entry.bucketName, planned, 0, deficit);
             totalRequested += deficit;
             return;
         }
         if (entry.type === 'mustHave') {
             if (!coreLabels[entry.itemLabel]) return;
-            totalRequested += getDeficitForLabel(entry.itemLabel, mustHavePlanByLabel[entry.itemLabel], true);
+            totalRequested += getDeficitForLabel(entry.itemLabel, mustHavePlanByLabel[entry.itemLabel]);
             return;
         }
         if (entry.type === 'mini') {
@@ -2611,7 +2673,7 @@ function applyPaycheckDistribute() {
             if (!sec || !Array.isArray(sec.items)) return;
             sec.items.forEach(function (item) {
                 if (!item || item.label === 'Payables' || item.label === 'Savings') return;
-                totalRequested += getDeficitForLabel(item.label, item.amount, true);
+                totalRequested += getDeficitForLabel(item.label, item.amount);
             });
         }
     });
@@ -2653,7 +2715,7 @@ function applyPaycheckDistribute() {
         }
         if (entry.type === 'mustHave') {
             if (!coreLabels[entry.itemLabel]) return;
-            var mhDeficit = getDeficitForLabel(entry.itemLabel, mustHavePlanByLabel[entry.itemLabel], false);
+            var mhDeficit = getDeficitForLabel(entry.itemLabel, mustHavePlanByLabel[entry.itemLabel]);
             var mhTake = Math.min(mhDeficit, remainingAvailable);
             if (mhTake > 0) {
                 allocateFromSurplusToTarget(entry.itemLabel, mhTake);
@@ -2668,7 +2730,7 @@ function applyPaycheckDistribute() {
             if (!sec || !Array.isArray(sec.items)) return;
             sec.items.forEach(function (item) {
                 if (!item || remainingAvailable <= 0 || item.label === 'Payables' || item.label === 'Savings') return;
-                var itemDeficit = getDeficitForLabel(item.label, item.amount, false);
+                var itemDeficit = getDeficitForLabel(item.label, item.amount);
                 var itemTake = Math.min(itemDeficit, remainingAvailable);
                 if (itemTake <= 0) return;
                 allocateFromSurplusToTarget(item.label, itemTake);
@@ -2698,6 +2760,118 @@ function applyPaycheckDistribute() {
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#39;');
     }
+    function getDisplayPlannedForLine(label) {
+        if (label.indexOf('Savings: ') === 0) {
+            var bn = label.slice('Savings: '.length);
+            return Number(savingsPlanByBucket[bn]) || 0;
+        }
+        if (label === 'Daily Food') {
+            var finfo = typeof getFoodRemainderInfo === 'function' ? getFoodRemainderInfo() : null;
+            return finfo && typeof finfo.theoreticalRemainder === 'number' ? finfo.theoreticalRemainder : 0;
+        }
+        if (Object.prototype.hasOwnProperty.call(mustHavePlanByLabel, label)) {
+            return Number(mustHavePlanByLabel[label]) || 0;
+        }
+        var found = 0;
+        (state.categories || []).forEach(function (sec) {
+            if (!sec || !Array.isArray(sec.items)) return;
+            sec.items.forEach(function (it) {
+                if (it && it.label === label) found = Number(it.amount) || 0;
+            });
+        });
+        return found;
+    }
+    function getRemainingAfterForLine(label) {
+        if (label.indexOf('Savings: ') === 0) {
+            var bn = label.slice('Savings: '.length);
+            var plannedSav = Number(savingsPlanByBucket[bn]) || 0;
+            var add = 0;
+            allocationsThisPaycheck.forEach(function (a) {
+                if (a.label === 'Savings: ' + bn) add += a.amount;
+            });
+            return Math.max(0, plannedSav - add);
+        }
+        var pl = getDisplayPlannedForLine(label);
+        return getDeficitForLabel(label, pl);
+    }
+    var leftRows = [];
+    priorityEntries.forEach(function (entry) {
+        if (!entry || !entry.type) return;
+        if (entry.type === 'savingsBucket') {
+            var plannedB = Number(savingsPlanByBucket[entry.bucketName]) || 0;
+            if (plannedB <= epsilon) return;
+            var labS = 'Savings: ' + entry.bucketName;
+            var remS = getRemainingAfterForLine(labS);
+            if (remS > epsilon) leftRows.push({ label: labS, remaining: remS, planned: plannedB });
+            return;
+        }
+        if (entry.type === 'mustHave') {
+            if (!coreLabels[entry.itemLabel]) return;
+            var plM = getDisplayPlannedForLine(entry.itemLabel);
+            var remM = getRemainingAfterForLine(entry.itemLabel);
+            if (remM > epsilon) leftRows.push({ label: entry.itemLabel, remaining: remM, planned: plM });
+            return;
+        }
+        if (entry.type === 'mini') {
+            var secL = state.categories.find(function (s) { return s && s.id === entry.categoryId; });
+            if (!secL || !Array.isArray(secL.items)) return;
+            secL.items.forEach(function (item) {
+                if (!item || item.label === 'Payables' || item.label === 'Savings') return;
+                var plI = Number(item.amount) || 0;
+                if (plI <= epsilon) return;
+                var remI = getRemainingAfterForLine(item.label);
+                if (remI > epsilon) leftRows.push({ label: item.label, remaining: remI, planned: plI });
+            });
+        }
+    });
+    function renderProgressBar(remaining, planned) {
+        if (planned <= epsilon) return '';
+        var funded = Math.max(0, planned - remaining);
+        var pct = Math.min(100, Math.round((100 * funded) / planned));
+        return '<div class="mt-2 h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">' +
+            '<div class="h-full rounded-full bg-indigo-500 transition-all" style="width:' + pct + '%"></div></div>';
+    }
+    function renderFractionPill(remaining, planned) {
+        if (planned > epsilon) {
+            return '<span class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-800 tabular-nums">' +
+                esc(formatMoney(remaining)) + '<span class="text-slate-400 font-normal">/</span>' + esc(formatMoney(planned)) +
+                '</span><span class="text-slate-400 text-[11px] ml-0.5">left</span>';
+        }
+        return '<span class="text-[11px] font-semibold text-amber-800 tabular-nums">' + esc(formatMoney(remaining)) + ' <span class="text-slate-400 font-normal">left</span></span>';
+    }
+    var addedSectionHtml = '';
+    if (allocationsThisPaycheck.length) {
+        addedSectionHtml = allocationsThisPaycheck.map(function (a) {
+            var plannedA = getDisplayPlannedForLine(a.label);
+            var remA = getRemainingAfterForLine(a.label);
+            return '<div class="py-2.5 border-b border-slate-100 last:border-0">' +
+                '<div class="text-sm font-semibold text-slate-800">' + esc(a.label) + '</div>' +
+                '<div class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">' +
+                    '<span class="inline-flex items-center rounded-md bg-emerald-50 border border-emerald-200 text-emerald-900 px-2 py-0.5 text-xs font-black tabular-nums">+' +
+                    esc(formatMoney(a.amount)) + ' ' + esc(getCurrencyLabel()) + '</span>' +
+                    '<span class="text-slate-300 select-none">·</span>' +
+                    renderFractionPill(remA, plannedA) +
+                '</div>' +
+                renderProgressBar(remA, plannedA) +
+                '</div>';
+        }).join('');
+    } else {
+        addedSectionHtml = '<div class="text-xs text-slate-500 py-2">Nothing was allocated to categories this time (nothing left to fund in priority order, or Extra ran out before any line).</div>';
+    }
+    var leftSectionHtml = '';
+    if (leftRows.length) {
+        leftSectionHtml = leftRows.map(function (r) {
+            return '<div class="py-2.5 border-b border-slate-100 last:border-0">' +
+                '<div class="text-sm font-semibold text-slate-800">' + esc(r.label) + '</div>' +
+                '<div class="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">' +
+                    renderFractionPill(r.remaining, r.planned) +
+                '</div>' +
+                renderProgressBar(r.remaining, r.planned) +
+                '</div>';
+        }).join('');
+    } else {
+        leftSectionHtml = '<div class="text-xs text-slate-500 py-2">Nothing left to fund for this cycle—every target is covered.</div>';
+    }
     var summaryHtml =
         '<div class="space-y-3 text-left">' +
             '<div class="p-3 rounded-xl border ' + statusToneClass + '">' +
@@ -2709,62 +2883,21 @@ function applyPaycheckDistribute() {
                 '<div class="p-2 rounded-lg bg-slate-50 border border-slate-100"><div class="text-slate-400 uppercase font-bold text-[10px]">Allocated this time</div><div class="text-slate-800 font-black">' + esc(formatMoney(distributedTotal)) + ' ' + esc(getCurrencyLabel()) + '</div></div>' +
                 '<div class="p-2 rounded-lg bg-slate-50 border border-slate-100"><div class="text-slate-400 uppercase font-bold text-[10px]">Plan needs (this cycle)</div><div class="text-slate-800 font-black">' + esc(formatMoney(totalRequested)) + ' ' + esc(getCurrencyLabel()) + '</div></div>' +
                 '<div class="p-2 rounded-lg bg-slate-50 border border-slate-100"><div class="text-slate-400 uppercase font-bold text-[10px]">Extra balance now</div><div class="text-slate-800 font-black">' + esc(formatMoney(extraAfter)) + ' ' + esc(getCurrencyLabel()) + '</div></div>' +
+            '</div>' +
+            '<div class="p-3 rounded-xl border border-slate-200 bg-white max-h-72 overflow-y-auto">' +
+                '<div class="text-[11px] font-black uppercase tracking-wider text-slate-500 mb-2">1 · What was added <span class="text-slate-400 font-normal normal-case">(priority order)</span></div>' +
+                addedSectionHtml +
+            '</div>' +
+            '<div class="p-3 rounded-xl border border-slate-200 bg-white max-h-72 overflow-y-auto">' +
+                '<div class="text-[11px] font-black uppercase tracking-wider text-slate-500 mb-2">2 · What is left <span class="text-slate-400 font-normal normal-case">(priority order)</span></div>' +
+                leftSectionHtml +
             '</div>';
-    if (distributedTotal > epsilon && allocationsThisPaycheck.length) {
-        var allocLines = allocationsThisPaycheck.map(function (a) {
-            return '<div class="flex justify-between gap-3 py-1.5 border-b border-slate-100 last:border-0">' +
-                '<span class="text-slate-700 font-medium">' + esc(a.label) + '</span>' +
-                '<span class="text-slate-800 font-black tabular-nums shrink-0">' + esc(formatMoney(a.amount)) + ' ' + esc(getCurrencyLabel()) + '</span></div>';
-        }).join('');
-        summaryHtml +=
-            '<div class="p-3 rounded-xl border border-slate-200 bg-white">' +
-                '<div class="text-[11px] font-black uppercase tracking-wider text-slate-500 mb-2">This paycheck went to</div>' +
-                allocLines +
-            '</div>';
-    }
     if (paycheckUnallocated > epsilon) {
         summaryHtml += '<div class="text-xs text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg p-2">Extra above plan kept in Extra: <span class="font-black">' + esc(formatMoney(paycheckUnallocated)) + ' ' + esc(getCurrencyLabel()) + '</span>.</div>';
     }
     summaryHtml += '<div class="text-[11px] text-slate-500">Funding follows your current priority order. Edit priorities on the <span class="font-semibold">Budget Plan</span> page.</div>';
-    if (debugEnabled) {
-        var grouped = { savings: [], deficit: [], other: [] };
-        debugRows.forEach(function (row) {
-            var key = row.kind === 'savings' ? 'savings' : (row.kind === 'deficit' ? 'deficit' : 'other');
-            grouped[key].push(row);
-        });
-        function renderRows(rows) {
-            var filtered = rows.filter(function (row) {
-                return (Number(row.deficit) || 0) > epsilon;
-            });
-            if (!filtered.length) {
-                return '<div class="text-xs text-slate-400 italic">No remaining gaps in this section.</div>';
-            }
-            var lines = filtered.map(function (row) {
-                return '<tr class="border-b border-slate-100">' +
-                    '<td class="py-1.5 pr-2 font-semibold text-slate-700">' + esc(row.label) + '</td>' +
-                    '<td class="py-1.5 pr-2 text-right text-slate-600">' + esc(formatMoney(row.planned)) + '</td>' +
-                    '<td class="py-1.5 pr-2 text-right text-slate-600">' + esc(formatMoney(row.current)) + '</td>' +
-                    '<td class="py-1.5 text-right font-black text-slate-800">' + esc(formatMoney(row.deficit)) + '</td>' +
-                '</tr>';
-            }).join('');
-            return '<div class="max-h-64 overflow-y-auto overflow-x-auto">' +
-                '<table class="w-full text-xs"><thead><tr class="text-slate-400 uppercase text-[10px] text-left">' +
-                '<th class="py-1.5 pr-2">Item</th><th class="py-1.5 pr-2 text-right">Target</th><th class="py-1.5 pr-2 text-right">Already had</th><th class="py-1.5 text-right">Still needed</th>' +
-                '</tr></thead><tbody>' + lines + '</tbody></table></div>';
-        }
-        summaryHtml +=
-            '<div class="mt-1 p-3 rounded-xl border border-slate-200 bg-white">' +
-                '<div class="text-[11px] font-black uppercase tracking-wider text-slate-500 mb-1">Category gaps (before this deposit)</div>' +
-                '<div class="text-[11px] text-slate-500 mb-2">Each row is your target, what you already had toward it, and how much was still missing—before this paycheck landed.</div>' +
-                '<div class="space-y-3">' +
-                    '<div><div class="text-[11px] font-bold text-slate-700 mb-1">1) Savings contributions</div>' + renderRows(grouped.savings) + '</div>' +
-                    '<div><div class="text-[11px] font-bold text-slate-700 mb-1">2) Other category top-ups</div>' + renderRows(grouped.deficit) + '</div>' +
-                '</div>' +
-                '<div class="text-[10px] text-slate-400 mt-2">Scroll a section if the list is long.</div>' +
-            '</div>';
-    }
     summaryHtml += '</div>';
-    var paycheckModalWide = debugEnabled || (distributedTotal > epsilon && allocationsThisPaycheck.length > 0);
+    var paycheckModalWide = true;
     showAppAlert({
         title: 'Paycheck Distribution',
         html: summaryHtml,
@@ -3911,7 +4044,6 @@ function saveSettingsFromUI() {
     const decimalsSelect = document.getElementById('settings-decimals');
     const showFoodPlanToggle = document.getElementById('budget-show-food-plan') || document.getElementById('settings-show-food-plan');
     const compactToggle = document.getElementById('settings-compact');
-    const paycheckBreakdownToggle = document.getElementById('settings-paycheck-breakdown');
     const firstDaySelect = document.getElementById('settings-first-day-of-week');
     const payDateSelect = document.getElementById('settings-pay-date');
 
@@ -3929,7 +4061,6 @@ function saveSettingsFromUI() {
         showFoodPlan: showFoodPlanToggle ? !!showFoodPlanToggle.checked : (state.settings?.showFoodPlan !== false),
         theme: state.settings?.theme || 'sepia',
         compact: !!compactToggle?.checked,
-        showPaycheckBreakdown: !!paycheckBreakdownToggle?.checked,
         firstDayOfWeek: Number.isNaN(firstDayOfWeek) ? 3 : firstDayOfWeek,
         payDate: Number.isNaN(payDate) ? 28 : payDate
     };

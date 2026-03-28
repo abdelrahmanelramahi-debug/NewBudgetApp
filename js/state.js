@@ -13,7 +13,6 @@ let state = {
         theme: 'sepia',
         compact: false,
         firstDayOfWeek: 3,
-        showPaycheckBreakdown: false,
         payDate: 28
     },
     categories: [
@@ -546,7 +545,6 @@ function ensureSettings() {
         allowNegativeSurplus: true,
         theme: 'sepia',
         compact: false,
-        showPaycheckBreakdown: false,
         firstDayOfWeek: 3,
         payDate: 28,
         hideEmptyCategories: false,
@@ -587,7 +585,43 @@ function ensureFoodConsumedDays() {
     if (typeof state.food.lastCycleStartKey !== 'string') {
         state.food.lastCycleStartKey = '';
     }
+    if (!state.food.overflowFunded || typeof state.food.overflowFunded !== 'object') {
+        state.food.overflowFunded = {};
+    }
     state.food.daysUsed = state.food.consumedDays.length;
+}
+
+function sumOverflowFunded() {
+    ensureFoodConsumedDays();
+    var m = state.food.overflowFunded || {};
+    var sum = 0;
+    Object.keys(m).forEach(function (k) {
+        sum += Number(m[k]) || 0;
+    });
+    return sum;
+}
+
+function countUnconsumedCoreDays() {
+    ensureFoodConsumedDays();
+    var consumed = {};
+    ((state.food && state.food.consumedDays) || []).forEach(function (cd) {
+        consumed[cd] = true;
+    });
+    var n = 0;
+    for (var d = 1; d <= 28; d++) {
+        if (!consumed[d]) n++;
+    }
+    return n;
+}
+
+function countRedistributedOverflowKeys() {
+    ensureFoodConsumedDays();
+    var usage = state.food.overflowUsage || {};
+    var n = 0;
+    Object.keys(usage).forEach(function (k) {
+        if (usage[k] === 'redistributed') n++;
+    });
+    return n;
 }
 
 /** Extra days between core 28 and next pay — from calendar, not user "redistribute" clicks. Defined in ui.js getPayCycleInfo(). */
@@ -723,7 +757,9 @@ function reconcileFoodFundingWithLedger() {
     var bal = (state.balances && state.balances['Daily Food'] !== undefined) ? Number(state.balances['Daily Food']) : 0;
     if (bal < 0) bal = 0;
     var sumF = sumFoodFundedAll();
-    var diff = bal - sumF;
+    var sumOv = typeof sumOverflowFunded === 'function' ? sumOverflowFunded() : 0;
+    var totalAlloc = sumF + sumOv;
+    var diff = bal - totalAlloc;
     if (Math.abs(diff) >= 0.02) {
         if (diff > 0) {
             var left = diff;
@@ -746,6 +782,17 @@ function reconcileFoodFundingWithLedger() {
             }
         } else {
             var need = -diff;
+            var of = state.food.overflowFunded || {};
+            var ovKeys = Object.keys(of).sort();
+            for (var oi = ovKeys.length - 1; oi >= 0 && need > 0.001; oi--) {
+                var ok = ovKeys[oi];
+                var ovAmt = Number(of[ok]) || 0;
+                if (ovAmt <= 0) continue;
+                var take = Math.min(ovAmt, need);
+                of[ok] = ovAmt - take;
+                if (of[ok] < 0.001) delete of[ok];
+                need -= take;
+            }
             for (var d3 = 28; d3 >= 1 && need > 0.001; d3--) {
                 if (consumed[d3]) continue;
                 var cur3 = getFoodFundedForDay(d3);
