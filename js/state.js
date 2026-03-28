@@ -763,16 +763,25 @@ function reconcileFoodFundingWithLedger() {
             var ledgerBeforeCap = (state.balances && state.balances['Daily Food'] !== undefined)
                 ? Number(state.balances['Daily Food']) || 0
                 : sumAfter;
-            var over = sumAfter - cap;
-            for (var d4 = 28; d4 >= 1 && over > 0.001; d4--) {
+            // Scale every unconsumed day down proportionally. (Trimming from high day numbers only
+            // zeroed the last slots and broke "funds for all 28 days" even when the total was fixable.)
+            var scale = cap / sumAfter;
+            for (var d4 = 1; d4 <= 28; d4++) {
                 if (consumed[d4]) continue;
                 var cur4 = getFoodFundedForDay(d4);
-                if (cur4 <= 0) continue;
-                var cut = Math.min(cur4, over);
-                setFoodFundedForDay(d4, cur4 - cut);
-                over -= cut;
+                setFoodFundedForDay(d4, Math.max(0, cur4 * scale));
             }
             var newSum = sumFoodFundedAll();
+            var drift = cap - newSum;
+            if (Math.abs(drift) > 0.02) {
+                for (var d5 = 1; d5 <= 28; d5++) {
+                    if (!consumed[d5]) {
+                        setFoodFundedForDay(d5, Math.max(0, getFoodFundedForDay(d5) + drift));
+                        break;
+                    }
+                }
+                newSum = sumFoodFundedAll();
+            }
             if (state.balances) {
                 state.balances['Daily Food'] = newSum;
             }

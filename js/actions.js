@@ -2632,6 +2632,7 @@ function applyPaycheckDistribute() {
     }
 
     var distributedTotal = 0;
+    var allocationsThisPaycheck = [];
     var remainingAvailable = Math.max(0, Number(state.accounts.surplus) || 0);
     priorityEntries.forEach(function (entry) {
         if (!entry || remainingAvailable <= 0) return;
@@ -2646,6 +2647,7 @@ function applyPaycheckDistribute() {
                 logHistory('Savings: ' + entry.bucketName, bucketTake, 'Distribute');
                 distributedTotal += bucketTake;
                 remainingAvailable -= bucketTake;
+                allocationsThisPaycheck.push({ label: 'Savings: ' + entry.bucketName, amount: bucketTake });
             }
             return;
         }
@@ -2657,6 +2659,7 @@ function applyPaycheckDistribute() {
                 allocateFromSurplusToTarget(entry.itemLabel, mhTake);
                 distributedTotal += mhTake;
                 remainingAvailable -= mhTake;
+                allocationsThisPaycheck.push({ label: entry.itemLabel, amount: mhTake });
             }
             return;
         }
@@ -2671,6 +2674,7 @@ function applyPaycheckDistribute() {
                 allocateFromSurplusToTarget(item.label, itemTake);
                 distributedTotal += itemTake;
                 remainingAvailable -= itemTake;
+                allocationsThisPaycheck.push({ label: item.label, amount: itemTake });
             });
         }
     });
@@ -2697,15 +2701,27 @@ function applyPaycheckDistribute() {
     var summaryHtml =
         '<div class="space-y-3 text-left">' +
             '<div class="p-3 rounded-xl border ' + statusToneClass + '">' +
-                '<div class="text-[11px] font-black uppercase tracking-wider mb-1">Distribution Result</div>' +
+                '<div class="text-[11px] font-black uppercase tracking-wider mb-1">Summary</div>' +
                 '<div class="text-sm font-semibold">' + esc(statusLine) + '</div>' +
             '</div>' +
             '<div class="grid grid-cols-2 gap-2 text-xs">' +
-                '<div class="p-2 rounded-lg bg-slate-50 border border-slate-100"><div class="text-slate-400 uppercase font-bold text-[10px]">Paycheck</div><div class="text-slate-800 font-black">' + esc(formatMoney(val)) + ' ' + esc(getCurrencyLabel()) + '</div></div>' +
-                '<div class="p-2 rounded-lg bg-slate-50 border border-slate-100"><div class="text-slate-400 uppercase font-bold text-[10px]">Distributed</div><div class="text-slate-800 font-black">' + esc(formatMoney(distributedTotal)) + ' ' + esc(getCurrencyLabel()) + '</div></div>' +
-                '<div class="p-2 rounded-lg bg-slate-50 border border-slate-100"><div class="text-slate-400 uppercase font-bold text-[10px]">Cycle Requested</div><div class="text-slate-800 font-black">' + esc(formatMoney(totalRequested)) + ' ' + esc(getCurrencyLabel()) + '</div></div>' +
-                '<div class="p-2 rounded-lg bg-slate-50 border border-slate-100"><div class="text-slate-400 uppercase font-bold text-[10px]">Extra Left</div><div class="text-slate-800 font-black">' + esc(formatMoney(extraAfter)) + ' ' + esc(getCurrencyLabel()) + '</div></div>' +
+                '<div class="p-2 rounded-lg bg-slate-50 border border-slate-100"><div class="text-slate-400 uppercase font-bold text-[10px]">You added</div><div class="text-slate-800 font-black">' + esc(formatMoney(val)) + ' ' + esc(getCurrencyLabel()) + '</div></div>' +
+                '<div class="p-2 rounded-lg bg-slate-50 border border-slate-100"><div class="text-slate-400 uppercase font-bold text-[10px]">Allocated this time</div><div class="text-slate-800 font-black">' + esc(formatMoney(distributedTotal)) + ' ' + esc(getCurrencyLabel()) + '</div></div>' +
+                '<div class="p-2 rounded-lg bg-slate-50 border border-slate-100"><div class="text-slate-400 uppercase font-bold text-[10px]">Plan needs (this cycle)</div><div class="text-slate-800 font-black">' + esc(formatMoney(totalRequested)) + ' ' + esc(getCurrencyLabel()) + '</div></div>' +
+                '<div class="p-2 rounded-lg bg-slate-50 border border-slate-100"><div class="text-slate-400 uppercase font-bold text-[10px]">Extra balance now</div><div class="text-slate-800 font-black">' + esc(formatMoney(extraAfter)) + ' ' + esc(getCurrencyLabel()) + '</div></div>' +
             '</div>';
+    if (distributedTotal > epsilon && allocationsThisPaycheck.length) {
+        var allocLines = allocationsThisPaycheck.map(function (a) {
+            return '<div class="flex justify-between gap-3 py-1.5 border-b border-slate-100 last:border-0">' +
+                '<span class="text-slate-700 font-medium">' + esc(a.label) + '</span>' +
+                '<span class="text-slate-800 font-black tabular-nums shrink-0">' + esc(formatMoney(a.amount)) + ' ' + esc(getCurrencyLabel()) + '</span></div>';
+        }).join('');
+        summaryHtml +=
+            '<div class="p-3 rounded-xl border border-slate-200 bg-white">' +
+                '<div class="text-[11px] font-black uppercase tracking-wider text-slate-500 mb-2">This paycheck went to</div>' +
+                allocLines +
+            '</div>';
+    }
     if (paycheckUnallocated > epsilon) {
         summaryHtml += '<div class="text-xs text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg p-2">Extra above plan kept in Extra: <span class="font-black">' + esc(formatMoney(paycheckUnallocated)) + ' ' + esc(getCurrencyLabel()) + '</span>.</div>';
     }
@@ -2717,8 +2733,13 @@ function applyPaycheckDistribute() {
             grouped[key].push(row);
         });
         function renderRows(rows) {
-            if (!rows.length) return '<div class="text-xs text-slate-400 italic">No rows</div>';
-            var lines = rows.map(function (row) {
+            var filtered = rows.filter(function (row) {
+                return (Number(row.deficit) || 0) > epsilon;
+            });
+            if (!filtered.length) {
+                return '<div class="text-xs text-slate-400 italic">No remaining gaps in this section.</div>';
+            }
+            var lines = filtered.map(function (row) {
                 return '<tr class="border-b border-slate-100">' +
                     '<td class="py-1.5 pr-2 font-semibold text-slate-700">' + esc(row.label) + '</td>' +
                     '<td class="py-1.5 pr-2 text-right text-slate-600">' + esc(formatMoney(row.planned)) + '</td>' +
@@ -2726,22 +2747,28 @@ function applyPaycheckDistribute() {
                     '<td class="py-1.5 text-right font-black text-slate-800">' + esc(formatMoney(row.deficit)) + '</td>' +
                 '</tr>';
             }).join('');
-            return '<div class="overflow-auto"><table class="w-full text-xs"><thead><tr class="text-slate-400 uppercase text-[10px] text-left"><th class="py-1.5 pr-2">Item</th><th class="py-1.5 pr-2 text-right">Planned</th><th class="py-1.5 pr-2 text-right">Current</th><th class="py-1.5 text-right">Deficit</th></tr></thead><tbody>' + lines + '</tbody></table></div>';
+            return '<div class="max-h-64 overflow-y-auto overflow-x-auto">' +
+                '<table class="w-full text-xs"><thead><tr class="text-slate-400 uppercase text-[10px] text-left">' +
+                '<th class="py-1.5 pr-2">Item</th><th class="py-1.5 pr-2 text-right">Target</th><th class="py-1.5 pr-2 text-right">Already had</th><th class="py-1.5 text-right">Still needed</th>' +
+                '</tr></thead><tbody>' + lines + '</tbody></table></div>';
         }
         summaryHtml +=
             '<div class="mt-1 p-3 rounded-xl border border-slate-200 bg-white">' +
-                '<div class="text-[11px] font-black uppercase tracking-wider text-slate-500 mb-2">Breakdown By Priority Type</div>' +
+                '<div class="text-[11px] font-black uppercase tracking-wider text-slate-500 mb-1">Category gaps (before this deposit)</div>' +
+                '<div class="text-[11px] text-slate-500 mb-2">Each row is your target, what you already had toward it, and how much was still missing—before this paycheck landed.</div>' +
                 '<div class="space-y-3">' +
-                    '<div><div class="text-[11px] font-bold text-slate-700 mb-1">1) Savings Contributions</div>' + renderRows(grouped.savings) + '</div>' +
-                    '<div><div class="text-[11px] font-bold text-slate-700 mb-1">2) Other Category Top-ups</div>' + renderRows(grouped.deficit) + '</div>' +
+                    '<div><div class="text-[11px] font-bold text-slate-700 mb-1">1) Savings contributions</div>' + renderRows(grouped.savings) + '</div>' +
+                    '<div><div class="text-[11px] font-bold text-slate-700 mb-1">2) Other category top-ups</div>' + renderRows(grouped.deficit) + '</div>' +
                 '</div>' +
+                '<div class="text-[10px] text-slate-400 mt-2">Scroll a section if the list is long.</div>' +
             '</div>';
     }
     summaryHtml += '</div>';
+    var paycheckModalWide = debugEnabled || (distributedTotal > epsilon && allocationsThisPaycheck.length > 0);
     showAppAlert({
         title: 'Paycheck Distribution',
         html: summaryHtml,
-        wide: debugEnabled,
+        wide: paycheckModalWide,
         leftAligned: true
     });
 
