@@ -1319,7 +1319,7 @@
             <h3 class="text-xl font-black text-slate-900 mb-2">Sign In or Create Account</h3>
             <p class="text-xs text-slate-500 mb-6">Sync your budget data across all your devices.</p>
             
-            <div class="space-y-4">
+            <form id="auth-modal-form" class="space-y-4" autocomplete="on" method="post" action="#" onsubmit="event.preventDefault();">
                 <div class="bg-slate-50 p-4 rounded-xl">
                     <label for="auth-email" class="text-[9px] font-bold uppercase text-slate-400">Email</label>
                     <input type="email" id="auth-email" name="email" placeholder="your@email.com" class="w-full bg-transparent text-lg font-bold outline-none mt-1" autocomplete="email">
@@ -1332,10 +1332,10 @@
                 <button type="button" onclick="handleForgotPassword()" class="w-full text-center text-[10px] font-bold text-indigo-600 hover:text-indigo-700">Forgot password?</button>
                 <p class="text-[9px] text-slate-400 mt-1">No reset email? Check spam/junk; use the <strong>exact</strong> email you signed up with. Sender: <code class="text-slate-500">noreply@budgetapp-8a20d.firebaseapp.com</code></p>
                 <div class="flex gap-3">
-                    <button onclick="handleSignIn()" class="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest">Sign In</button>
-                    <button onclick="handleSignUp()" class="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest">Sign Up</button>
+                    <button type="button" onclick="handleSignIn()" class="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest">Sign In</button>
+                    <button type="button" onclick="handleSignUp()" class="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest">Sign Up</button>
                 </div>
-            </div>
+            </form>
         </div>
     </div>
 
