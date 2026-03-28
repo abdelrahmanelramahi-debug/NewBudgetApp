@@ -422,6 +422,10 @@ function startHomeTour() {
     var overlay = document.getElementById('home-tour-overlay');
     var card = document.getElementById('home-tour-card');
     if (!overlay || !card) return;
+    var first = HOME_TOUR_STEPS[0];
+    if (first && first.target && !document.querySelector(first.target)) {
+        return;
+    }
     showHomeTourStep(0);
     overlay.classList.remove('hidden');
     card.classList.remove('hidden');
@@ -449,7 +453,10 @@ function showHomeTourStep(index) {
         });
 
         var targetEl = root.querySelector(step.target);
-        if (!targetEl) return;
+        if (!targetEl) {
+            finishHomeTour();
+            return;
+        }
 
         targetEl.classList.add('home-tour-highlight');
 

@@ -339,13 +339,19 @@
         });
     }
 
-    function startEditLockLifecycle() {
-        if (!getCurrentUser()) return;
+    /** First fetch + acquire/renew; must complete before app interaction (canEditNow). Intervals are separate. */
+    function primeEditLock() {
+        if (!getCurrentUser()) return Promise.resolve();
         initDeviceIdentity();
-        fetchEditLock().then(function (current) {
+        return fetchEditLock().then(function (current) {
             if (!current.canEdit) return acquireEditLock();
             return renewEditLock();
         });
+    }
+
+    function startEditLockLifecycle() {
+        if (!getCurrentUser()) return;
+        initDeviceIdentity();
         if (!lockHeartbeatInterval) {
             lockHeartbeatInterval = setInterval(function () {
                 if (!getCurrentUser()) return;
@@ -796,6 +802,7 @@
     global.refreshEditLock = refreshEditLock;
     global.startEditLockLifecycle = startEditLockLifecycle;
     global.stopEditLockLifecycle = stopEditLockLifecycle;
+    global.primeEditLock = primeEditLock;
 
     /** If cloud load hung past auth timeout, clear the lock so sync can recover. */
     global.forceSyncIdle = function () {

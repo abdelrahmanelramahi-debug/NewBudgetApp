@@ -38,7 +38,7 @@ function handleAuthSyncFailure(err) {
             updateSyncStatus('Slow network — showing local data', false, true);
         }
     }
-    runPostAuthSyncSetup();
+    // runPostAuthSyncSetup runs after primeEditLock in the auth promise chain
 }
 
 function runAuthReadyCallbacks() {
@@ -99,11 +99,18 @@ function initAuth() {
                     }
                     return promiseWithTimeout(loadStateFromCloud(), AUTH_CLOUD_LOAD_TIMEOUT_MS, 'cloud_load_timeout');
                 })
-                .then(function () {
-                    runPostAuthSyncSetup();
-                })
                 .catch(function (err) {
                     handleAuthSyncFailure(err);
+                })
+                .then(function () {
+                    if (typeof window.primeEditLock === 'function') {
+                        return window.primeEditLock().catch(function (e) {
+                            console.warn('primeEditLock:', e);
+                        });
+                    }
+                })
+                .then(function () {
+                    runPostAuthSyncSetup();
                 })
                 .finally(runAuthReadyCallbacks);
         } else {
