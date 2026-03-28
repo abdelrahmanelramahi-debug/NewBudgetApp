@@ -162,6 +162,9 @@ function setItemBalance(label, value) {
     } else {
         state.balances[label] = value;
     }
+    if (label === 'Daily Food' && typeof ensureFoodFundingState === 'function') {
+        ensureFoodFundingState();
+    }
 }
 
 function removeItemBalance(label) {
@@ -436,25 +439,34 @@ function applyTransaction(tx) {
             break;
         case 'food_spend':
             if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
-            var preFoodBalance = state.balances ? Number(state.balances['Daily Food'] || 0) : 0;
-            var list = state.food.consumedDays || [];
-            var todayDay = typeof window.getTodayCycleDay === 'function' ? window.getTodayCycleDay() : 0;
-            if (todayDay > 0 && list.indexOf(todayDay) === -1) {
-                list.push(todayDay);
+            if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
+            var list0 = state.food.consumedDays || [];
+            var todayDay0 = typeof window.getTodayCycleDay === 'function' ? window.getTodayCycleDay() : 0;
+            var spentDay = 0;
+            if (todayDay0 > 0 && list0.indexOf(todayDay0) === -1) {
+                spentDay = todayDay0;
+            } else if (todayDay0 <= 0) {
+                spentDay = (state.food.daysUsed || 0) + 1;
+                if (spentDay > 28 || list0.indexOf(spentDay) !== -1) {
+                    return false;
+                }
+            } else {
+                return false;
+            }
+            var fundedSpend = (typeof getFoodFundedForDay === 'function') ? getFoodFundedForDay(spentDay) : 0;
+            if (fundedSpend <= 0.001) {
+                return false;
+            }
+            var list = list0.slice();
+            if (list.indexOf(spentDay) === -1) {
+                list.push(spentDay);
                 list.sort(function(a, b) { return a - b; });
                 state.food.consumedDays = list;
-            } else if (todayDay <= 0) {
-                var next = (state.food.daysUsed || 0) + 1;
-                if (next <= 28 && list.indexOf(next) === -1) {
-                    list.push(next);
-                    list.sort(function(a, b) { return a - b; });
-                    state.food.consumedDays = list;
-                }
             }
             state.food.daysUsed = (state.food.consumedDays || []).length;
-            state.food.history.unshift({type:'spend', amt: tx.amount});
-            // Deduct one day's amount from Daily Food so consume actually reduces balance
-            adjustItemBalance('Daily Food', -tx.amount);
+            state.food.history.unshift({type:'spend', amt: fundedSpend});
+            if (typeof setFoodFundedForDay === 'function') setFoodFundedForDay(spentDay, 0);
+            adjustItemBalance('Daily Food', -fundedSpend);
             break;
         case 'food_lock':
             state.food.lockedAmount += tx.amount;
@@ -781,7 +793,7 @@ function openDangerModal(type, targetId) {
             ensureAccountsState();
             state.accounts.buckets = {};
             initSurplusFromOpening();
-            state.food = { daysTotal: 28, daysUsed: 0, lockedAmount: 0, history: [], viewWeek: 0 };
+            state.food = { daysTotal: 28, daysUsed: 0, lockedAmount: 0, history: [], viewWeek: 0, fundedAmountByDay: {}, _foodFundingMigrated: true };
             state.accounts.weekly = { balance: getWeeklyConfigAmount(), week: 1 };
             state.histories = {};
         };
@@ -1112,11 +1124,31 @@ function completeTask(label) {
 
 // Food
 function spendFoodDay() {
-    if(state.food.daysUsed < state.food.daysTotal) {
+    if (state.food.daysUsed < state.food.daysTotal) {
+        if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
+        var todayDay = typeof window.getTodayCycleDay === 'function' ? window.getTodayCycleDay() : 0;
+        var list = state.food.consumedDays || [];
+        var targetDay = 0;
+        if (todayDay > 0 && list.indexOf(todayDay) === -1) {
+            targetDay = todayDay;
+        } else if (todayDay <= 0) {
+            targetDay = (state.food.daysUsed || 0) + 1;
+        }
+        if (targetDay > 0 && targetDay <= 28) {
+            var fd = (typeof getFoodFundedForDay === 'function') ? getFoodFundedForDay(targetDay) : 0;
+            if (fd <= 0.001) {
+                if (typeof showAppAlert === 'function') {
+                    showAppAlert('No funds allocated for this day yet. Use Paycheck Distribute to fund Daily Food, or Refund Days to restore consumed days.', 'Daily Food');
+                }
+                return;
+            }
+        }
         var info = typeof getFoodRemainderInfo === 'function' ? getFoodRemainderInfo() : null;
         var amount = (info && info.dailyRate > 0) ? info.dailyRate : 30;
         pushToUndo();
-        applyTransaction({ type: 'food_spend', amount: amount });
+        if (!applyTransaction({ type: 'food_spend', amount: amount })) {
+            return;
+        }
         saveState();
         renderLedger();
     }
@@ -1125,6 +1157,7 @@ function spendFoodDay() {
 function setFoodDayFromCalendar(cycleDay, action) {
     var day = Math.max(1, Math.min(28, Math.floor(cycleDay)));
     if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
+    if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
     var list = state.food.consumedDays || [];
     if (action === 'unmark') {
         if (list.indexOf(day) === -1) return;
@@ -1136,12 +1169,19 @@ function setFoodDayFromCalendar(cycleDay, action) {
         state.food.consumedDays = list.filter(function(d) { return d !== day; });
         var infoUnmark = typeof getFoodRemainderInfo === 'function' ? getFoodRemainderInfo() : null;
         var dailyRateUnmark = (infoUnmark && infoUnmark.dailyRate > 0) ? infoUnmark.dailyRate : (600 / 28);
+        if (typeof setFoodFundedForDay === 'function') setFoodFundedForDay(day, dailyRateUnmark);
         adjustItemBalance('Daily Food', dailyRateUnmark);
     } else {
+        var funded = (typeof getFoodFundedForDay === 'function') ? getFoodFundedForDay(day) : 0;
+        if (funded <= 0.001) {
+            if (typeof showAppAlert === 'function') {
+                showAppAlert('No funds allocated for this day yet. Use Paycheck Distribute to fund Daily Food.', 'Daily Food');
+            }
+            return;
+        }
         state.food.consumedDays = list.concat([day]).sort(function(a, b) { return a - b; });
-        var info = typeof getFoodRemainderInfo === 'function' ? getFoodRemainderInfo() : null;
-        var dailyRate = (info && info.dailyRate > 0) ? info.dailyRate : (600 / 28);
-        adjustItemBalance('Daily Food', -dailyRate);
+        if (typeof setFoodFundedForDay === 'function') setFoodFundedForDay(day, 0);
+        adjustItemBalance('Daily Food', -funded);
     }
     state.food.daysUsed = state.food.consumedDays.length;
     saveState();
@@ -1153,17 +1193,22 @@ function setFoodDayFromCalendar(cycleDay, action) {
 function transferFoodDayTo(cycleDay, targetId) {
     var day = Math.max(1, Math.min(28, Math.floor(cycleDay)));
     if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
+    if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
     var list = state.food.consumedDays || [];
     if (list.indexOf(day) !== -1) return; // already consumed
-    var info = typeof getFoodRemainderInfo === 'function' ? getFoodRemainderInfo() : null;
-    var dailyRate = (info && info.dailyRate > 0) ? info.dailyRate : (600 / 28);
+    var funded = (typeof getFoodFundedForDay === 'function') ? getFoodFundedForDay(day) : 0;
     var foodBal = (state.balances && state.balances['Daily Food'] !== undefined) ? Number(state.balances['Daily Food']) : 0;
-    var amount = Math.min(dailyRate, Math.max(0, foodBal));
+    if (funded <= 0.001) {
+        if (typeof showAppAlert === 'function') showAppAlert('No funds allocated for this day yet. Use Paycheck Distribute to fund Daily Food.', 'Daily Food');
+        return;
+    }
+    var amount = Math.min(funded, Math.max(0, foodBal));
     if (amount <= 0) {
         if (typeof showAppAlert === 'function') showAppAlert('No Daily Food balance to transfer.');
         return;
     }
     pushToUndo();
+    if (typeof setFoodFundedForDay === 'function') setFoodFundedForDay(day, 0);
     applyTransaction({ type: 'transfer', from: 'Daily Food', to: targetId, amount: amount });
     state.food.consumedDays = list.concat([day]).sort(function(a, b) { return a - b; });
     state.food.daysUsed = state.food.consumedDays.length;
@@ -1538,11 +1583,17 @@ function applyDailyFoodBulkRefill() {
     var appliedAmount = daysToApply.length * dailyRate;
     pushToUndo();
     if (!deductDailyFoodBulkSource(sourceValue, appliedAmount)) return;
-    adjustItemBalance('Daily Food', appliedAmount);
     state.food.consumedDays = (state.food.consumedDays || []).filter(function (d) {
         return daysToApply.indexOf(d) === -1;
     }).sort(function (a, b) { return a - b; });
     state.food.daysUsed = state.food.consumedDays.length;
+    var curFood = getItemBalance('Daily Food', 0);
+    if (!state.balances) state.balances = {};
+    state.balances['Daily Food'] = curFood + appliedAmount;
+    for (var bi = 0; bi < daysToApply.length; bi++) {
+        if (typeof setFoodFundedForDay === 'function') setFoodFundedForDay(daysToApply[bi], dailyRate);
+    }
+    if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
     if (typeof logHistory === 'function') logHistory('Daily Food', appliedAmount, 'Bulk refill from source');
     saveState();
     renderLedger();
@@ -1589,7 +1640,7 @@ function isOverflowDayUsed(dayKey) {
 }
 
 function markOverflowDayUsage(dayKey, mode) {
-    if (!state.food) state.food = { daysTotal: 28, daysUsed: 0, lockedAmount: 0, history: [], viewWeek: 0 };
+    if (!state.food) state.food = { daysTotal: 28, daysUsed: 0, lockedAmount: 0, history: [], viewWeek: 0, fundedAmountByDay: {}, _foodFundingMigrated: true };
     if (!state.food.overflowUsage || typeof state.food.overflowUsage !== 'object') state.food.overflowUsage = {};
     state.food.overflowUsage[dayKey] = mode;
 }
@@ -1923,18 +1974,31 @@ function startNewMonthFoodReset(options) {
     var daysTotal = state.food.daysTotal || 28;
     var unconsumed = Math.max(0, daysTotal - daysUsed);
     var movedToExtra = 0;
-    if (unconsumed > 0) {
-        var info = typeof getFoodRemainderInfo === 'function' ? getFoodRemainderInfo() : null;
-        var dailyRate = (info && info.dailyRate > 0) ? info.dailyRate : (600 / 28);
-        var valueToMove = unconsumed * dailyRate;
+    if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
+    var consumedSet = {};
+    (state.food.consumedDays || []).forEach(function (cd) {
+        consumedSet[cd] = true;
+    });
+    var fundedUnconsumedTotal = 0;
+    for (var fd = 1; fd <= 28; fd++) {
+        if (consumedSet[fd]) continue;
+        fundedUnconsumedTotal += (typeof getFoodFundedForDay === 'function') ? getFoodFundedForDay(fd) : 0;
+    }
+    if (fundedUnconsumedTotal > 0) {
         var foodBal = (state.balances && state.balances['Daily Food'] !== undefined) ? Number(state.balances['Daily Food']) : 0;
-        var takeFromFood = Math.min(valueToMove, Math.max(0, foodBal));
+        var takeFromFood = Math.min(fundedUnconsumedTotal, Math.max(0, foodBal));
         if (takeFromFood > 0) {
             state.balances['Daily Food'] = (state.balances['Daily Food'] || 0) - takeFromFood;
             if (state.balances['Daily Food'] <= 0) delete state.balances['Daily Food'];
             if (!state.accounts) state.accounts = {};
             state.accounts.surplus = (state.accounts && typeof state.accounts.surplus === 'number' ? state.accounts.surplus : 0) + takeFromFood;
             movedToExtra = takeFromFood;
+        }
+    }
+    if (typeof getFoodFundingMap === 'function') {
+        var fm = getFoodFundingMap();
+        for (var z = 1; z <= 28; z++) {
+            fm[String(z)] = 0;
         }
     }
     state.food.consumedDays = [];
@@ -2429,6 +2493,14 @@ function allocateFromSurplusToTarget(targetLabel, amount) {
         logHistory(targetLabel, val, 'Distribute');
         return val;
     }
+    if (targetLabel === 'Daily Food') {
+        ensureAccountsState();
+        if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
+        state.accounts.surplus -= val;
+        adjustItemBalance('Daily Food', val);
+        logHistory(targetLabel, val, 'Distribute');
+        return val;
+    }
     applyTransaction({ type: 'transfer', from: 'Surplus', to: targetLabel, amount: val });
     logHistory(targetLabel, val, 'Distribute');
     return val;
@@ -2524,6 +2596,15 @@ function applyPaycheckDistribute() {
     function getDeficitForLabel(label, plannedAmount, recordExcluded) {
         var planned = Number(plannedAmount) || 0;
         if (planned <= 0) return 0;
+        if (label === 'Daily Food') {
+            if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
+            var finfo = (typeof getFoodRemainderInfo === 'function') ? getFoodRemainderInfo() : null;
+            var targetAmt = finfo && typeof finfo.theoreticalRemainder === 'number' ? finfo.theoreticalRemainder : 0;
+            var currentAmt = finfo && typeof finfo.remainder === 'number' ? finfo.remainder : 0;
+            var deficitFd = Math.max(0, targetAmt - currentAmt);
+            if (recordExcluded) pushDebugRow('deficit', label, targetAmt, currentAmt, deficitFd);
+            return deficitFd;
+        }
         var current = getCurrentForLabel(label);
         var deficit = Math.max(0, planned - current);
         if (recordExcluded) pushDebugRow('deficit', label, planned, current, deficit);

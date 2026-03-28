@@ -766,6 +766,8 @@ function seedBalancesFromOnboardingPlan() {
     state.food.lockedAmount = 0;
     state.food.overflowUsage = {};
     state.food.redistributedExtraDays = 0;
+    state.food.fundedAmountByDay = {};
+    state.food._foodFundingMigrated = true;
 
     if (typeof syncSavingsTotal === 'function') syncSavingsTotal();
     if (typeof syncPayablesTotal === 'function') syncPayablesTotal();

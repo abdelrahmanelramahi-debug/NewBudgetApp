@@ -1294,6 +1294,12 @@ function updateFoodUI() {
     }
     redistributedDays = Math.max(0, Math.floor((state.food && state.food.redistributedExtraDays) || 0));
     var daily = foodBase / ((state.food.daysTotal || 28) + redistributedDays);
+    if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
+    var fundedBalEl = document.getElementById('daily-food-funded-balance');
+    if (fundedBalEl && typeof getFoodRemainderInfo === 'function') {
+        var fr = getFoodRemainderInfo();
+        fundedBalEl.textContent = formatMoney(fr && typeof fr.remainder === 'number' ? fr.remainder : 0);
+    }
     var consumedDays = state.food.consumedDays || [];
     var daysUsed = consumedDays.length;
     var daysTotal = state.food.daysTotal || 28;
@@ -1360,35 +1366,46 @@ function updateFoodUI() {
                 var cycleDay = slot + 1;
                 var consumed = consumedDays.indexOf(cycleDay) !== -1;
                 var isToday = p.date === todayDate && p.month === todayMonth && p.year === todayYear;
-                var futureInCycle = !consumed && cycleDay <= 28;
+                var hasFunding = (typeof getFoodFundedForDay === 'function') ? (getFoodFundedForDay(cycleDay) > 0.001) : true;
+                var isLocked = !consumed && !hasFunding && cycleDay <= 28;
+                var futureInCycle = !consumed && cycleDay <= 28 && !isLocked;
                 var action = consumed ? 'unmark' : 'mark';
                 var cls = 'food-overview-cell rounded-md flex items-center justify-center text-[10px] font-black min-h-[2rem] transition cursor-pointer ';
                 if (consumed) cls += 'bg-slate-200 text-slate-500 hover:bg-slate-300';
+                else if (isLocked) cls += 'bg-slate-50 text-slate-400 border border-dashed border-slate-300 hover:bg-slate-100';
                 else if (isToday) cls += 'bg-indigo-500 text-white shadow-md hover:bg-indigo-600 food-cell-today';
                 else if (futureInCycle) cls += 'bg-slate-100 text-slate-400 border border-slate-200 hover:bg-slate-200';
                 else cls += 'bg-white text-slate-400 border border-slate-200';
                 if (isToday && consumed) cls += ' food-cell-today';
-                var label = consumed ? '✓' : p.date;
-                var clickAttr = ' onclick="event.stopPropagation(); setFoodDayFromCalendar(' + cycleDay + ', \'' + action + '\')" role="button"';
-                var cellContent = '<div' + clickAttr + ' class="' + cls + '" data-cycle-day="' + cycleDay + '" data-date="' + p.date + '" title="' + (consumed ? 'Click to unmark' : 'Click to mark consumed') + ' · ' + p.monthName + ' ' + p.date + '">' + label + '</div>';
+                var label = consumed ? '✓' : (isLocked ? '🔒' : p.date);
+                var cellTitle = isLocked
+                    ? ('No funds allocated yet · ' + p.monthName + ' ' + p.date)
+                    : ((consumed ? 'Click to unmark' : 'Click to mark consumed') + ' · ' + p.monthName + ' ' + p.date);
+                var clickAttr = isLocked
+                    ? ' onclick="event.stopPropagation(); showFoodDayLockedNotice()" role="button"'
+                    : (' onclick="event.stopPropagation(); setFoodDayFromCalendar(' + cycleDay + ', \'' + action + '\')" role="button"');
+                var cellContent = '<div' + clickAttr + ' class="' + cls + '" data-cycle-day="' + cycleDay + '" data-date="' + p.date + '" title="' + cellTitle + '">' + label + '</div>';
                 var hoverActions = '';
-                if (futureInCycle || consumed) {
-                    var tickTitle = consumed ? 'Unmark' : 'Mark consumed';
+                if (consumed) {
+                    var tickTitleU = 'Unmark';
+                    hoverActions = '<div class="food-day-hover-actions absolute inset-0 flex rounded-md overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto">' +
+                        '<span class="pointer-events-auto flex-1 flex items-center justify-center min-w-0 food-day-consume-panel" title="' + tickTitleU + '" onclick="event.stopPropagation(); setFoodDayFromCalendar(' + cycleDay + ', \'unmark\')" role="button" aria-label="' + tickTitleU + '">' +
+                        '<span class="text-white text-[10px] font-black">✓</span></span>';
+                    hoverActions += '<span class="flex-1 food-day-transfer-panel opacity-50"></span>';
+                    hoverActions += '</div>';
+                } else if (hasFunding) {
+                    var tickTitle = 'Mark consumed';
                     var transferTitle = 'Transfer day to...';
                     hoverActions = '<div class="food-day-hover-actions absolute inset-0 flex rounded-md overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto">' +
-                        '<span class="pointer-events-auto flex-1 flex items-center justify-center min-w-0 food-day-consume-panel" title="' + tickTitle + '" onclick="event.stopPropagation(); setFoodDayFromCalendar(' + cycleDay + ', \'' + action + '\')" role="button" aria-label="' + tickTitle + '">' +
+                        '<span class="pointer-events-auto flex-1 flex items-center justify-center min-w-0 food-day-consume-panel" title="' + tickTitle + '" onclick="event.stopPropagation(); setFoodDayFromCalendar(' + cycleDay + ', \'mark\')" role="button" aria-label="' + tickTitle + '">' +
                         '<span class="text-white text-[10px] font-black">✓</span></span>';
-                    if (!consumed) {
-                        hoverActions += '<span class="pointer-events-auto flex-1 flex items-center justify-center min-w-0 food-day-transfer-panel" title="' + transferTitle + '" onclick="event.stopPropagation(); openFoodDayTransferPopover(' + cycleDay + ', this)" role="button" aria-label="' + transferTitle + '">' +
-                            '<span class="text-white text-[10px] font-black">↗</span></span>';
-                    } else {
-                        hoverActions += '<span class="flex-1 food-day-transfer-panel opacity-50"></span>';
-                    }
+                    hoverActions += '<span class="pointer-events-auto flex-1 flex items-center justify-center min-w-0 food-day-transfer-panel" title="' + transferTitle + '" onclick="event.stopPropagation(); openFoodDayTransferPopover(' + cycleDay + ', this)" role="button" aria-label="' + transferTitle + '">' +
+                        '<span class="text-white text-[10px] font-black">↗</span></span>';
                     hoverActions += '</div>';
                 }
                 var wrapperClass = 'food-overview-cell-wrapper group relative overflow-hidden';
                 if (isToday) wrapperClass += ' food-cell-today-wrapper';
-                var dataAttrs = (futureInCycle || consumed) ? ' data-cycle-day="' + cycleDay + '" data-consumed="' + (consumed ? '1' : '0') + '"' : '';
+                var dataAttrs = ' data-cycle-day="' + cycleDay + '" data-consumed="' + (consumed ? '1' : '0') + '" data-locked="' + (isLocked ? '1' : '0') + '"';
                 rowHtml += '<div class="' + wrapperClass + '"' + dataAttrs + '>' + cellContent + hoverActions + '</div>';
             }
             rowHtml += '</div></div>';
@@ -1439,6 +1456,11 @@ function updateFoodUI() {
                     e.preventDefault();
                     e.stopPropagation();
                     var consumed = wrapper.getAttribute('data-consumed') === '1';
+                    var locked = wrapper.getAttribute('data-locked') === '1';
+                    if (locked && typeof showFoodDayLockedNotice === 'function') {
+                        showFoodDayLockedNotice();
+                        return;
+                    }
                     openFoodDayActionPopover(parseInt(cycleDay, 10), consumed, wrapper);
                 }
             }, true);
@@ -1509,11 +1531,22 @@ function isMobileFoodModal() {
     return (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 640px)').matches);
 }
 
+function showFoodDayLockedNotice() {
+    if (typeof showAppAlert === 'function') {
+        showAppAlert('No funds have been allocated for this day yet. Use Paycheck Distribute to fund Daily Food, or Refund Days to restore consumed days.', 'Daily Food');
+    }
+}
+window.showFoodDayLockedNotice = showFoodDayLockedNotice;
+
 function openFoodDayMobileModal(cycleDay, consumed) {
     var modal = document.getElementById('food-day-mobile-modal');
     if (!modal) return;
 
     var day = Math.max(1, Math.min(28, Math.floor(cycleDay)));
+    if (!consumed && typeof getFoodFundedForDay === 'function' && getFoodFundedForDay(day) <= 0.001) {
+        showFoodDayLockedNotice();
+        return;
+    }
     var payCycle = getPayCycleInfo();
     var p = payCycle && payCycle.dates ? payCycle.dates[day - 1] : null;
     var titleEl = document.getElementById('food-day-mobile-title');
@@ -1579,6 +1612,11 @@ window.closeFoodDayMobileModal = closeFoodDayMobileModal;
 var _foodDayActionPopoverAnchor = null;
 
 function openFoodDayActionPopover(cycleDay, consumed, anchorEl) {
+    var dCheck = Math.max(1, Math.min(28, Math.floor(cycleDay)));
+    if (!consumed && typeof getFoodFundedForDay === 'function' && getFoodFundedForDay(dCheck) <= 0.001) {
+        showFoodDayLockedNotice();
+        return;
+    }
     if (isTouchOrSmall() && isMobileFoodModal()) {
         openFoodDayMobileModal(cycleDay, consumed);
         return;
