@@ -735,14 +735,55 @@ function migrateLegacyFoodFunding() {
         remaining -= add;
     }
     if (remaining > 0.001) {
-        for (var d2 = 1; d2 <= 28; d2++) {
-            if (!consumed[d2]) {
-                m[String(d2)] = (Number(m[String(d2)]) || 0) + remaining;
-                break;
-            }
+        var uncM = [];
+        for (var dm = 1; dm <= 28; dm++) {
+            if (!consumed[dm]) uncM.push(dm);
+        }
+        if (uncM.length > 0) {
+            var perM = remaining / uncM.length;
+            uncM.forEach(function (d2) {
+                m[String(d2)] = (Number(m[String(d2)]) || 0) + perM;
+            });
         }
     }
     state.food._foodFundingMigrated = true;
+}
+
+/**
+ * If overflow extras hold balance while some core cycle days are starved (no funding), move from
+ * overflowFunded into those core slots up to plan dailyRate. Skips days that already have meaningful
+ * funding (e.g. redistribute split below dailyRate) so we do not pull from extras incorrectly.
+ */
+function fillEmptyCoreDaysFromOverflowFunding(consumed, dailyRate) {
+    var eps = 0.02;
+    if (dailyRate <= 0) return;
+    ensureFoodConsumedDays();
+    var of = state.food.overflowFunded || {};
+    for (var d = 1; d <= 28; d++) {
+        if (consumed[d]) continue;
+        var cur = getFoodFundedForDay(d);
+        if (cur > eps) continue;
+        while (cur < dailyRate - eps) {
+            var sumOv2 = sumOverflowFunded();
+            if (sumOv2 <= eps) break;
+            var need = Math.min(dailyRate - cur, sumOv2);
+            var needLeft = need;
+            var ovKeys = Object.keys(of).sort();
+            for (var oi = ovKeys.length - 1; oi >= 0 && needLeft > 0.001; oi--) {
+                var ok = ovKeys[oi];
+                var ovAmt = Number(of[ok]) || 0;
+                if (ovAmt <= 0) continue;
+                var take = Math.min(ovAmt, needLeft);
+                of[ok] = ovAmt - take;
+                if (of[ok] < 0.001) delete of[ok];
+                needLeft -= take;
+            }
+            var taken = need - needLeft;
+            if (taken <= 0.001) break;
+            setFoodFundedForDay(d, getFoodFundedForDay(d) + taken);
+            cur = getFoodFundedForDay(d);
+        }
+    }
 }
 
 function reconcileFoodFundingWithLedger() {
@@ -773,11 +814,15 @@ function reconcileFoodFundingWithLedger() {
                 left -= add;
             }
             if (left > 0.001) {
+                var unc = [];
                 for (var d2 = 1; d2 <= 28; d2++) {
-                    if (!consumed[d2]) {
-                        setFoodFundedForDay(d2, getFoodFundedForDay(d2) + left);
-                        break;
-                    }
+                    if (!consumed[d2]) unc.push(d2);
+                }
+                if (unc.length > 0) {
+                    var addEach = left / unc.length;
+                    unc.forEach(function (dx) {
+                        setFoodFundedForDay(dx, getFoodFundedForDay(dx) + addEach);
+                    });
                 }
             }
         } else {
@@ -803,6 +848,7 @@ function reconcileFoodFundingWithLedger() {
             }
         }
     }
+    fillEmptyCoreDaysFromOverflowFunding(consumed, dailyRate);
     var cap = core.foodBase;
     if (cap >= 0 && cap < 1e12) {
         var sumAfter = sumFoodFundedAll();
@@ -821,11 +867,15 @@ function reconcileFoodFundingWithLedger() {
             var newSum = sumFoodFundedAll();
             var drift = cap - newSum;
             if (Math.abs(drift) > 0.02) {
+                var uncDr = [];
                 for (var d5 = 1; d5 <= 28; d5++) {
-                    if (!consumed[d5]) {
-                        setFoodFundedForDay(d5, Math.max(0, getFoodFundedForDay(d5) + drift));
-                        break;
-                    }
+                    if (!consumed[d5]) uncDr.push(d5);
+                }
+                if (uncDr.length > 0) {
+                    var driftEach = drift / uncDr.length;
+                    uncDr.forEach(function (d6) {
+                        setFoodFundedForDay(d6, Math.max(0, getFoodFundedForDay(d6) + driftEach));
+                    });
                 }
                 newSum = sumFoodFundedAll();
             }

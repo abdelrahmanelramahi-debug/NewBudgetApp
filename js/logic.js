@@ -140,3 +140,21 @@ function recalculateSurplusFromReality() {
     var allocated = lb.totalLiquid - (state.accounts.surplus || 0);
     state.accounts.surplus = reality - allocated;
 }
+
+/** Daily Food header “X / day”: ledger balance divided by funded slots (unconsumed core days + each accounted extra day).
+ *  Updates when allocations change (paycheck distribute, refund, consume, overflow fund/redistribute/undo), not when only the plan slider changes. */
+function getDailyFoodEffectiveDisplayRate() {
+    if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
+    var bal = getItemBalance('Daily Food', 0);
+    if (bal <= 0.001) return 0;
+    if (typeof countUnconsumedCoreDays !== 'function') return 0;
+    var U = countUnconsumedCoreDays();
+    var usage = state.food && state.food.overflowUsage ? state.food.overflowUsage : {};
+    var overflowAcc = Object.keys(usage).filter(function (k) {
+        return !!usage[k];
+    }).length;
+    var slots = U + overflowAcc;
+    if (slots <= 0) return 0;
+    return bal / slots;
+}
+if (typeof window !== 'undefined') window.getDailyFoodEffectiveDisplayRate = getDailyFoodEffectiveDisplayRate;

@@ -1273,13 +1273,6 @@ function getMonthCalendarInfo() {
 
 // Updates food panel: daily rate, locked funds, days left, buffer source dropdown, pay-cycle calendar.
 function updateFoodUI() {
-    var cid = SECTION_IDS.CORE_ESSENTIALS;
-    var fid = SECTION_IDS.FOUNDATIONS;
-    var flabel = ITEM_LABELS.FOOD_BASE;
-    var fSec = state.categories.find(s=>s.id===cid) || state.categories.find(s=>s.id===fid);
-    // Match same item as getFoodRemainderInfo (Daily Food) so rate and remainder stay in sync
-    var fItem = fSec ? fSec.items.find(i=>i.label===flabel) : null;
-    var foodBase = fItem ? fItem.amount : 600;
     if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
     var payCycle = getPayCycleInfo();
     if (typeof maybeAutoAdvanceFoodCycle === 'function') {
@@ -1288,9 +1281,8 @@ function updateFoodUI() {
             if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
         }
     }
-    var coreDaysForRate = state.food.daysTotal || 28;
-    var daily = coreDaysForRate > 0 ? foodBase / coreDaysForRate : 0;
     if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
+    var daily = typeof getDailyFoodEffectiveDisplayRate === 'function' ? getDailyFoodEffectiveDisplayRate() : 0;
     var fundedBalEl = document.getElementById('daily-food-funded-balance');
     var fundedWrap = document.getElementById('daily-food-funded-wrap');
     if (fundedBalEl && typeof getFoodRemainderInfo === 'function' && typeof getItemBalance === 'function') {
