@@ -172,8 +172,10 @@ async function signIn(email, password) {
     try {
         const userCredential = await window.firebaseAuth.signInWithEmailAndPassword(trimmedEmail, trimmedPassword);
         currentUser = userCredential.user;
-        
-        await loadStateFromCloud();
+        window.currentUser = userCredential.user;
+        // Do not await loadStateFromCloud() here: onAuthStateChanged already runs the same load with
+        // timeouts. A second await can hang forever (e.g. sync lock / slow Firestore) and leaves the
+        // modal stuck on "Signing in...".
         closeAuthModal();
         return { success: true };
     } catch (error) {
