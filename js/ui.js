@@ -1181,7 +1181,7 @@ function lastDayOfMonth(y, m) {
  * Returns { cycleStart (Date), dates: [ { date, monthName, dayOfWeek, cycleDay } ] } for 28 days.
  */
 function getPayCycleInfo() {
-    var payDate = typeof state.settings?.payDate === 'number' ? Math.max(1, Math.min(31, state.settings.payDate)) : 28;
+    var payDate = typeof state.settings?.payDate === 'number' ? Math.max(1, Math.min(28, state.settings.payDate)) : 28;
     var now = new Date();
     var todayYear = now.getFullYear();
     var todayMonth = now.getMonth();
@@ -1290,9 +1290,8 @@ function updateFoodUI() {
             if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
         }
     }
-    var overflowDayCount = Array.isArray(payCycle.overflowDates) ? payCycle.overflowDates.length : 0;
-    var effectiveDaysForRate = (state.food.daysTotal || 28) + overflowDayCount;
-    var daily = effectiveDaysForRate > 0 ? foodBase / effectiveDaysForRate : 0;
+    var coreDaysForRate = state.food.daysTotal || 28;
+    var daily = coreDaysForRate > 0 ? foodBase / coreDaysForRate : 0;
     if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
     var fundedBalEl = document.getElementById('daily-food-funded-balance');
     if (fundedBalEl && typeof getFoodRemainderInfo === 'function') {
@@ -1302,7 +1301,7 @@ function updateFoodUI() {
     var consumedDays = state.food.consumedDays || [];
     var daysUsed = consumedDays.length;
     var daysTotal = state.food.daysTotal || 28;
-    var effectiveDaysTotal = daysTotal + overflowDayCount;
+    var effectiveDaysTotal = daysTotal;
     var daysLeftEffective = Math.max(0, effectiveDaysTotal - daysUsed);
     var lockedAmount = state.food.lockedAmount || 0;
     var currentDayInCycle = daysUsed + 1;

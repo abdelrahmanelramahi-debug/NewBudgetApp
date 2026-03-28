@@ -1335,7 +1335,7 @@ function openDailyFoodPayDayModal() {
     closeDailyFoodActionsMenu();
     var sel = document.getElementById('daily-food-pay-day-select');
     if (sel) {
-        var d = typeof state.settings?.payDate === 'number' ? Math.max(1, Math.min(31, state.settings.payDate)) : 28;
+        var d = typeof state.settings?.payDate === 'number' ? Math.max(1, Math.min(28, state.settings.payDate)) : 28;
         sel.value = String(d);
     }
     toggleModal('daily-food-pay-day-modal', true);
@@ -1380,7 +1380,7 @@ function applyFoodStartDateFromMenu() {
         if (typeof showAppAlert === 'function') showAppAlert('Pick a day of the month first.');
         return;
     }
-    var dayOfMonth = Math.max(1, Math.min(31, parseInt(modalSel.value, 10)));
+    var dayOfMonth = Math.max(1, Math.min(28, parseInt(modalSel.value, 10)));
     if (Number.isNaN(dayOfMonth)) {
         if (typeof showAppAlert === 'function') showAppAlert('Invalid day.');
         return;
@@ -3891,7 +3891,7 @@ function saveSettingsFromUI() {
     const currency = currencyInput?.value?.trim() || 'AED';
     const decimals = parseInt(decimalsSelect?.value, 10);
     const firstDayOfWeek = firstDaySelect ? Math.max(0, Math.min(6, parseInt(firstDaySelect.value, 10))) : 3;
-    const payDate = payDateSelect ? Math.max(1, Math.min(31, parseInt(payDateSelect.value, 10))) : 28;
+    const payDate = payDateSelect ? Math.max(1, Math.min(28, parseInt(payDateSelect.value, 10))) : 28;
 
     state.settings = {
         ...state.settings,

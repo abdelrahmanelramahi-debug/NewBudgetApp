@@ -563,6 +563,8 @@ function ensureSettings() {
     var pd = state.settings.payDate;
     if (typeof pd !== 'number' || pd < 1 || pd > 31) {
         state.settings.payDate = 28;
+    } else {
+        state.settings.payDate = Math.min(28, pd);
     }
     // These protections are now fixed on.
     state.settings.confirmSurplusEdits = true;
@@ -599,7 +601,9 @@ function getPayCycleOverflowDayCount() {
     }
 }
 
-/** Daily Food plan rates without touching funding migration (avoid recursion). */
+/** Daily Food plan rates without touching funding migration (avoid recursion).
+ *  Core cycle only (daysTotal, usually 28): overflow calendar days do not dilute the daily rate or inflate
+ *  “days left” — extra days are optional and funded via the overflow UI, not by spreading the same budget thinner. */
 function computeFoodPlanCore() {
     var cid = SECTION_IDS.CORE_ESSENTIALS;
     var fid = SECTION_IDS.FOUNDATIONS;
@@ -609,12 +613,19 @@ function computeFoodPlanCore() {
     const foodBase = fItem ? fItem.amount : 0;
     var coreDays = (state.food && state.food.daysTotal) ? state.food.daysTotal : 28;
     var overflowCalendarDays = typeof getPayCycleOverflowDayCount === 'function' ? getPayCycleOverflowDayCount() : 0;
-    var effectiveDaysTotal = coreDays + overflowCalendarDays;
     const daysUsed = (state.food && state.food.consumedDays) ? state.food.consumedDays.length : 0;
-    const daysLeft = Math.max(0, effectiveDaysTotal - daysUsed);
-    const dailyRate = effectiveDaysTotal > 0 ? (foodBase / effectiveDaysTotal) : 0;
+    const dailyRate = coreDays > 0 ? (foodBase / coreDays) : 0;
+    const daysLeft = Math.max(0, coreDays - daysUsed);
     const theoreticalRemainder = daysLeft * dailyRate;
-    return { fItem, foodBase, daysLeft, dailyRate, theoreticalRemainder, effectiveDaysTotal };
+    return {
+        fItem,
+        foodBase,
+        daysLeft,
+        dailyRate,
+        theoreticalRemainder,
+        effectiveDaysTotal: coreDays,
+        overflowCalendarDays: overflowCalendarDays
+    };
 }
 
 function getFoodFundingMap() {
@@ -713,35 +724,62 @@ function reconcileFoodFundingWithLedger() {
     if (bal < 0) bal = 0;
     var sumF = sumFoodFundedAll();
     var diff = bal - sumF;
-    if (Math.abs(diff) < 0.02) return;
-    if (diff > 0) {
-        var left = diff;
-        for (var d = 1; d <= 28 && left > 0.001; d++) {
-            if (consumed[d]) continue;
-            var cur = getFoodFundedForDay(d);
-            var room = Math.max(0, dailyRate - cur);
-            if (room <= 0) continue;
-            var add = Math.min(room, left);
-            setFoodFundedForDay(d, cur + add);
-            left -= add;
-        }
-        if (left > 0.001) {
-            for (var d2 = 1; d2 <= 28; d2++) {
-                if (!consumed[d2]) {
-                    setFoodFundedForDay(d2, getFoodFundedForDay(d2) + left);
-                    break;
+    if (Math.abs(diff) >= 0.02) {
+        if (diff > 0) {
+            var left = diff;
+            for (var d = 1; d <= 28 && left > 0.001; d++) {
+                if (consumed[d]) continue;
+                var cur = getFoodFundedForDay(d);
+                var room = Math.max(0, dailyRate - cur);
+                if (room <= 0) continue;
+                var add = Math.min(room, left);
+                setFoodFundedForDay(d, cur + add);
+                left -= add;
+            }
+            if (left > 0.001) {
+                for (var d2 = 1; d2 <= 28; d2++) {
+                    if (!consumed[d2]) {
+                        setFoodFundedForDay(d2, getFoodFundedForDay(d2) + left);
+                        break;
+                    }
                 }
             }
+        } else {
+            var need = -diff;
+            for (var d3 = 28; d3 >= 1 && need > 0.001; d3--) {
+                if (consumed[d3]) continue;
+                var cur3 = getFoodFundedForDay(d3);
+                if (cur3 <= 0) continue;
+                var sub = Math.min(cur3, need);
+                setFoodFundedForDay(d3, cur3 - sub);
+                need -= sub;
+            }
         }
-    } else {
-        var need = -diff;
-        for (var d3 = 28; d3 >= 1 && need > 0.001; d3--) {
-            if (consumed[d3]) continue;
-            var cur3 = getFoodFundedForDay(d3);
-            if (cur3 <= 0) continue;
-            var sub = Math.min(cur3, need);
-            setFoodFundedForDay(d3, cur3 - sub);
-            need -= sub;
+    }
+    var cap = core.foodBase;
+    if (cap >= 0 && cap < 1e12) {
+        var sumAfter = sumFoodFundedAll();
+        if (sumAfter > cap + 0.02) {
+            var ledgerBeforeCap = (state.balances && state.balances['Daily Food'] !== undefined)
+                ? Number(state.balances['Daily Food']) || 0
+                : sumAfter;
+            var over = sumAfter - cap;
+            for (var d4 = 28; d4 >= 1 && over > 0.001; d4--) {
+                if (consumed[d4]) continue;
+                var cur4 = getFoodFundedForDay(d4);
+                if (cur4 <= 0) continue;
+                var cut = Math.min(cur4, over);
+                setFoodFundedForDay(d4, cur4 - cut);
+                over -= cut;
+            }
+            var newSum = sumFoodFundedAll();
+            if (state.balances) {
+                state.balances['Daily Food'] = newSum;
+            }
+            var spillToExtra = ledgerBeforeCap - newSum;
+            if (spillToExtra > 0.02 && state.accounts) {
+                state.accounts.surplus = (Number(state.accounts.surplus) || 0) + spillToExtra;
+            }
         }
     }
 }
