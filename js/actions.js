@@ -1698,11 +1698,15 @@ function _recomputeOverflowRedistributionSplit() {
         (typeof sumOverflowFunded === 'function' ? sumOverflowFunded() : 0);
     var drift = pool - sumAfter;
     if (Math.abs(drift) > 0.05 && typeof setFoodFundedForDay === 'function' && typeof getFoodFundedForDay === 'function') {
+        var uncDr = [];
         for (var d2 = 1; d2 <= 28; d2++) {
-            if (!consumed[d2]) {
-                setFoodFundedForDay(d2, getFoodFundedForDay(d2) + drift);
-                break;
-            }
+            if (!consumed[d2]) uncDr.push(d2);
+        }
+        if (uncDr.length > 0) {
+            var driftEach = drift / uncDr.length;
+            uncDr.forEach(function (d3) {
+                setFoodFundedForDay(d3, getFoodFundedForDay(d3) + driftEach);
+            });
         }
     }
 }

@@ -786,6 +786,53 @@ function fillEmptyCoreDaysFromOverflowFunding(consumed, dailyRate) {
     }
 }
 
+/**
+ * When the ledger balances (diff ≈ 0) but core slots are malformed — e.g. some unconsumed days at 0
+ * while others exceed dailyRate, with nothing in overflowFunded to move — rebuild unconsumed core
+ * funding from targetCore = bal − sumOverflowFunded using the same pattern as migrateLegacyFoodFunding.
+ */
+function repairCoreFundingZerosFromOverages(consumed, dailyRate, bal) {
+    var eps = 0.02;
+    if (dailyRate <= 0) return;
+    var sumOv = typeof sumOverflowFunded === 'function' ? sumOverflowFunded() : 0;
+    if (sumOv > eps) return;
+    var hasZero = false;
+    for (var di = 1; di <= 28; di++) {
+        if (consumed[di]) continue;
+        if (getFoodFundedForDay(di) <= eps) {
+            hasZero = true;
+            break;
+        }
+    }
+    if (!hasZero) return;
+    var targetCore = bal - sumOv;
+    if (targetCore < 0) targetCore = 0;
+    getFoodFundingMap();
+    var m = state.food.fundedAmountByDay;
+    for (var cz = 1; cz <= 28; cz++) {
+        if (consumed[cz]) m[String(cz)] = 0;
+    }
+    var remaining = targetCore;
+    for (var d = 1; d <= 28 && remaining > 0.0001; d++) {
+        if (consumed[d]) continue;
+        var add = Math.min(dailyRate, remaining);
+        m[String(d)] = add;
+        remaining -= add;
+    }
+    if (remaining > 0.001) {
+        var uncM = [];
+        for (var dm = 1; dm <= 28; dm++) {
+            if (!consumed[dm]) uncM.push(dm);
+        }
+        if (uncM.length > 0) {
+            var perM = remaining / uncM.length;
+            uncM.forEach(function (d2) {
+                m[String(d2)] = (Number(m[String(d2)]) || 0) + perM;
+            });
+        }
+    }
+}
+
 function reconcileFoodFundingWithLedger() {
     ensureFoodConsumedDays();
     getFoodFundingMap();
@@ -849,6 +896,7 @@ function reconcileFoodFundingWithLedger() {
         }
     }
     fillEmptyCoreDaysFromOverflowFunding(consumed, dailyRate);
+    repairCoreFundingZerosFromOverages(consumed, dailyRate, bal);
     var cap = core.foodBase;
     if (cap >= 0 && cap < 1e12) {
         var sumAfter = sumFoodFundedAll();
