@@ -1331,20 +1331,21 @@ window.closeFoodDayTransferPopover = closeFoodDayTransferPopover;
 
 var _dailyFoodBulkSelectedDays = [];
 
-function syncDailyFoodStartDateInput() {
-    var info = (typeof getPayCycleInfo === 'function') ? getPayCycleInfo() : null;
-    var start = info && info.cycleStart ? info.cycleStart : null;
-    if (!start || !start.getFullYear) return;
-    var y = start.getFullYear();
-    var m = String(start.getMonth() + 1).padStart(2, '0');
-    var d = String(start.getDate()).padStart(2, '0');
-    var value = y + '-' + m + '-' + d;
-    var ids = ['food-start-date-menu-input', 'food-start-date-input'];
-    ids.forEach(function (id) {
-        var input = document.getElementById(id);
-        if (input) input.value = value;
-    });
+function openDailyFoodPayDayModal() {
+    closeDailyFoodActionsMenu();
+    var sel = document.getElementById('daily-food-pay-day-select');
+    if (sel) {
+        var d = typeof state.settings?.payDate === 'number' ? Math.max(1, Math.min(31, state.settings.payDate)) : 28;
+        sel.value = String(d);
+    }
+    toggleModal('daily-food-pay-day-modal', true);
 }
+window.openDailyFoodPayDayModal = openDailyFoodPayDayModal;
+
+function closeDailyFoodPayDayModal() {
+    toggleModal('daily-food-pay-day-modal', false);
+}
+window.closeDailyFoodPayDayModal = closeDailyFoodPayDayModal;
 
 function openDailyFoodActionsMenu(e) {
     if (e && e.preventDefault) e.preventDefault();
@@ -1357,7 +1358,6 @@ function openDailyFoodActionsMenu(e) {
         closeDailyFoodActionsMenu();
         return;
     }
-    syncDailyFoodStartDateInput();
     var rect = btn.getBoundingClientRect();
     var menuWidth = 260;
     var left = Math.max(10, rect.right - menuWidth);
@@ -1371,42 +1371,29 @@ window.openDailyFoodActionsMenu = openDailyFoodActionsMenu;
 function closeDailyFoodActionsMenu() {
     var menu = document.getElementById('daily-food-actions-menu');
     if (menu) menu.classList.add('hidden');
-    var panel = document.getElementById('daily-food-start-date-panel');
-    if (panel) panel.classList.add('hidden');
 }
 window.closeDailyFoodActionsMenu = closeDailyFoodActionsMenu;
 
-function toggleDailyFoodStartDateMenu() {
-    var panel = document.getElementById('daily-food-start-date-panel');
-    if (!panel) return;
-    var willShow = panel.classList.contains('hidden');
-    panel.classList.toggle('hidden', !willShow);
-    if (willShow) syncDailyFoodStartDateInput();
-}
-window.toggleDailyFoodStartDateMenu = toggleDailyFoodStartDateMenu;
-
 function applyFoodStartDateFromMenu() {
-    var input = document.getElementById('food-start-date-menu-input') || document.getElementById('food-start-date-input');
-    if (!input || !input.value) {
-        if (typeof showAppAlert === 'function') showAppAlert('Pick a start date first.');
+    var modalSel = document.getElementById('daily-food-pay-day-select');
+    if (!modalSel || !modalSel.value) {
+        if (typeof showAppAlert === 'function') showAppAlert('Pick a day of the month first.');
         return;
     }
-    var parsed = new Date(input.value + 'T00:00:00');
-    if (!parsed || Number.isNaN(parsed.getTime())) {
-        if (typeof showAppAlert === 'function') showAppAlert('Invalid date.');
+    var dayOfMonth = Math.max(1, Math.min(31, parseInt(modalSel.value, 10)));
+    if (Number.isNaN(dayOfMonth)) {
+        if (typeof showAppAlert === 'function') showAppAlert('Invalid day.');
         return;
     }
-    var dayOfMonth = parsed.getDate();
     var payDateSelect = document.getElementById('settings-pay-date');
     if (payDateSelect) payDateSelect.value = String(dayOfMonth);
     saveSettingsFromUI();
-    closeDailyFoodActionsMenu();
+    closeDailyFoodPayDayModal();
     if (typeof showAppAlert === 'function') {
-        showAppAlert('Daily Food start date synced. Pay date is now set to day ' + dayOfMonth + '.');
+        showAppAlert('Pay date is set to day ' + dayOfMonth + ' (same as Settings).');
     }
 }
 window.applyFoodStartDateFromMenu = applyFoodStartDateFromMenu;
-window.applyFoodStartDateFromInline = applyFoodStartDateFromMenu;
 
 function openDailyFoodBulkRefillModal() {
     if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();

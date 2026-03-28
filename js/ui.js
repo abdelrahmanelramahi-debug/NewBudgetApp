@@ -1284,7 +1284,6 @@ function updateFoodUI() {
     var foodBase = fItem ? fItem.amount : 600;
     if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
     var payCycle = getPayCycleInfo();
-    if (typeof syncDailyFoodStartDateInput === 'function') syncDailyFoodStartDateInput();
     if (typeof maybeAutoAdvanceFoodCycle === 'function') {
         var didAutoAdvance = maybeAutoAdvanceFoodCycle(payCycle);
         if (didAutoAdvance) {
