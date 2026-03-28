@@ -1350,6 +1350,8 @@ function updateFoodUI() {
     var todayYear = today.getFullYear();
     var rowsContainer = document.getElementById('food-overview-rows');
     if (rowsContainer) {
+        closeOverflowDayPopover();
+        closeFoodDayActionPopover();
         rowsContainer.innerHTML = '';
         var dates = payCycle.dates;
         var todaySlot = dates.findIndex(function(p) { return p.date === todayDate && p.month === todayMonth && p.year === todayYear; });
@@ -1481,6 +1483,36 @@ function updateFoodUI() {
 }
 
 var _overflowDayPopoverAnchor = null;
+var _overflowPopoverScrollAttached = false;
+
+function _detachOverflowPopoverScrollListeners() {
+    if (!_overflowPopoverScrollAttached) return;
+    var handler = window._overflowPopoverPositionHandler;
+    if (typeof handler === 'function') {
+        window.removeEventListener('scroll', handler, true);
+        window.removeEventListener('resize', handler);
+    }
+    _overflowPopoverScrollAttached = false;
+}
+
+function _positionOverflowDayPopover() {
+    var pop = document.getElementById('food-overflow-popover');
+    var anchorEl = _overflowDayPopoverAnchor;
+    if (!pop || pop.classList.contains('hidden')) return;
+    if (!anchorEl || !document.body.contains(anchorEl)) {
+        closeOverflowDayPopover();
+        return;
+    }
+    var rect = anchorEl.getBoundingClientRect();
+    var vw = typeof window.innerWidth === 'number' ? window.innerWidth : 400;
+    var pad = 8;
+    var w = pop.offsetWidth || 220;
+    var left = rect.left;
+    if (left + w + pad > vw) left = Math.max(pad, vw - w - pad);
+    if (left < pad) left = pad;
+    pop.style.left = left + 'px';
+    pop.style.top = (rect.bottom + 4) + 'px';
+}
 
 function openOverflowDayPopover(dayKey, anchorEl) {
     var pop = document.getElementById('food-overflow-popover');
@@ -1489,6 +1521,7 @@ function openOverflowDayPopover(dayKey, anchorEl) {
     var redistributeBtn = document.getElementById('food-overflow-redistribute-btn');
     if (!pop || !sourceSel || !sourceBtn || !redistributeBtn || !dayKey) return;
     closeFoodDayActionPopover();
+    _detachOverflowPopoverScrollListeners();
     _overflowDayPopoverAnchor = anchorEl;
     pop.setAttribute('data-overflow-key', dayKey);
 
@@ -1511,12 +1544,20 @@ function openOverflowDayPopover(dayKey, anchorEl) {
         if (typeof applyOverflowDayRedistribution === 'function') applyOverflowDayRedistribution(key);
         closeOverflowDayPopover();
     };
-    if (anchorEl && anchorEl.getBoundingClientRect) {
-        var rect = anchorEl.getBoundingClientRect();
-        pop.style.left = rect.left + 'px';
-        pop.style.top = (rect.bottom + 4) + 'px';
-    }
     pop.classList.remove('hidden');
+    requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+            _positionOverflowDayPopover();
+        });
+    });
+    if (!_overflowPopoverScrollAttached) {
+        window._overflowPopoverPositionHandler = function () {
+            _positionOverflowDayPopover();
+        };
+        window.addEventListener('scroll', window._overflowPopoverPositionHandler, true);
+        window.addEventListener('resize', window._overflowPopoverPositionHandler);
+        _overflowPopoverScrollAttached = true;
+    }
 }
 window.openOverflowDayPopover = openOverflowDayPopover;
 
@@ -1524,6 +1565,7 @@ function closeOverflowDayPopover() {
     var pop = document.getElementById('food-overflow-popover');
     if (pop) pop.classList.add('hidden');
     _overflowDayPopoverAnchor = null;
+    _detachOverflowPopoverScrollListeners();
 }
 window.closeOverflowDayPopover = closeOverflowDayPopover;
 
