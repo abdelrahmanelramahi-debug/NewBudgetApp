@@ -28,6 +28,8 @@
     var loadRetryCount = 0;
     var realtimeUnsubscribe = null;
     var realtimePullTimeoutId = null;
+    /** Server doc lastUpdated (ms) we last fully applied; skip redundant load+refresh on editLock-only snapshots. */
+    var lastAppliedCloudLastUpdatedMs = -1;
     var lockHeartbeatInterval = null;
     var lockPollInterval = null;
     var deviceId = '';
@@ -464,6 +466,7 @@
                 var lastUpdated = docSnap.data().lastUpdated;
                 if (typeof lastUpdated.toMillis === 'function') savedTime = lastUpdated.toMillis();
             }
+            lastAppliedCloudLastUpdatedMs = savedTime;
             try {
                 var modKey = STORAGE_KEYS.MODIFIED;
                 var syncKey = STORAGE_KEYS.LAST_SYNCED;
@@ -564,6 +567,7 @@
                 });
             } else {
                 // Already in sync (or both empty) -> nothing to do.
+                if (cloudTime > 0) lastAppliedCloudLastUpdatedMs = cloudTime;
                 updateSyncStatus('Synced', true, false);
                 return;
             }
@@ -626,6 +630,7 @@
                         global.localStorage.setItem(modKey, String(cloudMillis));
                         global.localStorage.setItem(syncKey, String(cloudMillis));
                     } catch (e) {}
+                    lastAppliedCloudLastUpdatedMs = cloudMillis;
                 }
                 if (typeof refreshUI === 'function') refreshUI();
                 updateSyncStatus('Synced', true, false);
@@ -634,6 +639,7 @@
             } else {
                 updateSyncStatus('Cloud empty, using local', true, false);
                 if (typeof updateGlobalUI === 'function') updateGlobalUI();
+                if (cloudTime > 0) lastAppliedCloudLastUpdatedMs = cloudTime;
                 hasCompletedInitialCloudLoad = true;
             }
             loadRetryCount = 0;
@@ -726,6 +732,17 @@
                 applyLockFromDoc(snapData);
             } catch (e) {}
             if (syncInProgress) return;
+            var snapLu = 0;
+            if (snapshot && snapshot.exists && snapshot.data()) {
+                var sd = snapshot.data();
+                if (sd.lastUpdated && typeof sd.lastUpdated.toMillis === 'function') {
+                    snapLu = sd.lastUpdated.toMillis();
+                }
+            }
+            // Heartbeat / editLock-only writes do not bump lastUpdated — avoid full pull+refreshUI storm on main thread.
+            if (hasCompletedInitialCloudLoad && snapLu > 0 && snapLu === lastAppliedCloudLastUpdatedMs) {
+                return;
+            }
             if (realtimePullTimeoutId) clearTimeout(realtimePullTimeoutId);
             realtimePullTimeoutId = setTimeout(function () {
                 realtimePullTimeoutId = null;
@@ -754,6 +771,7 @@
             clearTimeout(pushTimeoutId);
             pushTimeoutId = null;
         }
+        lastAppliedCloudLastUpdatedMs = -1;
         stopEditLockLifecycle();
         stopRealtimeSync();
     }
