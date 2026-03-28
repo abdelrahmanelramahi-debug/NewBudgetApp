@@ -264,15 +264,22 @@
             return acquired;
         }).catch(function (err) {
             console.warn('Edit lock write failed:', err);
-            setEditLockState({
-                known: false,
-                canEdit: false,
-                holderId: editLockState.holderId,
-                holderLabel: editLockState.holderLabel,
-                expiresAt: editLockState.expiresAt,
-                reason: 'lock_write_failed'
+            // Do not set known:false here: that blocks saveState + saveStateToCloud even when the
+            // server still shows the doc unlocked. Re-sync lock from Firestore so canEdit matches reality.
+            return fetchEditLock().then(function () {
+                return false;
+            }).catch(function (fetchErr) {
+                console.warn('Edit lock re-fetch after write failed:', fetchErr);
+                setEditLockState({
+                    known: false,
+                    canEdit: false,
+                    holderId: editLockState.holderId,
+                    holderLabel: editLockState.holderLabel,
+                    expiresAt: editLockState.expiresAt,
+                    reason: 'lock_write_failed'
+                });
+                return false;
             });
-            return false;
         });
     }
 
