@@ -419,9 +419,6 @@ function applyTransaction(tx) {
             var prevVal = item.amount;
             item.amount = newVal;
             delete item.amortData;
-            // #region agent log
-            fetch('http://127.0.0.1:7853/ingest/84e116a3-552a-4446-9ad4-b17912da8656',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9bd46d'},body:JSON.stringify({sessionId:'9bd46d',runId:'pre-fix',hypothesisId:'H2_H3',location:'actions.js:applyTransaction:update_item_amount',message:'plan amount updated',data:{sid:tx.sid,idx:tx.idx,label:item.label,prevVal:prevVal,newVal:newVal,transportBucket:state.accounts&&state.accounts.buckets?state.accounts.buckets['Transportation']:null,dailyFoodBalance:state.balances?state.balances['Daily Food']:null},timestamp:Date.now()})}).catch(()=>{});
-            // #endregion
             if (isAccountLabel(item.label)) {
                 if (item.label === 'Savings') {
                     ensureGeneralSavingsBudgetConfig();
@@ -458,9 +455,6 @@ function applyTransaction(tx) {
             state.food.history.unshift({type:'spend', amt: tx.amount});
             // Deduct one day's amount from Daily Food so consume actually reduces balance
             adjustItemBalance('Daily Food', -tx.amount);
-            // #region agent log
-            fetch('http://127.0.0.1:7853/ingest/84e116a3-552a-4446-9ad4-b17912da8656',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9bd46d'},body:JSON.stringify({sessionId:'9bd46d',runId:'pre-fix',hypothesisId:'H3',location:'actions.js:applyTransaction:food_spend',message:'food spend applied',data:{amount:tx.amount,preFoodBalance:preFoodBalance,postFoodBalance:state.balances?state.balances['Daily Food']:null,daysUsed:state.food?state.food.daysUsed:null},timestamp:Date.now()})}).catch(()=>{});
-            // #endregion
             break;
         case 'food_lock':
             state.food.lockedAmount += tx.amount;

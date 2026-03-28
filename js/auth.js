@@ -4,6 +4,43 @@ let currentUser = null;
 var authReady = false;
 var authReadyCallbacks = [];
 
+var AUTH_TOKEN_TIMEOUT_MS = 15000;
+var AUTH_CLOUD_LOAD_TIMEOUT_MS = 28000;
+
+function promiseWithTimeout(promise, ms, label) {
+    return Promise.race([
+        promise,
+        new Promise(function (_, reject) {
+            setTimeout(function () {
+                reject(new Error(label || 'timeout'));
+            }, ms);
+        })
+    ]);
+}
+
+function runPostAuthSyncSetup() {
+    if (typeof requestAnimationFrame !== 'undefined' && typeof updateGlobalUI === 'function') {
+        requestAnimationFrame(updateGlobalUI);
+    } else if (typeof updateGlobalUI === 'function') updateGlobalUI();
+    startAutoSync();
+    if (typeof startEditLockLifecycle === 'function') startEditLockLifecycle();
+    if (typeof refreshEditLock === 'function') refreshEditLock();
+    if (typeof startRealtimeSync === 'function') startRealtimeSync();
+}
+
+function handleAuthSyncFailure(err) {
+    if (err && err.message) console.warn('Auth sync:', err.message);
+    if (err && err.message === 'cloud_load_timeout' && typeof forceSyncIdle === 'function') {
+        forceSyncIdle();
+    }
+    if (typeof updateSyncStatus === 'function') {
+        if (err && err.message === 'cloud_load_timeout') {
+            updateSyncStatus('Slow network — showing local data', false, true);
+        }
+    }
+    runPostAuthSyncSetup();
+}
+
 function runAuthReadyCallbacks() {
     if (authReady) return;
     authReady = true;
@@ -50,25 +87,25 @@ function initAuth() {
                     console.error('Failed to load local state:', e);
                 }
             }
-            user.getIdToken(true).then(function() {
-                loadStateFromCloud().then(function() {
-                    if (typeof requestAnimationFrame !== 'undefined' && typeof updateGlobalUI === 'function') {
-                        requestAnimationFrame(updateGlobalUI);
-                    } else if (typeof updateGlobalUI === 'function') updateGlobalUI();
-                    startAutoSync();
-                    if (typeof startEditLockLifecycle === 'function') startEditLockLifecycle();
-                    if (typeof refreshEditLock === 'function') refreshEditLock();
-                    if (typeof startRealtimeSync === 'function') startRealtimeSync();
-                }).finally(runAuthReadyCallbacks);
-            }).catch(function() {
-                loadStateFromCloud().then(function() {
-                    if (typeof updateGlobalUI === 'function') updateGlobalUI();
-                    startAutoSync();
-                    if (typeof startEditLockLifecycle === 'function') startEditLockLifecycle();
-                    if (typeof refreshEditLock === 'function') refreshEditLock();
-                    if (typeof startRealtimeSync === 'function') startRealtimeSync();
-                }).finally(runAuthReadyCallbacks);
-            });
+            var tokenSlow = false;
+            promiseWithTimeout(user.getIdToken(true), AUTH_TOKEN_TIMEOUT_MS, 'token_timeout')
+                .catch(function (e) {
+                    if (e && e.message === 'token_timeout') tokenSlow = true;
+                    else console.warn('getIdToken:', e);
+                })
+                .then(function () {
+                    if (tokenSlow && typeof updateSyncStatus === 'function') {
+                        updateSyncStatus('Sign-in check slow — showing local data', false, true);
+                    }
+                    return promiseWithTimeout(loadStateFromCloud(), AUTH_CLOUD_LOAD_TIMEOUT_MS, 'cloud_load_timeout');
+                })
+                .then(function () {
+                    runPostAuthSyncSetup();
+                })
+                .catch(function (err) {
+                    handleAuthSyncFailure(err);
+                })
+                .finally(runAuthReadyCallbacks);
         } else {
             currentUser = null;
             window.currentUser = null;

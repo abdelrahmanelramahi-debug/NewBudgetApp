@@ -364,36 +364,42 @@
     }
 
     // --- SAVE TO CLOUD ---
-    function saveStateToCloud() {
+    // options.fromLoad: invoked from loadStateFromCloud while it already holds syncInProgress;
+    // must not take/release the outer sync lock (load's finally clears it).
+    function saveStateToCloud(options) {
+        options = options || {};
+        var fromLoad = !!options.fromLoad;
         var user = getCurrentUser();
-        if (!user) return;
+        if (!user) return Promise.resolve();
         if (!canEditNow()) {
             updateSyncStatus('View-only on this device', false, false);
             return Promise.resolve();
         }
-        if (syncInProgress) {
+        if (!fromLoad && syncInProgress) {
             pendingPush = true;
-            return;
+            return Promise.resolve();
         }
 
-        try {
-            syncInProgress = true;
-            pendingPush = false;
-            updateSyncStatus('Syncing…', true, false);
-        } catch (e) {}
+        if (!fromLoad) {
+            try {
+                syncInProgress = true;
+                pendingPush = false;
+                updateSyncStatus('Syncing…', true, false);
+            } catch (e) {}
+        }
 
         var userDocRef = global.firebaseDb && global.firebaseDb.collection('users').doc(user.uid);
         if (!userDocRef) {
-            syncInProgress = false;
+            if (!fromLoad) syncInProgress = false;
             updateSyncStatus('Sync failed', false, true);
-            return;
+            return Promise.reject(new Error('no_firestore'));
         }
 
         var serverTimestamp = global.firebase && global.firebase.firestore && global.firebase.firestore.FieldValue && global.firebase.firestore.FieldValue.serverTimestamp();
         if (!serverTimestamp) {
-            syncInProgress = false;
+            if (!fromLoad) syncInProgress = false;
             updateSyncStatus('Sync failed', false, true);
-            return;
+            return Promise.reject(new Error('no_timestamp'));
         }
 
         // Guard against overwriting newer cloud data from an idle/stale tab.
@@ -428,6 +434,8 @@
                 // Never allow an automatic overwrite (common on refresh/pagehide).
                 if (cloudHasData && cloudTime > lastSyncedToCloud && localModified <= lastSyncedToCloud) {
                     updateSyncStatus('Cloud newer — pulling…', true, false);
+                    // Release save's lock so loadStateFromCloud can run (it takes its own lock).
+                    if (!fromLoad) syncInProgress = false;
                     return loadStateFromCloud(0);
                 }
             }
@@ -440,8 +448,12 @@
                 return userDocRef.get({ source: 'server' });
             });
         }).then(function (docSnap) {
+            // After a pull instead of a save, docSnap is undefined — do not write fake sync times.
+            if (!docSnap || !docSnap.exists) {
+                return;
+            }
             var savedTime = Date.now();
-            if (docSnap && docSnap.exists && docSnap.data().lastUpdated) {
+            if (docSnap.data().lastUpdated) {
                 var lastUpdated = docSnap.data().lastUpdated;
                 if (typeof lastUpdated.toMillis === 'function') savedTime = lastUpdated.toMillis();
             }
@@ -458,19 +470,23 @@
             if (typeof refreshUI === 'function') refreshUI();
         }).catch(function (error) {
             console.error('Save to cloud error:', error);
-            saveRetryCount = (saveRetryCount || 0) + 1;
-            if (saveRetryCount <= MAX_RETRIES && RETRY_DELAYS_MS[saveRetryCount - 1]) {
-                var delay = RETRY_DELAYS_MS[saveRetryCount - 1];
-                updateSyncStatus('Sync failed, retrying in ' + (delay / 1000) + 's…', false, false);
-                setTimeout(function () { saveStateToCloud(); }, delay);
-            } else {
-                updateSyncStatus('Sync failed', false, true);
+            if (!fromLoad) {
+                saveRetryCount = (saveRetryCount || 0) + 1;
+                if (saveRetryCount <= MAX_RETRIES && RETRY_DELAYS_MS[saveRetryCount - 1]) {
+                    var delay = RETRY_DELAYS_MS[saveRetryCount - 1];
+                    updateSyncStatus('Sync failed, retrying in ' + (delay / 1000) + 's…', false, false);
+                    setTimeout(function () { saveStateToCloud(); }, delay);
+                } else {
+                    updateSyncStatus('Sync failed', false, true);
+                }
             }
         }).finally(function () {
-            syncInProgress = false;
-            if (pendingPush) {
-                pendingPush = false;
-                setTimeout(saveStateToCloud, 400);
+            if (!fromLoad) {
+                syncInProgress = false;
+                if (pendingPush) {
+                    pendingPush = false;
+                    setTimeout(saveStateToCloud, 400);
+                }
             }
         });
     }
@@ -496,7 +512,7 @@
 
         return userDocRef.get({ source: 'server' }).then(function (docSnap) {
             if (!docSnap.exists) {
-                return saveStateToCloud().then(function () {
+                return saveStateToCloud({ fromLoad: true }).then(function () {
                     updateSyncStatus('Synced', true, false);
                     if (typeof updateGlobalUI === 'function') updateGlobalUI();
                 });
@@ -528,13 +544,13 @@
                 // Cloud is newer than our last known synced version -> pull cloud below.
             } else if (!cloudHasData && localHasData) {
                 // Cloud empty but local has data -> seed cloud from local.
-                return saveStateToCloud().then(function () {
+                return saveStateToCloud({ fromLoad: true }).then(function () {
                     if (typeof refreshUI === 'function') refreshUI();
                     updateSyncStatus('Synced', true, false);
                 });
             } else if (localModified > lastSyncedToCloud && localHasData && cloudTime <= lastSyncedToCloud) {
                 // Local changed since last sync, and cloud hasn't changed since last sync -> push local.
-                return saveStateToCloud().then(function () {
+                return saveStateToCloud({ fromLoad: true }).then(function () {
                     if (typeof refreshUI === 'function') refreshUI();
                     updateSyncStatus('Synced (local)', true, false);
                     if (cloudData.lastUpdated) lastSyncTime = cloudData.lastUpdated.toDate ? cloudData.lastUpdated.toDate() : new Date();
@@ -755,5 +771,10 @@
     global.refreshEditLock = refreshEditLock;
     global.startEditLockLifecycle = startEditLockLifecycle;
     global.stopEditLockLifecycle = stopEditLockLifecycle;
+
+    /** If cloud load hung past auth timeout, clear the lock so sync can recover. */
+    global.forceSyncIdle = function () {
+        syncInProgress = false;
+    };
 
 })(typeof window !== 'undefined' ? window : this);

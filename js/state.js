@@ -385,9 +385,6 @@ function loadState() {
         try {
             const loaded = JSON.parse(saved);
             state = { ...state, ...loaded };
-            // #region agent log
-            fetch('http://127.0.0.1:7853/ingest/84e116a3-552a-4446-9ad4-b17912da8656',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'9bd46d'},body:JSON.stringify({sessionId:'9bd46d',runId:'pre-fix',hypothesisId:'H4',location:'state.js:loadState:from-localStorage',message:'state loaded from local storage',data:{onboardingComplete:loaded.onboardingComplete,monthlyIncome:loaded.monthlyIncome,transportBucket:loaded.accounts&&loaded.accounts.buckets?loaded.accounts.buckets['Transportation']:null,dailyFoodBalance:loaded.balances?loaded.balances['Daily Food']:null},timestamp:Date.now()})}).catch(()=>{});
-            // #endregion
             if(typeof state.monthlyIncome === 'undefined') state.monthlyIncome = 5000;
             // Only treat as onboarding-complete when loaded state explicitly has the flag (existing users).
             // If key is missing (old schema or new device), keep default false so new users see onboarding.
