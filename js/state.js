@@ -652,7 +652,7 @@ function countRedistributedOverflowKeys() {
     return n;
 }
 
-/** Extra days between core 28 and next pay — from calendar, not user "redistribute" clicks. Defined in ui.js getPayCycleInfo(). */
+/** Count of pay-cycle overflow days: calendar gap after the 28 core days until next pay (see getPayCycleInfo in ui.js), not “end-of-month 29–31” specifically. */
 function getPayCycleOverflowDayCount() {
     if (typeof getPayCycleInfo !== 'function') return 0;
     try {
@@ -664,8 +664,9 @@ function getPayCycleOverflowDayCount() {
 }
 
 /** Daily Food plan rates without touching funding migration (avoid recursion).
- *  Core cycle only (daysTotal, usually 28): overflow calendar days do not dilute the daily rate or inflate
- *  “days left” — extra days are optional and funded via the overflow UI, not by spreading the same budget thinner. */
+ *  Core cycle only (daysTotal, usually 28): pay-cycle overflow days (gap before next pay) do not dilute
+ *  the daily rate or inflate “days left” — those days are optional and funded via the overflow UI, not
+ *  by spreading the same budget thinner. */
 function computeFoodPlanCore() {
     var cid = SECTION_IDS.CORE_ESSENTIALS;
     var fid = SECTION_IDS.FOUNDATIONS;

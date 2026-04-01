@@ -1211,7 +1211,12 @@ function lastDayOfMonth(y, m) {
 
 /**
  * Current 28-day pay cycle: pay day = first slot, no empty leading cells.
- * Returns { cycleStart (Date), dates: [ { date, monthName, dayOfWeek, cycleDay } ] } for 28 days.
+ * Returns { cycleStart, dates (28 core days), overflowDates, monthNames }.
+ *
+ * overflowDates: every calendar day from the day *after* the 28th core day until (but not including)
+ * the next pay day. That gap exists because a real month does not line up with exactly 28 budget
+ * slots—these are not “the 29th–31st of the month” as a rule; they are whatever dates fall between
+ * the end of the 28-day block and the next payday (e.g. mid-month days depending on pay settings).
  */
 function getPayCycleInfo() {
     var payDate = typeof state.settings?.payDate === 'number' ? Math.max(1, Math.min(28, state.settings.payDate)) : 28;
@@ -1479,10 +1484,10 @@ function updateFoodUI() {
             });
             var rowExtraClass = 'food-week-row food-overflow-row flex gap-2 items-stretch rounded-lg border border-transparent transition';
             if (allOverflowResolved) rowExtraClass += ' food-overflow-row-complete border-emerald-200 bg-emerald-50/80';
-            var labelExtraClass = 'w-12 flex-shrink-0 flex items-center text-[10px] font-black uppercase tracking-wider ';
+            var labelExtraClass = 'w-14 flex-shrink-0 flex items-center text-[10px] font-black uppercase tracking-wider ';
             labelExtraClass += allOverflowResolved ? 'text-emerald-700' : 'text-red-500';
             var extraHtml = '<div class="' + rowExtraClass + '">' +
-                '<div class="' + labelExtraClass + '">Extra</div>' +
+                '<div class="' + labelExtraClass + '" title="Calendar days after your 28-day plan until your next pay day">Overflow</div>' +
                 '<div class="grid grid-cols-7 gap-1 flex-1">';
             for (var ec = 0; ec < 7; ec++) {
                 if (ec < overflowDates.length) {
@@ -1494,7 +1499,7 @@ function updateFoodUI() {
                         : ' food-overflow-cell-unfunded bg-rose-50 text-rose-800 border border-rose-200';
                     var badge = usageMode ? '<span class="absolute top-0.5 right-1 text-[8px] font-black uppercase tracking-wide ' + (funded ? 'text-emerald-100' : 'text-rose-700') + '">' + (usageMode === 'redistributed' ? 'R' : 'S') + '</span>' : '';
                     extraHtml += '<div class="food-overview-cell-wrapper group relative overflow-hidden" data-overflow-day="true" data-overflow-key="' + ex.key + '">' +
-                        '<div class="food-overview-cell food-overflow-cell rounded-md flex items-center justify-center text-[10px] font-black min-h-[2rem] cursor-pointer transition' + cellTone + '" onclick="event.stopPropagation(); openOverflowDayPopover(\'' + ex.key + '\', this.closest(\'.food-overview-cell-wrapper\'))" role="button" title="' + ex.monthName + ' ' + ex.date + '">' +
+                        '<div class="food-overview-cell food-overflow-cell rounded-md flex items-center justify-center text-[10px] font-black min-h-[2rem] cursor-pointer transition' + cellTone + '" onclick="event.stopPropagation(); openOverflowDayPopover(\'' + ex.key + '\', this.closest(\'.food-overview-cell-wrapper\'))" role="button" title="Pay-cycle overflow: ' + ex.monthName + ' ' + ex.date + '">' +
                         ex.date + badge + '</div></div>';
                 } else {
                     extraHtml += '<div class="food-overview-cell rounded-md min-h-[2rem] bg-transparent"></div>';
@@ -1675,9 +1680,9 @@ function _bindOverflowDayPanel(dayKey, ui) {
         if (currentVal && options.some(function(opt) { return opt.id === currentVal; })) sourceSel.value = currentVal;
     }
     if (ui.subtitleEl) {
-        if (usage === 'source') ui.subtitleEl.textContent = 'This extra day is funded from your chosen source.';
+        if (usage === 'source') ui.subtitleEl.textContent = 'This overflow day is funded from your chosen source.';
         else if (usage === 'redistributed') ui.subtitleEl.textContent = 'This day shares your Daily Food pool across more calendar days. Undo to revert this split.';
-        else ui.subtitleEl.textContent = 'Choose how to account for this overflow day.';
+        else ui.subtitleEl.textContent = 'Days between the end of your 28-day plan and your next pay day. Choose how to account for this day.';
     }
     if (ui.sourceBtn) {
         ui.sourceBtn.onclick = function() {

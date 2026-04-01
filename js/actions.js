@@ -1886,14 +1886,14 @@ function applyOverflowDayFromSource(dayKey, sourceId) {
         return;
     }
     if (isOverflowDayUsed(dayKey)) {
-        if (typeof showAppAlert === 'function') showAppAlert('This extra day is already accounted for.');
+        if (typeof showAppAlert === 'function') showAppAlert('This overflow day is already accounted for.');
         return;
     }
     var info = typeof getFoodRemainderInfo === 'function' ? getFoodRemainderInfo() : null;
     var dailyRate = (info && info.dailyRate > 0) ? info.dailyRate : (600 / 28);
     var available = getBufferSourceBalance(sourceId || 'surplus');
     if (available < dailyRate) {
-        if (typeof showAppAlert === 'function') showAppAlert('Not enough in selected source for 1 extra day.');
+        if (typeof showAppAlert === 'function') showAppAlert('Not enough in selected source for one overflow day.');
         return;
     }
     pushToUndo();
@@ -1970,12 +1970,12 @@ function _recomputeOverflowRedistributionSplit() {
 function applyOverflowDayRedistribution(dayKey) {
     if (!dayKey) return;
     if (isOverflowDayUsed(dayKey)) {
-        if (typeof showAppAlert === 'function') showAppAlert('This extra day is already accounted for.');
+        if (typeof showAppAlert === 'function') showAppAlert('This overflow day is already accounted for.');
         return;
     }
     if (_anyOverflowDayFromSource()) {
         if (typeof showAppAlert === 'function') {
-            showAppAlert('Redistribute is not available while an extra day is funded from Extra/Savings/Weekly. Finish the cycle or use only redistributed extras first.');
+            showAppAlert('Redistribute is not available while an overflow day is funded from Extra/Savings/Weekly. Finish the cycle or use only redistributed overflow days first.');
         }
         return;
     }

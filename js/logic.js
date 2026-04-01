@@ -142,7 +142,8 @@ function recalculateSurplusFromReality() {
 }
 
 /** Daily Food header “X / day”: fixed plan rate (budget ÷ 28) so marking days consumed does not change it.
- *  Exception: overflow “Redistribute” freezes state.food.redistributedPerSlot until undo or cycle reset. */
+ *  Exception: pay-cycle overflow “Redistribute” (gap between 28 core days and next pay) freezes
+ *  state.food.redistributedPerSlot until undo or cycle reset. */
 function getDailyFoodEffectiveDisplayRate() {
     if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
     var bal = getItemBalance('Daily Food', 0);
