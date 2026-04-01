@@ -588,6 +588,12 @@ function ensureFoodConsumedDays() {
     if (!state.food.overflowFunded || typeof state.food.overflowFunded !== 'object') {
         state.food.overflowFunded = {};
     }
+    if (!state.food.overflowFundingSource || typeof state.food.overflowFundingSource !== 'object') {
+        state.food.overflowFundingSource = {};
+    }
+    if (!state.food.overflowConsumedAmounts || typeof state.food.overflowConsumedAmounts !== 'object') {
+        state.food.overflowConsumedAmounts = {};
+    }
     if (state.food.redistributedPerSlot !== undefined && (typeof state.food.redistributedPerSlot !== 'number' || Number.isNaN(state.food.redistributedPerSlot))) {
         delete state.food.redistributedPerSlot;
     }

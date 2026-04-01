@@ -765,6 +765,9 @@ function seedBalancesFromOnboardingPlan() {
     state.food.history = [];
     state.food.lockedAmount = 0;
     state.food.overflowUsage = {};
+    state.food.overflowFunded = {};
+    state.food.overflowFundingSource = {};
+    state.food.overflowConsumedAmounts = {};
     if (state.food.redistributedPerSlot !== undefined) delete state.food.redistributedPerSlot;
     state.food.redistributedExtraDays = 0;
     state.food.fundedAmountByDay = {};

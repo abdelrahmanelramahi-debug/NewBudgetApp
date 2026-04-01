@@ -1479,12 +1479,13 @@ function updateFoodUI() {
         var overflowDates = payCycle.overflowDates || [];
         if (overflowDates.length > 0) {
             var overflowUsage = (state.food && state.food.overflowUsage) ? state.food.overflowUsage : {};
+            var overflowConsumedMap = (state.food && state.food.overflowConsumedAmounts) ? state.food.overflowConsumedAmounts : {};
             var allOverflowResolved = overflowDates.every(function (ex) {
-                return !!(overflowUsage[ex.key]);
+                return !!(overflowUsage[ex.key]) || (Number(overflowConsumedMap[ex.key]) > 0.001);
             });
             var rowExtraClass = 'food-week-row food-overflow-row flex gap-2 items-stretch rounded-lg border border-transparent transition';
             if (allOverflowResolved) rowExtraClass += ' food-overflow-row-complete border-emerald-200 bg-emerald-50/80';
-            var labelExtraClass = 'w-14 flex-shrink-0 flex items-center text-[10px] font-black uppercase tracking-wider ';
+            var labelExtraClass = 'w-12 flex-shrink-0 flex items-center text-[8px] leading-tight font-black uppercase tracking-wider ';
             labelExtraClass += allOverflowResolved ? 'text-emerald-700' : 'text-red-500';
             var extraHtml = '<div class="' + rowExtraClass + '">' +
                 '<div class="' + labelExtraClass + '" title="Calendar days after your 28-day plan until your next pay day">Overflow</div>' +
@@ -1492,15 +1493,21 @@ function updateFoodUI() {
             for (var ec = 0; ec < 7; ec++) {
                 if (ec < overflowDates.length) {
                     var ex = overflowDates[ec];
+                    var ovConsumed = Number(overflowConsumedMap[ex.key]) > 0.001;
                     var usageMode = overflowUsage[ex.key] || '';
-                    var funded = usageMode === 'source' || usageMode === 'redistributed';
-                    var cellTone = funded
+                    var funded = ovConsumed || usageMode === 'source' || usageMode === 'redistributed';
+                    var cellTone = ovConsumed
+                        ? ' food-overflow-cell-funded bg-slate-200 text-slate-600 border border-slate-300'
+                        : (funded
                         ? ' food-overflow-cell-funded bg-emerald-500 text-white border border-emerald-600 shadow-sm'
-                        : ' food-overflow-cell-unfunded bg-rose-50 text-rose-800 border border-rose-200';
-                    var badge = usageMode ? '<span class="absolute top-0.5 right-1 text-[8px] font-black uppercase tracking-wide ' + (funded ? 'text-emerald-100' : 'text-rose-700') + '">' + (usageMode === 'redistributed' ? 'R' : 'S') + '</span>' : '';
+                        : ' food-overflow-cell-unfunded bg-rose-50 text-rose-800 border border-rose-200');
+                    var badge = '';
+                    if (!ovConsumed && usageMode) {
+                        badge = '<span class="absolute top-0.5 right-1 text-[7px] font-black uppercase tracking-wide ' + (funded ? 'text-emerald-100' : 'text-rose-700') + '">' + (usageMode === 'redistributed' ? 'R' : 'S') + '</span>';
+                    }
                     extraHtml += '<div class="food-overview-cell-wrapper group relative overflow-hidden" data-overflow-day="true" data-overflow-key="' + ex.key + '">' +
-                        '<div class="food-overview-cell food-overflow-cell rounded-md flex items-center justify-center text-[10px] font-black min-h-[2rem] cursor-pointer transition' + cellTone + '" onclick="event.stopPropagation(); openOverflowDayPopover(\'' + ex.key + '\', this.closest(\'.food-overview-cell-wrapper\'))" role="button" title="Pay-cycle overflow: ' + ex.monthName + ' ' + ex.date + '">' +
-                        ex.date + badge + '</div></div>';
+                        '<div class="food-overview-cell food-overflow-cell rounded-md flex items-center justify-center text-[9px] font-black min-h-[2rem] cursor-pointer transition' + cellTone + '" onclick="event.stopPropagation(); openOverflowDayPopover(\'' + ex.key + '\', this.closest(\'.food-overview-cell-wrapper\'))" role="button" title="Pay-cycle overflow: ' + ex.monthName + ' ' + ex.date + '">' +
+                        (ovConsumed ? '✓' : ex.date) + badge + '</div></div>';
                 } else {
                     extraHtml += '<div class="food-overview-cell rounded-md min-h-[2rem] bg-transparent"></div>';
                 }
@@ -1658,9 +1665,13 @@ function _bindOverflowDayPanel(dayKey, ui) {
     if (!dayKey || !ui || !ui.rootEl) return;
     ui.rootEl.setAttribute('data-overflow-key', dayKey);
     var usage = (state.food && state.food.overflowUsage && state.food.overflowUsage[dayKey]) || '';
-    if (ui.sourceWrap) ui.sourceWrap.classList.toggle('hidden', usage === 'source' || usage === 'redistributed');
+    var consumedAmt = Number((state.food && state.food.overflowConsumedAmounts && state.food.overflowConsumedAmounts[dayKey]) || 0) || 0;
+    var isConsumed = consumedAmt > 0.001;
+
+    if (ui.sourceWrap) ui.sourceWrap.classList.toggle('hidden', !!usage);
     if (ui.sourceBtn) ui.sourceBtn.classList.toggle('hidden', !!usage);
     if (ui.redistributeBtn) ui.redistributeBtn.classList.toggle('hidden', !!usage);
+    if (ui.removeSourceBtn) ui.removeSourceBtn.classList.toggle('hidden', usage !== 'source');
     if (ui.undoBtn) {
         ui.undoBtn.classList.toggle('hidden', usage !== 'redistributed');
         ui.undoBtn.onclick = function () {
@@ -1668,6 +1679,7 @@ function _bindOverflowDayPanel(dayKey, ui) {
             if (!key) return;
             if (typeof applyOverflowRedistributionUndo === 'function') applyOverflowRedistributionUndo(key);
             if (typeof ui.close === 'function') ui.close();
+            if (typeof updateFoodUI === 'function') updateFoodUI();
         };
     }
     var sourceSel = ui.sourceSel;
@@ -1680,9 +1692,49 @@ function _bindOverflowDayPanel(dayKey, ui) {
         if (currentVal && options.some(function(opt) { return opt.id === currentVal; })) sourceSel.value = currentVal;
     }
     if (ui.subtitleEl) {
-        if (usage === 'source') ui.subtitleEl.textContent = 'This overflow day is funded from your chosen source.';
-        else if (usage === 'redistributed') ui.subtitleEl.textContent = 'This day shares your Daily Food pool across more calendar days. Undo to revert this split.';
+        if (isConsumed) ui.subtitleEl.textContent = 'Marked consumed or transferred. Unmark to put the Daily Food amount back on your plan.';
+        else if (usage === 'source') ui.subtitleEl.textContent = 'Funded from your chosen source. Remove funding to pick another option, or mark consumed / transfer.';
+        else if (usage === 'redistributed') ui.subtitleEl.textContent = 'Daily Food is split across more calendar days. Undo redistribute to revert, or mark consumed / transfer.';
         else ui.subtitleEl.textContent = 'Days between the end of your 28-day plan and your next pay day. Choose how to account for this day.';
+    }
+    if (ui.consumeBtn) {
+        ui.consumeBtn.disabled = !isConsumed && !usage;
+        ui.consumeBtn.textContent = isConsumed ? 'Unmark consumed' : 'Mark consumed';
+        ui.consumeBtn.classList.toggle('opacity-40', ui.consumeBtn.disabled);
+        ui.consumeBtn.classList.toggle('cursor-not-allowed', ui.consumeBtn.disabled);
+        ui.consumeBtn.onclick = function() {
+            if (ui.consumeBtn.disabled) return;
+            var key = ui.rootEl.getAttribute('data-overflow-key');
+            if (!key) return;
+            if (typeof setOverflowFoodDayConsumed === 'function') setOverflowFoodDayConsumed(key, isConsumed ? 'unmark' : 'mark');
+            if (typeof ui.close === 'function') ui.close();
+            if (typeof updateFoodUI === 'function') updateFoodUI();
+        };
+    }
+    if (ui.transferBtn) {
+        var canTransfer = !!usage && !isConsumed;
+        ui.transferBtn.disabled = !canTransfer;
+        ui.transferBtn.classList.toggle('opacity-40', !canTransfer);
+        ui.transferBtn.classList.toggle('cursor-not-allowed', !canTransfer);
+        ui.transferBtn.onclick = function() {
+            if (ui.transferBtn.disabled) return;
+            var key = ui.rootEl.getAttribute('data-overflow-key');
+            if (!key) return;
+            var anchor = _overflowDayPopoverAnchor || ui.anchorEl;
+            var anchorRect = anchor && anchor.getBoundingClientRect ? anchor.getBoundingClientRect() : null;
+            if (typeof closeOverflowDayPopover === 'function') closeOverflowDayPopover();
+            else if (typeof ui.close === 'function') ui.close();
+            if (typeof openFoodOverflowTransferPopover === 'function') openFoodOverflowTransferPopover(key, anchorRect);
+        };
+    }
+    if (ui.removeSourceBtn) {
+        ui.removeSourceBtn.onclick = function() {
+            var key = ui.rootEl.getAttribute('data-overflow-key');
+            if (!key) return;
+            if (typeof applyOverflowDaySourceUndo === 'function') applyOverflowDaySourceUndo(key);
+            if (typeof ui.close === 'function') ui.close();
+            if (typeof updateFoodUI === 'function') updateFoodUI();
+        };
     }
     if (ui.sourceBtn) {
         ui.sourceBtn.onclick = function() {
@@ -1690,6 +1742,7 @@ function _bindOverflowDayPanel(dayKey, ui) {
             if (!key) return;
             if (typeof applyOverflowDayFromSource === 'function') applyOverflowDayFromSource(key, (sourceSel && sourceSel.value) || 'surplus');
             if (typeof ui.close === 'function') ui.close();
+            if (typeof updateFoodUI === 'function') updateFoodUI();
         };
     }
     if (ui.redistributeBtn) {
@@ -1698,6 +1751,7 @@ function _bindOverflowDayPanel(dayKey, ui) {
             if (!key) return;
             if (typeof applyOverflowDayRedistribution === 'function') applyOverflowDayRedistribution(key);
             if (typeof ui.close === 'function') ui.close();
+            if (typeof updateFoodUI === 'function') updateFoodUI();
         };
     }
     if (ui.closeBtn) {
@@ -1718,6 +1772,9 @@ function openOverflowDayMobileModal(dayKey) {
     var redistributeBtn = document.getElementById('food-overflow-mobile-redistribute-btn');
     var undoBtn = document.getElementById('food-overflow-mobile-undo-btn');
     var doneBtn = document.getElementById('food-overflow-mobile-done-btn');
+    var removeSourceBtn = document.getElementById('food-overflow-mobile-remove-source-btn');
+    var consumeBtn = document.getElementById('food-overflow-mobile-consume-btn');
+    var transferBtn = document.getElementById('food-overflow-mobile-transfer-btn');
     if (!modal || !sourceSel || !sourceBtn || !redistributeBtn || !dayKey) return;
     _bindOverflowDayPanel(dayKey, {
         rootEl: modal,
@@ -1725,9 +1782,13 @@ function openOverflowDayMobileModal(dayKey) {
         sourceBtn: sourceBtn,
         redistributeBtn: redistributeBtn,
         undoBtn: undoBtn,
+        removeSourceBtn: removeSourceBtn,
+        consumeBtn: consumeBtn,
+        transferBtn: transferBtn,
         sourceWrap: document.getElementById('food-overflow-mobile-source-wrap'),
         subtitleEl: document.getElementById('food-overflow-mobile-subtitle'),
         closeBtn: doneBtn,
+        anchorEl: modal,
         close: closeOverflowDayMobileModal
     });
     if (typeof toggleModal === 'function') toggleModal('food-overflow-mobile-modal', true);
@@ -1749,6 +1810,9 @@ function openOverflowDayPopover(dayKey, anchorEl) {
     var redistributeBtn = document.getElementById('food-overflow-redistribute-btn');
     var undoBtn = document.getElementById('food-overflow-undo-btn');
     var doneBtn = document.getElementById('food-overflow-close-btn');
+    var removeSourceBtn = document.getElementById('food-overflow-remove-source-btn');
+    var consumeBtn = document.getElementById('food-overflow-consume-btn');
+    var transferBtn = document.getElementById('food-overflow-transfer-btn');
     if (!dayKey || !sourceSel || !sourceBtn || !redistributeBtn) return;
     closeFoodDayActionPopover();
     if (typeof closeFoodDayMobileModal === 'function') closeFoodDayMobileModal();
@@ -1765,9 +1829,13 @@ function openOverflowDayPopover(dayKey, anchorEl) {
         sourceBtn: sourceBtn,
         redistributeBtn: redistributeBtn,
         undoBtn: undoBtn,
+        removeSourceBtn: removeSourceBtn,
+        consumeBtn: consumeBtn,
+        transferBtn: transferBtn,
         sourceWrap: document.getElementById('food-overflow-source-wrap'),
         subtitleEl: document.getElementById('food-overflow-popover-subtitle'),
         closeBtn: doneBtn,
+        anchorEl: anchorEl,
         close: closeOverflowDayPopover
     });
     pop.classList.remove('hidden');
