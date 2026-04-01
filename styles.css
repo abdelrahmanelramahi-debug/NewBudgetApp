@@ -1829,6 +1829,18 @@ body.theme-sepia .paycheck-close-btn:hover {
     overflow: visible;
 }
 
+/* Ledger: #ledger-categories comes after .ledger-top-grid in the DOM, so it painted on top and
+   covered fixed popovers (Extra day, day actions) that extend over Savings / Transportation cards.
+   Keep the top stack above the category list for correct overlap. */
+#page-ledger > .ledger-top-grid {
+    position: relative;
+    z-index: 2;
+}
+#page-ledger > #ledger-categories {
+    position: relative;
+    z-index: 1;
+}
+
 .food-overview-cell-wrapper {
     position: relative;
     min-height: 2rem;
