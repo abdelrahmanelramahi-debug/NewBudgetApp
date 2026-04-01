@@ -570,7 +570,11 @@ function renderStrategy(opts) {
     state.categories.forEach((sec, secIdx) => {
         if (sec && sec.id === 'sys_savings') return;
         const budgetPlanItems = sec.items.filter(i => i.label !== 'Payables');
-        const secTotalBase = budgetPlanItems.reduce((a, b) => a + b.amount, 0);
+        const plannedTotalForRow = (item) => {
+            if (item && item.amortData && typeof item.amortData.total === 'number') return Number(item.amortData.total) || 0;
+            return typeof item.amount === 'number' ? item.amount : 0;
+        };
+        const secTotalBase = budgetPlanItems.reduce((a, b) => a + plannedTotalForRow(b), 0);
         const secTotal = secTotalBase;
         const perc = state.monthlyIncome > 0 ? Math.round((secTotal/state.monthlyIncome)*100) : 0;
 
@@ -1016,7 +1020,10 @@ function renderLedger() {
     // Category view options (above creatable categories, below Savings / Transportation / Payables)
     var optionsBarHtml = `
         <div id="ledger-options-bar" class="flex flex-wrap items-center justify-between gap-3 py-3 px-1 mb-2">
-            <span class="text-[12px] font-black text-slate-900 uppercase tracking-[0.2em]">Mini-Budgets</span>
+            <div class="flex items-center gap-2">
+                <span class="text-[12px] font-black text-slate-900 uppercase tracking-[0.2em]">Mini-Budgets</span>
+                <button type="button" onclick="openAddItemTool(null, { showCategoryPicker: true })" class="bg-slate-900 text-white w-7 h-7 flex items-center justify-center rounded-lg text-lg leading-none pb-0.5 hover:bg-slate-700" title="Add item">+</button>
+            </div>
             <div class="flex flex-wrap items-center gap-3">
                 <label class="flex items-center gap-2 cursor-pointer">
                     <input type="checkbox" id="ledger-hide-empty" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" onchange="setLedgerViewOptions()">
@@ -1067,36 +1074,55 @@ function renderLedger() {
         const secId = `ledger-sec-${sec.id}`;
         let sumLeft = 0;
         let sumAllocated = 0;
+        const plannedTotalForLedger = (item) => {
+            if (item && item.amortData && typeof item.amortData.total === 'number') return Number(item.amortData.total) || 0;
+            return typeof item.amount === 'number' ? item.amount : 0;
+        };
         items.forEach(item => {
             sumLeft += getItemBalance(item.label, 0);
-            sumAllocated += (typeof item.amount === 'number' ? item.amount : 0);
+            sumAllocated += plannedTotalForLedger(item);
         });
 
         let barsHtml = '';
         items.forEach(item => {
             let bal = getItemBalance(item.label, 0);
-            const planned = typeof item.amount === 'number' && item.amount > 0 ? item.amount : 1;
-            const pct = Math.min(100, Math.max(0, (bal / planned) * 100));
+            const goalTotal = plannedTotalForLedger(item);
+            const plannedDenom = goalTotal > 0 ? goalTotal : (typeof item.amount === 'number' && item.amount > 0 ? item.amount : 1);
+            const pct = Math.min(100, Math.max(0, (bal / plannedDenom) * 100));
             const safeLabel = escapeAttr(item.label);
             const safeLabelAttr = escapeAttr(item.label);
             const safeLabelText = escapeHtml(item.label);
+            const splitLocked = !!(item.amortData && goalTotal > 0 && bal < goalTotal - 0.005);
+            const splitBadge = item.amortData
+                ? (splitLocked
+                    ? '<span class="ml-1 text-[8px] font-black uppercase text-amber-800 bg-amber-100 px-1 py-0.5 rounded">Locked</span>'
+                    : '<span class="ml-1 text-[8px] font-black uppercase text-emerald-800 bg-emerald-100 px-1 py-0.5 rounded">Unlocked</span>')
+                : '';
 
             let actionBtn = '';
-            if (sec.isSingleAction && bal !== 0) {
+            if (sec.isSingleAction && bal !== 0 && !splitLocked) {
                 actionBtn = `<button type="button" onclick="event.stopPropagation(); completeTask('${safeLabel}')" class="ledger-bar-complete flex-shrink-0 w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center text-sm font-bold hover:bg-emerald-600 transition shadow-sm" title="Mark used">✓</button>`;
             }
+
+            const unlockBtn = splitLocked && bal > 0
+                ? `<button type="button" onclick="event.stopPropagation(); releaseSplitGoalFunds('${safeLabel}')" class="flex-shrink-0 px-2 py-1 rounded-lg bg-amber-100 text-amber-900 text-[9px] font-black uppercase tracking-wide hover:bg-amber-200" title="Move balance to Extra">Unlock early</button>`
+                : '';
+
+            const amountSub = item.amortData && goalTotal > 0
+                ? `<p class="text-[9px] font-bold text-slate-500">${formatMoney(bal)} / ${formatMoney(goalTotal)}</p>`
+                : `<p class="text-[9px] font-bold text-slate-400 uppercase hidden sm:block">${getCurrencyLabel()} left</p>`;
 
             barsHtml += `
                 <div class="ledger-bar flex items-center gap-2 sm:gap-3 w-full py-2.5 px-3 sm:px-4 rounded-xl border border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm transition-all group ${bal === 0 ? 'opacity-70' : ''}">
                     <div class="flex-1 min-w-0 flex flex-col gap-0.5">
-                        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 truncate" title="${safeLabelAttr}">${safeLabelText}</span>
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 truncate" title="${safeLabelAttr}">${safeLabelText}${splitBadge}</span>
                         <div class="h-1.5 w-full max-w-[100px] rounded-full bg-slate-100 overflow-hidden">
                             <div class="ledger-bar-fill h-full rounded-full transition-all duration-300" style="width:${pct}%"></div>
                         </div>
                     </div>
                     <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 text-right">
                         <p class="text-base sm:text-lg font-black text-slate-800 leading-tight">${formatMoney(bal)}</p>
-                        <p class="text-[9px] font-bold text-slate-400 uppercase hidden sm:block">${getCurrencyLabel()} left</p>
+                        ${amountSub}
                     </div>
                     <div class="ledger-bar-actions flex items-center gap-1.5 flex-shrink-0" onclick="event.stopPropagation()">
                         <input type="number" class="ledger-bar-amount w-14 sm:w-16 h-8 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-200" placeholder="0" min="0" step="any" autocomplete="off">
@@ -1105,6 +1131,7 @@ function renderLedger() {
                             <button type="button" onclick="var b=this.closest('.ledger-bar'); var v=b.querySelector('.ledger-bar-amount').value; applyItemAdjustment('${safeLabel}', v, 'deduct'); b.querySelector('.ledger-bar-amount').value='';" class="w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none border-t border-slate-200">−</button>
                         </div>
                         <button type="button" onclick="var b=this.closest('.ledger-bar'); var v=b&&b.querySelector('.ledger-bar-amount')?b.querySelector('.ledger-bar-amount').value:''; openTool('${safeLabel}', undefined, false, v);" class="h-8 w-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-sm font-bold transition" title="Transfer">⋯</button>
+                        ${unlockBtn}
                         ${actionBtn}
                     </div>
                 </div>
@@ -1395,7 +1422,6 @@ function updateFoodUI() {
                 var hasFunding = (typeof getFoodFundedForDay === 'function') ? (getFoodFundedForDay(cycleDay) > 0.001) : true;
                 var isLocked = !consumed && !hasFunding && cycleDay <= 28;
                 var futureInCycle = !consumed && cycleDay <= 28 && !isLocked;
-                var action = consumed ? 'unmark' : 'mark';
                 var cls = 'food-overview-cell rounded-md flex items-center justify-center text-[10px] font-black min-h-[2rem] transition cursor-pointer ';
                 if (consumed) cls += 'bg-slate-200 text-slate-500 hover:bg-slate-300';
                 else if (isLocked) cls += 'bg-slate-50 text-slate-400 border border-dashed border-slate-300 hover:bg-slate-100';
@@ -1406,15 +1432,12 @@ function updateFoodUI() {
                 var label = consumed ? '✓' : (isLocked ? '🔒' : p.date);
                 var cellTitle = isLocked
                     ? ('No funds allocated yet · ' + p.monthName + ' ' + p.date)
-                    : ((consumed ? 'Click to unmark' : 'Click to mark consumed') + ' · ' + p.monthName + ' ' + p.date);
-                var clickAttr = isLocked
-                    ? ' onclick="event.stopPropagation(); showFoodDayLockedNotice()" role="button"'
-                    : (' onclick="event.stopPropagation(); setFoodDayFromCalendar(' + cycleDay + ', \'' + action + '\')" role="button"');
-                var cellContent = '<div' + clickAttr + ' class="' + cls + '" data-cycle-day="' + cycleDay + '" data-date="' + p.date + '" title="' + cellTitle + '">' + label + '</div>';
+                    : ('Click for actions · ' + p.monthName + ' ' + p.date);
+                var cellContent = '<div class="' + cls + '" data-cycle-day="' + cycleDay + '" data-date="' + p.date + '" title="' + cellTitle + '" role="button" tabindex="0">' + label + '</div>';
                 var hoverActions = '';
                 if (consumed) {
                     var tickTitleU = 'Unmark';
-                    hoverActions = '<div class="food-day-hover-actions absolute inset-0 flex rounded-md overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto">' +
+                    hoverActions = '<div class="food-day-hover-actions absolute inset-0 flex rounded-md overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">' +
                         '<span class="pointer-events-auto flex-1 flex items-center justify-center min-w-0 food-day-consume-panel" title="' + tickTitleU + '" onclick="event.stopPropagation(); setFoodDayFromCalendar(' + cycleDay + ', \'unmark\')" role="button" aria-label="' + tickTitleU + '">' +
                         '<span class="text-white text-[10px] font-black">✓</span></span>';
                     hoverActions += '<span class="flex-1 food-day-transfer-panel opacity-50"></span>';
@@ -1422,7 +1445,7 @@ function updateFoodUI() {
                 } else if (hasFunding) {
                     var tickTitle = 'Mark consumed';
                     var transferTitle = 'Transfer day to...';
-                    hoverActions = '<div class="food-day-hover-actions absolute inset-0 flex rounded-md overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto">' +
+                    hoverActions = '<div class="food-day-hover-actions absolute inset-0 flex rounded-md overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">' +
                         '<span class="pointer-events-auto flex-1 flex items-center justify-center min-w-0 food-day-consume-panel" title="' + tickTitle + '" onclick="event.stopPropagation(); setFoodDayFromCalendar(' + cycleDay + ', \'mark\')" role="button" aria-label="' + tickTitle + '">' +
                         '<span class="text-white text-[10px] font-black">✓</span></span>';
                     hoverActions += '<span class="pointer-events-auto flex-1 flex items-center justify-center min-w-0 food-day-transfer-panel" title="' + transferTitle + '" onclick="event.stopPropagation(); openFoodDayTransferPopover(' + cycleDay + ', this)" role="button" aria-label="' + transferTitle + '">' +
@@ -1478,30 +1501,32 @@ function updateFoodUI() {
         if (!rowsContainer._foodDayActionWired) {
             rowsContainer._foodDayActionWired = true;
             rowsContainer.addEventListener('click', function(e) {
-                if (!isTouchOrSmall()) return;
                 var wrapper = e.target.closest('.food-overview-cell-wrapper');
                 if (!wrapper) return;
                 if (wrapper.getAttribute('data-overflow-day') === 'true') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    openOverflowDayPopover(wrapper.getAttribute('data-overflow-key'), wrapper);
+                    if (isTouchOrSmall()) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        openOverflowDayPopover(wrapper.getAttribute('data-overflow-key'), wrapper);
+                    }
                     return;
                 }
                 var cycleDay = wrapper.getAttribute('data-cycle-day');
-                if (cycleDay) {
+                if (!cycleDay) return;
+                var consumed = wrapper.getAttribute('data-consumed') === '1';
+                var locked = wrapper.getAttribute('data-locked') === '1';
+                if (locked) {
                     e.preventDefault();
                     e.stopPropagation();
-                    var consumed = wrapper.getAttribute('data-consumed') === '1';
-                    var locked = wrapper.getAttribute('data-locked') === '1';
-                    if (locked && typeof showFoodDayLockedNotice === 'function') {
-                        showFoodDayLockedNotice();
-                        return;
-                    }
-                    openFoodDayActionPopover(parseInt(cycleDay, 10), consumed, wrapper);
+                    if (typeof showFoodDayLockedNotice === 'function') showFoodDayLockedNotice();
+                    return;
                 }
+                e.preventDefault();
+                e.stopPropagation();
+                openFoodDayActionPopover(parseInt(cycleDay, 10), consumed, wrapper);
             }, true);
             document.addEventListener('click', function(e) {
-                if (e.target.closest('#food-day-action-popover') || e.target.closest('#food-overflow-popover')) return;
+                if (e.target.closest('#food-day-action-popover') || e.target.closest('#food-overflow-popover') || e.target.closest('#food-overflow-mobile-modal')) return;
                 closeFoodDayActionPopover();
                 closeOverflowDayPopover();
             });
@@ -1615,59 +1640,114 @@ function _positionOverflowDayPopover() {
     pop.style.top = (rect.bottom + 4) + 'px';
 }
 
+/** Shared wiring for desktop overflow popover and touch bottom-sheet modal. */
+function _bindOverflowDayPanel(dayKey, ui) {
+    if (!dayKey || !ui || !ui.rootEl) return;
+    ui.rootEl.setAttribute('data-overflow-key', dayKey);
+    var usage = (state.food && state.food.overflowUsage && state.food.overflowUsage[dayKey]) || '';
+    if (ui.sourceWrap) ui.sourceWrap.classList.toggle('hidden', usage === 'source' || usage === 'redistributed');
+    if (ui.sourceBtn) ui.sourceBtn.classList.toggle('hidden', !!usage);
+    if (ui.redistributeBtn) ui.redistributeBtn.classList.toggle('hidden', !!usage);
+    if (ui.undoBtn) {
+        ui.undoBtn.classList.toggle('hidden', usage !== 'redistributed');
+        ui.undoBtn.onclick = function () {
+            var key = ui.rootEl.getAttribute('data-overflow-key');
+            if (!key) return;
+            if (typeof applyOverflowRedistributionUndo === 'function') applyOverflowRedistributionUndo(key);
+            if (typeof ui.close === 'function') ui.close();
+        };
+    }
+    var sourceSel = ui.sourceSel;
+    if (sourceSel) {
+        var currentVal = sourceSel.value;
+        var options = getOverflowFundingSources();
+        sourceSel.innerHTML = options.map(function(opt) {
+            return '<option value="' + String(opt.id).replace(/"/g, '&quot;') + '">' + String(opt.label).replace(/</g, '&lt;') + '</option>';
+        }).join('');
+        if (currentVal && options.some(function(opt) { return opt.id === currentVal; })) sourceSel.value = currentVal;
+    }
+    if (ui.subtitleEl) {
+        if (usage === 'source') ui.subtitleEl.textContent = 'This extra day is funded from your chosen source.';
+        else if (usage === 'redistributed') ui.subtitleEl.textContent = 'This day shares your Daily Food pool across more calendar days. Undo to revert this split.';
+        else ui.subtitleEl.textContent = 'Choose how to account for this overflow day.';
+    }
+    if (ui.sourceBtn) {
+        ui.sourceBtn.onclick = function() {
+            var key = ui.rootEl.getAttribute('data-overflow-key');
+            if (!key) return;
+            if (typeof applyOverflowDayFromSource === 'function') applyOverflowDayFromSource(key, (sourceSel && sourceSel.value) || 'surplus');
+            if (typeof ui.close === 'function') ui.close();
+        };
+    }
+    if (ui.redistributeBtn) {
+        ui.redistributeBtn.onclick = function() {
+            var key = ui.rootEl.getAttribute('data-overflow-key');
+            if (!key) return;
+            if (typeof applyOverflowDayRedistribution === 'function') applyOverflowDayRedistribution(key);
+            if (typeof ui.close === 'function') ui.close();
+        };
+    }
+}
+
+function openOverflowDayMobileModal(dayKey) {
+    var popDesk = document.getElementById('food-overflow-popover');
+    if (popDesk) popDesk.classList.add('hidden');
+    _overflowDayPopoverAnchor = null;
+    _detachOverflowPopoverScrollListeners();
+    var modal = document.getElementById('food-overflow-mobile-modal');
+    var sourceSel = document.getElementById('food-overflow-mobile-source');
+    var sourceBtn = document.getElementById('food-overflow-mobile-source-add-btn');
+    var redistributeBtn = document.getElementById('food-overflow-mobile-redistribute-btn');
+    var undoBtn = document.getElementById('food-overflow-mobile-undo-btn');
+    if (!modal || !sourceSel || !sourceBtn || !redistributeBtn || !dayKey) return;
+    _bindOverflowDayPanel(dayKey, {
+        rootEl: modal,
+        sourceSel: sourceSel,
+        sourceBtn: sourceBtn,
+        redistributeBtn: redistributeBtn,
+        undoBtn: undoBtn,
+        sourceWrap: document.getElementById('food-overflow-mobile-source-wrap'),
+        subtitleEl: document.getElementById('food-overflow-mobile-subtitle'),
+        close: closeOverflowDayMobileModal
+    });
+    if (typeof toggleModal === 'function') toggleModal('food-overflow-mobile-modal', true);
+    else modal.classList.remove('hidden');
+}
+window.openOverflowDayMobileModal = openOverflowDayMobileModal;
+
+function closeOverflowDayMobileModal() {
+    var modal = document.getElementById('food-overflow-mobile-modal');
+    if (typeof toggleModal === 'function') toggleModal('food-overflow-mobile-modal', false);
+    else if (modal) modal.classList.add('hidden');
+}
+window.closeOverflowDayMobileModal = closeOverflowDayMobileModal;
+
 function openOverflowDayPopover(dayKey, anchorEl) {
     var pop = document.getElementById('food-overflow-popover');
     var sourceSel = document.getElementById('food-overflow-source');
     var sourceBtn = document.getElementById('food-overflow-source-add-btn');
     var redistributeBtn = document.getElementById('food-overflow-redistribute-btn');
     var undoBtn = document.getElementById('food-overflow-undo-btn');
-    if (!pop || !sourceSel || !sourceBtn || !redistributeBtn || !dayKey) return;
+    if (!dayKey || !sourceSel || !sourceBtn || !redistributeBtn) return;
     closeFoodDayActionPopover();
+    if (typeof closeFoodDayMobileModal === 'function') closeFoodDayMobileModal();
+    if (isTouchOrSmall()) {
+        openOverflowDayMobileModal(dayKey);
+        return;
+    }
+    if (!pop) return;
     _detachOverflowPopoverScrollListeners();
     _overflowDayPopoverAnchor = anchorEl;
-    pop.setAttribute('data-overflow-key', dayKey);
-
-    var usage = (state.food && state.food.overflowUsage && state.food.overflowUsage[dayKey]) || '';
-    var sourceWrap = document.getElementById('food-overflow-source-wrap');
-    if (sourceWrap) sourceWrap.classList.toggle('hidden', usage === 'source' || usage === 'redistributed');
-    sourceBtn.classList.toggle('hidden', !!usage);
-    redistributeBtn.classList.toggle('hidden', !!usage);
-    if (undoBtn) {
-        undoBtn.classList.toggle('hidden', usage !== 'redistributed');
-        undoBtn.onclick = function () {
-            var key = pop.getAttribute('data-overflow-key');
-            if (!key) return;
-            if (typeof applyOverflowRedistributionUndo === 'function') applyOverflowRedistributionUndo(key);
-            closeOverflowDayPopover();
-        };
-    }
-
-    var currentVal = sourceSel.value;
-    var options = getOverflowFundingSources();
-    sourceSel.innerHTML = options.map(function(opt) {
-        return '<option value="' + String(opt.id).replace(/"/g, '&quot;') + '">' + String(opt.label).replace(/</g, '&lt;') + '</option>';
-    }).join('');
-    if (currentVal && options.some(function(opt) { return opt.id === currentVal; })) sourceSel.value = currentVal;
-
-    var sub = document.getElementById('food-overflow-popover-subtitle');
-    if (sub) {
-        if (usage === 'source') sub.textContent = 'This extra day is funded from your chosen source.';
-        else if (usage === 'redistributed') sub.textContent = 'This day shares your Daily Food pool across more calendar days. Undo to revert this split.';
-        else sub.textContent = 'Choose how to account for this overflow day.';
-    }
-
-    sourceBtn.onclick = function() {
-        var key = pop.getAttribute('data-overflow-key');
-        if (!key) return;
-        if (typeof applyOverflowDayFromSource === 'function') applyOverflowDayFromSource(key, sourceSel.value || 'surplus');
-        closeOverflowDayPopover();
-    };
-    redistributeBtn.onclick = function() {
-        var key = pop.getAttribute('data-overflow-key');
-        if (!key) return;
-        if (typeof applyOverflowDayRedistribution === 'function') applyOverflowDayRedistribution(key);
-        closeOverflowDayPopover();
-    };
+    _bindOverflowDayPanel(dayKey, {
+        rootEl: pop,
+        sourceSel: sourceSel,
+        sourceBtn: sourceBtn,
+        redistributeBtn: redistributeBtn,
+        undoBtn: undoBtn,
+        sourceWrap: document.getElementById('food-overflow-source-wrap'),
+        subtitleEl: document.getElementById('food-overflow-popover-subtitle'),
+        close: closeOverflowDayPopover
+    });
     pop.classList.remove('hidden');
     requestAnimationFrame(function () {
         requestAnimationFrame(function () {
@@ -1690,15 +1770,12 @@ function closeOverflowDayPopover() {
     if (pop) pop.classList.add('hidden');
     _overflowDayPopoverAnchor = null;
     _detachOverflowPopoverScrollListeners();
+    closeOverflowDayMobileModal();
 }
 window.closeOverflowDayPopover = closeOverflowDayPopover;
 
 function isTouchOrSmall() {
     return (typeof window !== 'undefined' && window.matchMedia && (window.matchMedia('(max-width: 768px)').matches || window.matchMedia('(pointer: coarse)').matches));
-}
-
-function isMobileFoodModal() {
-    return (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 640px)').matches);
 }
 
 function showFoodDayLockedNotice() {
@@ -1711,6 +1788,7 @@ window.showFoodDayLockedNotice = showFoodDayLockedNotice;
 function openFoodDayMobileModal(cycleDay, consumed) {
     var modal = document.getElementById('food-day-mobile-modal');
     if (!modal) return;
+    if (typeof closeOverflowDayPopover === 'function') closeOverflowDayPopover();
 
     var day = Math.max(1, Math.min(28, Math.floor(cycleDay)));
     if (!consumed && typeof getFoodFundedForDay === 'function' && getFoodFundedForDay(day) <= 0.001) {
@@ -1787,7 +1865,7 @@ function openFoodDayActionPopover(cycleDay, consumed, anchorEl) {
         showFoodDayLockedNotice();
         return;
     }
-    if (isTouchOrSmall() && isMobileFoodModal()) {
+    if (isTouchOrSmall()) {
         openFoodDayMobileModal(cycleDay, consumed);
         return;
     }

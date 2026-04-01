@@ -1826,6 +1826,11 @@ body.theme-sepia .paycheck-close-btn:hover {
 .food-day-hover-actions {
     background: rgba(71, 85, 105, 0.92);
     gap: 0;
+    /* Let clicks reach the day cell when the overlay is invisible; enable only on hover */
+    pointer-events: none;
+}
+.food-overview-cell-wrapper.group:hover .food-day-hover-actions {
+    pointer-events: auto;
 }
 /* On mobile / touch: hide the split checkmark+transfer overlay; only the action popover is used */
 @media (max-width: 768px), (pointer: coarse) {

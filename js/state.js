@@ -588,7 +588,35 @@ function ensureFoodConsumedDays() {
     if (!state.food.overflowFunded || typeof state.food.overflowFunded !== 'object') {
         state.food.overflowFunded = {};
     }
+    if (state.food.redistributedPerSlot !== undefined && (typeof state.food.redistributedPerSlot !== 'number' || Number.isNaN(state.food.redistributedPerSlot))) {
+        delete state.food.redistributedPerSlot;
+    }
     state.food.daysUsed = state.food.consumedDays.length;
+}
+
+/** When overflow days use "Redistribute", per-slot funding cap (frozen until undo or cycle reset). */
+function ensureRedistributedPerSlotCoherent() {
+    ensureFoodConsumedDays();
+    var R = countRedistributedOverflowKeys();
+    if (R <= 0) {
+        if (state.food && state.food.redistributedPerSlot !== undefined) delete state.food.redistributedPerSlot;
+        return;
+    }
+    var slot = state.food && typeof state.food.redistributedPerSlot === 'number' && !Number.isNaN(state.food.redistributedPerSlot) ? state.food.redistributedPerSlot : 0;
+    if (slot > 0.001) return;
+    var bal = (state.balances && state.balances['Daily Food'] !== undefined) ? Number(state.balances['Daily Food']) : 0;
+    if (bal < 0) bal = 0;
+    var U = countUnconsumedCoreDays();
+    var slots = U + R;
+    if (slots <= 0) return;
+    state.food.redistributedPerSlot = bal / slots;
+}
+
+function getEffectiveFoodSlotDailyCap(core) {
+    var R = countRedistributedOverflowKeys();
+    var slot = state.food && typeof state.food.redistributedPerSlot === 'number' && !Number.isNaN(state.food.redistributedPerSlot) ? state.food.redistributedPerSlot : 0;
+    if (R > 0 && slot > 0.001) return slot;
+    return core && typeof core.dailyRate === 'number' ? core.dailyRate : 0;
 }
 
 function sumOverflowFunded() {
@@ -837,7 +865,8 @@ function reconcileFoodFundingWithLedger() {
     ensureFoodConsumedDays();
     getFoodFundingMap();
     var core = computeFoodPlanCore();
-    var dailyRate = core.dailyRate;
+    ensureRedistributedPerSlotCoherent();
+    var dailyRate = getEffectiveFoodSlotDailyCap(core);
     var consumed = {};
     (state.food.consumedDays || []).forEach(function (cd) {
         consumed[cd] = true;

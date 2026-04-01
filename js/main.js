@@ -90,6 +90,13 @@ window.onload = function() {
         if (amortMonths) amortMonths.oninput = updateAmortCalc;
     }
 
+    function wireAddItemInputs() {
+        var amt = byId('new-item-amount');
+        var mo = byId('new-item-split-months');
+        if (amt && typeof updateAddItemCalc === 'function') amt.oninput = updateAddItemCalc;
+        if (mo && typeof updateAddItemCalc === 'function') mo.oninput = updateAddItemCalc;
+    }
+
     function wireFirstActionPrompt() {
         if (!state._showFirstActionPrompt) return;
         var banner = byId('first-action-prompt');
@@ -209,6 +216,7 @@ window.onload = function() {
         }
         renderInitialShell();
         wireAmortizationInputs();
+        wireAddItemInputs();
         wireFirstActionPrompt();
         scheduleHomeTour();
         wireResizeRefresh();

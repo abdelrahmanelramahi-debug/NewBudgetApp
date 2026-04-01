@@ -194,6 +194,30 @@ function removeItemBalance(label) {
     }
 }
 
+/** Find first category item with this label (balances are keyed by label). */
+function getItemByLabel(label) {
+    if (!label || !Array.isArray(state.categories)) return null;
+    for (var si = 0; si < state.categories.length; si++) {
+        var sec = state.categories[si];
+        if (!sec || !Array.isArray(sec.items)) continue;
+        for (var ii = 0; ii < sec.items.length; ii++) {
+            var it = sec.items[ii];
+            if (it && it.label === label) return { sec: sec, item: it, idx: ii };
+        }
+    }
+    return null;
+}
+
+/** True when item has a split savings goal and ledger balance is still below the goal total. */
+function isSplitGoalLocked(label) {
+    var found = getItemByLabel(label);
+    if (!found || !found.item.amortData) return false;
+    var goal = Number(found.item.amortData.total);
+    if (!goal || goal <= 0) return false;
+    var bal = getItemBalance(label, 0);
+    return bal < goal - 0.005;
+}
+
 function adjustItemBalance(label, delta) {
     if (label === 'Savings') {
         adjustSavingsTotal(delta);
@@ -380,9 +404,40 @@ function applyTransaction(tx) {
         case 'add_item': {
             const sec = state.categories.find(s=>s.id===tx.sid);
             if (!sec) break;
-            sec.items.push({ label: tx.label, amount: tx.amount });
-            state.accounts.surplus -= tx.amount;
-            setItemBalance(tx.label, tx.amount);
+            const splitMonths = Math.max(1, Math.floor(Number(tx.splitMonths) || 1));
+            const totalPrice = Number(tx.totalPrice);
+            const useSplit =
+                tx.splitMonths != null &&
+                splitMonths > 1 &&
+                !Number.isNaN(totalPrice) &&
+                totalPrice > 0;
+            if (useSplit) {
+                const monthly = totalPrice / splitMonths;
+                sec.items.push({
+                    label: tx.label,
+                    amount: monthly,
+                    amortData: { total: totalPrice, months: splitMonths }
+                });
+                setItemBalance(tx.label, 0);
+            } else {
+                const amt = Number(tx.amount);
+                if (Number.isNaN(amt)) break;
+                sec.items.push({ label: tx.label, amount: amt });
+                state.accounts.surplus -= amt;
+                setItemBalance(tx.label, amt);
+            }
+            break;
+        }
+        case 'release_split_goal': {
+            const take = Math.min(Number(tx.amount) || 0, getItemBalance(tx.label, 0));
+            if (take <= 0) break;
+            const cur = getItemBalance(tx.label, 0);
+            setItemBalance(tx.label, cur - take);
+            state.accounts.surplus += take;
+            var rel = getItemByLabel(tx.label);
+            if (rel && rel.item && rel.item.amortData && getItemBalance(tx.label, 0) <= 0.005) {
+                delete rel.item.amortData;
+            }
             break;
         }
         case 'delete_item': {
@@ -695,6 +750,7 @@ function openDeficitModal() {
 
             const bal = getItemBalance(item.label, 0);
             if(bal > 0) {
+                if (typeof isSplitGoalLocked === 'function' && isSplitGoalLocked(item.label)) return;
                 const safeLabel = String(item.label).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
                 list.innerHTML += `
                     <div class="flex justify-between items-center gap-2 p-3 bg-slate-50 rounded-xl min-w-0">
@@ -713,6 +769,12 @@ function openDeficitModal() {
 function closeDeficitModal() { toggleModal('deficit-modal', false); }
 
 function raidBucket(label, available) {
+    if (typeof isSplitGoalLocked === 'function' && isSplitGoalLocked(label)) {
+        if (typeof showAppAlert === 'function') {
+            showAppAlert('This line is a locked split goal. Use Unlock early on the ledger, or wait until the goal is reached.');
+        }
+        return;
+    }
     const deficit = Math.abs(state.accounts.surplus);
     const take = Math.min(deficit, available);
 
@@ -902,25 +964,112 @@ function applyDirectCost() {
 function closeAmortizationTool() { toggleModal('amortization-tool', false); }
 
 // Add Items
-function openAddItemTool(sid) {
-    currentAddSectionId = sid;
+function updateAddItemCalc() {
+    var totalEl = document.getElementById('new-item-amount');
+    var monthsEl = document.getElementById('new-item-split-months');
+    var previewEl = document.getElementById('new-item-split-preview');
+    if (!previewEl) return;
+    var t = parseFloat(totalEl && totalEl.value);
+    var m = Math.max(1, Math.floor(parseFloat(monthsEl && monthsEl.value) || 1));
+    if (!totalEl || totalEl.value === '' || isNaN(t) || t <= 0) {
+        previewEl.textContent = '—';
+        return;
+    }
+    if (m <= 1) {
+        previewEl.textContent = formatMoney(t) + ' ' + (typeof getCurrencyLabel === 'function' ? getCurrencyLabel() : '') + ' / cycle';
+        return;
+    }
+    previewEl.textContent = formatMoney(t / m) + ' ' + (typeof getCurrencyLabel === 'function' ? getCurrencyLabel() : '') + ' / month · ' + m + ' mo';
+}
+
+function openAddItemTool(sid, opts) {
+    opts = opts || {};
+    var explicitSid = sid || '';
     document.getElementById('new-item-label').value = '';
     document.getElementById('new-item-amount').value = '';
+    var monthsEl = document.getElementById('new-item-split-months');
+    if (monthsEl) monthsEl.value = '1';
+    var catRow = document.getElementById('new-item-category-row');
+    var catSel = document.getElementById('new-item-category');
+    var showPicker = opts.showCategoryPicker === true || !explicitSid;
+    if (catRow && catSel) {
+        catRow.classList.toggle('hidden', !showPicker);
+        if (showPicker) {
+            catSel.innerHTML = '';
+            (state.categories || []).forEach(function (sec) {
+                if (!sec || sec.isSystem || sec.id === 'sys_savings' || sec.id === 'core_essentials') return;
+                var opt = document.createElement('option');
+                opt.value = sec.id;
+                opt.textContent = sec.label || sec.id;
+                catSel.appendChild(opt);
+            });
+            if (explicitSid) {
+                for (var ci = 0; ci < catSel.options.length; ci++) {
+                    if (catSel.options[ci].value === explicitSid) {
+                        catSel.selectedIndex = ci;
+                        break;
+                    }
+                }
+            }
+            currentAddSectionId = catSel.value || '';
+            catSel.onchange = function () { currentAddSectionId = this.value; };
+        } else {
+            currentAddSectionId = explicitSid;
+        }
+    } else {
+        currentAddSectionId = explicitSid;
+    }
+    updateAddItemCalc();
     toggleModal('add-item-tool', true);
     document.getElementById('new-item-label').focus();
 }
 function closeAddItemTool() { toggleModal('add-item-tool', false); }
 function confirmAddItem() {
-    const label = document.getElementById('new-item-label').value;
-    const amount = parseFloat(document.getElementById('new-item-amount').value);
-    if(label && !isNaN(amount)) {
-        pushToUndo();
-        applyTransaction({ type: 'add_item', sid: currentAddSectionId, label, amount });
-        saveState();
-        renderStrategy();
-        closeAddItemTool();
+    const label = (document.getElementById('new-item-label').value || '').trim();
+    const total = parseFloat(document.getElementById('new-item-amount').value);
+    const monthsEl = document.getElementById('new-item-split-months');
+    const months = Math.max(1, Math.floor(parseFloat(monthsEl && monthsEl.value) || 1));
+    var catSel = document.getElementById('new-item-category');
+    var catRow = document.getElementById('new-item-category-row');
+    if (catRow && !catRow.classList.contains('hidden') && catSel && catSel.value) {
+        currentAddSectionId = catSel.value;
+    }
+    if (!label || isNaN(total) || total <= 0 || !currentAddSectionId) return;
+    pushToUndo();
+    if (months > 1) {
+        applyTransaction({ type: 'add_item', sid: currentAddSectionId, label, splitMonths: months, totalPrice: total });
+    } else {
+        applyTransaction({ type: 'add_item', sid: currentAddSectionId, label, amount: total });
+    }
+    saveState();
+    renderStrategy();
+    if (typeof refreshUI === 'function') refreshUI();
+    else if (typeof renderLedger === 'function') renderLedger();
+    closeAddItemTool();
+}
+
+/** Move funds from a locked split-goal line to Extra (surplus). Full release clears amortData when balance hits zero. */
+function releaseSplitGoalFunds(label) {
+    if (!ensureEditControlBeforeMutation()) return;
+    if (!isSplitGoalLocked(label)) {
+        if (typeof showAppAlert === 'function') showAppAlert('Unlock early applies to active split goals that are still below target.');
+        return;
+    }
+    var bal = getItemBalance(label, 0);
+    if (bal <= 0) return;
+    pushToUndo();
+    applyTransaction({ type: 'release_split_goal', label: label, amount: bal });
+    if (typeof logHistory === 'function') logHistory(label, -bal, 'Unlock early');
+    saveState();
+    if (typeof refreshUI === 'function') refreshUI();
+    else {
+        if (typeof renderLedger === 'function') renderLedger();
+        if (typeof renderStrategy === 'function') renderStrategy();
     }
 }
+window.releaseSplitGoalFunds = releaseSplitGoalFunds;
+window.updateAddItemCalc = updateAddItemCalc;
+window.openAddItemTool = openAddItemTool;
 
 // Delete Items
 function openDeleteModal(sid, idx) {
@@ -933,7 +1082,8 @@ function confirmDelete() {
         pushToUndo();
         applyTransaction({ type: 'delete_item', sid: itemToDelete.sid, idx: itemToDelete.idx });
         saveState();
-        renderStrategy();
+        if (typeof refreshUI === 'function') refreshUI();
+        else renderStrategy();
         closeDeleteModal();
     }
 }
@@ -1053,6 +1203,13 @@ function executeTransfer(targetId) {
     const val = parseFloat(document.getElementById('tool-value').value);
     if(!val || val <= 0) return;
 
+    if (typeof isSplitGoalLocked === 'function' && isSplitGoalLocked(activeCat)) {
+        if (typeof showAppAlert === 'function') {
+            showAppAlert('This line is a locked split goal. Reach the target, or use Unlock early on the ledger.');
+        }
+        return;
+    }
+
     pushToUndo();
     const isTransferToWeek = String(targetId).startsWith('weekly_week_');
 
@@ -1091,6 +1248,12 @@ function executeAction(type) {
 
 function applySurplusOrItemFromTool(type, val) {
     var mod = type === 'deduct' ? -val : val;
+    if (mod < 0 && typeof isSplitGoalLocked === 'function' && isSplitGoalLocked(activeCat)) {
+        if (typeof showAppAlert === 'function') {
+            showAppAlert('This line is a locked split goal. Reach the target, or use Unlock early on the ledger.');
+        }
+        return;
+    }
     if (activeCat === 'Surplus') {
         applyTransaction({ type: 'adjust_surplus', delta: mod });
     } else {
@@ -1106,6 +1269,12 @@ function applyItemAdjustment(label, amountStr, type) {
     var val = parseFloat(amountStr);
     if (!val || val <= 0) return;
     var mod = type === 'deduct' ? -val : val;
+    if (mod < 0 && typeof isSplitGoalLocked === 'function' && isSplitGoalLocked(label)) {
+        if (typeof showAppAlert === 'function') {
+            showAppAlert('This line is a locked split goal. Reach the target, or use Unlock early on the ledger.');
+        }
+        return;
+    }
     pushToUndo();
     applyTransaction({ type: 'adjust_item_balance', label: label, delta: mod });
     logHistory(label, mod, 'Manual');
@@ -1114,9 +1283,17 @@ function applyItemAdjustment(label, amountStr, type) {
 }
 
 function completeTask(label) {
+    if (typeof isSplitGoalLocked === 'function' && isSplitGoalLocked(label)) {
+        if (typeof showAppAlert === 'function') {
+            showAppAlert('Complete is available once this split goal is fully funded.');
+        }
+        return;
+    }
     pushToUndo();
     const current = getItemBalance(label, 0);
     setItemBalance(label, 0);
+    var doneItem = getItemByLabel(label);
+    if (doneItem && doneItem.item && doneItem.item.amortData) delete doneItem.item.amortData;
     logHistory(label, -current, 'Completed');
     saveState();
     renderLedger();
@@ -1168,7 +1345,11 @@ function setFoodDayFromCalendar(cycleDay, action) {
     if (action === 'unmark') {
         state.food.consumedDays = list.filter(function(d) { return d !== day; });
         var infoUnmark = typeof getFoodRemainderInfo === 'function' ? getFoodRemainderInfo() : null;
-        var dailyRateUnmark = (infoUnmark && infoUnmark.dailyRate > 0) ? infoUnmark.dailyRate : (600 / 28);
+        var Rov = typeof countRedistributedOverflowKeys === 'function' ? countRedistributedOverflowKeys() : 0;
+        var slotRate = state.food && typeof state.food.redistributedPerSlot === 'number' && !Number.isNaN(state.food.redistributedPerSlot) ? state.food.redistributedPerSlot : 0;
+        var dailyRateUnmark = (Rov > 0 && slotRate > 0.001)
+            ? slotRate
+            : ((infoUnmark && infoUnmark.dailyRate > 0) ? infoUnmark.dailyRate : (600 / 28));
         if (typeof setFoodFundedForDay === 'function') setFoodFundedForDay(day, dailyRateUnmark);
         adjustItemBalance('Daily Food', dailyRateUnmark);
     } else {
@@ -1607,6 +1788,14 @@ function getBufferSourceBalance(sourceId) {
 }
 
 function deductFromBufferSource(sourceId, amount) {
+    if (sourceId && sourceId !== 'surplus' && sourceId !== 'savings' && sourceId !== 'weekly') {
+        if (typeof isSplitGoalLocked === 'function' && isSplitGoalLocked(sourceId)) {
+            if (typeof showAppAlert === 'function') {
+                showAppAlert('This line is a locked split goal. Use Unlock early on the ledger to move funds to Extra.');
+            }
+            return false;
+        }
+    }
     if (sourceId === 'surplus') {
         applyTransaction({ type: 'adjust_surplus', delta: -amount });
     } else if (sourceId === 'savings') {
@@ -1619,6 +1808,7 @@ function deductFromBufferSource(sourceId, amount) {
         if (getItemBalance(sourceId, undefined) === undefined) setItemBalance(sourceId, current);
         applyTransaction({ type: 'adjust_item_balance', label: sourceId, delta: -amount });
     }
+    return true;
 }
 
 function isOverflowDayUsed(dayKey) {
@@ -1634,6 +1824,11 @@ function markOverflowDayUsage(dayKey, mode) {
 
 function applyOverflowDayFromSource(dayKey, sourceId) {
     if (!dayKey) return;
+    var src = sourceId || 'surplus';
+    if (src !== 'surplus' && src !== 'savings' && src !== 'weekly' && typeof isSplitGoalLocked === 'function' && isSplitGoalLocked(src)) {
+        if (typeof showAppAlert === 'function') showAppAlert('This line is a locked split goal. Use Unlock early on the ledger first.');
+        return;
+    }
     if (isOverflowDayUsed(dayKey)) {
         if (typeof showAppAlert === 'function') showAppAlert('This extra day is already accounted for.');
         return;
@@ -1646,7 +1841,7 @@ function applyOverflowDayFromSource(dayKey, sourceId) {
         return;
     }
     pushToUndo();
-    deductFromBufferSource(sourceId || 'surplus', dailyRate);
+    if (!deductFromBufferSource(sourceId || 'surplus', dailyRate)) return;
     adjustItemBalance('Daily Food', dailyRate);
     if (!state.food.overflowFunded || typeof state.food.overflowFunded !== 'object') state.food.overflowFunded = {};
     state.food.overflowFunded[dayKey] = dailyRate;
@@ -1693,6 +1888,11 @@ function _recomputeOverflowRedistributionSplit() {
     redistKeys.forEach(function (k) {
         state.food.overflowFunded[k] = perSlot;
     });
+    if (R > 0) {
+        state.food.redistributedPerSlot = perSlot;
+    } else if (state.food) {
+        delete state.food.redistributedPerSlot;
+    }
     var sumAfter =
         (typeof sumFoodFundedUnconsumed === 'function' ? sumFoodFundedUnconsumed() : 0) +
         (typeof sumOverflowFunded === 'function' ? sumOverflowFunded() : 0);
@@ -1765,6 +1965,11 @@ function buyFoodDay() {
 
     const sourceEl = document.getElementById('food-buffer-source');
     const sourceId = (sourceEl && sourceEl.value) ? sourceEl.value : 'surplus';
+
+    if (sourceId && sourceId !== 'surplus' && sourceId !== 'savings' && sourceId !== 'weekly' && typeof isSplitGoalLocked === 'function' && isSplitGoalLocked(sourceId)) {
+        if (typeof showAppAlert === 'function') showAppAlert('This line is a locked split goal. Use Unlock early on the ledger first.');
+        return;
+    }
 
     const info = typeof getFoodRemainderInfo === 'function' ? getFoodRemainderInfo() : null;
     const dailyRate = (info && info.dailyRate > 0) ? info.dailyRate : (600 / 28);
@@ -2067,6 +2272,7 @@ function startNewMonthFoodReset(options) {
     state.food.history = [];
     state.food.overflowUsage = {};
     state.food.overflowFunded = {};
+    if (state.food.redistributedPerSlot !== undefined) delete state.food.redistributedPerSlot;
     state.food.redistributedExtraDays = 0;
     state.food.lastCycleStartKey = getPayCycleStartKey(options.payCycleInfo);
     if (movedToExtra > 0) {

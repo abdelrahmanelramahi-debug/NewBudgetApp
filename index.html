@@ -685,11 +685,11 @@
                         <div class="grid grid-cols-7 gap-1 flex-1 text-center text-[10px] font-black uppercase tracking-wider text-slate-400"></div>
                     </div>
                     <div id="food-overview-rows" class="food-overview-rows"></div>
-                    <div id="food-day-transfer-popover" class="food-day-transfer-popover hidden fixed z-30 w-[132px] max-h-[180px] overflow-y-auto py-1 bg-white border border-slate-200 rounded-lg shadow-xl shadow-slate-200/50" role="dialog" aria-label="Transfer day to">
+                    <div id="food-day-transfer-popover" class="food-day-transfer-popover hidden fixed z-[92] w-[132px] max-h-[180px] overflow-y-auto py-1 bg-white border border-slate-200 rounded-lg shadow-xl shadow-slate-200/50" role="dialog" aria-label="Transfer day to">
                         <p class="text-[9px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1 border-b border-slate-100">To</p>
                         <div id="food-day-transfer-targets" class="py-0.5"></div>
                     </div>
-                    <div id="food-day-action-popover" class="food-day-action-popover hidden fixed z-30 min-w-[200px] py-2 bg-white border border-slate-200 rounded-xl shadow-xl shadow-slate-300/40 ring-1 ring-slate-900/5" role="dialog" aria-label="Day action">
+                    <div id="food-day-action-popover" class="food-day-action-popover hidden fixed z-[92] min-w-[200px] py-2 bg-white border border-slate-200 rounded-xl shadow-xl shadow-slate-300/40 ring-1 ring-slate-900/5" role="dialog" aria-label="Day action">
                         <button type="button" id="food-day-action-consume" class="food-day-action-popover-btn food-day-action-consume-btn flex items-center gap-3 w-full text-left px-4 py-3 text-[13px] font-semibold text-slate-800 hover:bg-emerald-50 active:bg-emerald-100 rounded-lg mx-2 mb-1 transition-colors">
                             <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 shrink-0" aria-hidden="true">✓</span>
                             <span class="food-day-action-consume-label">Mark consumed</span>
@@ -699,7 +699,7 @@
                             <span>Transfer day to…</span>
                         </button>
                     </div>
-                    <div id="food-overflow-popover" class="hidden fixed z-40 w-[220px] p-3 bg-white border border-red-200 rounded-xl shadow-xl shadow-red-100/60 ring-1 ring-red-900/5" role="dialog" aria-label="Extra day options">
+                    <div id="food-overflow-popover" class="hidden fixed z-[90] w-[220px] p-3 bg-white border border-red-200 rounded-xl shadow-xl shadow-red-100/60 ring-1 ring-red-900/5" role="dialog" aria-label="Extra day options">
                         <p class="text-[10px] font-black uppercase tracking-wider text-red-600">Extra day</p>
                         <p id="food-overflow-popover-subtitle" class="text-[10px] font-semibold text-slate-500 mt-1">Choose how to account for this overflow day.</p>
                         <div id="food-overflow-source-wrap" class="mt-2">
@@ -742,6 +742,34 @@
                                     </div>
                                     <p id="food-day-mobile-transfer-disabled" class="hidden text-[11px] font-bold text-slate-500 mt-2">Transfer is disabled for consumed days.</p>
                                     <div id="food-day-mobile-transfer-targets" class="mt-3 max-h-48 overflow-y-auto rounded-xl bg-white border border-slate-200 divide-y divide-slate-100"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="food-overflow-mobile-modal" class="modal-overlay hidden fixed inset-0 z-[85]" aria-hidden="true">
+                        <div class="absolute inset-0 bg-black/40" onclick="closeOverflowDayMobileModal()"></div>
+                        <div class="absolute inset-x-0 bottom-0 max-h-[88dvh] rounded-t-3xl bg-white shadow-2xl overflow-hidden flex flex-col border-t border-red-100">
+                            <div class="px-5 pt-4 pb-3 border-b border-slate-100 flex items-start justify-between gap-3">
+                                <div class="min-w-0">
+                                    <p class="text-[10px] font-black uppercase tracking-widest text-red-600">Extra day</p>
+                                    <p id="food-overflow-mobile-subtitle" class="text-[11px] font-semibold text-slate-600 mt-1 leading-snug">Choose how to account for this overflow day.</p>
+                                </div>
+                                <button type="button" onclick="closeOverflowDayMobileModal()" class="p-2 rounded-full bg-slate-50 text-slate-600 hover:bg-slate-100 shrink-0" aria-label="Close">✕</button>
+                            </div>
+                            <div class="p-5 space-y-3 overflow-y-auto">
+                                <div id="food-overflow-mobile-source-wrap">
+                                    <label for="food-overflow-mobile-source" class="text-[9px] font-bold uppercase tracking-wider text-slate-500">Source</label>
+                                    <select id="food-overflow-mobile-source" name="food-overflow-mobile-source" class="mt-1 w-full bg-white border border-red-200 rounded-lg px-2 py-2.5 text-[12px] font-bold outline-none focus:ring-2 focus:ring-red-300">
+                                        <option value="surplus">Extra</option>
+                                        <option value="savings">Savings</option>
+                                        <option value="weekly">Weekly Allowance</option>
+                                    </select>
+                                </div>
+                                <div class="space-y-2 pt-1">
+                                    <button type="button" id="food-overflow-mobile-source-add-btn" class="w-full py-3 rounded-xl bg-red-500 text-white text-[11px] font-black uppercase tracking-wider hover:bg-red-600 transition">Use source for +1 day</button>
+                                    <button type="button" id="food-overflow-mobile-redistribute-btn" class="w-full py-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-[11px] font-black uppercase tracking-wider hover:bg-red-100 transition">Redistribute Daily Food</button>
+                                    <button type="button" id="food-overflow-mobile-undo-btn" class="hidden w-full py-3 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 text-[11px] font-black uppercase tracking-wider hover:bg-slate-200 transition">Undo redistribute</button>
                                 </div>
                             </div>
                         </div>
@@ -1397,11 +1425,25 @@
                 <button onclick="closeAddItemTool()" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
             </div>
             <div class="space-y-4">
+                <div id="new-item-category-row" class="hidden">
+                    <label for="new-item-category" class="block text-[9px] font-bold uppercase text-slate-400 mb-1">Category</label>
+                    <select id="new-item-category" name="new-item-category" class="w-full bg-slate-50 border-none rounded-2xl px-6 py-3 text-sm font-bold text-slate-900 outline-none"></select>
+                </div>
                 <label for="new-item-label" class="sr-only">Item name</label>
                 <input type="text" id="new-item-label" name="new-item-label" placeholder="Item Name" class="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 text-lg font-bold text-slate-900 outline-none" autocomplete="off">
                 <div class="relative">
-                    <label for="new-item-amount" class="sr-only">Amount</label>
-                    <input type="number" id="new-item-amount" name="new-item-amount" placeholder="0.00" class="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 text-2xl font-black text-slate-900 outline-none" autocomplete="off">
+                    <label for="new-item-amount" class="sr-only">Total amount</label>
+                    <input type="number" id="new-item-amount" name="new-item-amount" placeholder="0.00" class="w-full bg-slate-50 border-none rounded-2xl px-6 py-4 text-2xl font-black text-slate-900 outline-none" autocomplete="off" oninput="updateAddItemCalc()">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label for="new-item-split-months" class="block text-[9px] font-bold uppercase text-slate-400 mb-1">Split (months)</label>
+                        <input type="number" id="new-item-split-months" name="new-item-split-months" min="1" step="1" value="1" class="w-full bg-slate-50 border-none rounded-2xl px-4 py-3 text-lg font-black text-slate-900 outline-none" autocomplete="off" oninput="updateAddItemCalc()">
+                    </div>
+                    <div class="flex flex-col justify-end">
+                        <span class="text-[9px] font-bold uppercase text-slate-400 mb-1">Plan</span>
+                        <span id="new-item-split-preview" class="text-sm font-black text-indigo-600 leading-tight">—</span>
+                    </div>
                 </div>
                 <button onclick="confirmAddItem()" class="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest">Create Item</button>
             </div>
