@@ -721,7 +721,7 @@ function openDeficitModal() {
             <div class="flex justify-between items-center gap-2 p-3 bg-slate-50 rounded-xl min-w-0">
                 <div class="min-w-0 flex-1">
                     <span class="block text-xs font-bold text-slate-800 truncate">Weekly Allowance</span>
-                    <span class="text-[10px] text-slate-400">Available: ${weeklyAvailable.toFixed(0)}</span>
+                    <span class="text-[10px] text-slate-400">Available: ${formatMoney(weeklyAvailable)}</span>
                 </div>
                 <button onclick="raidWeekly(${weeklyAvailable})" class="bg-indigo-100 text-indigo-600 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase whitespace-nowrap flex-shrink-0">Use</button>
             </div>
@@ -737,7 +737,7 @@ function openDeficitModal() {
             <div class="flex justify-between items-center gap-2 p-3 bg-slate-50 rounded-xl min-w-0">
                 <div class="min-w-0 flex-1">
                     <span class="block text-xs font-bold text-slate-800 truncate">Food Remainder</span>
-                    <span class="text-[10px] text-slate-400">Before: ${foodInfo.dailyRate.toFixed(2)}/day • After: ${postPerDay.toFixed(2)}/day</span>
+                    <span class="text-[10px] text-slate-400">Before: ${formatMoney(foodInfo.dailyRate)}/day • After: ${formatMoney(postPerDay)}/day</span>
                 </div>
                 <button onclick="raidFood(${foodInfo.remainder})" class="bg-indigo-100 text-indigo-600 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase whitespace-nowrap flex-shrink-0">Use</button>
             </div>
@@ -923,44 +923,94 @@ function confirmAddCategory() {
     }
 }
 
-// Amortization
+// Edit item (same flow as New Entry: amount + split; one save)
 function openAmortTool(sid, idx) {
-    currentAmort = {sid, idx};
-    const item = state.categories.find(s=>s.id===sid).items[idx];
-    document.getElementById('amortization-title').innerText = item.label;
+    currentAmort = { sid: sid, idx: idx };
+    const item = state.categories.find(s => s.id === sid).items[idx];
+    var labelEl = document.getElementById('amort-label');
+    if (labelEl) {
+        labelEl.value = item.label;
+        var nameLocked = item.isCore || (typeof isAccountLabel === 'function' && isAccountLabel(item.label));
+        labelEl.disabled = !!nameLocked;
+        labelEl.classList.toggle('opacity-60', !!nameLocked);
+    }
     document.getElementById('amort-total').value = item.amortData ? item.amortData.total : item.amount;
-    document.getElementById('amort-months').value = item.amortData ? item.amortData.months : 1;
+    var mo = document.getElementById('amort-months');
+    if (mo) mo.value = String(item.amortData ? item.amortData.months : 1);
     toggleModal('amortization-tool', true);
     updateAmortCalc();
+    if (labelEl && !labelEl.disabled) labelEl.focus();
+    else document.getElementById('amort-total').focus();
 }
 
 function updateAmortCalc() {
-    const t = parseFloat(document.getElementById('amort-total').value)||0;
-    const m = parseFloat(document.getElementById('amort-months').value)||1;
-    document.getElementById('amort-preview').innerText = (t/m).toFixed(2);
+    var totalEl = document.getElementById('amort-total');
+    var monthsEl = document.getElementById('amort-months');
+    var previewEl = document.getElementById('amort-preview');
+    if (!previewEl) return;
+    var t = parseFloat(totalEl && totalEl.value);
+    var m = Math.max(1, Math.floor(parseFloat(monthsEl && monthsEl.value) || 1));
+    if (!totalEl || totalEl.value === '' || isNaN(t) || t <= 0) {
+        previewEl.textContent = '—';
+        return;
+    }
+    if (m <= 1) {
+        previewEl.textContent = formatMoney(t) + ' ' + (typeof getCurrencyLabel === 'function' ? getCurrencyLabel() : '') + ' / cycle';
+        return;
+    }
+    previewEl.textContent = formatMoney(t / m) + ' ' + (typeof getCurrencyLabel === 'function' ? getCurrencyLabel() : '') + ' / month · ' + m + ' mo';
 }
-function saveAmortization() {
-    const t = parseFloat(document.getElementById('amort-total').value);
-    const m = parseFloat(document.getElementById('amort-months').value);
-    const item = state.categories.find(s=>s.id===currentAmort.sid).items[currentAmort.idx];
+
+function confirmEditItem() {
+    if (!ensureEditControlBeforeMutation()) return;
+    if (!currentAmort) return;
+    var sec = state.categories.find(function (s) { return s.id === currentAmort.sid; });
+    if (!sec) return;
+    var item = sec.items[currentAmort.idx];
+    if (!item) return;
+
+    var labelInput = document.getElementById('amort-label');
+    var newName = (labelInput && !labelInput.disabled && (labelInput.value || '').trim()) || item.label;
+    var canRename = !item.isCore && typeof isAccountLabel === 'function' && !isAccountLabel(item.label);
+    if (canRename && (!(labelInput && (labelInput.value || '').trim()))) {
+        if (typeof showAppAlert === 'function') showAppAlert('Enter an item name.');
+        return;
+    }
+
+    var t = parseFloat(document.getElementById('amort-total').value);
+    var m = Math.max(1, Math.floor(parseFloat(document.getElementById('amort-months').value) || 1));
+    if (isNaN(t) || t <= 0) return;
 
     pushToUndo();
-    const oldVal = item.amount;
-    const newVal = t/m;
-    item.amortData = {total: t, months: m};
-    applyTransaction({ type: 'update_item_amount', sid: currentAmort.sid, idx: currentAmort.idx, amount: newVal });
+
+    if (canRename && newName !== item.label) {
+        var oldLabel = item.label;
+        var bal = getItemBalance(oldLabel, item.amount);
+        if (state.balances && state.balances[oldLabel] !== undefined) delete state.balances[oldLabel];
+        item.label = newName;
+        setItemBalance(newName, bal);
+    }
+
+    if (m <= 1) {
+        applyTransaction({ type: 'update_item_amount', sid: currentAmort.sid, idx: currentAmort.idx, amount: t });
+    } else {
+        var newVal = t / m;
+        applyTransaction({ type: 'update_item_amount', sid: currentAmort.sid, idx: currentAmort.idx, amount: newVal });
+        item.amortData = { total: t, months: m };
+    }
     saveState();
-    renderStrategy(); toggleModal('amortization-tool', false);
+    renderStrategy();
+    toggleModal('amortization-tool', false);
 }
+
+function saveAmortization() {
+    confirmEditItem();
+}
+
 function applyDirectCost() {
-    const t = parseFloat(document.getElementById('amort-total').value);
-    const item = state.categories.find(s=>s.id===currentAmort.sid).items[currentAmort.idx];
-    pushToUndo();
-    delete item.amortData;
-    applyTransaction({ type: 'update_item_amount', sid: currentAmort.sid, idx: currentAmort.idx, amount: t });
-    saveState();
-    renderStrategy(); toggleModal('amortization-tool', false);
+    confirmEditItem();
 }
+
 function closeAmortizationTool() { toggleModal('amortization-tool', false); }
 
 // Add Items
@@ -2432,10 +2482,11 @@ function fastUpdateItemAmount(sid, idx, val) {
             const dailyRounded = Math.round(dailyRate);
             if(slider.value !== String(dailyRounded)) slider.value = String(dailyRounded);
             var label = document.getElementById('food-daily-slider-label-' + sid + '-' + idx);
-            if (label) label.textContent = String(dailyRounded) + ' ' + getCurrencyLabel();
+            if (label) label.textContent = formatMoney(dailyRate) + ' ' + getCurrencyLabel();
         }
         // Do not overwrite a focused input (it breaks cursor position)
-        if(input && document.activeElement !== input && input.value !== String(num)) input.value = String(num);
+        var plain = typeof formatMoneyPlain === 'function' ? formatMoneyPlain(num) : String(num);
+        if(input && document.activeElement !== input && input.value !== plain) input.value = plain;
         const badge = document.querySelector('.budget-item-badge[data-badge="food"][data-sid="' + sid + '"][data-idx="' + idx + '"]');
         if(badge) {
             const dailyRate = state.food.daysTotal > 0 ? (num / state.food.daysTotal) : 0;
@@ -2448,11 +2499,12 @@ function fastUpdateItemAmount(sid, idx, val) {
             const snapped = Math.round(num / WEEKLY_SLIDER_STEP) * WEEKLY_SLIDER_STEP;
             if(slider.value !== String(snapped)) slider.value = String(snapped);
             var inputW = document.querySelector('.budget-item-input[data-sid="' + sid + '"][data-idx="' + idx + '"]');
-            if (inputW && document.activeElement !== inputW && inputW.value !== String(num)) inputW.value = String(num);
+            var plainW = typeof formatMoneyPlain === 'function' ? formatMoneyPlain(num) : String(num);
+            if (inputW && document.activeElement !== inputW && inputW.value !== plainW) inputW.value = plainW;
             var badgeW = document.querySelector('.budget-item-badge[data-badge="weekly"][data-sid="' + sid + '"][data-idx="' + idx + '"]');
             if (badgeW) badgeW.textContent = '~' + formatMoney(num / 4) + '/wk';
             var labelW = document.getElementById('weekly-slider-label-' + sid + '-' + idx);
-            if (labelW) labelW.textContent = Math.round(num) + ' ' + getCurrencyLabel();
+            if (labelW) labelW.textContent = formatMoney(num) + ' ' + getCurrencyLabel();
         }
     } else if(item.label === 'Savings') {
         const slider = document.getElementById('general-savings-slider-' + sid + '-' + idx);
@@ -2461,9 +2513,10 @@ function fastUpdateItemAmount(sid, idx, val) {
             const snapped = Math.round(num / SAVINGS_SLIDER_STEP) * SAVINGS_SLIDER_STEP;
             if(slider.value !== String(snapped)) slider.value = String(snapped);
             var inputS = document.querySelector('.budget-item-input[data-sid="' + sid + '"][data-idx="' + idx + '"]');
-            if (inputS && document.activeElement !== inputS && inputS.value !== String(num)) inputS.value = String(num);
+            var plainS = typeof formatMoneyPlain === 'function' ? formatMoneyPlain(num) : String(num);
+            if (inputS && document.activeElement !== inputS && inputS.value !== plainS) inputS.value = plainS;
             var labelS = document.getElementById('savings-slider-label-' + sid + '-' + idx);
-            if (labelS) labelS.textContent = Math.round(num) + ' ' + getCurrencyLabel();
+            if (labelS) labelS.textContent = formatMoney(num) + ' ' + getCurrencyLabel();
         }
     } else if(item.label === 'Transportation') {
         const slider = document.getElementById('car-fund-slider-' + sid + '-' + idx);
@@ -2472,11 +2525,12 @@ function fastUpdateItemAmount(sid, idx, val) {
             const snapped = Math.round(num / CAR_SLIDER_STEP) * CAR_SLIDER_STEP;
             if(slider.value !== String(snapped)) slider.value = String(snapped);
             var inputT = document.querySelector('.budget-item-input[data-sid="' + sid + '"][data-idx="' + idx + '"]');
-            if (inputT && document.activeElement !== inputT && inputT.value !== String(num)) inputT.value = String(num);
+            var plainT = typeof formatMoneyPlain === 'function' ? formatMoneyPlain(num) : String(num);
+            if (inputT && document.activeElement !== inputT && inputT.value !== plainT) inputT.value = plainT;
             var badgeT = document.querySelector('.budget-item-badge[data-badge="transport"][data-sid="' + sid + '"][data-idx="' + idx + '"]');
             if (badgeT) badgeT.textContent = '~' + formatMoney(num / 4) + '/wk';
             var labelT = document.getElementById('car-slider-label-' + sid + '-' + idx);
-            if (labelT) labelT.textContent = Math.round(num) + ' ' + getCurrencyLabel();
+            if (labelT) labelT.textContent = formatMoney(num) + ' ' + getCurrencyLabel();
         }
     }
     var obStep = document.getElementById('onboarding-step-categories');
@@ -2522,9 +2576,7 @@ function budgetPlanAmountCommit(sid, idx, el) {
         if (Number.isNaN(num)) num = 0;
     }
 
-    // Never override what the user typed with step rounding.
-    // Sliders can still snap (they have step), but the typed number is the source of truth.
-    el.value = raw === '' ? '0' : raw;
+    el.value = typeof formatMoneyPlain === 'function' ? formatMoneyPlain(num) : num.toFixed(2);
     fastUpdateItemAmount(sid, idx, num);
 }
 window.budgetPlanAmountCommit = budgetPlanAmountCommit;
@@ -2567,7 +2619,7 @@ function budgetPlanSavingsBucketCommit(bucketKey, bucketIdx, el) {
         num = parseFloat(raw);
         if (Number.isNaN(num)) num = 0;
     }
-    el.value = String(Math.max(0, num));
+    el.value = typeof formatMoneyPlain === 'function' ? formatMoneyPlain(Math.max(0, num)) : String(Math.max(0, num));
     syncSavingsBucketBudgetAmount(bucketKey, num);
     var slider = document.getElementById('savings-bucket-slider-' + bucketIdx);
     if (slider) slider.value = String(Math.round(num / 50) * 50);
@@ -2590,7 +2642,7 @@ function budgetPlanSavingsBucketSyncLabel(bucketIdx, rawValue) {
     var num = Number(rawValue);
     if (Number.isNaN(num) || num < 0) num = 0;
     var label = document.getElementById('savings-bucket-slider-label-' + bucketIdx);
-    if (label) label.textContent = Math.round(num) + ' ' + getCurrencyLabel();
+    if (label) label.textContent = formatMoney(num) + ' ' + getCurrencyLabel();
 }
 window.budgetPlanSavingsBucketSyncLabel = budgetPlanSavingsBucketSyncLabel;
 
@@ -2613,7 +2665,7 @@ function budgetPlanSavingsBucketSliderInput(bucketKey, bucketIdx, sliderEl) {
     if (Number.isNaN(num) || num < 0) num = 0;
     syncSavingsBucketBudgetAmount(bucketKey, num);
     var input = document.getElementById('savings-bucket-input-' + bucketIdx);
-    if (input && document.activeElement !== input) input.value = String(Math.round(num));
+    if (input && document.activeElement !== input) input.value = typeof formatMoneyPlain === 'function' ? formatMoneyPlain(num) : String(num);
     budgetPlanSavingsBucketSyncLabel(bucketIdx, num);
 }
 window.budgetPlanSavingsBucketSliderInput = budgetPlanSavingsBucketSliderInput;
@@ -2627,9 +2679,10 @@ function syncFoodBaseAmount(sid, idx, val) {
         const dailyRounded = Math.round(dailyRate);
         if(slider.value !== String(dailyRounded)) slider.value = String(dailyRounded);
         var label = document.getElementById('food-daily-slider-label-' + sid + '-' + idx);
-        if (label) label.textContent = String(dailyRounded) + ' ' + getCurrencyLabel();
+        if (label) label.textContent = formatMoney(dailyRate) + ' ' + getCurrencyLabel();
     }
-    if(input && input.value !== String(num)) input.value = String(num);
+    var plainF = typeof formatMoneyPlain === 'function' ? formatMoneyPlain(num) : String(num);
+    if(input && input.value !== plainF) input.value = plainF;
     fastUpdateItemAmount(sid, idx, num);
     try {
         var badge = document.querySelector('.budget-item-badge[data-badge="food"][data-sid="' + sid + '"][data-idx="' + idx + '"]');
@@ -2653,11 +2706,12 @@ function syncWeeklyAmount(sid, idx, val) {
     fastUpdateItemAmount(sid, idx, snapped);
     try {
         var input = document.querySelector('.budget-item-input[data-sid="' + sid + '"][data-idx="' + idx + '"]');
-        if (input && input.value !== String(snapped)) input.value = String(snapped);
+        var plainW2 = typeof formatMoneyPlain === 'function' ? formatMoneyPlain(snapped) : String(snapped);
+        if (input && input.value !== plainW2) input.value = plainW2;
         var badge = document.querySelector('.budget-item-badge[data-badge="weekly"][data-sid="' + sid + '"][data-idx="' + idx + '"]');
         if (badge) badge.textContent = '~' + formatMoney(snapped / 4) + '/wk';
         var label = document.getElementById('weekly-slider-label-' + sid + '-' + idx);
-        if (label) label.textContent = snapped + ' ' + getCurrencyLabel();
+        if (label) label.textContent = formatMoney(snapped) + ' ' + getCurrencyLabel();
     } catch (e) {}
 }
 var SAVINGS_SLIDER_STEP = 50;
@@ -2682,9 +2736,10 @@ function syncGeneralSavingsAmount(sid, idx, val) {
     syncSavingsBudgetPlanItemAmount();
     try {
         var input = document.querySelector('.budget-item-input[data-sid="' + sid + '"][data-idx="' + idx + '"]');
-        if (input && input.value !== String(snapped)) input.value = String(snapped);
+        var plainS2 = typeof formatMoneyPlain === 'function' ? formatMoneyPlain(snapped) : String(snapped);
+        if (input && input.value !== plainS2) input.value = plainS2;
         var label = document.getElementById('savings-slider-label-' + sid + '-' + idx);
-        if (label) label.textContent = snapped + ' ' + getCurrencyLabel();
+        if (label) label.textContent = formatMoney(snapped) + ' ' + getCurrencyLabel();
     } catch (e) {}
     if (typeof syncSavingsTotal === 'function') syncSavingsTotal();
 }
@@ -2695,11 +2750,12 @@ function syncCarFundAmount(sid, idx, val) {
     fastUpdateItemAmount(sid, idx, snapped);
     try {
         var input = document.querySelector('.budget-item-input[data-sid="' + sid + '"][data-idx="' + idx + '"]');
-        if (input && input.value !== String(snapped)) input.value = String(snapped);
+        var plainC = typeof formatMoneyPlain === 'function' ? formatMoneyPlain(snapped) : String(snapped);
+        if (input && input.value !== plainC) input.value = plainC;
         var badge = document.querySelector('.budget-item-badge[data-badge="transport"][data-sid="' + sid + '"][data-idx="' + idx + '"]');
         if (badge) badge.textContent = '~' + formatMoney(snapped / 4) + '/wk';
         var label = document.getElementById('car-slider-label-' + sid + '-' + idx);
-        if (label) label.textContent = snapped + ' ' + getCurrencyLabel();
+        if (label) label.textContent = formatMoney(snapped) + ' ' + getCurrencyLabel();
     } catch (e) {}
     if (typeof syncTransportationTotal === 'function') syncTransportationTotal();
 }
@@ -4251,21 +4307,19 @@ function deletePayablesBucket(name) {
 // Settings
 function saveSettingsFromUI() {
     const currencyInput = document.getElementById('settings-currency');
-    const decimalsSelect = document.getElementById('settings-decimals');
     const showFoodPlanToggle = document.getElementById('budget-show-food-plan') || document.getElementById('settings-show-food-plan');
     const compactToggle = document.getElementById('settings-compact');
     const firstDaySelect = document.getElementById('settings-first-day-of-week');
     const payDateSelect = document.getElementById('settings-pay-date');
 
     const currency = currencyInput?.value?.trim() || 'AED';
-    const decimals = parseInt(decimalsSelect?.value, 10);
     const firstDayOfWeek = firstDaySelect ? Math.max(0, Math.min(6, parseInt(firstDaySelect.value, 10))) : 3;
     const payDate = payDateSelect ? Math.max(1, Math.min(28, parseInt(payDateSelect.value, 10))) : 28;
 
     state.settings = {
         ...state.settings,
         currency,
-        decimals: Number.isNaN(decimals) ? 2 : decimals,
+        decimals: 2,
         confirmSurplusEdits: true,
         allowNegativeSurplus: true,
         showFoodPlan: showFoodPlanToggle ? !!showFoodPlanToggle.checked : (state.settings?.showFoodPlan !== false),

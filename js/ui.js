@@ -247,8 +247,6 @@ if (typeof window !== 'undefined') window.setThemeFromSidebar = setThemeFromSide
 function renderSettings() {
     const currencyInput = getEl('settings-currency');
     if (currencyInput) currencyInput.value = getCurrencyLabel();
-    const decimalsSelect = getEl('settings-decimals');
-    if(decimalsSelect) decimalsSelect.value = String(state.settings?.decimals ?? 2);
     const compactToggle = getEl('settings-compact');
     if(compactToggle) compactToggle.checked = !!state.settings?.compact;
     const firstDaySelect = getEl('settings-first-day-of-week');
@@ -451,15 +449,20 @@ function renderFundingPriorityCard() {
 
     var empty = '<div class="text-[10px] text-slate-400 py-3 px-3">No priority targets yet. Add savings buckets, must-haves, or mini-budgets.</div>';
     return `
-        <section class="funding-priority-section mb-5">
-            <div class="flex items-center justify-between mb-3">
-                <span class="text-[11px] font-black text-slate-900 uppercase tracking-widest">Funding Priority</span>
-                <span class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Drag to reorder</span>
-            </div>
-            <div class="funding-priority-list rounded-xl border border-slate-100 bg-white overflow-hidden">
-                ${rows || empty}
-            </div>
-        </section>
+        <div class="funding-priority-region" role="region" aria-labelledby="funding-priority-heading">
+            <section class="funding-priority-section mb-5">
+                <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-4">
+                    <div class="min-w-0">
+                        <h2 id="funding-priority-heading" class="funding-priority-title text-xl sm:text-2xl font-black uppercase tracking-[0.14em] text-slate-900 leading-tight">Funding Priority</h2>
+                        <p class="text-[11px] font-semibold text-slate-500 mt-2 uppercase tracking-wider">Paycheck funds flow top-to-bottom — order matters.</p>
+                    </div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">Drag to reorder</span>
+                </header>
+                <div class="funding-priority-list rounded-xl border border-slate-100 bg-white overflow-hidden">
+                    ${rows || empty}
+                </div>
+            </section>
+        </div>
     `;
 }
 
@@ -531,7 +534,7 @@ function renderStrategy(opts) {
                             <span class="text-xs font-bold text-slate-600">${escapeHtml(bucketName)}</span>
                         </div>
                         <div class="flex items-center gap-2 no-drag" onmousedown="event.stopPropagation()">
-                            <input id="savings-bucket-input-${bucketIdx}" type="text" inputmode="decimal" value="${planned.toFixed(0)}" class="input-pill text-slate-900 budget-item-input" onfocus="pushToUndo()" oninput="budgetPlanSavingsBucketInput(${bucketArg}, ${bucketIdx}, this)" onblur="budgetPlanSavingsBucketCommit(${bucketArg}, ${bucketIdx}, this)" onkeydown="budgetPlanSavingsBucketKeydown(event, ${bucketArg}, ${bucketIdx}, this)" autocomplete="off">
+                            <input id="savings-bucket-input-${bucketIdx}" type="text" inputmode="decimal" value="${formatMoneyPlain(planned)}" class="input-pill text-slate-900 budget-item-input" onfocus="pushToUndo()" oninput="budgetPlanSavingsBucketInput(${bucketArg}, ${bucketIdx}, this)" onblur="budgetPlanSavingsBucketCommit(${bucketArg}, ${bucketIdx}, this)" onkeydown="budgetPlanSavingsBucketKeydown(event, ${bucketArg}, ${bucketIdx}, this)" autocomplete="off">
                             <button onclick="openSavingsBuckets()" class="p-1.5 text-slate-300 hover:text-slate-600 hover:bg-slate-50 rounded">⋯</button>
                         </div>
                     </div>
@@ -629,19 +632,19 @@ function renderStrategy(opts) {
                 ? `onfocus="pushToUndo()" oninput="budgetPlanAmountInput('${sid}', ${idx}, this)" onblur="budgetPlanAmountCommit('${sid}', ${idx}, this)" onkeydown="budgetPlanAmountKeydown(event, '${sid}', ${idx}, this)"`
                 : `onfocus="pushToUndo()" oninput="budgetPlanAmountInput('${sid}', ${idx}, this)" onblur="budgetPlanAmountCommit('${sid}', ${idx}, this)" onkeydown="budgetPlanAmountKeydown(event, '${sid}', ${idx}, this)"`;
 
-            // Logic to disable delete for Core items
-            const deleteBtnClass = (item.isCore) ? 'text-slate-200 cursor-not-allowed' : 'text-slate-300 hover:text-red-500 hover:bg-red-50 cursor-pointer';
-            const deleteAction = (item.isCore) ? '' : `onclick="openDeleteModal('${sid}', ${idx})"`;
-
-            const actions = `
+            // Core "Must Have" lines are locked: no edit/delete controls (amounts use sliders/inputs only)
+            const actions = item.isCore
+                ? ''
+                : `
                 <button onclick="openAmortTool('${sec.id}', ${idx})" class="p-1.5 text-indigo-400 hover:bg-indigo-50 rounded">✎</button>
-                <button ${deleteAction} class="p-1.5 ${deleteBtnClass} rounded">×</button>
+                <button onclick="openDeleteModal('${sid}', ${idx})" class="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 cursor-pointer rounded">×</button>
             `;
 
             const effectiveAmount = isFoodPlanOff ? 0 : item.amount;
-            const displayAmount = effectiveAmount.toFixed(0);
+            const displayAmount = formatMoneyPlain(effectiveAmount);
             const dailyRateVal = state.food.daysTotal > 0 ? (effectiveAmount / state.food.daysTotal) : 0;
-            const dailyRateDisplay = dailyRateVal.toFixed(0);
+            const dailyRateRounded = Math.round(dailyRateVal);
+            const dailyRateLabel = formatMoneyPlain(dailyRateVal);
             var totalBudget = state.monthlyIncome || 0;
             const dailyBudgetCap = (totalBudget > 0 && state.food.daysTotal > 0)
                 ? Math.ceil(totalBudget / state.food.daysTotal)
@@ -651,9 +654,9 @@ function renderStrategy(opts) {
                 <div class="px-6 pb-3">
                     <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mb-1">
                         <span>Daily Rate</span>
-                        <span id="food-daily-slider-label-${sid}-${idx}">${dailyRateDisplay} ${getCurrencyLabel()}</span>
+                        <span id="food-daily-slider-label-${sid}-${idx}">${dailyRateLabel} ${getCurrencyLabel()}</span>
                     </div>
-                    <input type="range" id="food-daily-slider-${sid}-${idx}" min="0" max="${dailyRateMax}" step="1" value="${dailyRateDisplay}" oninput="syncFoodDailyRate('${sid}', ${idx}, this.value)" class="w-full" ${isFoodPlanOff ? 'disabled' : ''}>
+                    <input type="range" id="food-daily-slider-${sid}-${idx}" min="0" max="${dailyRateMax}" step="1" value="${dailyRateRounded}" oninput="syncFoodDailyRate('${sid}', ${idx}, this.value)" class="w-full" ${isFoodPlanOff ? 'disabled' : ''}>
                     <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mt-1">
                         <span>0</span>
                         <span>${dailyRateMax}</span>

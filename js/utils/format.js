@@ -4,11 +4,16 @@
  */
 
 function formatMoney(value, decimalsOverride) {
-    var decimals = Number.isInteger(decimalsOverride)
-        ? decimalsOverride
-        : (typeof state !== 'undefined' && typeof state.settings?.decimals === 'number' ? state.settings.decimals : 2);
+    var decimals = Number.isInteger(decimalsOverride) ? decimalsOverride : 2;
     var num = Number(value) || 0;
     return num.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+}
+
+/** Two decimals, no grouping — safe for text inputs and parseFloat. */
+function formatMoneyPlain(value) {
+    var num = Number(value);
+    if (Number.isNaN(num)) num = 0;
+    return num.toFixed(2);
 }
 
 function formatSignedMoney(value) {
@@ -32,6 +37,7 @@ function getCurrencyLabel() {
 
 if (typeof window !== 'undefined') {
     window.formatMoney = formatMoney;
+    window.formatMoneyPlain = formatMoneyPlain;
     window.formatSignedMoney = formatSignedMoney;
     window.formatCompactSignedMoney = formatCompactSignedMoney;
     window.getCurrencyLabel = getCurrencyLabel;

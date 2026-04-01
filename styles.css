@@ -2071,11 +2071,31 @@ body.theme-dark .food-overflow-cell-used {
 .funding-priority-row { cursor: grab; user-select: none; transition: background-color 0.15s ease; }
 .funding-priority-row:hover { background: #f8fafc; }
 .funding-priority-row:active { cursor: grabbing; }
+/* Clear break below Mini-Budgets toolbar → Funding Priority */
+.funding-priority-region {
+    margin-top: 2.5rem;
+    padding-top: 2rem;
+    border-top: 2px solid rgba(148, 163, 184, 0.55);
+    background: linear-gradient(to bottom, rgba(248, 250, 252, 0.85) 0%, transparent 3.5rem);
+    border-radius: 0.75rem;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+}
 .funding-priority-section {
     padding: 0 0.25rem;
 }
 .funding-priority-list {
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+body.theme-dark .funding-priority-region {
+    border-top-color: rgba(71, 85, 105, 0.85);
+    background: linear-gradient(to bottom, rgba(15, 23, 42, 0.65) 0%, transparent 3.5rem);
+}
+body.theme-dark .funding-priority-title {
+    color: #f1f5f9;
+}
+body.theme-dark .funding-priority-region header p {
+    color: #94a3b8;
 }
 
 /* Inputs */
