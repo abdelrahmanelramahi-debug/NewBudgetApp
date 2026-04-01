@@ -4,6 +4,7 @@ window.onload = function() {
         ? getEl
         : function(id) { return document.getElementById(id); };
     loadState();
+    if (typeof normalizeMoneyPrecision === 'function') normalizeMoneyPrecision();
     if (typeof applySettings === 'function') applySettings();
     // Decide onboarding: use device-local flag so we don't skip onboarding when state was restored from elsewhere
     var hasSavedState = !!localStorage.getItem(STORAGE_KEYS.STATE);

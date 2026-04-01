@@ -15,9 +15,9 @@ function ensureEditControlBeforeMutation() {
 
 function updateIncome(val) {
     if (!ensureEditControlBeforeMutation()) return;
-    const num = parseFloat(val);
-    if(!isNaN(num)) {
-        state.monthlyIncome = num;
+    const raw = parseFloat(val);
+    if (!isNaN(raw)) {
+        state.monthlyIncome = typeof parseMoney === 'function' ? parseMoney(val) : Math.round(raw * 100) / 100;
         renderStrategy();
         saveState();
         if (typeof updateBudgetPlanAllocated === 'function') updateBudgetPlanAllocated();
@@ -412,15 +412,16 @@ function applyTransaction(tx) {
                 !Number.isNaN(totalPrice) &&
                 totalPrice > 0;
             if (useSplit) {
-                const monthly = totalPrice / splitMonths;
+                const rm = typeof roundMoney === 'function' ? roundMoney : function (x) { return Math.round(Number(x) * 100) / 100; };
+                const monthly = rm(totalPrice / splitMonths);
                 sec.items.push({
                     label: tx.label,
                     amount: monthly,
-                    amortData: { total: totalPrice, months: splitMonths }
+                    amortData: { total: rm(totalPrice), months: splitMonths }
                 });
                 setItemBalance(tx.label, 0);
             } else {
-                const amt = Number(tx.amount);
+                const amt = typeof roundMoney === 'function' ? roundMoney(tx.amount) : Number(tx.amount);
                 if (Number.isNaN(amt)) break;
                 sec.items.push({ label: tx.label, amount: amt });
                 state.accounts.surplus -= amt;
@@ -473,7 +474,8 @@ function applyTransaction(tx) {
             if (!sec) break;
             const item = sec.items[tx.idx];
             if (!item) break;
-            const newVal = tx.amount;
+            const rm = typeof roundMoney === 'function' ? roundMoney : function (x) { return Math.round(Number(x) * 100) / 100; };
+            const newVal = rm(tx.amount);
             var prevVal = item.amount;
             item.amount = newVal;
             delete item.amortData;
@@ -934,7 +936,9 @@ function openAmortTool(sid, idx) {
         labelEl.disabled = !!nameLocked;
         labelEl.classList.toggle('opacity-60', !!nameLocked);
     }
-    document.getElementById('amort-total').value = item.amortData ? item.amortData.total : item.amount;
+    document.getElementById('amort-total').value = typeof formatMoneyPlain === 'function'
+        ? formatMoneyPlain(item.amortData ? item.amortData.total : item.amount)
+        : String(item.amortData ? item.amortData.total : item.amount);
     var mo = document.getElementById('amort-months');
     if (mo) mo.value = String(item.amortData ? item.amortData.months : 1);
     toggleModal('amortization-tool', true);
@@ -977,7 +981,7 @@ function confirmEditItem() {
         return;
     }
 
-    var t = parseFloat(document.getElementById('amort-total').value);
+    var t = typeof parseMoney === 'function' ? parseMoney(document.getElementById('amort-total').value) : Math.round((parseFloat(document.getElementById('amort-total').value) || 0) * 100) / 100;
     var m = Math.max(1, Math.floor(parseFloat(document.getElementById('amort-months').value) || 1));
     if (isNaN(t) || t <= 0) return;
 
@@ -991,12 +995,13 @@ function confirmEditItem() {
         setItemBalance(newName, bal);
     }
 
+    var rm = typeof roundMoney === 'function' ? roundMoney : function (x) { return Math.round(Number(x) * 100) / 100; };
     if (m <= 1) {
         applyTransaction({ type: 'update_item_amount', sid: currentAmort.sid, idx: currentAmort.idx, amount: t });
     } else {
-        var newVal = t / m;
+        var newVal = rm(t / m);
         applyTransaction({ type: 'update_item_amount', sid: currentAmort.sid, idx: currentAmort.idx, amount: newVal });
-        item.amortData = { total: t, months: m };
+        item.amortData = { total: rm(t), months: m };
     }
     saveState();
     renderStrategy();
@@ -1076,7 +1081,8 @@ function openAddItemTool(sid, opts) {
 function closeAddItemTool() { toggleModal('add-item-tool', false); }
 function confirmAddItem() {
     const label = (document.getElementById('new-item-label').value || '').trim();
-    const total = parseFloat(document.getElementById('new-item-amount').value);
+    const amtRaw = document.getElementById('new-item-amount').value;
+    const totalRounded = typeof parseMoney === 'function' ? parseMoney(amtRaw) : Math.round((parseFloat(amtRaw) || 0) * 100) / 100;
     const monthsEl = document.getElementById('new-item-split-months');
     const months = Math.max(1, Math.floor(parseFloat(monthsEl && monthsEl.value) || 1));
     var catSel = document.getElementById('new-item-category');
@@ -1084,12 +1090,12 @@ function confirmAddItem() {
     if (catRow && !catRow.classList.contains('hidden') && catSel && catSel.value) {
         currentAddSectionId = catSel.value;
     }
-    if (!label || isNaN(total) || total <= 0 || !currentAddSectionId) return;
+    if (!label || isNaN(totalRounded) || totalRounded <= 0 || !currentAddSectionId) return;
     pushToUndo();
     if (months > 1) {
-        applyTransaction({ type: 'add_item', sid: currentAddSectionId, label, splitMonths: months, totalPrice: total });
+        applyTransaction({ type: 'add_item', sid: currentAddSectionId, label, splitMonths: months, totalPrice: totalRounded });
     } else {
-        applyTransaction({ type: 'add_item', sid: currentAddSectionId, label, amount: total });
+        applyTransaction({ type: 'add_item', sid: currentAddSectionId, label, amount: totalRounded });
     }
     saveState();
     renderStrategy();
@@ -2456,7 +2462,7 @@ function adjustGlobalSurplus(dir) {
 
 // Fast Update (Budget Plan) - FIXED: No full re-render on input
 function fastUpdateItemAmount(sid, idx, val) {
-    const num = parseFloat(val) || 0;
+    const num = typeof parseMoney === 'function' ? parseMoney(val) : Math.round((parseFloat(val) || 0) * 100) / 100;
     const sec = state.categories.find(s => s.id === sid);
     const item = sec.items[idx];
 
@@ -2535,11 +2541,12 @@ function fastUpdateItemAmount(sid, idx, val) {
     }
     var obStep = document.getElementById('onboarding-step-categories');
     if (obStep && !obStep.classList.contains('hidden') && typeof updateAllocatedTotalUI === 'function') {
-        var total = state.monthlyIncome || 0;
+        var rm3 = typeof roundMoney === 'function' ? roundMoney : function (v) { return Math.round(Number(v) * 100) / 100; };
+        var total = rm3(state.monthlyIncome || 0);
         var allocated = state.categories.reduce(function (sum, sec) {
-            return sum + (sec.items || []).reduce(function (s, i) { return s + (i.amount || 0); }, 0);
+            return sum + (sec.items || []).reduce(function (s, i) { return s + rm3(i.amount || 0); }, 0);
         }, 0);
-        updateAllocatedTotalUI({ total: total, allocated: allocated, prefix: 'onboarding-cat' });
+        updateAllocatedTotalUI({ total: total, allocated: rm3(allocated), prefix: 'onboarding-cat' });
     }
 }
 
@@ -2554,6 +2561,13 @@ function isProbablyPartialNumber(s) {
 function budgetPlanAmountInput(sid, idx, el) {
     if (!el) return;
     var raw = String(el.value ?? '');
+    if (typeof clampMoneyInputString === 'function') {
+        var clamped = clampMoneyInputString(raw);
+        if (clamped !== raw) {
+            el.value = clamped;
+            raw = clamped;
+        }
+    }
     // Don't force "0" while typing (this is what made it impossible to type when the field was 0)
     if (!isProbablyPartialNumber(raw)) return;
     if (raw.trim() === '' || raw === '-' || raw === '.' || raw === '-.') {
@@ -2572,8 +2586,10 @@ function budgetPlanAmountCommit(sid, idx, el) {
     if (raw === '' || raw === '-' || raw === '.' || raw === '-.') {
         num = 0;
     } else {
-        num = parseFloat(raw);
-        if (Number.isNaN(num)) num = 0;
+        num = typeof parseMoney === 'function' ? parseMoney(raw) : (function () {
+            var p = parseFloat(raw);
+            return Number.isNaN(p) ? 0 : Math.round(p * 100) / 100;
+        })();
     }
 
     el.value = typeof formatMoneyPlain === 'function' ? formatMoneyPlain(num) : num.toFixed(2);
@@ -2598,9 +2614,16 @@ window.budgetPlanAmountKeydown = budgetPlanAmountKeydown;
 function budgetPlanSavingsBucketInput(bucketKey, bucketIdx, el) {
     if (!el) return;
     var raw = String(el.value ?? '');
+    if (typeof clampMoneyInputString === 'function') {
+        var c = clampMoneyInputString(raw);
+        if (c !== raw) {
+            el.value = c;
+            raw = c;
+        }
+    }
     if (!isProbablyPartialNumber(raw)) return;
     if (raw.trim() === '' || raw === '-' || raw === '.' || raw === '-.') return;
-    var num = parseFloat(raw);
+    var num = typeof parseMoney === 'function' ? parseMoney(raw) : Math.round((parseFloat(raw) || 0) * 100) / 100;
     if (Number.isNaN(num) || num < 0) num = 0;
     syncSavingsBucketBudgetAmount(bucketKey, num);
     var slider = document.getElementById('savings-bucket-slider-' + bucketIdx);
@@ -2616,10 +2639,11 @@ function budgetPlanSavingsBucketCommit(bucketKey, bucketIdx, el) {
     if (raw === '' || raw === '-' || raw === '.' || raw === '-.') {
         num = 0;
     } else {
-        num = parseFloat(raw);
+        num = typeof parseMoney === 'function' ? parseMoney(raw) : Math.round((parseFloat(raw) || 0) * 100) / 100;
         if (Number.isNaN(num)) num = 0;
     }
-    el.value = typeof formatMoneyPlain === 'function' ? formatMoneyPlain(Math.max(0, num)) : String(Math.max(0, num));
+    num = Math.max(0, num);
+    el.value = typeof formatMoneyPlain === 'function' ? formatMoneyPlain(num) : String(num);
     syncSavingsBucketBudgetAmount(bucketKey, num);
     var slider = document.getElementById('savings-bucket-slider-' + bucketIdx);
     if (slider) slider.value = String(Math.round(num / 50) * 50);
@@ -2647,10 +2671,12 @@ function budgetPlanSavingsBucketSyncLabel(bucketIdx, rawValue) {
 window.budgetPlanSavingsBucketSyncLabel = budgetPlanSavingsBucketSyncLabel;
 
 function refreshSavingsPlanTotalsUI() {
+    var rm = typeof roundMoney === 'function' ? roundMoney : function (x) { return Math.round(Number(x) * 100) / 100; };
     var total = 0;
     Object.keys((state.accounts && state.accounts.savingsBudgetPlan) || {}).forEach(function (k) {
         total += Number(state.accounts.savingsBudgetPlan[k]) || 0;
     });
+    total = rm(total);
     var nodes = document.querySelectorAll('.budget-savings-total');
     if (!nodes || !nodes.length) return;
     for (var i = 0; i < nodes.length; i++) {
@@ -2661,7 +2687,7 @@ window.refreshSavingsPlanTotalsUI = refreshSavingsPlanTotalsUI;
 
 function budgetPlanSavingsBucketSliderInput(bucketKey, bucketIdx, sliderEl) {
     if (!sliderEl) return;
-    var num = parseFloat(sliderEl.value);
+    var num = typeof parseMoney === 'function' ? parseMoney(sliderEl.value) : Math.round((parseFloat(sliderEl.value) || 0) * 100) / 100;
     if (Number.isNaN(num) || num < 0) num = 0;
     syncSavingsBucketBudgetAmount(bucketKey, num);
     var input = document.getElementById('savings-bucket-input-' + bucketIdx);
@@ -2671,7 +2697,7 @@ function budgetPlanSavingsBucketSliderInput(bucketKey, bucketIdx, sliderEl) {
 window.budgetPlanSavingsBucketSliderInput = budgetPlanSavingsBucketSliderInput;
 
 function syncFoodBaseAmount(sid, idx, val) {
-    const num = parseFloat(val) || 0;
+    const num = typeof parseMoney === 'function' ? parseMoney(val) : Math.round((parseFloat(val) || 0) * 100) / 100;
     const slider = document.getElementById('food-daily-slider-' + sid + '-' + idx);
     const input = document.querySelector('.budget-item-input[data-sid="' + sid + '"][data-idx="' + idx + '"]');
     if(slider) {
@@ -3612,33 +3638,35 @@ function syncSavingsBudgetPlanItemAmount() {
     var item = (sec.items || []).find(function (i) { return i && i.label === 'Savings'; });
     if (!item) return;
     var total = 0;
+    var rm = typeof roundMoney === 'function' ? roundMoney : function (x) { return Math.round(Number(x) * 100) / 100; };
     Object.keys(state.accounts.savingsBudgetPlan || {}).forEach(function (k) {
         total += Number(state.accounts.savingsBudgetPlan[k]) || 0;
     });
-    item.amount = total;
+    item.amount = rm(total);
     if (typeof refreshSavingsPlanTotalsUI === 'function') refreshSavingsPlanTotalsUI();
 }
 
 function syncSavingsBucketBudgetAmount(bucketKey, rawValue) {
     ensureGeneralSavingsBudgetConfig();
     if (!bucketKey || state.accounts.savingsBuckets[bucketKey] === undefined) return;
-    var amount = Number(rawValue);
+    var amount = typeof roundMoney === 'function' ? roundMoney(rawValue) : Number(rawValue);
     if (Number.isNaN(amount) || amount < 0) amount = 0;
     state.accounts.savingsBudgetPlan[bucketKey] = amount;
     syncSavingsBudgetPlanItemAmount();
     saveState();
     if (typeof updateBudgetPlanAllocated === 'function') updateBudgetPlanAllocated();
     if (typeof updateAllocatedTotalUI === 'function') {
-        var total = typeof state.monthlyIncome === 'number' ? state.monthlyIncome : 0;
+        var rm2 = typeof roundMoney === 'function' ? roundMoney : function (v) { return Math.round(Number(v) * 100) / 100; };
+        var total = rm2(typeof state.monthlyIncome === 'number' ? state.monthlyIncome : 0);
         var allocated = 0;
         (state.categories || []).forEach(function (sec) {
             (sec.items || []).forEach(function (item) {
                 if (!item || item.label === 'Payables') return;
                 if ((state.settings && state.settings.showFoodPlan === false) && item.label === 'Daily Food') return;
-                allocated += (typeof item.amount === 'number' ? item.amount : 0);
+                allocated += typeof item.amount === 'number' ? rm2(item.amount) : 0;
             });
         });
-        updateAllocatedTotalUI({ total: total, allocated: allocated, prefix: 'onboarding-cat' });
+        updateAllocatedTotalUI({ total: total, allocated: rm2(allocated), prefix: 'onboarding-cat' });
     }
 }
 window.syncSavingsBucketBudgetAmount = syncSavingsBucketBudgetAmount;
@@ -4460,6 +4488,7 @@ function restoreFromAutoBackup(index) {
         ensureSystemSavings();
         ensureCoreItems();
         ensureSettings();
+        if (typeof normalizeMoneyPrecision === 'function') normalizeMoneyPrecision();
         saveState();
         closeImportBackupModal();
         location.reload();
@@ -4482,6 +4511,7 @@ function importStateFile(file) {
             ensureSystemSavings();
             ensureCoreItems();
             ensureSettings();
+            if (typeof normalizeMoneyPrecision === 'function') normalizeMoneyPrecision();
             saveState();
             if (typeof closeImportBackupModal === 'function') closeImportBackupModal();
             location.reload();
@@ -4518,6 +4548,7 @@ function recoverLocalData() {
             ensureSystemSavings();
             ensureCoreItems();
             ensureSettings();
+            if (typeof normalizeMoneyPrecision === 'function') normalizeMoneyPrecision();
             saveState();
             if (currentUser && window.saveStateToCloud) {
                 showAppConfirm('Save recovered data to cloud?', function () {
@@ -4552,6 +4583,7 @@ function loadExampleBudget() {
         if (typeof ensureCoreItems === 'function') ensureCoreItems();
         if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
         if (typeof initSurplusFromOpening === 'function') initSurplusFromOpening();
+        if (typeof normalizeMoneyPrecision === 'function') normalizeMoneyPrecision();
         if (typeof saveState === 'function') saveState();
         if (typeof refreshUI === 'function') refreshUI();
         showAppAlert('Example budget loaded. You can edit it in Budget Plan.');

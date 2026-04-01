@@ -357,8 +357,9 @@ function closeBudgetPlan() {
  * opts: { total, allocated, prefix } where prefix is the element id prefix (e.g. 'budget-plan' or 'onboarding-cat').
  */
 function updateAllocatedTotalUI(opts) {
-    var total = opts.total != null ? Number(opts.total) : 0;
-    var allocated = opts.allocated != null ? Number(opts.allocated) : 0;
+    var rm = typeof roundMoney === 'function' ? roundMoney : function (v) { return Math.round(Number(v) * 100) / 100; };
+    var total = rm(opts.total != null ? Number(opts.total) : 0);
+    var allocated = rm(opts.allocated != null ? Number(opts.allocated) : 0);
     var prefix = opts.prefix || 'budget-plan';
     var totalDisplayEl = document.getElementById(prefix + '-total');
     var allocEl = document.getElementById(prefix + '-allocated-val');
@@ -372,8 +373,8 @@ function updateAllocatedTotalUI(opts) {
     var overEl = document.getElementById(prefix + '-overallocated-alert');
     var overAmountEl = document.getElementById(prefix + '-overallocated-amount');
     if (alertEl && amountEl && total > 0) {
-        var unallocated = total - allocated;
-        if (unallocated > 0.001) {
+        var unallocated = rm(total - allocated);
+        if (unallocated > 0) {
             amountEl.textContent = formatMoney(unallocated);
             alertEl.classList.remove('hidden');
         } else {
@@ -383,8 +384,9 @@ function updateAllocatedTotalUI(opts) {
         alertEl.classList.add('hidden');
     }
     if (overEl && overAmountEl && total > 0) {
-        if (allocated > total + 0.001) {
-            overAmountEl.textContent = formatMoney(allocated - total);
+        var overAmt = rm(allocated - total);
+        if (overAmt > 0) {
+            overAmountEl.textContent = formatMoney(overAmt);
             overEl.classList.remove('hidden');
         } else {
             overEl.classList.add('hidden');
@@ -395,17 +397,19 @@ function updateAllocatedTotalUI(opts) {
 }
 
 function updateBudgetPlanAllocated() {
-    var total = typeof state.monthlyIncome === 'number' ? state.monthlyIncome : 0;
+    var rm = typeof roundMoney === 'function' ? roundMoney : function (v) { return Math.round(Number(v) * 100) / 100; };
+    var total = typeof state.monthlyIncome === 'number' ? rm(state.monthlyIncome) : 0;
     var allocated = 0;
     if (state.categories && state.categories.length) {
         state.categories.forEach(function (sec) {
             sec.items.forEach(function (item) {
                 if (item.label === 'Payables') return;
                 if ((state.settings && state.settings.showFoodPlan === false) && item.label === 'Daily Food') return;
-                allocated += (typeof item.amount === 'number' ? item.amount : 0);
+                allocated += typeof item.amount === 'number' ? rm(item.amount) : 0;
             });
         });
     }
+    allocated = rm(allocated);
     updateAllocatedTotalUI({ total: total, allocated: allocated, prefix: 'budget-plan' });
 }
 window.openBudgetPlan = openBudgetPlan;
@@ -836,11 +840,12 @@ function renderStrategy(opts) {
     }
     clearDomCache();
     if (forOnboarding) {
-        var total = state.monthlyIncome || 0;
+        var rm = typeof roundMoney === 'function' ? roundMoney : function (v) { return Math.round(Number(v) * 100) / 100; };
+        var total = rm(state.monthlyIncome || 0);
         var allocated = state.categories.reduce(function (sum, sec) {
-            return sum + (sec.items || []).reduce(function (s, i) { return s + (i.amount || 0); }, 0);
+            return sum + (sec.items || []).reduce(function (s, i) { return s + rm(i.amount || 0); }, 0);
         }, 0);
-        updateAllocatedTotalUI({ total: total, allocated: allocated, prefix: 'onboarding-cat' });
+        updateAllocatedTotalUI({ total: total, allocated: rm(allocated), prefix: 'onboarding-cat' });
     } else {
         calculateReality();
         if (typeof updateBudgetPlanAllocated === 'function') updateBudgetPlanAllocated();

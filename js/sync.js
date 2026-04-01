@@ -621,6 +621,7 @@
                 if (typeof ensureSystemSavings === 'function') ensureSystemSavings();
                 if (typeof ensureCoreItems === 'function') ensureCoreItems();
                 if (typeof ensureSettings === 'function') ensureSettings();
+                if (typeof normalizeMoneyPrecision === 'function') normalizeMoneyPrecision();
                 if (state.settings) state.settings.theme = localTheme;
                 if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
                 if (typeof purgeDeletedPayablesBuckets === 'function') purgeDeletedPayablesBuckets();
@@ -668,6 +669,7 @@
                     if (typeof ensureSystemSavings === 'function') ensureSystemSavings();
                     if (typeof ensureCoreItems === 'function') ensureCoreItems();
                     if (typeof ensureSettings === 'function') ensureSettings();
+                    if (typeof normalizeMoneyPrecision === 'function') normalizeMoneyPrecision();
                     if ((state.schemaVersion || 1) < 2 &&
                         state.accounts &&
                         state.accounts.surplus === 0 &&
