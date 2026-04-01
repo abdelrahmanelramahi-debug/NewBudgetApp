@@ -1687,6 +1687,11 @@ function _bindOverflowDayPanel(dayKey, ui) {
             if (typeof ui.close === 'function') ui.close();
         };
     }
+    if (ui.closeBtn) {
+        ui.closeBtn.onclick = function() {
+            if (typeof ui.close === 'function') ui.close();
+        };
+    }
 }
 
 function openOverflowDayMobileModal(dayKey) {
@@ -1699,6 +1704,7 @@ function openOverflowDayMobileModal(dayKey) {
     var sourceBtn = document.getElementById('food-overflow-mobile-source-add-btn');
     var redistributeBtn = document.getElementById('food-overflow-mobile-redistribute-btn');
     var undoBtn = document.getElementById('food-overflow-mobile-undo-btn');
+    var doneBtn = document.getElementById('food-overflow-mobile-done-btn');
     if (!modal || !sourceSel || !sourceBtn || !redistributeBtn || !dayKey) return;
     _bindOverflowDayPanel(dayKey, {
         rootEl: modal,
@@ -1708,6 +1714,7 @@ function openOverflowDayMobileModal(dayKey) {
         undoBtn: undoBtn,
         sourceWrap: document.getElementById('food-overflow-mobile-source-wrap'),
         subtitleEl: document.getElementById('food-overflow-mobile-subtitle'),
+        closeBtn: doneBtn,
         close: closeOverflowDayMobileModal
     });
     if (typeof toggleModal === 'function') toggleModal('food-overflow-mobile-modal', true);
@@ -1728,6 +1735,7 @@ function openOverflowDayPopover(dayKey, anchorEl) {
     var sourceBtn = document.getElementById('food-overflow-source-add-btn');
     var redistributeBtn = document.getElementById('food-overflow-redistribute-btn');
     var undoBtn = document.getElementById('food-overflow-undo-btn');
+    var doneBtn = document.getElementById('food-overflow-close-btn');
     if (!dayKey || !sourceSel || !sourceBtn || !redistributeBtn) return;
     closeFoodDayActionPopover();
     if (typeof closeFoodDayMobileModal === 'function') closeFoodDayMobileModal();
@@ -1746,6 +1754,7 @@ function openOverflowDayPopover(dayKey, anchorEl) {
         undoBtn: undoBtn,
         sourceWrap: document.getElementById('food-overflow-source-wrap'),
         subtitleEl: document.getElementById('food-overflow-popover-subtitle'),
+        closeBtn: doneBtn,
         close: closeOverflowDayPopover
     });
     pop.classList.remove('hidden');

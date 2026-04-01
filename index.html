@@ -699,9 +699,9 @@
                             <span>Transfer day to…</span>
                         </button>
                     </div>
-                    <div id="food-overflow-popover" class="hidden fixed z-[90] w-[220px] p-3 bg-white border border-red-200 rounded-xl shadow-xl shadow-red-100/60 ring-1 ring-red-900/5" role="dialog" aria-label="Extra day options">
+                    <div id="food-overflow-popover" class="hidden fixed z-[90] w-[min(92vw,260px)] max-w-[260px] p-3 bg-white border border-red-200 rounded-xl shadow-xl shadow-red-100/60 ring-1 ring-red-900/5" role="dialog" aria-label="Extra day options">
                         <p class="text-[10px] font-black uppercase tracking-wider text-red-600">Extra day</p>
-                        <p id="food-overflow-popover-subtitle" class="text-[10px] font-semibold text-slate-500 mt-1">Choose how to account for this overflow day.</p>
+                        <p id="food-overflow-popover-subtitle" class="text-[11px] font-semibold text-slate-500 mt-1 leading-snug break-words">Choose how to account for this overflow day.</p>
                         <div id="food-overflow-source-wrap" class="mt-2">
                             <label for="food-overflow-source" class="text-[9px] font-bold uppercase tracking-wider text-slate-500">Source</label>
                             <select id="food-overflow-source" name="food-overflow-source" class="mt-1 w-full bg-white border border-red-200 rounded-lg px-2 py-2 text-[11px] font-bold outline-none focus:ring-2 focus:ring-red-300">
@@ -714,6 +714,7 @@
                             <button type="button" id="food-overflow-source-add-btn" class="w-full py-2 rounded-lg bg-red-500 text-white text-[10px] font-black uppercase tracking-wider hover:bg-red-600 transition">Use source for +1 day</button>
                             <button type="button" id="food-overflow-redistribute-btn" class="w-full py-2 rounded-lg bg-red-50 border border-red-200 text-red-700 text-[10px] font-black uppercase tracking-wider hover:bg-red-100 transition">Redistribute Daily Food</button>
                             <button type="button" id="food-overflow-undo-btn" class="hidden w-full py-2 rounded-lg bg-slate-100 border border-slate-200 text-slate-700 text-[10px] font-black uppercase tracking-wider hover:bg-slate-200 transition">Undo redistribute</button>
+                            <button type="button" id="food-overflow-close-btn" class="mt-2 w-full py-2 rounded-lg bg-slate-100 border border-slate-200 text-slate-700 text-[10px] font-black uppercase tracking-wider hover:bg-slate-200 transition">Done</button>
                         </div>
                     </div>
 
@@ -753,7 +754,7 @@
                             <div class="px-5 pt-4 pb-3 border-b border-slate-100 flex items-start justify-between gap-3">
                                 <div class="min-w-0">
                                     <p class="text-[10px] font-black uppercase tracking-widest text-red-600">Extra day</p>
-                                    <p id="food-overflow-mobile-subtitle" class="text-[11px] font-semibold text-slate-600 mt-1 leading-snug">Choose how to account for this overflow day.</p>
+                                    <p id="food-overflow-mobile-subtitle" class="text-[11px] font-semibold text-slate-600 mt-1 leading-snug break-words">Choose how to account for this overflow day.</p>
                                 </div>
                                 <button type="button" onclick="closeOverflowDayMobileModal()" class="p-2 rounded-full bg-slate-50 text-slate-600 hover:bg-slate-100 shrink-0" aria-label="Close">✕</button>
                             </div>
@@ -770,6 +771,7 @@
                                     <button type="button" id="food-overflow-mobile-source-add-btn" class="w-full py-3 rounded-xl bg-red-500 text-white text-[11px] font-black uppercase tracking-wider hover:bg-red-600 transition">Use source for +1 day</button>
                                     <button type="button" id="food-overflow-mobile-redistribute-btn" class="w-full py-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-[11px] font-black uppercase tracking-wider hover:bg-red-100 transition">Redistribute Daily Food</button>
                                     <button type="button" id="food-overflow-mobile-undo-btn" class="hidden w-full py-3 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 text-[11px] font-black uppercase tracking-wider hover:bg-slate-200 transition">Undo redistribute</button>
+                                    <button type="button" id="food-overflow-mobile-done-btn" class="w-full py-3 rounded-xl bg-slate-100 border border-slate-200 text-slate-700 text-[11px] font-black uppercase tracking-wider hover:bg-slate-200 transition">Done</button>
                                 </div>
                             </div>
                         </div>

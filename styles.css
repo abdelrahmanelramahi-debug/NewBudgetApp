@@ -1109,6 +1109,11 @@ textarea,
         overflow: visible !important;
     }
 
+    /* Fixed popovers inside Daily Food must not be clipped (see #food-overflow-popover). */
+    #food-tracker-card {
+        overflow: visible !important;
+    }
+
     .premium-card .flex {
         flex-wrap: wrap;
     }
@@ -1817,6 +1822,11 @@ body.theme-sepia .paycheck-close-btn:hover {
 }
 .food-overview-cell:active {
     transform: scale(0.96);
+}
+
+/* Allow fixed Daily Food popovers (overflow day, etc.) to paint outside the card */
+#food-tracker-card {
+    overflow: visible;
 }
 
 .food-overview-cell-wrapper {
