@@ -1481,14 +1481,22 @@ function updateFoodUI() {
         if (overflowDates.length > 0) {
             var overflowUsage = (state.food && state.food.overflowUsage) ? state.food.overflowUsage : {};
             var overflowConsumedMap = (state.food && state.food.overflowConsumedAmounts) ? state.food.overflowConsumedAmounts : {};
+            var fundedOverflowCount = overflowDates.reduce(function (sum, ex) {
+                var isFunded = !!(overflowUsage[ex.key]) || (Number(overflowConsumedMap[ex.key]) > 0.001);
+                return sum + (isFunded ? 1 : 0);
+            }, 0);
+            var overflowFundingRatio = overflowDates.length ? (fundedOverflowCount / overflowDates.length) : 0;
             var allOverflowResolved = overflowDates.every(function (ex) {
                 return !!(overflowUsage[ex.key]) || (Number(overflowConsumedMap[ex.key]) > 0.001);
             });
-            var rowExtraClass = 'food-week-row food-overflow-row flex gap-2 items-stretch rounded-lg border border-transparent transition';
-            if (allOverflowResolved) rowExtraClass += ' food-overflow-row-complete border-emerald-200 bg-emerald-50/80';
-            var labelExtraClass = 'w-12 flex-shrink-0 flex items-center text-[10px] font-black uppercase tracking-wider ';
-            labelExtraClass += allOverflowResolved ? 'text-emerald-700' : 'text-red-500';
-            var extraHtml = '<div class="' + rowExtraClass + '">' +
+            var rowExtraClass = 'food-week-row food-overflow-row flex gap-2 items-stretch rounded-xl border transition';
+            if (fundedOverflowCount > 0) rowExtraClass += ' food-overflow-row-funded';
+            if (allOverflowResolved) rowExtraClass += ' food-overflow-row-complete';
+            var labelExtraClass = 'w-12 flex-shrink-0 flex items-center text-[10px] font-black uppercase tracking-wider food-overflow-label';
+            var rowTint = (0.14 + (overflowFundingRatio * 0.32)).toFixed(3);
+            var rowBorder = (0.18 + (overflowFundingRatio * 0.44)).toFixed(3);
+            var labelTint = (0.72 + (overflowFundingRatio * 0.24)).toFixed(3);
+            var extraHtml = '<div class="' + rowExtraClass + '" style="--food-overflow-row-tint:' + rowTint + '; --food-overflow-row-border:' + rowBorder + '; --food-overflow-label-tint:' + labelTint + ';">' +
                 '<div class="' + labelExtraClass + '" title="Calendar days after your 28-day plan until your next pay day">Extra</div>' +
                 '<div class="grid grid-cols-7 gap-1 flex-1">';
             for (var ec = 0; ec < 7; ec++) {
@@ -1497,11 +1505,9 @@ function updateFoodUI() {
                     var ovConsumed = Number(overflowConsumedMap[ex.key]) > 0.001;
                     var usageMode = overflowUsage[ex.key] || '';
                     var funded = ovConsumed || usageMode === 'source' || usageMode === 'redistributed';
-                    var cellTone = ovConsumed
-                        ? ' food-overflow-cell-funded bg-slate-200 text-slate-600 border border-slate-300'
-                        : (funded
+                    var cellTone = funded
                         ? ' food-overflow-cell-funded bg-emerald-500 text-white border border-emerald-600 shadow-sm'
-                        : ' food-overflow-cell-unfunded bg-rose-50 text-rose-800 border border-rose-200');
+                        : ' food-overflow-cell-unfunded bg-rose-50 text-rose-800 border border-rose-200';
                     var badge = '';
                     if (!ovConsumed && usageMode) {
                         badge = '<span class="absolute top-0.5 right-1 text-[7px] font-black uppercase tracking-wide ' + (funded ? 'text-emerald-100' : 'text-rose-700') + '">' + (usageMode === 'redistributed' ? 'R' : 'S') + '</span>';

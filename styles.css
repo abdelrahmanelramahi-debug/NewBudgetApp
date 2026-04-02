@@ -1961,11 +1961,27 @@ body.theme-dark .food-day-action-popover .food-day-action-transfer span:first-of
     background: rgba(99, 102, 241, 0.12);
 }
 .food-overflow-row {
-    margin-top: 0.25rem;
+    margin-top: 0.4rem;
+    padding: 0.4rem 0.55rem;
     align-items: center;
+    border-color: rgba(248, 113, 113, 0.22);
+    background: rgba(255, 255, 255, 0.55);
+}
+.food-overflow-row-funded {
+    border-color: rgba(16, 185, 129, var(--food-overflow-row-border, 0.3));
+    background: linear-gradient(180deg, rgba(16, 185, 129, var(--food-overflow-row-tint, 0.16)) 0%, rgba(16, 185, 129, calc(var(--food-overflow-row-tint, 0.16) * 0.45)) 100%);
 }
 .food-overflow-row-complete {
-    padding: 0.35rem 0.45rem;
+    border-color: rgba(16, 185, 129, 0.72);
+    background: linear-gradient(180deg, rgba(16, 185, 129, 0.26) 0%, rgba(16, 185, 129, 0.12) 100%);
+}
+.food-overflow-label {
+    color: rgb(239, 68, 68);
+    transition: color 0.2s ease;
+}
+.food-overflow-row-funded .food-overflow-label,
+.food-overflow-row-complete .food-overflow-label {
+    color: rgba(4, 120, 87, var(--food-overflow-label-tint, 0.8));
 }
 .food-overflow-cell {
     background: #fee2e2;
@@ -1990,6 +2006,25 @@ body.theme-dark .food-overflow-cell:hover {
 }
 body.theme-dark .food-overflow-cell-used {
     background: #b91c1c;
+}
+body.theme-dark .food-overflow-row {
+    background: rgba(15, 23, 42, 0.3);
+    border-color: rgba(248, 113, 113, 0.28);
+}
+body.theme-dark .food-overflow-row-funded {
+    border-color: rgba(52, 211, 153, var(--food-overflow-row-border, 0.34));
+    background: linear-gradient(180deg, rgba(16, 185, 129, calc(var(--food-overflow-row-tint, 0.16) * 0.95)) 0%, rgba(15, 23, 42, 0.18) 100%);
+}
+body.theme-dark .food-overflow-row-complete {
+    border-color: rgba(52, 211, 153, 0.8);
+    background: linear-gradient(180deg, rgba(16, 185, 129, 0.26) 0%, rgba(15, 23, 42, 0.16) 100%);
+}
+body.theme-dark .food-overflow-label {
+    color: #fca5a5;
+}
+body.theme-dark .food-overflow-row-funded .food-overflow-label,
+body.theme-dark .food-overflow-row-complete .food-overflow-label {
+    color: rgba(110, 231, 183, var(--food-overflow-label-tint, 0.9));
 }
 /* Current day cell: strong ring so it’s unmistakable */
 .food-cell-today-wrapper {
