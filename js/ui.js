@@ -1485,7 +1485,7 @@ function updateFoodUI() {
             });
             var rowExtraClass = 'food-week-row food-overflow-row flex gap-2 items-stretch rounded-lg border border-transparent transition';
             if (allOverflowResolved) rowExtraClass += ' food-overflow-row-complete border-emerald-200 bg-emerald-50/80';
-            var labelExtraClass = 'w-12 flex-shrink-0 flex items-center text-[8px] leading-tight font-black uppercase tracking-wider ';
+            var labelExtraClass = 'w-12 flex-shrink-0 flex items-center text-[10px] font-black uppercase tracking-wider ';
             labelExtraClass += allOverflowResolved ? 'text-emerald-700' : 'text-red-500';
             var extraHtml = '<div class="' + rowExtraClass + '">' +
                 '<div class="' + labelExtraClass + '" title="Calendar days after your 28-day plan until your next pay day">Overflow</div>' +
@@ -1526,7 +1526,7 @@ function updateFoodUI() {
                 if (wrapper.getAttribute('data-overflow-day') === 'true') {
                     e.preventDefault();
                     e.stopPropagation();
-                    openOverflowDayActionPopover(wrapper.getAttribute('data-overflow-key'), wrapper);
+                    openOverflowDayPopover(wrapper.getAttribute('data-overflow-key'), wrapper);
                     return;
                 }
                 var cycleDay = wrapper.getAttribute('data-cycle-day');
@@ -1664,14 +1664,16 @@ function _bindOverflowDayPanel(dayKey, ui) {
     ui.rootEl.setAttribute('data-overflow-key', dayKey);
     var usage = (state.food && state.food.overflowUsage && state.food.overflowUsage[dayKey]) || '';
     var consumedAmt = Number((state.food && state.food.overflowConsumedAmounts && state.food.overflowConsumedAmounts[dayKey]) || 0) || 0;
+    var consumedMeta = (state.food && state.food.overflowConsumedMeta && state.food.overflowConsumedMeta[dayKey]) ? state.food.overflowConsumedMeta[dayKey] : null;
     var isConsumed = consumedAmt > 0.001;
+    var isTransferred = !!(consumedMeta && consumedMeta.resolution === 'transferred');
 
-    if (ui.sourceWrap) ui.sourceWrap.classList.toggle('hidden', !!usage);
-    if (ui.sourceBtn) ui.sourceBtn.classList.toggle('hidden', !!usage);
-    if (ui.redistributeBtn) ui.redistributeBtn.classList.toggle('hidden', !!usage);
-    if (ui.removeSourceBtn) ui.removeSourceBtn.classList.toggle('hidden', usage !== 'source');
+    if (ui.sourceWrap) ui.sourceWrap.classList.toggle('hidden', !!usage || isConsumed);
+    if (ui.sourceBtn) ui.sourceBtn.classList.toggle('hidden', !!usage || isConsumed);
+    if (ui.redistributeBtn) ui.redistributeBtn.classList.toggle('hidden', !!usage || isConsumed);
+    if (ui.removeSourceBtn) ui.removeSourceBtn.classList.toggle('hidden', usage !== 'source' || isConsumed);
     if (ui.undoBtn) {
-        ui.undoBtn.classList.toggle('hidden', usage !== 'redistributed');
+        ui.undoBtn.classList.toggle('hidden', usage !== 'redistributed' || isConsumed);
         ui.undoBtn.onclick = function () {
             var key = ui.rootEl.getAttribute('data-overflow-key');
             if (!key) return;
@@ -1690,13 +1692,14 @@ function _bindOverflowDayPanel(dayKey, ui) {
         if (currentVal && options.some(function(opt) { return opt.id === currentVal; })) sourceSel.value = currentVal;
     }
     if (ui.subtitleEl) {
-        if (isConsumed) ui.subtitleEl.textContent = 'Marked consumed or transferred. Unmark to put the Daily Food amount back on your plan.';
+        if (isTransferred) ui.subtitleEl.textContent = 'This overflow day was transferred to another fund and is already resolved.';
+        else if (isConsumed) ui.subtitleEl.textContent = 'Marked consumed. Unmark to restore the previous overflow funding method for this day.';
         else if (usage === 'source') ui.subtitleEl.textContent = 'Funded from your chosen source. Remove funding to pick another option, or mark consumed / transfer.';
         else if (usage === 'redistributed') ui.subtitleEl.textContent = 'Daily Food is split across more calendar days. Undo redistribute to revert, or mark consumed / transfer.';
         else ui.subtitleEl.textContent = 'Days between the end of your 28-day plan and your next pay day. Choose how to account for this day.';
     }
     if (ui.consumeBtn) {
-        ui.consumeBtn.disabled = !isConsumed && !usage;
+        ui.consumeBtn.disabled = isTransferred || (!isConsumed && !usage);
         ui.consumeBtn.textContent = isConsumed ? 'Unmark consumed' : 'Mark consumed';
         ui.consumeBtn.classList.toggle('opacity-40', ui.consumeBtn.disabled);
         ui.consumeBtn.classList.toggle('cursor-not-allowed', ui.consumeBtn.disabled);

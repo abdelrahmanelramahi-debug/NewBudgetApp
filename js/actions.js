@@ -2018,17 +2018,47 @@ function getOverflowDaySpendableAmount(dayKey) {
     return 0;
 }
 
+function getOverflowConsumedMeta(dayKey) {
+    if (!state.food || !dayKey) return null;
+    var metaMap = state.food.overflowConsumedMeta;
+    if (!metaMap || typeof metaMap !== 'object') return null;
+    return metaMap[dayKey] || null;
+}
+
 function setOverflowFoodDayConsumed(dayKey, action) {
     if (!dayKey) return;
     ensureFoodConsumedDays();
     var consumedMap = state.food.overflowConsumedAmounts || {};
+    if (!state.food.overflowConsumedMeta || typeof state.food.overflowConsumedMeta !== 'object') {
+        state.food.overflowConsumedMeta = {};
+    }
+    var consumedMetaMap = state.food.overflowConsumedMeta;
     if (action === 'unmark') {
         var refund = Number(consumedMap[dayKey]) || 0;
         if (refund <= 0.001) return;
+        var meta = getOverflowConsumedMeta(dayKey) || {};
+        if (meta.resolution === 'transferred') {
+            if (typeof showAppAlert === 'function') showAppAlert('This overflow day was transferred to another fund. Move it back manually if you want to re-open this day.', 'Daily Food');
+            return;
+        }
         pushToUndo();
         adjustItemBalance('Daily Food', refund);
         delete consumedMap[dayKey];
         state.food.overflowConsumedAmounts = consumedMap;
+        delete consumedMetaMap[dayKey];
+        if (meta.usage === 'source') {
+            if (!state.food.overflowUsage || typeof state.food.overflowUsage !== 'object') state.food.overflowUsage = {};
+            state.food.overflowUsage[dayKey] = 'source';
+            if (!state.food.overflowFunded || typeof state.food.overflowFunded !== 'object') state.food.overflowFunded = {};
+            state.food.overflowFunded[dayKey] = refund;
+            if (!state.food.overflowFundingSource || typeof state.food.overflowFundingSource !== 'object') state.food.overflowFundingSource = {};
+            state.food.overflowFundingSource[dayKey] = meta.sourceId || 'surplus';
+        } else if (meta.usage === 'redistributed') {
+            markOverflowDayUsage(dayKey, 'redistributed');
+            _recomputeOverflowRedistributionSplit();
+        }
+        if (!Object.keys(consumedMetaMap).length) delete state.food.overflowConsumedMeta;
+        if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
         saveState();
         if (typeof renderLedger === 'function') renderLedger();
         if (typeof updateGlobalUI === 'function') updateGlobalUI();
@@ -2048,6 +2078,11 @@ function setOverflowFoodDayConsumed(dayKey, action) {
     }
     pushToUndo();
     adjustItemBalance('Daily Food', -amount);
+    consumedMetaMap[dayKey] = {
+        resolution: 'consumed',
+        usage: usage,
+        sourceId: (state.food.overflowFundingSource && state.food.overflowFundingSource[dayKey]) || ''
+    };
     delete state.food.overflowUsage[dayKey];
     if (state.food.overflowFunded) delete state.food.overflowFunded[dayKey];
     if (state.food.overflowFundingSource) delete state.food.overflowFundingSource[dayKey];
@@ -2085,7 +2120,16 @@ function transferFoodOverflowDayTo(dayKey, targetId) {
         return;
     }
     pushToUndo();
+    if (!state.food.overflowConsumedMeta || typeof state.food.overflowConsumedMeta !== 'object') {
+        state.food.overflowConsumedMeta = {};
+    }
     applyTransaction({ type: 'transfer', from: 'Daily Food', to: targetId, amount: useAmt });
+    state.food.overflowConsumedMeta[dayKey] = {
+        resolution: 'transferred',
+        usage: usage,
+        sourceId: (state.food.overflowFundingSource && state.food.overflowFundingSource[dayKey]) || '',
+        targetId: targetId
+    };
     delete state.food.overflowUsage[dayKey];
     if (state.food.overflowFunded) delete state.food.overflowFunded[dayKey];
     if (state.food.overflowFundingSource) delete state.food.overflowFundingSource[dayKey];

@@ -1892,6 +1892,10 @@ body.theme-sepia .paycheck-close-btn:hover {
 }
 .food-day-action-popover .food-day-action-popover-btn {
     min-height: 44px;
+    width: calc(100% - 1rem);
+    margin-left: 0.5rem;
+    margin-right: 0.5rem;
+    box-sizing: border-box;
 }
 body.theme-dark .food-day-action-popover {
     background-color: #1e293b;
@@ -1944,6 +1948,7 @@ body.theme-dark .food-day-action-popover .food-day-action-transfer span:first-of
 }
 .food-overflow-row {
     margin-top: 0.25rem;
+    align-items: center;
 }
 .food-overflow-row-complete {
     padding: 0.35rem 0.45rem;
