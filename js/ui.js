@@ -832,18 +832,32 @@ function renderStrategy(opts) {
             ` : '';
 
             return `
-                <div class="draggable-row flex justify-between items-center py-3 border-b border-slate-50 last:border-0 ${isFoodPlanOff ? 'opacity-50 grayscale' : ''}"
+                <div class="draggable-row flex justify-between items-center gap-2 py-3 border-b border-slate-50 last:border-0 ${isFoodPlanOff ? 'opacity-50 grayscale' : ''}"
                      draggable="${isDragAllowed}"
                      ondragstart="${isDragAllowed ? `handleItemDragStart(event, '${sid}', ${idx})` : ''}"
                      ondragover="handleDragOver(event)"
                      ondrop="handleItemDrop(event, '${sid}', ${idx})">
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2.5 min-w-0 flex-1">
                         <span class="text-slate-300 ${isDragAllowed ? 'cursor-move' : 'opacity-0'}">::</span>
-                        <span class="text-xs font-bold text-slate-600">${itemLabel} ${amortLabel}</span>
+                        <span class="text-xs font-bold text-slate-600 truncate">${itemLabel} ${amortLabel}</span>
                     </div>
-                    <div class="flex items-center gap-2 no-drag" onmousedown="event.stopPropagation()">
-                        ${isFoodBase ? `<input type="checkbox" id="budget-show-food-plan" class="w-4 h-4 accent-amber-500 rounded" ${(state.settings && state.settings.showFoodPlan === false) ? '' : 'checked'} onchange="toggleBudgetFoodPlan(this, '${sid}', ${idx})">` : ''}
-                        <input type="text" inputmode="decimal" value="${displayAmount}" class="input-pill text-slate-900 budget-item-input" data-sid="${sid}" data-idx="${idx}" autocomplete="off" ${inputAttr} ${isFoodPlanOff ? 'disabled' : ''}>
+                    <div class="flex items-center gap-1.5 no-drag ${isFoodBase ? 'budget-food-controls' : ''}" onmousedown="event.stopPropagation()">
+                        ${isFoodBase ? `
+                            <input type="checkbox" id="budget-show-food-plan" class="w-4 h-4 accent-amber-500 rounded" ${(state.settings && state.settings.showFoodPlan === false) ? '' : 'checked'} onchange="toggleBudgetFoodPlan(this, '${sid}', ${idx})">
+                            <button
+                                type="button"
+                                class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:text-slate-700"
+                                onclick="toggleFoodTrackerVisibility()"
+                                aria-label="${(state.settings && state.settings.showFoodTracker === false) ? 'Show Daily Food on home page' : 'Hide Daily Food on home page'}"
+                                title="${(state.settings && state.settings.showFoodTracker === false) ? 'Show Daily Food on home page' : 'Hide Daily Food on home page'}"
+                            >
+                                ${(state.settings && state.settings.showFoodTracker === false)
+                                    ? '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.58 10.58a2 2 0 1 0 2.84 2.84"/><path d="M16.68 16.67A10.94 10.94 0 0 1 12 17.73c-5 0-9.27-5.73-9.27-5.73a21.76 21.76 0 0 1 5.12-4.88"/><path d="M19.73 14.27A21.8 21.8 0 0 0 21.27 12S17 6.27 12 6.27a10.92 10.92 0 0 0-2.52.29"/><path d="M3 3l18 18"/></svg>'
+                                    : '<svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.73 12S7 6.27 12 6.27 21.27 12 21.27 12 17 17.73 12 17.73 2.73 12 2.73 12Z"/><circle cx="12" cy="12" r="2.5"/></svg>'
+                                }
+                            </button>
+                        ` : ''}
+                        <input type="text" inputmode="decimal" value="${displayAmount}" class="input-pill text-slate-900 budget-item-input ${isFoodBase ? 'budget-food-amount-input' : ''}" data-sid="${sid}" data-idx="${idx}" autocomplete="off" ${inputAttr} ${isFoodPlanOff ? 'disabled' : ''}>
                         ${actions}
                     </div>
                 </div>
@@ -963,6 +977,18 @@ function toggleBudgetFoodPlan(el, sid, idx) {
     endBudgetPlanEditing();
 }
 if (typeof window !== 'undefined') window.toggleBudgetFoodPlan = toggleBudgetFoodPlan;
+
+function toggleFoodTrackerVisibility() {
+    if (typeof state === 'undefined') return;
+    if (!state.settings) state.settings = {};
+    beginBudgetPlanEditing();
+    state.settings.showFoodTracker = state.settings.showFoodTracker === false ? true : false;
+    if (typeof saveState === 'function') saveState();
+    if (typeof renderLedger === 'function') renderLedger();
+    if (typeof renderStrategy === 'function') renderStrategy();
+    endBudgetPlanEditing();
+}
+if (typeof window !== 'undefined') window.toggleFoodTrackerVisibility = toggleFoodTrackerVisibility;
 
 // --- LEDGER RENDER: builds ledger-categories (weekly, major funds, category sections with bars). Calls updateFoodUI, updateGlobalUI, clearDomCache. ---
 function renderLedger() {
@@ -1117,19 +1143,19 @@ function renderLedger() {
 
     // Category view options (above creatable categories, below Savings / Transportation / Payables)
     var optionsBarHtml = `
-        <div id="ledger-options-bar" class="flex flex-wrap items-center justify-between gap-3 py-3 px-1 mb-2">
-            <div class="flex items-center gap-2">
-                <span class="text-[12px] font-black text-slate-900 uppercase tracking-[0.2em]">Mini-Budgets</span>
-                <button type="button" onclick="openAddItemTool(null, { showCategoryPicker: true })" class="bg-slate-900 text-white w-7 h-7 flex items-center justify-center rounded-lg text-lg leading-none pb-0.5 hover:bg-slate-700" title="Add item">+</button>
+        <div id="ledger-options-bar" class="flex flex-col gap-2 py-2 px-1 mb-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3 sm:py-3">
+            <div class="flex items-center gap-1.5 sm:gap-2">
+                <span class="text-[11px] font-black text-slate-900 uppercase tracking-[0.16em] sm:text-[12px] sm:tracking-[0.2em]">Mini-Budgets</span>
+                <button type="button" onclick="openAddItemTool(null, { showCategoryPicker: true })" class="bg-slate-900 text-white w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg text-base sm:text-lg leading-none pb-0.5 hover:bg-slate-700" title="Add item">+</button>
             </div>
-            <div class="flex flex-wrap items-center gap-3">
-                <label class="flex items-center gap-2 cursor-pointer">
+            <div class="flex items-center gap-2.5 flex-wrap sm:gap-3">
+                <label class="flex items-center gap-1.5 sm:gap-2 cursor-pointer">
                     <input type="checkbox" id="ledger-hide-empty" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" onchange="setLedgerViewOptions()">
-                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Hide empty</span>
+                    <span class="text-[9px] font-bold uppercase tracking-[0.14em] text-slate-500 sm:text-[10px] sm:tracking-wider">Hide empty</span>
                 </label>
-                <div class="flex items-center gap-2">
-                    <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Sort:</span>
-                    <select id="ledger-sort" class="rounded-lg border border-slate-200 px-2 py-1.5 text-xs font-bold text-slate-800 bg-white outline-none focus:ring-2 focus:ring-indigo-200" onchange="setLedgerViewOptions()">
+                <div class="flex items-center gap-1.5 sm:gap-2">
+                    <span class="text-[9px] font-bold uppercase tracking-[0.14em] text-slate-500 sm:text-[10px] sm:tracking-wider">Sort:</span>
+                    <select id="ledger-sort" class="min-w-[108px] rounded-lg border border-slate-200 px-2 py-1 text-[11px] sm:px-2 sm:py-1.5 sm:text-xs font-bold text-slate-800 bg-white outline-none focus:ring-2 focus:ring-indigo-200" onchange="setLedgerViewOptions()">
                         <option value="default">Default</option>
                         <option value="balanceDesc">Highest first</option>
                         <option value="balanceAsc">Lowest first</option>
@@ -1400,7 +1426,7 @@ function getMonthCalendarInfo() {
 // Updates food panel: daily rate, locked funds, days left, buffer source dropdown, pay-cycle calendar.
 function updateFoodUI() {
     var foodTrackerCard = document.getElementById('food-tracker-card');
-    var foodVisible = !(state.settings && state.settings.showFoodPlan === false);
+    var foodVisible = !(state.settings && state.settings.showFoodTracker === false);
     if (foodTrackerCard) foodTrackerCard.classList.toggle('hidden', !foodVisible);
     if (!foodVisible) {
         closeOverflowDayPopover();

@@ -4682,6 +4682,7 @@ function saveSettingsFromUI() {
         confirmSurplusEdits: true,
         allowNegativeSurplus: true,
         showFoodPlan: showFoodPlanToggle ? !!showFoodPlanToggle.checked : (state.settings?.showFoodPlan !== false),
+        showFoodTracker: state.settings?.showFoodTracker !== false,
         theme: state.settings?.theme || 'sepia',
         compact: !!compactToggle?.checked,
         firstDayOfWeek: Number.isNaN(firstDayOfWeek) ? 3 : firstDayOfWeek,

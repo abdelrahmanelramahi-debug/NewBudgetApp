@@ -388,7 +388,7 @@ var HOME_TOUR_STEPS = [
         body: 'Mark the days you use your food budget so it stays paced through the month.',
         target: '#food-tracker-card',
         includeWhen: function () {
-            return !(typeof state !== 'undefined' && state.settings && state.settings.showFoodPlan === false);
+            return !(typeof state !== 'undefined' && state.settings && state.settings.showFoodTracker === false);
         }
     },
     {

@@ -10,6 +10,7 @@ let state = {
         decimals: 2,
         confirmSurplusEdits: true,
         allowNegativeSurplus: true,
+        showFoodTracker: true,
         theme: 'sepia',
         compact: false,
         firstDayOfWeek: 3,
