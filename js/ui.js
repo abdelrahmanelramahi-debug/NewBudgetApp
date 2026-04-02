@@ -1148,12 +1148,13 @@ function renderLedger() {
                 <span class="text-[11px] font-black text-slate-900 uppercase tracking-[0.16em] sm:text-[12px] sm:tracking-[0.2em]">Mini-Budgets</span>
                 <button type="button" onclick="openAddItemTool(null, { showCategoryPicker: true })" class="bg-slate-900 text-white w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg text-base sm:text-lg leading-none pb-0.5 hover:bg-slate-700" title="Add item">+</button>
             </div>
-            <div class="flex items-center gap-2.5 flex-wrap sm:gap-3">
-                <label class="flex items-center gap-1.5 sm:gap-2 cursor-pointer">
-                    <input type="checkbox" id="ledger-hide-empty" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500" onchange="setLedgerViewOptions()">
+            <div class="ledger-options-controls flex items-center gap-2.5 sm:gap-3">
+                <label class="ledger-hide-empty-control flex items-center gap-1.5 sm:gap-2 cursor-pointer">
+                    <input type="checkbox" id="ledger-hide-empty" class="sr-only" onchange="setLedgerViewOptions()">
+                    <span class="ledger-hide-empty-indicator" aria-hidden="true"></span>
                     <span class="text-[9px] font-bold uppercase tracking-[0.14em] text-slate-500 sm:text-[10px] sm:tracking-wider">Hide empty</span>
                 </label>
-                <div class="flex items-center gap-1.5 sm:gap-2">
+                <div class="ledger-sort-control flex items-center gap-1.5 sm:gap-2">
                     <span class="text-[9px] font-bold uppercase tracking-[0.14em] text-slate-500 sm:text-[10px] sm:tracking-wider">Sort:</span>
                     <select id="ledger-sort" class="min-w-[108px] rounded-lg border border-slate-200 px-2 py-1 text-[11px] sm:px-2 sm:py-1.5 sm:text-xs font-bold text-slate-800 bg-white outline-none focus:ring-2 focus:ring-indigo-200" onchange="setLedgerViewOptions()">
                         <option value="default">Default</option>

@@ -127,6 +127,76 @@ body.theme-dark #ledger-sort {
     border-color: #334155;
     color: #e5e7eb;
 }
+.ledger-options-controls {
+    flex-wrap: nowrap;
+    white-space: nowrap;
+}
+.ledger-hide-empty-control {
+    padding: 0.25rem 0.5rem;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(226, 232, 240, 0.95);
+}
+.ledger-hide-empty-indicator {
+    width: 14px;
+    height: 14px;
+    border-radius: 4px;
+    border: 1.5px solid #94a3b8;
+    background: #ffffff;
+    position: relative;
+    flex-shrink: 0;
+    transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.ledger-hide-empty-indicator::after {
+    content: "";
+    position: absolute;
+    left: 3px;
+    top: 0px;
+    width: 4px;
+    height: 8px;
+    border-right: 2px solid transparent;
+    border-bottom: 2px solid transparent;
+    transform: rotate(45deg);
+}
+#ledger-hide-empty:checked + .ledger-hide-empty-indicator {
+    background: #4f46e5;
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.16);
+}
+#ledger-hide-empty:checked + .ledger-hide-empty-indicator::after {
+    border-color: #ffffff;
+}
+.ledger-sort-control {
+    padding-left: 0.15rem;
+}
+body.theme-dark .ledger-hide-empty-control {
+    background: rgba(51, 65, 85, 0.72);
+    border-color: rgba(71, 85, 105, 0.95);
+}
+body.theme-dark .ledger-hide-empty-indicator {
+    background: #0f172a;
+    border-color: #64748b;
+}
+@media (max-width: 640px) {
+    .ledger-options-controls {
+        width: 100%;
+        justify-content: space-between;
+        gap: 0.6rem;
+    }
+    .ledger-hide-empty-control {
+        padding: 0.2rem 0.42rem;
+    }
+    .ledger-hide-empty-indicator {
+        width: 13px;
+        height: 13px;
+    }
+    .ledger-hide-empty-indicator::after {
+        left: 3px;
+        top: 0px;
+        width: 3px;
+        height: 7px;
+    }
+}
 /* Ledger categories (groceries, misc, etc.): light text in dark mode */
 body.theme-dark #ledger-categories button .text-slate-800,
 body.theme-dark #ledger-categories .text-slate-800 {
