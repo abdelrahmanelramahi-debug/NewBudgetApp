@@ -1506,7 +1506,7 @@ function updateFoodUI() {
                         badge = '<span class="absolute top-0.5 right-1 text-[7px] font-black uppercase tracking-wide ' + (funded ? 'text-emerald-100' : 'text-rose-700') + '">' + (usageMode === 'redistributed' ? 'R' : 'S') + '</span>';
                     }
                     extraHtml += '<div class="food-overview-cell-wrapper group relative overflow-hidden" data-overflow-day="true" data-overflow-key="' + ex.key + '">' +
-                        '<div class="food-overview-cell food-overflow-cell rounded-md flex items-center justify-center text-[9px] font-black min-h-[2rem] cursor-pointer transition' + cellTone + '" onclick="event.stopPropagation(); openOverflowDayPopover(\'' + ex.key + '\', this.closest(\'.food-overview-cell-wrapper\'))" role="button" title="Pay-cycle overflow: ' + ex.monthName + ' ' + ex.date + '">' +
+                        '<div class="food-overview-cell food-overflow-cell rounded-md flex items-center justify-center text-[9px] font-black min-h-[2rem] cursor-pointer transition' + cellTone + '" role="button" title="Pay-cycle overflow: ' + ex.monthName + ' ' + ex.date + '">' +
                         (ovConsumed ? '✓' : ex.date) + badge + '</div></div>';
                 } else {
                     extraHtml += '<div class="food-overview-cell rounded-md min-h-[2rem] bg-transparent"></div>';
@@ -1524,11 +1524,9 @@ function updateFoodUI() {
                 var wrapper = e.target.closest('.food-overview-cell-wrapper');
                 if (!wrapper) return;
                 if (wrapper.getAttribute('data-overflow-day') === 'true') {
-                    if (isTouchOrSmall()) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        openOverflowDayPopover(wrapper.getAttribute('data-overflow-key'), wrapper);
-                    }
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openOverflowDayActionPopover(wrapper.getAttribute('data-overflow-key'), wrapper);
                     return;
                 }
                 var cycleDay = wrapper.getAttribute('data-cycle-day');
@@ -1879,6 +1877,8 @@ function openFoodDayMobileModal(cycleDay, consumed) {
     var modal = document.getElementById('food-day-mobile-modal');
     if (!modal) return;
     if (typeof closeOverflowDayPopover === 'function') closeOverflowDayPopover();
+    var overflowRBtn = document.getElementById('food-day-mobile-overflow-redistribute-btn');
+    if (overflowRBtn) overflowRBtn.classList.add('hidden');
 
     var day = Math.max(1, Math.min(28, Math.floor(cycleDay)));
     if (!consumed && typeof getFoodFundedForDay === 'function' && getFoodFundedForDay(day) <= 0.001) {
@@ -1947,6 +1947,153 @@ function closeFoodDayMobileModal() {
 }
 window.closeFoodDayMobileModal = closeFoodDayMobileModal;
 
+function openOverflowDayMobileModal(dayKey) {
+    var modal = document.getElementById('food-day-mobile-modal');
+    if (!modal || !dayKey) return;
+
+    // Prevent competing overflow-specific panels from staying open.
+    if (typeof closeOverflowDayMobileModal === 'function') closeOverflowDayMobileModal();
+    if (typeof closeOverflowDayPopover === 'function') closeOverflowDayPopover();
+
+    var payCycle = (typeof getPayCycleInfo === 'function') ? getPayCycleInfo() : null;
+    var p = payCycle && Array.isArray(payCycle.overflowDates) ? payCycle.overflowDates.find(function (x) { return x.key === dayKey; }) : null;
+
+    var titleEl = document.getElementById('food-day-mobile-title');
+    var subtitleEl = document.getElementById('food-day-mobile-subtitle');
+    if (titleEl) titleEl.textContent = 'Overflow';
+    if (subtitleEl) subtitleEl.textContent = p ? (p.monthName + ' ' + p.date) : 'Overflow day';
+
+    var consumedAmt = Number((state.food && state.food.overflowConsumedAmounts && state.food.overflowConsumedAmounts[dayKey]) || 0);
+    var isConsumed = consumedAmt > 0.001;
+    modal.setAttribute('data-overflow-key', dayKey);
+    modal.setAttribute('data-overflow-consumed', isConsumed ? '1' : '0');
+
+    var consumeBtn = document.getElementById('food-day-mobile-consume-btn');
+    if (consumeBtn) {
+        consumeBtn.textContent = isConsumed ? 'Unconsume day' : 'Consume day';
+        consumeBtn.className = 'w-full py-3 rounded-2xl text-[12px] font-black uppercase tracking-widest transition ' +
+            (isConsumed ? 'bg-slate-900 text-white hover:bg-slate-800' : 'bg-emerald-600 text-white hover:bg-emerald-700');
+        consumeBtn.onclick = function () {
+            if (typeof setOverflowFoodDayConsumed === 'function') {
+                setOverflowFoodDayConsumed(dayKey, isConsumed ? 'unmark' : 'mark');
+            }
+            closeFoodDayMobileModal();
+            if (typeof updateFoodUI === 'function') updateFoodUI();
+            if (typeof renderLedger === 'function') renderLedger();
+            if (typeof updateGlobalUI === 'function') updateGlobalUI();
+        };
+    }
+
+    var rBtn = document.getElementById('food-day-mobile-overflow-redistribute-btn');
+    if (rBtn) {
+        rBtn.classList.remove('hidden');
+        var usage = state.food && state.food.overflowUsage ? state.food.overflowUsage[dayKey] : '';
+        rBtn.textContent = usage === 'redistributed' ? 'Undo distribute' : 'Distribute';
+        rBtn.onclick = function () {
+            if (usage === 'redistributed') {
+                if (typeof applyOverflowRedistributionUndo === 'function') applyOverflowRedistributionUndo(dayKey);
+            } else {
+                if (typeof applyOverflowDayRedistribution === 'function') applyOverflowDayRedistribution(dayKey);
+            }
+            closeFoodDayMobileModal();
+        };
+    }
+
+    var transferTargets = document.getElementById('food-day-mobile-transfer-targets');
+    var transferDisabled = document.getElementById('food-day-mobile-transfer-disabled');
+    if (transferTargets) {
+        transferTargets.innerHTML = '';
+        if (transferDisabled) {
+            if (isConsumed) {
+                transferDisabled.classList.remove('hidden');
+                transferTargets.classList.add('opacity-50', 'pointer-events-none');
+            } else {
+                transferDisabled.classList.add('hidden');
+                transferTargets.classList.remove('opacity-50', 'pointer-events-none');
+            }
+        }
+        if (!isConsumed) {
+            var targets = (typeof getFoodDayTransferTargets === 'function') ? getFoodDayTransferTargets() : [];
+            transferTargets.innerHTML = (targets || []).map(function (t) {
+                var safeLabel = String(t.label).replace(/</g, '&lt;').replace(/"/g, '&quot;');
+                var tid = String(t.id).replace(/"/g, '&quot;');
+                return (
+                    '<button type="button" class="w-full text-left px-4 py-3 text-[12px] font-bold text-slate-800 hover:bg-slate-50 active:bg-slate-100 transition truncate" ' +
+                    'onclick="transferFoodOverflowDayTo(' + '\'' + dayKey + '\'' + ', \'' + tid + '\'); closeFoodDayMobileModal();">' +
+                    safeLabel +
+                    '</button>'
+                );
+            }).join('');
+        }
+    }
+
+    if (typeof toggleModal === 'function') toggleModal('food-day-mobile-modal', true);
+    else modal.classList.remove('hidden');
+}
+window.openOverflowDayMobileModal = openOverflowDayMobileModal;
+
+function openOverflowDayActionPopover(dayKey, anchorEl) {
+    if (isTouchOrSmall()) {
+        openOverflowDayMobileModal(dayKey);
+        return;
+    }
+
+    var pop = document.getElementById('food-day-action-popover');
+    var consumeBtn = document.getElementById('food-day-action-consume');
+    var transferBtn = document.getElementById('food-day-action-transfer');
+    var rBtn = document.getElementById('food-day-action-overflow-redistribute');
+    if (!pop || !consumeBtn || !transferBtn || !rBtn) return;
+
+    var consumedAmt = Number((state.food && state.food.overflowConsumedAmounts && state.food.overflowConsumedAmounts[dayKey]) || 0);
+    var isConsumed = consumedAmt > 0.001;
+    var usage = state.food && state.food.overflowUsage ? state.food.overflowUsage[dayKey] : '';
+
+    rBtn.classList.remove('hidden');
+    var rLabel = document.getElementById('food-day-action-overflow-redistribute-label');
+    if (rLabel) rLabel.textContent = usage === 'redistributed' ? 'Undo distribute' : 'Distribute';
+
+    pop.setAttribute('data-overflow-key', dayKey);
+
+    var consumeLabel = consumeBtn.querySelector('.food-day-action-consume-label');
+    if (consumeLabel) consumeLabel.textContent = isConsumed ? 'Unmark' : 'Mark consumed'; else consumeBtn.textContent = isConsumed ? 'Unmark' : 'Mark consumed';
+
+    consumeBtn.onclick = function () {
+        if (typeof setOverflowFoodDayConsumed === 'function') setOverflowFoodDayConsumed(dayKey, isConsumed ? 'unmark' : 'mark');
+        closeFoodDayActionPopover();
+        if (typeof updateFoodUI === 'function') updateFoodUI();
+        if (typeof renderLedger === 'function') renderLedger();
+        if (typeof updateGlobalUI === 'function') updateGlobalUI();
+    };
+
+    transferBtn.onclick = function () {
+        closeFoodDayActionPopover();
+        if (typeof openFoodOverflowTransferPopover === 'function') {
+            var rect = anchorEl && anchorEl.getBoundingClientRect ? anchorEl.getBoundingClientRect() : null;
+            openFoodOverflowTransferPopover(dayKey, rect);
+        }
+    };
+
+    rBtn.onclick = function () {
+        if (usage === 'redistributed') {
+            if (typeof applyOverflowRedistributionUndo === 'function') applyOverflowRedistributionUndo(dayKey);
+        } else {
+            if (typeof applyOverflowDayRedistribution === 'function') applyOverflowDayRedistribution(dayKey);
+        }
+        closeFoodDayActionPopover();
+        if (typeof updateFoodUI === 'function') updateFoodUI();
+        if (typeof renderLedger === 'function') renderLedger();
+        if (typeof updateGlobalUI === 'function') updateGlobalUI();
+    };
+
+    if (anchorEl && anchorEl.getBoundingClientRect) {
+        var rect = anchorEl.getBoundingClientRect();
+        pop.style.left = rect.left + 'px';
+        pop.style.top = (rect.bottom + 4) + 'px';
+    }
+    pop.classList.remove('hidden');
+}
+window.openOverflowDayActionPopover = openOverflowDayActionPopover;
+
 var _foodDayActionPopoverAnchor = null;
 
 function openFoodDayActionPopover(cycleDay, consumed, anchorEl) {
@@ -1962,6 +2109,8 @@ function openFoodDayActionPopover(cycleDay, consumed, anchorEl) {
     var pop = document.getElementById('food-day-action-popover');
     var consumeBtn = document.getElementById('food-day-action-consume');
     var transferBtn = document.getElementById('food-day-action-transfer');
+    var overflowRBtn = document.getElementById('food-day-action-overflow-redistribute');
+    if (overflowRBtn) overflowRBtn.classList.add('hidden');
     if (!pop || !consumeBtn || !transferBtn) return;
     _foodDayActionPopoverAnchor = anchorEl;
     pop.removeAttribute('data-buffer');

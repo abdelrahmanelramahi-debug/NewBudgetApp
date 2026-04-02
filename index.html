@@ -698,6 +698,10 @@
                             <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-600 shrink-0" aria-hidden="true">↗</span>
                             <span>Transfer day to…</span>
                         </button>
+                        <button type="button" id="food-day-action-overflow-redistribute" class="food-day-action-popover-btn flex items-center gap-3 w-full text-left px-4 py-3 text-[13px] font-semibold text-slate-800 hover:bg-red-50 active:bg-red-100 rounded-lg mx-2 mt-1 transition-colors hidden">
+                            <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-red-100 text-red-700 shrink-0" aria-hidden="true">⇄</span>
+                            <span id="food-day-action-overflow-redistribute-label">Redistribute Daily Food</span>
+                        </button>
                     </div>
                     <div id="food-overflow-popover" class="hidden fixed z-[110] w-[min(92vw,260px)] max-w-[260px] p-3 bg-white border border-red-200 rounded-xl shadow-xl shadow-red-100/60 ring-1 ring-red-900/5" role="dialog" aria-label="Pay-cycle overflow options">
                         <p class="text-[10px] font-black uppercase tracking-wider text-red-600">Pay-cycle overflow</p>
@@ -749,6 +753,9 @@
                                     <p id="food-day-mobile-transfer-disabled" class="hidden text-[11px] font-bold text-slate-500 mt-2">Transfer is disabled for consumed days.</p>
                                     <div id="food-day-mobile-transfer-targets" class="mt-3 max-h-48 overflow-y-auto rounded-xl bg-white border border-slate-200 divide-y divide-slate-100"></div>
                                 </div>
+                                <button type="button" id="food-day-mobile-overflow-redistribute-btn" class="hidden w-full py-3 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-[12px] font-black uppercase tracking-widest hover:bg-red-100 transition">
+                                    Redistribute Daily Food
+                                </button>
                             </div>
                         </div>
                     </div>
