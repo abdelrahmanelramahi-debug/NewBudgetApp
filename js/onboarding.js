@@ -14,31 +14,31 @@ var onboardingBudgetTipPhase = 'must';
 
 var ONBOARDING_BUDGET_TIPS_MUST_HAVES = [
     {
-        title: 'Must Haves',
-        body: 'These are your essentials and should be funded before everything else.',
+        title: 'Start With Essentials',
+        body: 'Fund your essential categories first so the rest of your plan has a stable base.',
         target: '#onboarding-must-haves-heading'
     },
     {
-        title: 'Total Budget',
-        body: "See how much of your monthly income you've assigned. Stay within 100% for a balanced plan.",
+        title: 'Watch Your Total',
+        body: 'Keep your plan at or under 100% of your monthly income.',
         target: '#onboarding-cat-header'
     },
     {
-        title: 'Set Must Haves',
-        body: 'Adjust Weekly Allowance, Daily Food, Transportation, and Savings buckets first.',
+        title: 'Set Core Amounts',
+        body: 'Adjust Weekly Allowance, Daily Food, Transportation, and Savings before moving on.',
         target: '#onboarding-must-haves-section'
     }
 ];
 
 var ONBOARDING_BUDGET_TIPS_MINI_BUDGETS = [
     {
-        title: 'Mini-Budgets',
-        body: 'These categories are flexible and help you plan personal spending with control.',
+        title: 'Add Flexible Spending',
+        body: 'Use mini-budgets for personal spending that can change month to month.',
         target: '#onboarding-mini-budgets-heading'
     },
     {
-        title: 'Fine-tune Mini-Budgets',
-        body: 'Use sliders or type amounts. You can reorder and adjust these later anytime.',
+        title: 'Fine-Tune Later',
+        body: 'You can edit, reorder, or rebalance these categories anytime.',
         target: '#onboarding-mini-budgets-section'
     }
 ];
@@ -78,7 +78,7 @@ function wireOnboardingWelcomeButtons() {
         signIn._wired = true;
         signIn.addEventListener('click', function (e) {
             e.preventDefault();
-            if (typeof onboardingSignInAndSkip === 'function') onboardingSignInAndSkip();
+            if (typeof onboardingOpenAuth === 'function') onboardingOpenAuth();
         });
     }
 }
@@ -225,10 +225,11 @@ function showBudgetPlanTip(index) {
     bodyEl.textContent = tip.body;
     var isLastInPhase = index >= tips.length - 1;
     var hasMiniPhase = ONBOARDING_BUDGET_TIPS_MINI_BUDGETS.length > 0;
-    if (onboardingBudgetTipPhase === 'must' && isLastInPhase && hasMiniPhase) nextBtn.textContent = 'Mini-Budgets tips';
-    else nextBtn.textContent = isLastInPhase ? 'Got it' : 'Next';
+    var isFinalTip = onboardingBudgetTipPhase !== 'must' && isLastInPhase;
+    if (!isFinalTip && onboardingBudgetTipPhase === 'must' && isLastInPhase && !hasMiniPhase) isFinalTip = true;
+    nextBtn.textContent = isFinalTip ? 'Done' : 'Next';
     if (skipBtn) {
-        skipBtn.textContent = onboardingBudgetTipPhase === 'must' ? 'Skip Must Haves tips' : 'Skip Mini-Budgets tips';
+        skipBtn.textContent = 'Skip';
     }
 
     var step = document.getElementById('onboarding-step-categories');
@@ -330,23 +331,23 @@ window.skipBudgetPlanTips = skipBudgetPlanTips;
 
 var HOME_TOUR_STEPS = [
     {
-        title: 'Bank Balance',
-        body: 'What your bank balance should show if you\'re following your plan. The bar shows how your money is split across sections.',
+        title: 'Check Your Balance',
+        body: 'This shows the balance your account should have based on your current plan.',
         target: '.bank-balance-card'
     },
     {
-        title: 'Weekly Allowance',
-        body: 'Your safe-to-spend amount for this week. Record purchases or move money when needed.',
+        title: 'Use Weekly Spending',
+        body: 'This is your safe-to-spend amount for the current week.',
         target: '.weekly-hero'
     },
     {
-        title: 'Food Tracker',
-        body: 'Tap a day when you use your food budget. Buffer days help you stretch the month.',
+        title: 'Track Food Days',
+        body: 'Mark the days you use your food budget so it stays paced through the month.',
         target: '#food-tracker-card'
     },
     {
-        title: 'Categories',
-        body: 'Each category is its own mini-budget. Tap to spend from it or move money between categories.',
+        title: 'Manage Categories',
+        body: 'Each category works like a mini-budget that you can spend from or adjust.',
         target: '#ledger-categories'
     }
 ];
@@ -441,7 +442,7 @@ function showHomeTourStep(index) {
     if (stepNum) stepNum.textContent = index + 1;
     titleEl.textContent = step.title;
     bodyEl.textContent = step.body;
-    if (nextBtn) nextBtn.textContent = index >= HOME_TOUR_STEPS.length - 1 ? 'Got it' : 'Next';
+    if (nextBtn) nextBtn.textContent = index >= HOME_TOUR_STEPS.length - 1 ? 'Done' : 'Next';
 
     // Scroll and highlight the relevant area on the home screen
     if (step.target) {
@@ -800,22 +801,8 @@ function finishOnboarding() {
     }
 }
 
-// Allow user to sign in and skip the remainder of onboarding in one action.
+// Open auth from onboarding without completing the flow first.
 function onboardingSignInAndSkip() {
-    if (typeof state !== 'undefined') {
-        state.onboardingComplete = true;
-        if (typeof saveState === 'function') saveState();
-    }
-    try {
-        if (typeof STORAGE_KEYS !== 'undefined' && STORAGE_KEYS.ONBOARDING_DONE && localStorage.setItem) {
-            localStorage.setItem(STORAGE_KEYS.ONBOARDING_DONE, '1');
-        }
-    } catch (e) {}
-    hideOnboarding();
-    if (onboardingCompleteCallback) {
-        onboardingCompleteCallback();
-        onboardingCompleteCallback = null;
-    }
     if (typeof openAuthModal === 'function') openAuthModal();
 }
 

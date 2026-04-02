@@ -28,7 +28,7 @@ window.onload = function() {
         bindClick('onboarding-summary-edit-income', function () { showOnboardingStep(2); });
         bindClick('onboarding-summary-edit-categories', function () { showOnboardingStep(3); });
         bindClick('onboarding-summary-edit-priority', function () { showOnboardingStep(4); });
-        bindClick('onboarding-summary-signin', function () { onboardingSignInAndSkip(); });
+        bindClick('onboarding-summary-signin', function () { onboardingOpenAuth(); });
         bindClick('onboarding-summary-skip', function () { onboardingSkipAccount(); });
         bindClick('onboarding-summary-complete', function () { onboardingComplete(); });
         bindClick('onboarding-tip-skip', function () { skipBudgetPlanTips(); });

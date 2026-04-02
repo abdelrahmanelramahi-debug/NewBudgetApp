@@ -328,16 +328,22 @@ function updateAuthUI() {
     const userInfoSection = document.getElementById('user-info-section');
     const userInfo = document.getElementById('user-info');
     const signOutBtn = document.getElementById('sign-out-btn');
+    const onboardingAccountCard = document.getElementById('onboarding-account-card');
     
     if (currentUser) {
         if (authSection) authSection.classList.add('hidden');
         if (userInfoSection) userInfoSection.classList.remove('hidden');
         if (userInfo) userInfo.textContent = currentUser.email;
         if (signOutBtn) signOutBtn.classList.remove('hidden');
+        if (onboardingAccountCard) onboardingAccountCard.classList.add('hidden');
     } else {
         if (authSection) authSection.classList.remove('hidden');
         if (userInfoSection) userInfoSection.classList.add('hidden');
         if (signOutBtn) signOutBtn.classList.add('hidden');
+        if (onboardingAccountCard && typeof showOnboardingStep === 'function') {
+            var summaryStep = document.getElementById('onboarding-step-summary');
+            if (summaryStep && !summaryStep.classList.contains('hidden')) onboardingAccountCard.classList.remove('hidden');
+        }
     }
 }
 
