@@ -20,26 +20,16 @@ var ONBOARDING_BUDGET_TIPS_MUST_HAVES = [
     },
     {
         title: 'Start With Essentials',
-        body: 'Fund your essential categories first so the rest of your plan has a stable base.',
-        target: '#onboarding-must-haves-heading'
-    },
-    {
-        title: 'Set Core Amounts',
-        body: 'Adjust Weekly Allowance, Daily Food, Transportation, and Savings before moving on.',
-        target: '#onboarding-must-haves-section'
+        body: 'Fund your essential categories first, then adjust Weekly Allowance, Daily Food, Transportation, and Savings.',
+        target: '#onboarding-must-haves-block'
     }
 ];
 
 var ONBOARDING_BUDGET_TIPS_MINI_BUDGETS = [
     {
         title: 'Add Flexible Spending',
-        body: 'Use mini-budgets for personal spending that can change month to month.',
-        target: '#onboarding-mini-budgets-heading'
-    },
-    {
-        title: 'Fine-Tune Later',
-        body: 'You can edit, reorder, or rebalance these categories anytime.',
-        target: '#onboarding-mini-budgets-section'
+        body: 'Use mini-budgets for flexible spending, and adjust or reorder them anytime later.',
+        target: '#onboarding-mini-budgets-block'
     }
 ];
 

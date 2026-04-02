@@ -2310,6 +2310,20 @@ body.theme-sepia .home-tour-highlight {
     border-radius: 18px;
 }
 
+#onboarding-step-categories #onboarding-must-haves-block.onboarding-tip-highlight-contrast,
+#onboarding-must-haves-block.onboarding-tip-highlight-contrast,
+#onboarding-step-categories #onboarding-mini-budgets-block.onboarding-tip-highlight-contrast,
+#onboarding-mini-budgets-block.onboarding-tip-highlight-contrast,
+#onboarding-step-categories #onboarding-savings-block.onboarding-tip-highlight-contrast,
+#onboarding-savings-block.onboarding-tip-highlight-contrast {
+    background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%) !important;
+    border-radius: 22px;
+    padding: 12px;
+    margin-left: 4px !important;
+    margin-right: 4px !important;
+    max-width: calc(100% - 8px) !important;
+}
+
 #onboarding-step-categories #onboarding-must-haves-section.onboarding-tip-highlight-contrast,
 #onboarding-must-haves-section.onboarding-tip-highlight-contrast,
 #onboarding-step-categories #onboarding-mini-budgets-section.onboarding-tip-highlight-contrast,
@@ -2327,6 +2341,12 @@ body.theme-dark .onboarding-tip-highlight.onboarding-tip-highlight-contrast {
 
 body.theme-dark #onboarding-step-categories #onboarding-cat-header.onboarding-tip-highlight-contrast,
 body.theme-dark #onboarding-cat-header.onboarding-tip-highlight-contrast,
+body.theme-dark #onboarding-step-categories #onboarding-must-haves-block.onboarding-tip-highlight-contrast,
+body.theme-dark #onboarding-must-haves-block.onboarding-tip-highlight-contrast,
+body.theme-dark #onboarding-step-categories #onboarding-mini-budgets-block.onboarding-tip-highlight-contrast,
+body.theme-dark #onboarding-mini-budgets-block.onboarding-tip-highlight-contrast,
+body.theme-dark #onboarding-step-categories #onboarding-savings-block.onboarding-tip-highlight-contrast,
+body.theme-dark #onboarding-savings-block.onboarding-tip-highlight-contrast,
 body.theme-dark #onboarding-step-categories #onboarding-must-haves-section.onboarding-tip-highlight-contrast,
 body.theme-dark #onboarding-must-haves-section.onboarding-tip-highlight-contrast,
 body.theme-dark #onboarding-step-categories #onboarding-mini-budgets-section.onboarding-tip-highlight-contrast,
