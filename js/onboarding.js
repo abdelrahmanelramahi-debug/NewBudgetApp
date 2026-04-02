@@ -152,7 +152,9 @@ function startBudgetPlanTips() {
     onboardingBudgetTipIndex = 0;
     var overlay = document.getElementById('onboarding-budget-tips-overlay');
     var card = document.getElementById('onboarding-tip-card');
+    var step = document.getElementById('onboarding-step-categories');
     if (!overlay || !card) return;
+    if (step) step.classList.add('onboarding-tip-active');
     overlay.classList.remove('hidden');
     card.classList.remove('hidden');
     showBudgetPlanTip(0);
@@ -329,6 +331,7 @@ function finishBudgetPlanTips() {
     }
     var overlay = document.getElementById('onboarding-budget-tips-overlay');
     var card = document.getElementById('onboarding-tip-card');
+    var step = document.getElementById('onboarding-step-categories');
     if (overlay) overlay.classList.add('hidden');
     if (card) {
         card.classList.add('hidden');
@@ -339,7 +342,7 @@ function finishBudgetPlanTips() {
         card.style.transform = '';
         card.style.width = '';
     }
-    var step = document.getElementById('onboarding-step-categories');
+    if (step) step.classList.remove('onboarding-tip-active');
     if (step) {
         step.querySelectorAll('.onboarding-tip-highlight').forEach(function (el) {
             el.classList.remove('onboarding-tip-highlight');
