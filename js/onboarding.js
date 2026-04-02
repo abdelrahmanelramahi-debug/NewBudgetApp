@@ -84,8 +84,10 @@ function prefillOnboardingFromState() {
     if (typeof state === 'undefined') return;
     var cur = document.getElementById('onboarding-currency');
     var inc = document.getElementById('onboarding-income');
+    var catTotal = document.getElementById('onboarding-cat-total-input');
     if (cur && state.settings && state.settings.currency) cur.value = state.settings.currency;
     if (inc && typeof state.monthlyIncome === 'number') inc.value = state.monthlyIncome > 0 ? state.monthlyIncome : '';
+    if (catTotal && typeof state.monthlyIncome === 'number') catTotal.value = state.monthlyIncome > 0 ? state.monthlyIncome : 0;
 }
 
 function showOnboardingStep(index) {
@@ -108,6 +110,31 @@ function showOnboardingStep(index) {
     var app = getAppShellEl();
     if (ob) ob.classList.remove('hidden');
     if (app) app.classList.add('hidden');
+}
+
+function syncOnboardingBudgetTotalInputs() {
+    if (typeof state === 'undefined') return;
+    var incomeValue = typeof state.monthlyIncome === 'number' && !isNaN(state.monthlyIncome) ? state.monthlyIncome : 0;
+    var incomeEl = document.getElementById('onboarding-income');
+    var totalInputEl = document.getElementById('onboarding-cat-total-input');
+    if (incomeEl) incomeEl.value = incomeValue > 0 ? incomeValue : '';
+    if (totalInputEl) totalInputEl.value = incomeValue;
+}
+
+function updateOnboardingBudgetTotal(rawValue) {
+    if (typeof state === 'undefined') return;
+    var parsed = parseFloat(rawValue);
+    if (isNaN(parsed) || parsed < 0) parsed = 0;
+    state.monthlyIncome = parsed;
+    syncOnboardingBudgetTotalInputs();
+    if (typeof renderStrategy === 'function') {
+        renderStrategy({ containerId: 'onboarding-strategy-sections', onboarding: true, force: true });
+    }
+    if (typeof updateOnboardingSummary === 'function') updateOnboardingSummary();
+    var overlay = document.getElementById('onboarding-budget-tips-overlay');
+    if (overlay && !overlay.classList.contains('hidden')) {
+        showBudgetPlanTip(onboardingBudgetTipIndex);
+    }
 }
 
 function renderOnboardingPriorityStep() {
@@ -614,6 +641,7 @@ function initAndRenderOnboardingCategories() {
         var parsed = parseFloat(obInc.value);
         if (!isNaN(parsed) && parsed >= 0) state.monthlyIncome = parsed;
     }
+    syncOnboardingBudgetTotalInputs();
     if (typeof renderStrategy === 'function') {
         renderStrategy({ containerId: 'onboarding-strategy-sections', onboarding: true });
     }
@@ -847,6 +875,7 @@ function onboardingSkipAccount() {
 }
 window.onboardingOpenAuth = onboardingOpenAuth;
 window.onboardingSkipAccount = onboardingSkipAccount;
+window.updateOnboardingBudgetTotal = updateOnboardingBudgetTotal;
 
 (function () {
     function wireWelcome() {

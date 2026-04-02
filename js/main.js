@@ -10,6 +10,12 @@ window.onload = function() {
         el.addEventListener('click', handler);
     }
 
+    function bindInput(id, handler) {
+        var el = byId(id);
+        if (!el) return;
+        el.addEventListener('input', handler);
+    }
+
     function getWeeklyTransferPrefillValue() {
         var input = byId('weekly-inline-val');
         return input ? input.value : '';
@@ -20,6 +26,7 @@ window.onload = function() {
         bindClick('onboarding-currency-next', function () { onboardingNext(); });
         bindClick('onboarding-income-back', function () { onboardingBack(); });
         bindClick('onboarding-income-next', function () { onboardingNext(); });
+        bindInput('onboarding-cat-total-input', function (event) { updateOnboardingBudgetTotal(event.target.value); });
         bindClick('onboarding-categories-back', function () { onboardingBack(); });
         bindClick('onboarding-categories-next', function () { onboardingNext(); });
         bindClick('onboarding-priority-back', function () { onboardingBack(); });

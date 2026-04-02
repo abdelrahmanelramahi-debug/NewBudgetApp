@@ -652,7 +652,7 @@ function renderStrategy(opts) {
                         </div>
                         <span class="text-[10px] font-bold text-slate-500">${formatMoney(savingsPlannedTotal)} ${getCurrencyLabel()} allocated</span>
                     </div>
-                    ${forOnboarding ? '<span class="text-[9px] font-bold text-emerald-700 bg-emerald-50 px-2 py-1 rounded-lg">EDITABLE</span>' : '<span class="text-[9px] font-bold text-slate-300 bg-slate-50 px-2 py-1 rounded-lg">LOCKED</span>'}
+                    ${forOnboarding ? '' : '<span class="text-[9px] font-bold text-slate-300 bg-slate-50 px-2 py-1 rounded-lg">LOCKED</span>'}
                 </div>
                 <div class="space-y-1">${rowsHtml}</div>
             </div>
@@ -673,7 +673,9 @@ function renderStrategy(opts) {
         let controls;
 
         if (sec.isSystem) {
-            controls = `<span class="text-[9px] font-bold text-slate-300 bg-slate-50 px-2 py-1 rounded-lg">LOCKED</span>`;
+            controls = forOnboarding
+                ? ``
+                : `<span class="text-[9px] font-bold text-slate-300 bg-slate-50 px-2 py-1 rounded-lg">LOCKED</span>`;
         } else {
             controls = `
             <div class="flex items-center gap-2">

@@ -82,7 +82,8 @@
                     <div id="onboarding-cat-total-card" class="premium-card px-3 py-2 flex items-center justify-between gap-2 border border-slate-200 rounded-lg shadow-sm">
                         <div class="flex items-baseline gap-1.5">
                             <span class="text-[10px] font-bold uppercase text-slate-500">Total</span>
-                            <span id="onboarding-cat-total" class="text-base font-black text-slate-900">0</span>
+                            <input type="number" id="onboarding-cat-total-input" name="onboarding-cat-total" min="0" step="1" value="0" class="w-28 bg-transparent border-0 p-0 text-base font-black text-slate-900 outline-none focus:ring-0" autocomplete="off" aria-label="Onboarding budget total">
+                            <span id="onboarding-cat-total" class="sr-only">0</span>
                             <span class="text-xs font-bold text-slate-400" data-currency>AED</span>
                         </div>
                         <p id="onboarding-cat-allocated" class="text-[10px] font-bold text-slate-600">

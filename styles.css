@@ -2324,6 +2324,36 @@ body.theme-sepia .home-tour-highlight {
     max-width: calc(100% - 8px) !important;
 }
 
+#onboarding-step-categories #onboarding-must-haves-block.onboarding-tip-highlight-contrast .premium-card,
+#onboarding-must-haves-block.onboarding-tip-highlight-contrast .premium-card,
+#onboarding-step-categories #onboarding-mini-budgets-block.onboarding-tip-highlight-contrast .premium-card,
+#onboarding-mini-budgets-block.onboarding-tip-highlight-contrast .premium-card,
+#onboarding-step-categories #onboarding-savings-block.onboarding-tip-highlight-contrast .premium-card,
+#onboarding-savings-block.onboarding-tip-highlight-contrast .premium-card {
+    background: #ffffff !important;
+    border-color: rgba(99, 102, 241, 0.18) !important;
+    box-shadow: 0 18px 32px rgba(15, 23, 42, 0.08) !important;
+}
+
+#onboarding-step-categories #onboarding-must-haves-block.onboarding-tip-highlight-contrast .input-pill,
+#onboarding-must-haves-block.onboarding-tip-highlight-contrast .input-pill,
+#onboarding-step-categories #onboarding-mini-budgets-block.onboarding-tip-highlight-contrast .input-pill,
+#onboarding-mini-budgets-block.onboarding-tip-highlight-contrast .input-pill,
+#onboarding-step-categories #onboarding-savings-block.onboarding-tip-highlight-contrast .input-pill,
+#onboarding-savings-block.onboarding-tip-highlight-contrast .input-pill {
+    background: #ffffff !important;
+    border-color: rgba(203, 213, 225, 0.9) !important;
+}
+
+#onboarding-step-categories #onboarding-must-haves-block.onboarding-tip-highlight-contrast [class*="bg-indigo-50"],
+#onboarding-must-haves-block.onboarding-tip-highlight-contrast [class*="bg-indigo-50"],
+#onboarding-step-categories #onboarding-mini-budgets-block.onboarding-tip-highlight-contrast [class*="bg-indigo-50"],
+#onboarding-mini-budgets-block.onboarding-tip-highlight-contrast [class*="bg-indigo-50"],
+#onboarding-step-categories #onboarding-savings-block.onboarding-tip-highlight-contrast [class*="bg-indigo-50"],
+#onboarding-savings-block.onboarding-tip-highlight-contrast [class*="bg-indigo-50"] {
+    background-color: rgba(238, 242, 255, 1) !important;
+}
+
 #onboarding-step-categories #onboarding-must-haves-section.onboarding-tip-highlight-contrast,
 #onboarding-must-haves-section.onboarding-tip-highlight-contrast,
 #onboarding-step-categories #onboarding-mini-budgets-section.onboarding-tip-highlight-contrast,
@@ -2352,6 +2382,27 @@ body.theme-dark #onboarding-must-haves-section.onboarding-tip-highlight-contrast
 body.theme-dark #onboarding-step-categories #onboarding-mini-budgets-section.onboarding-tip-highlight-contrast,
 body.theme-dark #onboarding-mini-budgets-section.onboarding-tip-highlight-contrast {
     background: linear-gradient(180deg, #1e293b 0%, #334155 100%) !important;
+}
+
+body.theme-dark #onboarding-step-categories #onboarding-must-haves-block.onboarding-tip-highlight-contrast .premium-card,
+body.theme-dark #onboarding-must-haves-block.onboarding-tip-highlight-contrast .premium-card,
+body.theme-dark #onboarding-step-categories #onboarding-mini-budgets-block.onboarding-tip-highlight-contrast .premium-card,
+body.theme-dark #onboarding-mini-budgets-block.onboarding-tip-highlight-contrast .premium-card,
+body.theme-dark #onboarding-step-categories #onboarding-savings-block.onboarding-tip-highlight-contrast .premium-card,
+body.theme-dark #onboarding-savings-block.onboarding-tip-highlight-contrast .premium-card {
+    background: #334155 !important;
+    border-color: rgba(165, 180, 252, 0.24) !important;
+    box-shadow: 0 18px 32px rgba(2, 6, 23, 0.28) !important;
+}
+
+body.theme-dark #onboarding-step-categories #onboarding-must-haves-block.onboarding-tip-highlight-contrast .input-pill,
+body.theme-dark #onboarding-must-haves-block.onboarding-tip-highlight-contrast .input-pill,
+body.theme-dark #onboarding-step-categories #onboarding-mini-budgets-block.onboarding-tip-highlight-contrast .input-pill,
+body.theme-dark #onboarding-mini-budgets-block.onboarding-tip-highlight-contrast .input-pill,
+body.theme-dark #onboarding-step-categories #onboarding-savings-block.onboarding-tip-highlight-contrast .input-pill,
+body.theme-dark #onboarding-savings-block.onboarding-tip-highlight-contrast .input-pill {
+    background: #0f172a !important;
+    border-color: rgba(148, 163, 184, 0.45) !important;
 }
 
 body.theme-sepia #onboarding-step-categories .onboarding-tip-highlight.onboarding-tip-highlight-contrast,
