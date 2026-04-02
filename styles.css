@@ -1945,6 +1945,9 @@ body.theme-dark .food-day-action-popover .food-day-action-transfer span:first-of
 .food-overflow-row {
     margin-top: 0.25rem;
 }
+.food-overflow-row-complete {
+    padding: 0.35rem 0.45rem;
+}
 .food-overflow-cell {
     background: #fee2e2;
     color: #991b1b;
