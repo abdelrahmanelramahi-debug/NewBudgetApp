@@ -1453,7 +1453,8 @@ function updateFoodUI() {
                     hoverActions = '<div class="food-day-hover-actions absolute inset-0 flex rounded-md overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">' +
                         '<span class="pointer-events-auto flex-1 flex items-center justify-center min-w-0 food-day-consume-panel" title="' + tickTitleU + '" onclick="event.stopPropagation(); setFoodDayFromCalendar(' + cycleDay + ', \'unmark\')" role="button" aria-label="' + tickTitleU + '">' +
                         '<span class="text-white text-[10px] font-black">✓</span></span>';
-                    hoverActions += '<span class="flex-1 food-day-transfer-panel opacity-50"></span>';
+                    hoverActions += '<span class="pointer-events-auto flex-1 flex items-center justify-center min-w-0 food-day-transfer-panel" title="Transfer into day..." onclick="event.stopPropagation(); openFoodDayTransferPopover(' + cycleDay + ', this, true)" role="button" aria-label="Transfer into day...">' +
+                        '<span class="text-white text-[10px] font-black">↗</span></span>';
                     hoverActions += '</div>';
                 } else if (hasFunding) {
                     var tickTitle = 'Mark consumed';
@@ -1461,7 +1462,7 @@ function updateFoodUI() {
                     hoverActions = '<div class="food-day-hover-actions absolute inset-0 flex rounded-md overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none group-hover:pointer-events-auto">' +
                         '<span class="pointer-events-auto flex-1 flex items-center justify-center min-w-0 food-day-consume-panel" title="' + tickTitle + '" onclick="event.stopPropagation(); setFoodDayFromCalendar(' + cycleDay + ', \'mark\')" role="button" aria-label="' + tickTitle + '">' +
                         '<span class="text-white text-[10px] font-black">✓</span></span>';
-                    hoverActions += '<span class="pointer-events-auto flex-1 flex items-center justify-center min-w-0 food-day-transfer-panel" title="' + transferTitle + '" onclick="event.stopPropagation(); openFoodDayTransferPopover(' + cycleDay + ', this)" role="button" aria-label="' + transferTitle + '">' +
+                    hoverActions += '<span class="pointer-events-auto flex-1 flex items-center justify-center min-w-0 food-day-transfer-panel" title="' + transferTitle + '" onclick="event.stopPropagation(); openFoodDayTransferPopover(' + cycleDay + ', this, false)" role="button" aria-label="' + transferTitle + '">' +
                         '<span class="text-white text-[10px] font-black">↗</span></span>';
                     hoverActions += '</div>';
                 }
@@ -1539,9 +1540,11 @@ function updateFoodUI() {
                     if (typeof showFoodDayLockedNotice === 'function') showFoodDayLockedNotice();
                     return;
                 }
-                e.preventDefault();
-                e.stopPropagation();
-                openFoodDayActionPopover(parseInt(cycleDay, 10), consumed, wrapper);
+                if (isTouchOrSmall()) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    openFoodDayMobileModal(parseInt(cycleDay, 10), consumed);
+                }
             }, true);
             document.addEventListener('click', function(e) {
                 if (e.target.closest('#food-day-action-popover') || e.target.closest('#food-overflow-popover') || e.target.closest('#food-overflow-mobile-modal')) return;
@@ -1912,12 +1915,26 @@ function openFoodDayMobileModal(cycleDay, consumed) {
 
     var transferTargets = document.getElementById('food-day-mobile-transfer-targets');
     var transferDisabled = document.getElementById('food-day-mobile-transfer-disabled');
+    var transferHint = document.getElementById('food-day-mobile-transfer-hint');
     if (transferTargets) {
         transferTargets.innerHTML = '';
         if (consumed) {
-            if (transferDisabled) transferDisabled.classList.remove('hidden');
-            transferTargets.classList.add('opacity-50', 'pointer-events-none');
+            if (transferHint) transferHint.textContent = 'Funds the day from a source';
+            if (transferDisabled) transferDisabled.classList.add('hidden');
+            transferTargets.classList.remove('opacity-50', 'pointer-events-none');
+            var sources = (typeof getDailyFoodBulkSourceOptions === 'function') ? getDailyFoodBulkSourceOptions() : [];
+            transferTargets.innerHTML = (sources || []).map(function (s) {
+                var safeLabel = String(s.label).replace(/</g, '&lt;').replace(/"/g, '&quot;');
+                var sourceValue = String(s.value).replace(/"/g, '&quot;');
+                return (
+                    '<button type="button" class="w-full text-left px-4 py-3 text-[12px] font-bold text-slate-800 hover:bg-slate-50 active:bg-slate-100 transition truncate" ' +
+                    'onclick="fundConsumedFoodDayFromSource(' + day + ', \'' + sourceValue + '\'); closeFoodDayMobileModal();">' +
+                    safeLabel +
+                    '</button>'
+                );
+            }).join('');
         } else {
+            if (transferHint) transferHint.textContent = 'Moves 1 day from Daily Food';
             if (transferDisabled) transferDisabled.classList.add('hidden');
             transferTargets.classList.remove('opacity-50', 'pointer-events-none');
             var targets = (typeof getFoodDayTransferTargets === 'function') ? getFoodDayTransferTargets() : [];

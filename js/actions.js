@@ -1524,13 +1524,14 @@ function openBufferDayTransferPopover(anchorEl) {
 }
 window.openBufferDayTransferPopover = openBufferDayTransferPopover;
 
-function openFoodDayTransferPopover(cycleDay, anchorEl) {
+function openFoodDayTransferPopover(cycleDay, anchorEl, intoConsumedDay) {
     var pop = document.getElementById('food-day-transfer-popover');
     var container = document.getElementById('food-day-transfer-targets');
     if (!pop || !container) return;
     if (pop) {
         pop.removeAttribute('data-buffer');
         pop.removeAttribute('data-overflow-key');
+        pop.removeAttribute('data-transfer-into-day');
     }
     var anchor = anchorEl && anchorEl.closest ? anchorEl.closest('.food-overview-cell-wrapper') : anchorEl;
     if (anchor && anchor.getBoundingClientRect) {
@@ -1539,11 +1540,23 @@ function openFoodDayTransferPopover(cycleDay, anchorEl) {
         pop.style.top = (rect.bottom + 4) + 'px';
     }
     pop.setAttribute('data-cycle-day', cycleDay);
-    var targets = getFoodDayTransferTargets();
-    container.innerHTML = targets.map(function(t) {
-        var safeLabel = String(t.label).replace(/</g, '&lt;').replace(/"/g, '&quot;');
-        return '<button type="button" class="food-day-transfer-target-btn block w-full text-left px-2 py-1.5 text-[10px] font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 rounded-sm truncate transition-colors" data-target-id="' + String(t.id).replace(/"/g, '&quot;') + '">' + safeLabel + '</button>';
-    }).join('');
+    var titleEl = pop.querySelector('p');
+    if (intoConsumedDay) {
+        pop.setAttribute('data-transfer-into-day', 'true');
+        if (titleEl) titleEl.textContent = 'From';
+        var sources = getDailyFoodBulkSourceOptions();
+        container.innerHTML = sources.map(function(s) {
+            var safeLabel = String(s.label).replace(/</g, '&lt;').replace(/"/g, '&quot;');
+            return '<button type="button" class="food-day-transfer-target-btn block w-full text-left px-2 py-1.5 text-[10px] font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 rounded-sm truncate transition-colors" data-source-value="' + String(s.value).replace(/"/g, '&quot;') + '">' + safeLabel + '</button>';
+        }).join('');
+    } else {
+        if (titleEl) titleEl.textContent = 'To';
+        var targets = getFoodDayTransferTargets();
+        container.innerHTML = targets.map(function(t) {
+            var safeLabel = String(t.label).replace(/</g, '&lt;').replace(/"/g, '&quot;');
+            return '<button type="button" class="food-day-transfer-target-btn block w-full text-left px-2 py-1.5 text-[10px] font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 rounded-sm truncate transition-colors" data-target-id="' + String(t.id).replace(/"/g, '&quot;') + '">' + safeLabel + '</button>';
+        }).join('');
+    }
     pop.classList.remove('hidden');
 }
 window.openFoodDayTransferPopover = openFoodDayTransferPopover;
@@ -1554,6 +1567,7 @@ function openFoodOverflowTransferPopover(dayKey, anchorElOrRect) {
     if (!pop || !container || !dayKey) return;
     pop.removeAttribute('data-buffer');
     pop.removeAttribute('data-cycle-day');
+    pop.removeAttribute('data-transfer-into-day');
     pop.setAttribute('data-overflow-key', dayKey);
     var rect = null;
     if (anchorElOrRect && typeof anchorElOrRect.left === 'number' && typeof anchorElOrRect.bottom === 'number') {
@@ -1569,6 +1583,8 @@ function openFoodOverflowTransferPopover(dayKey, anchorElOrRect) {
         pop.style.left = rect.left + 'px';
         pop.style.top = (rect.bottom + 4) + 'px';
     }
+    var titleEl = pop.querySelector('p');
+    if (titleEl) titleEl.textContent = 'To';
     var targets = getFoodDayTransferTargets();
     container.innerHTML = targets.map(function(t) {
         var safeLabel = String(t.label).replace(/</g, '&lt;').replace(/"/g, '&quot;');
@@ -1583,6 +1599,9 @@ function closeFoodDayTransferPopover() {
     if (pop) {
         pop.classList.add('hidden');
         pop.removeAttribute('data-overflow-key');
+        pop.removeAttribute('data-transfer-into-day');
+        var titleEl = pop.querySelector('p');
+        if (titleEl) titleEl.textContent = 'To';
     }
 }
 window.closeFoodDayTransferPopover = closeFoodDayTransferPopover;
@@ -1593,6 +1612,12 @@ window.closeFoodDayTransferPopover = closeFoodDayTransferPopover;
         if (btn) {
             var pop = document.getElementById('food-day-transfer-popover');
             if (!pop || pop.classList.contains('hidden')) return;
+            if (pop.getAttribute('data-transfer-into-day') === 'true') {
+                var sourceValue = btn.getAttribute('data-source-value');
+                var cycleDayInto = parseInt(pop.getAttribute('data-cycle-day'), 10);
+                if (cycleDayInto && sourceValue) fundConsumedFoodDayFromSource(cycleDayInto, sourceValue);
+                return;
+            }
             var targetId = btn.getAttribute('data-target-id');
             if (!targetId) return;
             if (pop.getAttribute('data-buffer') === 'true') {
@@ -1818,6 +1843,42 @@ function deductDailyFoodBulkSource(sourceValue, amount) {
     }
     return false;
 }
+
+function fundConsumedFoodDayFromSource(day, sourceValue) {
+    if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
+    var targetDay = Math.max(1, Math.min(28, Math.floor(day)));
+    var consumedList = (state.food && state.food.consumedDays) ? state.food.consumedDays.slice() : [];
+    if (consumedList.indexOf(targetDay) === -1) return;
+    if (!sourceValue) {
+        if (typeof showAppAlert === 'function') showAppAlert('Choose a source bucket.');
+        return;
+    }
+    var core = typeof computeFoodPlanCore === 'function' ? computeFoodPlanCore() : null;
+    var dailyRate = (core && core.dailyRate > 0) ? core.dailyRate : (600 / 28);
+    if (dailyRate <= 0) {
+        if (typeof showAppAlert === 'function') showAppAlert('Daily Food plan amount is zero.');
+        return;
+    }
+    var available = getDailyFoodBulkSourceAvailable(sourceValue);
+    if (available + 0.001 < dailyRate) {
+        if (typeof showAppAlert === 'function') showAppAlert('Selected source does not have enough funds.');
+        return;
+    }
+    pushToUndo();
+    if (!deductDailyFoodBulkSource(sourceValue, dailyRate)) return;
+    state.food.consumedDays = consumedList.filter(function (d) { return d !== targetDay; }).sort(function (a, b) { return a - b; });
+    state.food.daysUsed = state.food.consumedDays.length;
+    if (typeof setFoodFundedForDay === 'function') setFoodFundedForDay(targetDay, dailyRate);
+    if (typeof countRedistributedOverflowKeys === 'function' && countRedistributedOverflowKeys() > 0) {
+        _recomputeOverflowRedistributionSplit();
+    }
+    if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
+    saveState();
+    renderLedger();
+    updateGlobalUI();
+    closeFoodDayTransferPopover();
+}
+window.fundConsumedFoodDayFromSource = fundConsumedFoodDayFromSource;
 
 function applyDailyFoodBulkRefill() {
     if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
