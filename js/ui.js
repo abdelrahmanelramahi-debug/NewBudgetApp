@@ -315,7 +315,7 @@ function switchPage(page, options) {
     if(page === 'ledger') renderLedger();
     if(page === 'budget') {
         renderStrategy();
-        updateBudgetPlanAllocated();
+        scheduleBudgetPlanAllocatedRefresh();
     }
     if(page === 'profile' && typeof updateAuthUI === 'function') updateAuthUI();
     if(page === 'settings') renderSettings();
@@ -416,9 +416,19 @@ function updateBudgetPlanAllocated() {
     allocated = rm(allocated);
     updateAllocatedTotalUI({ total: total, allocated: allocated, prefix: 'budget-plan' });
 }
+function scheduleBudgetPlanAllocatedRefresh() {
+    if (typeof updateBudgetPlanAllocated !== 'function') return;
+    updateBudgetPlanAllocated();
+    if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(function () {
+            updateBudgetPlanAllocated();
+        });
+    }
+}
 window.openBudgetPlan = openBudgetPlan;
 window.closeBudgetPlan = closeBudgetPlan;
 window.updateBudgetPlanAllocated = updateBudgetPlanAllocated;
+window.scheduleBudgetPlanAllocatedRefresh = scheduleBudgetPlanAllocatedRefresh;
 window.updateAllocatedTotalUI = updateAllocatedTotalUI;
 
 function toggleSideMenu() {
@@ -850,7 +860,7 @@ function renderStrategy(opts) {
         updateAllocatedTotalUI({ total: total, allocated: rm(allocated), prefix: 'onboarding-cat' });
     } else {
         calculateReality();
-        if (typeof updateBudgetPlanAllocated === 'function') updateBudgetPlanAllocated();
+        if (typeof scheduleBudgetPlanAllocatedRefresh === 'function') scheduleBudgetPlanAllocatedRefresh();
         var obStep = document.getElementById('onboarding-step-categories');
         if (obStep && !obStep.classList.contains('hidden') && document.getElementById('onboarding-strategy-sections')) {
             renderStrategy({ containerId: 'onboarding-strategy-sections', onboarding: true });
@@ -865,7 +875,7 @@ function toggleBudgetFoodPlan(el, sid, idx) {
     state.settings.showFoodPlan = enabled;
     if (typeof saveState === 'function') saveState();
     renderStrategy();
-    updateBudgetPlanAllocated();
+    scheduleBudgetPlanAllocatedRefresh();
 }
 if (typeof window !== 'undefined') window.toggleBudgetFoodPlan = toggleBudgetFoodPlan;
 
