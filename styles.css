@@ -2281,11 +2281,34 @@ body.theme-dark .budget-savings-total {
     padding: 6px;
 }
 
+#onboarding-step-categories .onboarding-tip-highlight > *,
+#onboarding-step-categories .onboarding-tip-highlight .premium-card,
+#onboarding-step-categories .onboarding-tip-highlight .draggable-row,
+#onboarding-step-categories .onboarding-tip-highlight .input-pill,
+#onboarding-step-categories .onboarding-tip-highlight input,
+#onboarding-step-categories .onboarding-tip-highlight button,
+#onboarding-step-categories .onboarding-tip-highlight [class*="budget-"],
+#onboarding-step-categories .onboarding-tip-highlight [class*="section-"] {
+    position: relative;
+    z-index: 31 !important;
+}
+
 body.theme-dark #onboarding-step-categories .onboarding-tip-highlight,
 body.theme-dark #page-ledger .home-tour-highlight,
 body.theme-dark .onboarding-tip-highlight,
 body.theme-dark .home-tour-highlight {
     background-color: #1e293b !important;
+}
+
+body.theme-dark #onboarding-step-categories .onboarding-tip-highlight > *,
+body.theme-dark #onboarding-step-categories .onboarding-tip-highlight .premium-card,
+body.theme-dark #onboarding-step-categories .onboarding-tip-highlight .draggable-row,
+body.theme-dark #onboarding-step-categories .onboarding-tip-highlight .input-pill,
+body.theme-dark #onboarding-step-categories .onboarding-tip-highlight input,
+body.theme-dark #onboarding-step-categories .onboarding-tip-highlight button,
+body.theme-dark #onboarding-step-categories .onboarding-tip-highlight [class*="budget-"],
+body.theme-dark #onboarding-step-categories .onboarding-tip-highlight [class*="section-"] {
+    z-index: 31 !important;
 }
 
 body.theme-sepia #onboarding-step-categories .onboarding-tip-highlight,
