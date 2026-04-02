@@ -1488,7 +1488,7 @@ function updateFoodUI() {
             var labelExtraClass = 'w-12 flex-shrink-0 flex items-center text-[10px] font-black uppercase tracking-wider ';
             labelExtraClass += allOverflowResolved ? 'text-emerald-700' : 'text-red-500';
             var extraHtml = '<div class="' + rowExtraClass + '">' +
-                '<div class="' + labelExtraClass + '" title="Calendar days after your 28-day plan until your next pay day">Overflow</div>' +
+                '<div class="' + labelExtraClass + '" title="Calendar days after your 28-day plan until your next pay day">Extra</div>' +
                 '<div class="grid grid-cols-7 gap-1 flex-1">';
             for (var ec = 0; ec < 7; ec++) {
                 if (ec < overflowDates.length) {
@@ -1671,7 +1671,6 @@ function _bindOverflowDayPanel(dayKey, ui) {
     if (ui.sourceWrap) ui.sourceWrap.classList.toggle('hidden', !!usage || isConsumed);
     if (ui.sourceBtn) ui.sourceBtn.classList.toggle('hidden', !!usage || isConsumed);
     if (ui.redistributeBtn) ui.redistributeBtn.classList.toggle('hidden', !!usage || isConsumed);
-    if (ui.removeSourceBtn) ui.removeSourceBtn.classList.toggle('hidden', usage !== 'source' || isConsumed);
     if (ui.undoBtn) {
         ui.undoBtn.classList.toggle('hidden', usage !== 'redistributed' || isConsumed);
         ui.undoBtn.onclick = function () {
@@ -1694,8 +1693,8 @@ function _bindOverflowDayPanel(dayKey, ui) {
     if (ui.subtitleEl) {
         if (isTransferred) ui.subtitleEl.textContent = 'This overflow day was transferred to another fund and is already resolved.';
         else if (isConsumed) ui.subtitleEl.textContent = 'Marked consumed. Unmark to restore the previous overflow funding method for this day.';
-        else if (usage === 'source') ui.subtitleEl.textContent = 'Funded from your chosen source. Remove funding to pick another option, or mark consumed / transfer.';
-        else if (usage === 'redistributed') ui.subtitleEl.textContent = 'Daily Food is split across more calendar days. Undo redistribute to revert, or mark consumed / transfer.';
+        else if (usage === 'source') ui.subtitleEl.textContent = 'Funded from your chosen source. Mark consumed or transfer when you use this extra day.';
+        else if (usage === 'redistributed') ui.subtitleEl.textContent = 'Daily Food is split across more calendar days. De-distribute to revert, or mark consumed / transfer.';
         else ui.subtitleEl.textContent = 'Days between the end of your 28-day plan and your next pay day. Choose how to account for this day.';
     }
     if (ui.consumeBtn) {
@@ -1726,15 +1725,6 @@ function _bindOverflowDayPanel(dayKey, ui) {
             if (typeof closeOverflowDayPopover === 'function') closeOverflowDayPopover();
             else if (typeof ui.close === 'function') ui.close();
             if (typeof openFoodOverflowTransferPopover === 'function') openFoodOverflowTransferPopover(key, anchorRect);
-        };
-    }
-    if (ui.removeSourceBtn) {
-        ui.removeSourceBtn.onclick = function() {
-            var key = ui.rootEl.getAttribute('data-overflow-key');
-            if (!key) return;
-            if (typeof applyOverflowDaySourceUndo === 'function') applyOverflowDaySourceUndo(key);
-            if (typeof ui.close === 'function') ui.close();
-            if (typeof updateFoodUI === 'function') updateFoodUI();
         };
     }
     if (ui.sourceBtn) {

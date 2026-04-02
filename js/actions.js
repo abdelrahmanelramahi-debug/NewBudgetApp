@@ -2011,6 +2011,11 @@ function getOverflowDaySpendableAmount(dayKey) {
     if (!usage) return 0;
     var amt = Number(state.food.overflowFunded && state.food.overflowFunded[dayKey]) || 0;
     if (amt > 0.001) return amt;
+    if (usage === 'source') {
+        var info = typeof getFoodRemainderInfo === 'function' ? getFoodRemainderInfo() : null;
+        var dailyRate = (info && info.dailyRate > 0) ? info.dailyRate : (600 / 28);
+        return dailyRate > 0.001 ? dailyRate : 0;
+    }
     if (usage === 'redistributed') {
         var slot = state.food && typeof state.food.redistributedPerSlot === 'number' && !Number.isNaN(state.food.redistributedPerSlot) ? state.food.redistributedPerSlot : 0;
         return slot > 0.001 ? slot : 0;
@@ -2073,7 +2078,7 @@ function setOverflowFoodDayConsumed(dayKey, action) {
     }
     var amount = getOverflowDaySpendableAmount(dayKey);
     if (amount <= 0.001) {
-        if (typeof showAppAlert === 'function') showAppAlert('No overflow funding to mark consumed.', 'Daily Food');
+        if (typeof showAppAlert === 'function') showAppAlert('This extra day is set up, but its Daily Food amount is missing. Fund it again or de-distribute it first.', 'Daily Food');
         return;
     }
     pushToUndo();
