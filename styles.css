@@ -2230,8 +2230,9 @@ body.theme-dark .budget-savings-total {
 
 /* Onboarding tips overlay + tip card (overlay must sit below highlight so highlighted area stays ungreyed) */
 #onboarding-budget-tips-overlay {
-    pointer-events: auto;
+    pointer-events: none;
     z-index: 22 !important;
+    background: transparent !important;
 }
 
 #onboarding-tip-card {
@@ -2318,10 +2319,19 @@ body.theme-sepia .home-tour-highlight {
     background-color: #fef3c7 !important;
 }
 
-/* Onboarding tips: apply stronger contrast only to the currently referenced box. */
+/* Onboarding tips use a spotlight: the active target stays lit while its giant shadow dims the rest. */
+#onboarding-step-categories .onboarding-tip-highlight {
+    z-index: 35 !important;
+    box-shadow:
+        0 0 0 9999px rgba(15, 23, 42, 0.42),
+        0 22px 48px rgba(15, 23, 42, 0.24) !important;
+}
+
 #onboarding-step-categories .onboarding-tip-highlight.onboarding-tip-highlight-contrast,
 .onboarding-tip-highlight.onboarding-tip-highlight-contrast {
-    box-shadow: 0 22px 48px rgba(15, 23, 42, 0.24);
+    box-shadow:
+        0 0 0 9999px rgba(15, 23, 42, 0.42),
+        0 22px 48px rgba(15, 23, 42, 0.24) !important;
     outline: 3px solid rgba(99, 102, 241, 0.95);
     outline-offset: -3px;
     filter: brightness(1.03) saturate(1.02);
@@ -2402,7 +2412,9 @@ body.theme-sepia .home-tour-highlight {
 
 body.theme-dark #onboarding-step-categories .onboarding-tip-highlight.onboarding-tip-highlight-contrast,
 body.theme-dark .onboarding-tip-highlight.onboarding-tip-highlight-contrast {
-    box-shadow: 0 24px 52px rgba(2, 6, 23, 0.55);
+    box-shadow:
+        0 0 0 9999px rgba(2, 6, 23, 0.58),
+        0 24px 52px rgba(2, 6, 23, 0.55) !important;
     outline-color: rgba(165, 180, 252, 0.95);
     filter: brightness(1.12) saturate(1.04);
 }
@@ -2449,7 +2461,9 @@ body.theme-dark #onboarding-savings-block.onboarding-tip-highlight-contrast .inp
 
 body.theme-sepia #onboarding-step-categories .onboarding-tip-highlight.onboarding-tip-highlight-contrast,
 body.theme-sepia .onboarding-tip-highlight.onboarding-tip-highlight-contrast {
-    box-shadow: 0 22px 48px rgba(120, 53, 15, 0.18);
+    box-shadow:
+        0 0 0 9999px rgba(120, 53, 15, 0.26),
+        0 22px 48px rgba(120, 53, 15, 0.18) !important;
     outline-color: rgba(180, 83, 9, 0.9);
     filter: brightness(1.02) saturate(1.02);
 }
