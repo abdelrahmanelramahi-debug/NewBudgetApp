@@ -855,8 +855,12 @@ function renderStrategy(opts) {
         }
 
         var displayLabel = (sec && sec.id === 'core_essentials') ? 'Must Haves' : sec.label;
+        var onboardingCardId = '';
+        if (forOnboarding && sec.isSystem) onboardingCardId = ' id="onboarding-must-haves-card"';
+        else if (forOnboarding && !sec.isSystem && !customHtml) onboardingCardId = ' id="onboarding-mini-budgets-card"';
+
         const cardHtml = `
-            <div class="premium-card p-6 mb-6 draggable-card ${sec.isSystem ? 'bg-indigo-50/50 border-indigo-100' : ''}"
+            <div${onboardingCardId} class="premium-card p-6 mb-6 draggable-card ${sec.isSystem ? 'bg-indigo-50/50 border-indigo-100' : ''}"
                  draggable="${!sec.isSystem}"
                  ondragstart="handleCatDragStart(event, ${secIdx})"
                  ondragover="handleDragOver(event)"

@@ -21,7 +21,7 @@ var ONBOARDING_BUDGET_TIPS_MUST_HAVES = [
     {
         title: 'Start With Essentials',
         body: 'Fund your essential categories first, then adjust Weekly Allowance, Daily Food, Transportation, and Savings.',
-        target: '#onboarding-must-haves-block'
+        target: '#onboarding-must-haves-card'
     }
 ];
 
@@ -29,7 +29,7 @@ var ONBOARDING_BUDGET_TIPS_MINI_BUDGETS = [
     {
         title: 'Add Flexible Spending',
         body: 'Use mini-budgets for flexible spending, and adjust or reorder them anytime later.',
-        target: '#onboarding-mini-budgets-block'
+        target: '#onboarding-mini-budgets-card'
     }
 ];
 

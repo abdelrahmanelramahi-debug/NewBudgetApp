@@ -2352,10 +2352,25 @@ body.theme-sepia .home-tour-highlight {
 #onboarding-step-categories #onboarding-mini-budgets-block.onboarding-tip-highlight-contrast .premium-card,
 #onboarding-mini-budgets-block.onboarding-tip-highlight-contrast .premium-card,
 #onboarding-step-categories #onboarding-savings-block.onboarding-tip-highlight-contrast .premium-card,
-#onboarding-savings-block.onboarding-tip-highlight-contrast .premium-card {
+#onboarding-savings-block.onboarding-tip-highlight-contrast .premium-card,
+#onboarding-step-categories #onboarding-must-haves-card.onboarding-tip-highlight,
+#onboarding-must-haves-card.onboarding-tip-highlight,
+#onboarding-step-categories #onboarding-mini-budgets-card.onboarding-tip-highlight,
+#onboarding-mini-budgets-card.onboarding-tip-highlight {
     background: #ffffff !important;
     border-color: rgba(99, 102, 241, 0.18) !important;
     box-shadow: 0 18px 32px rgba(15, 23, 42, 0.08) !important;
+}
+
+#onboarding-step-categories #onboarding-must-haves-card.onboarding-tip-highlight,
+#onboarding-must-haves-card.onboarding-tip-highlight,
+#onboarding-step-categories #onboarding-mini-budgets-card.onboarding-tip-highlight,
+#onboarding-mini-budgets-card.onboarding-tip-highlight {
+    position: relative;
+    z-index: 35 !important;
+    outline: 3px solid rgba(99, 102, 241, 0.95);
+    outline-offset: -3px;
+    filter: brightness(1.04) saturate(1.02);
 }
 
 #onboarding-step-categories #onboarding-must-haves-block.onboarding-tip-highlight-contrast .input-pill,
@@ -2412,7 +2427,11 @@ body.theme-dark #onboarding-must-haves-block.onboarding-tip-highlight-contrast .
 body.theme-dark #onboarding-step-categories #onboarding-mini-budgets-block.onboarding-tip-highlight-contrast .premium-card,
 body.theme-dark #onboarding-mini-budgets-block.onboarding-tip-highlight-contrast .premium-card,
 body.theme-dark #onboarding-step-categories #onboarding-savings-block.onboarding-tip-highlight-contrast .premium-card,
-body.theme-dark #onboarding-savings-block.onboarding-tip-highlight-contrast .premium-card {
+body.theme-dark #onboarding-savings-block.onboarding-tip-highlight-contrast .premium-card,
+body.theme-dark #onboarding-step-categories #onboarding-must-haves-card.onboarding-tip-highlight,
+body.theme-dark #onboarding-must-haves-card.onboarding-tip-highlight,
+body.theme-dark #onboarding-step-categories #onboarding-mini-budgets-card.onboarding-tip-highlight,
+body.theme-dark #onboarding-mini-budgets-card.onboarding-tip-highlight {
     background: #334155 !important;
     border-color: rgba(165, 180, 252, 0.24) !important;
     box-shadow: 0 18px 32px rgba(2, 6, 23, 0.28) !important;
