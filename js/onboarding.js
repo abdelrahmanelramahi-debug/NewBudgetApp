@@ -258,6 +258,7 @@ function showBudgetPlanTip(index) {
     step.querySelectorAll('.onboarding-tip-highlight').forEach(function (el) {
         el.classList.remove('onboarding-tip-highlight');
         el.classList.remove('onboarding-tip-highlight-contrast');
+        el.classList.remove('onboarding-tip-highlight-ancestor');
     });
 
     var targetEl = null;
@@ -266,6 +267,18 @@ function showBudgetPlanTip(index) {
     }
 
     if (targetEl) {
+        var ancestorEls = [];
+        var strategySections = document.getElementById('onboarding-strategy-sections');
+        if (strategySections && strategySections.contains(targetEl)) {
+            var blockAncestor = targetEl.closest('[id$="-block"]');
+            if (blockAncestor) ancestorEls.push(blockAncestor);
+        }
+
+        ancestorEls.forEach(function (el) {
+            el.classList.add('onboarding-tip-highlight');
+            el.classList.add('onboarding-tip-highlight-contrast');
+            el.classList.add('onboarding-tip-highlight-ancestor');
+        });
         targetEl.classList.add('onboarding-tip-highlight');
         targetEl.classList.add('onboarding-tip-highlight-contrast');
 
@@ -347,6 +360,7 @@ function finishBudgetPlanTips() {
         step.querySelectorAll('.onboarding-tip-highlight').forEach(function (el) {
             el.classList.remove('onboarding-tip-highlight');
             el.classList.remove('onboarding-tip-highlight-contrast');
+            el.classList.remove('onboarding-tip-highlight-ancestor');
         });
     }
     if (typeof state !== 'undefined') {
