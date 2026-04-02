@@ -612,9 +612,7 @@ function confirmRealityCheck() {
 
     pushToUndo();
     applyTransaction({ type: 'adjust_surplus', delta });
-    saveState();
-
-    updateGlobalUI();
+    commitUI('global');
     closeRealityCheck();
 }
 
@@ -641,9 +639,7 @@ function deleteCategory(sid) {
         pushToUndo();
         applyTransaction({ type: 'delete_category', sid });
         if (typeof normalizePaycheckPriorityOrder === 'function') normalizePaycheckPriorityOrder();
-        saveState();
-        renderStrategy();
-        updateGlobalUI();
+        commitStrategyAndGlobal();
     }, null, { confirmLabel: 'Delete' });
 }
 
@@ -664,8 +660,7 @@ function handleItemDrop(e, targetSid, targetIdx) {
         const items = state.categories.find(s => s.id === targetSid).items;
         const moved = items.splice(dragSrc.idx, 1)[0];
         items.splice(targetIdx, 0, moved);
-        saveState();
-        renderStrategy();
+        commitUI('strategy');
     }
     dragSrc = null; dragType = null;
 }
@@ -684,8 +679,7 @@ function handleCatDrop(e, targetIdx) {
         pushToUndo();
         const moved = state.categories.splice(dragSrc.idx, 1)[0];
         state.categories.splice(targetIdx, 0, moved);
-        saveState();
-        renderStrategy();
+        commitUI('strategy');
     }
     dragSrc = null; dragType = null;
 }
@@ -725,8 +719,7 @@ function handlePriorityDrop(e, targetPriorityId) {
     var moved = order.splice(fromIdx, 1)[0];
     order.splice(toIdx, 0, moved);
     state.accounts.paycheckPriorityOrder = order;
-    saveState();
-    if (typeof renderStrategy === 'function') renderStrategy();
+    commitUI('strategy');
     dragSrc = null;
     dragType = null;
 }
@@ -1389,8 +1382,7 @@ function completeTask(label) {
     var doneItem = getItemByLabel(label);
     if (doneItem && doneItem.item && doneItem.item.amortData) delete doneItem.item.amortData;
     logHistory(label, -current, 'Completed');
-    saveState();
-    renderLedger();
+    commitUI('ledger');
 }
 
 // Food
@@ -1420,9 +1412,7 @@ function spendFoodDay() {
         if (!applyTransaction({ type: 'food_spend', amount: amount })) {
             return;
         }
-        saveState();
-        renderLedger();
-        updateGlobalUI();
+        commitLedgerAndGlobal();
     }
 }
 
@@ -1461,9 +1451,7 @@ function setFoodDayFromCalendar(cycleDay, action) {
     }
     state.food.daysUsed = state.food.consumedDays.length;
     if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
-    saveState();
-    renderLedger();
-    updateGlobalUI();
+    commitLedgerAndGlobal();
 }
 
 // Transfer one day's worth from Daily Food to another category and mark day consumed. Used by food-cycle day popover.
@@ -1490,9 +1478,7 @@ function transferFoodDayTo(cycleDay, targetId) {
     state.food.consumedDays = list.concat([day]).sort(function(a, b) { return a - b; });
     state.food.daysUsed = state.food.consumedDays.length;
     if (typeof logHistory === 'function') logHistory('Daily Food', -amount, 'Day transfer to ' + targetId);
-    saveState();
-    if (typeof renderLedger === 'function') renderLedger();
-    if (typeof updateGlobalUI === 'function') updateGlobalUI();
+    commitLedgerAndGlobal();
     if (typeof closeFoodDayTransferPopover === 'function') closeFoodDayTransferPopover();
 }
 window.transferFoodDayTo = transferFoodDayTo;
@@ -1529,9 +1515,7 @@ function transferBufferDayTo(targetId) {
         applyTransaction({ type: 'transfer', from: 'Surplus', to: targetId, amount: dailyRate });
     }
     if (typeof logHistory === 'function') logHistory('Buffer', -dailyRate, 'Released to ' + targetId);
-    saveState();
-    if (typeof renderLedger === 'function') renderLedger();
-    if (typeof updateGlobalUI === 'function') updateGlobalUI();
+    commitLedgerAndGlobal();
     closeFoodDayTransferPopover();
 }
 window.transferBufferDayTo = transferBufferDayTo;
@@ -1908,9 +1892,7 @@ function fundConsumedFoodDayFromSource(day, sourceValue) {
         _recomputeOverflowRedistributionSplit();
     }
     if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
-    saveState();
-    renderLedger();
-    updateGlobalUI();
+    commitLedgerAndGlobal();
     closeFoodDayTransferPopover();
 }
 window.fundConsumedFoodDayFromSource = fundConsumedFoodDayFromSource;
@@ -1959,9 +1941,7 @@ function applyDailyFoodBulkRefill() {
     }
     if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
     if (typeof logHistory === 'function') logHistory('Daily Food', appliedAmount, 'Bulk refill from source');
-    saveState();
-    renderLedger();
-    updateGlobalUI();
+    commitLedgerAndGlobal();
     _dailyFoodBulkSelectedDays = [];
     renderDailyFoodBulkSourceOptions();
     renderDailyFoodBulkDaysGrid();
@@ -2078,9 +2058,7 @@ function applyOverflowDayFromSource(dayKey, sourceId) {
         _recomputeOverflowRedistributionSplit();
     }
     if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
-    saveState();
-    if (typeof renderLedger === 'function') renderLedger();
-    if (typeof updateGlobalUI === 'function') updateGlobalUI();
+    commitLedgerAndGlobal();
 }
 window.applyOverflowDayFromSource = applyOverflowDayFromSource;
 
@@ -2105,9 +2083,7 @@ function applyOverflowDaySourceUndo(dayKey) {
         _recomputeOverflowRedistributionSplit();
     }
     if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
-    saveState();
-    if (typeof renderLedger === 'function') renderLedger();
-    if (typeof updateGlobalUI === 'function') updateGlobalUI();
+    commitLedgerAndGlobal();
 }
 window.applyOverflowDaySourceUndo = applyOverflowDaySourceUndo;
 
@@ -2174,9 +2150,7 @@ function setOverflowFoodDayConsumed(dayKey, action) {
         }
         if (!Object.keys(consumedMetaMap).length) delete state.food.overflowConsumedMeta;
         if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
-        saveState();
-        if (typeof renderLedger === 'function') renderLedger();
-        if (typeof updateGlobalUI === 'function') updateGlobalUI();
+        commitLedgerAndGlobal();
         if (typeof updateFoodUI === 'function') updateFoodUI();
         return;
     }
@@ -2207,9 +2181,7 @@ function setOverflowFoodDayConsumed(dayKey, action) {
     consumedMap[dayKey] = amount;
     state.food.overflowConsumedAmounts = consumedMap;
     if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
-    saveState();
-    if (typeof renderLedger === 'function') renderLedger();
-    if (typeof updateGlobalUI === 'function') updateGlobalUI();
+    commitLedgerAndGlobal();
     if (typeof updateFoodUI === 'function') updateFoodUI();
 }
 window.setOverflowFoodDayConsumed = setOverflowFoodDayConsumed;
@@ -2254,9 +2226,7 @@ function transferFoodOverflowDayTo(dayKey, targetId) {
     if (!state.food.overflowConsumedAmounts || typeof state.food.overflowConsumedAmounts !== 'object') state.food.overflowConsumedAmounts = {};
     state.food.overflowConsumedAmounts[dayKey] = useAmt;
     if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
-    saveState();
-    if (typeof renderLedger === 'function') renderLedger();
-    if (typeof updateGlobalUI === 'function') updateGlobalUI();
+    commitLedgerAndGlobal();
     if (typeof updateFoodUI === 'function') updateFoodUI();
     if (typeof closeFoodDayTransferPopover === 'function') closeFoodDayTransferPopover();
 }
@@ -2353,9 +2323,7 @@ function applyOverflowDayRedistribution(dayKey) {
     markOverflowDayUsage(dayKey, 'redistributed');
     _recomputeOverflowRedistributionSplit();
     if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
-    saveState();
-    if (typeof renderLedger === 'function') renderLedger();
-    if (typeof updateGlobalUI === 'function') updateGlobalUI();
+    commitLedgerAndGlobal();
 }
 window.applyOverflowDayRedistribution = applyOverflowDayRedistribution;
 
@@ -2369,9 +2337,7 @@ function applyOverflowRedistributionUndo(dayKey) {
     if (state.food.overflowFundingSource) delete state.food.overflowFundingSource[dayKey];
     _recomputeOverflowRedistributionSplit();
     if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
-    saveState();
-    if (typeof renderLedger === 'function') renderLedger();
-    if (typeof updateGlobalUI === 'function') updateGlobalUI();
+    commitLedgerAndGlobal();
 }
 window.applyOverflowRedistributionUndo = applyOverflowRedistributionUndo;
 
@@ -2402,9 +2368,7 @@ function buyFoodDay() {
     applyTransaction({ type: 'food_lock', amount: totalCost, label: `+${daysInput} Days` });
     document.getElementById('food-lock-val').value = '';
 
-    saveState();
-    renderLedger();
-    updateGlobalUI();
+    commitLedgerAndGlobal();
 }
 
 // Consume a single buffer day: reduce locked buffer by one daily-rate chunk (no money back to Extra).
@@ -2419,9 +2383,7 @@ function consumeBufferDay() {
     state.food.lockedAmount = locked - dailyRate;
     if (!state.food.history) state.food.history = [];
     state.food.history.unshift({ type: 'buffer_spend', amt: dailyRate });
-    saveState();
-    renderLedger();
-    updateGlobalUI();
+    commitLedgerAndGlobal();
 }
 
 // Release a specific number of buffer days (partial release) back to Extra (refund unused buffer).
@@ -2440,9 +2402,7 @@ function releaseBufferDays(days) {
     if (!amount || amount <= 0) return;
     pushToUndo();
     applyTransaction({ type: 'food_release_partial', amount: amount, days: n });
-    saveState();
-    renderLedger();
-    updateGlobalUI();
+    commitLedgerAndGlobal();
 }
 
 // Release handler for the UI button: if a day count is entered, release that many days;
@@ -2463,9 +2423,7 @@ function releaseAllBuffer() {
     if(state.food.lockedAmount > 0) {
         pushToUndo();
         applyTransaction({ type: 'food_release_all' });
-        saveState();
-        renderLedger();
-        updateGlobalUI();
+        commitLedgerAndGlobal();
     }
 }
 

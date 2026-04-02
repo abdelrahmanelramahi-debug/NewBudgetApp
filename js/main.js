@@ -10,6 +10,11 @@ window.onload = function() {
         el.addEventListener('click', handler);
     }
 
+    function getWeeklyTransferPrefillValue() {
+        var input = byId('weekly-inline-val');
+        return input ? input.value : '';
+    }
+
     function wireStaticClickActions() {
         bindClick('onboarding-currency-back', function () { onboardingBack(); });
         bindClick('onboarding-currency-next', function () { onboardingNext(); });
@@ -43,6 +48,7 @@ window.onload = function() {
         });
 
         bindClick('desktop-bug-report', function () { openBugReportModal(); closeSideMenu(); });
+        bindClick('desktop-sign-out-btn', function () { signOut(); });
         bindClick('mobile-menu-open', function () { toggleSideMenu(); });
         bindClick('side-menu-backdrop', function () { closeSideMenu(); });
         bindClick('mobile-menu-close', function () { closeSideMenu(); });
@@ -80,6 +86,7 @@ window.onload = function() {
         bindClick('profile-back-btn', function () { switchPage('ledger'); });
         bindClick('settings-back-btn', function () { switchPage('ledger'); });
         bindClick('profile-auth-open-btn', function () { openAuthModal(); });
+        bindClick('sign-out-btn', function () { signOut(); });
         bindClick('settings-setup-again-btn', function () { showOnboarding(function () { refreshUI(); }); });
         bindClick('settings-export-btn', function () { exportState(); });
         bindClick('settings-import-btn', function () { triggerImport(); });
@@ -103,6 +110,7 @@ window.onload = function() {
         bindClick('deficit-close-btn', function () { closeDeficitModal(); });
         bindClick('tool-close-btn', function () { closeTool(); });
         bindClick('amortization-close-btn', function () { closeAmortizationTool(); });
+        bindClick('amortization-save-btn', function () { confirmEditItem(); });
         bindClick('danger-cancel-btn', function () { closeDangerModal(); });
         bindClick('danger-confirm-btn', function () { confirmDangerAction(); });
         bindClick('delete-cancel-btn', function () { closeDeleteModal(); });
@@ -115,6 +123,46 @@ window.onload = function() {
         bindClick('add-item-confirm-btn', function () { confirmAddItem(); });
         bindClick('add-category-close-btn', function () { closeAddCategoryTool(); });
         bindClick('add-category-confirm-btn', function () { confirmAddCategory(); });
+
+        bindClick('deficit-trigger-resolve-btn', function () { openDeficitModal(); });
+        bindClick('surplus-controls-toggle', function () { toggleSurplusControls(); });
+        bindClick('global-undo-btn', function () { globalUndo(); });
+        bindClick('global-redo-btn', function () { globalRedo(); });
+        bindClick('surplus-add-btn', function () { adjustGlobalSurplus(1); });
+        bindClick('surplus-deduct-btn', function () { adjustGlobalSurplus(-1); });
+        bindClick('surplus-transfer-btn', function () { openTool('Surplus', 'Extra Fund', true); });
+        bindClick('surplus-controls-resolve', function () { openDeficitModal(); });
+
+        bindClick('bank-balance-info-btn', function () {
+            var info = byId('bank-balance-info');
+            if (info) info.classList.toggle('hidden');
+        });
+        bindClick('bank-balance-filter-btn', function () { toggleBankBalanceFilterDropdown(); });
+        bindClick('bank-balance-breakdown-btn', function () { openLiquidityBreakdown(); });
+        bindClick('bank-balance-select-all-btn', function () { bankBalanceFilterSelectAll(); });
+        var bankBalanceGroupsRoot = byId('bank-balance-bar') ? byId('bank-balance-bar').parentElement : null;
+        if (bankBalanceGroupsRoot) {
+            bankBalanceGroupsRoot.addEventListener('click', function (event) {
+                var trigger = event.target.closest('[data-bb-group]');
+                if (!trigger || !bankBalanceGroupsRoot.contains(trigger)) return;
+                var group = trigger.getAttribute('data-bb-group');
+                if (!group) return;
+                if (event.target.closest('input, label') && trigger.tagName === 'DIV') return;
+                toggleBankBalanceGroup(group);
+            });
+        }
+
+        bindClick('weekly-rollover-notice-btn', function () { showWeeklyRolloverNotice(); });
+        bindClick('prev-week-btn', function () { prevWeek(); });
+        bindClick('next-week-btn', function () { nextWeek(); });
+        bindClick('weekly-manage-btn', function () { openTool('Weekly Allowance', 'Weekly Allowance'); });
+        bindClick('weekly-spend-btn', function () { inlineWeeklyAdjust(-1); });
+        bindClick('weekly-transfer-btn', function () { openTool('Weekly Allowance', 'Weekly Allowance', true, getWeeklyTransferPrefillValue()); });
+
+        bindClick('tool-action-deduct-btn', function () { executeAction('deduct'); });
+        bindClick('tool-action-add-btn', function () { executeAction('add'); });
+        bindClick('tool-action-transfer-btn', function () { toggleTransferMode(); });
+        bindClick('tool-transfer-cancel-btn', function () { toggleTransferMode(); });
     }
 
     loadState();

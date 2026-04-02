@@ -252,7 +252,7 @@
                     </button>
                 </nav>
                 <div class="mt-auto border-t border-slate-100 px-4 py-4 flex flex-col gap-2">
-                    <button type="button" onclick="signOut()" class="w-full flex items-center justify-between px-3 py-2 rounded-2xl bg-slate-50 text-[12px] font-semibold text-slate-600">
+                    <button type="button" id="desktop-sign-out-btn" class="w-full flex items-center justify-between px-3 py-2 rounded-2xl bg-slate-50 text-[12px] font-semibold text-slate-600">
                         <span class="flex items-center gap-2">
                             <span class="inline-flex items-center justify-center w-6 h-6 rounded-xl bg-white text-slate-500">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -307,14 +307,14 @@
                         <span id="global-surplus-currency" class="home-header-extra-amount text-emerald-600 shrink-0" data-currency>AED</span>
                     </div>
                     <div id="deficit-trigger" class="hidden shrink-0 deficit-trigger-desktop-only">
-                        <button onclick="openDeficitModal()" class="home-header-resolve-btn">Resolve</button>
+                        <button id="deficit-trigger-resolve-btn" class="home-header-resolve-btn">Resolve</button>
                     </div>
-                    <button id="surplus-controls-toggle" onclick="toggleSurplusControls()" class="home-header-icon-btn shrink-0" aria-label="Extra options">
+                    <button id="surplus-controls-toggle" class="home-header-icon-btn shrink-0" aria-label="Extra options">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>
                     </button>
                     <div class="home-header-actions flex-shrink-0 flex items-center gap-0.5 sm:gap-1">
-                        <button onclick="globalUndo()" id="global-undo-btn" class="home-header-icon-btn home-header-undo-redo opacity-40 pointer-events-none" title="Undo" aria-label="Undo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg></button>
-                        <button onclick="globalRedo()" id="global-redo-btn" class="home-header-icon-btn home-header-undo-redo opacity-40 pointer-events-none" title="Redo" aria-label="Redo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg></button>
+                        <button id="global-undo-btn" class="home-header-icon-btn home-header-undo-redo opacity-40 pointer-events-none" title="Undo" aria-label="Undo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg></button>
+                        <button id="global-redo-btn" class="home-header-icon-btn home-header-undo-redo opacity-40 pointer-events-none" title="Redo" aria-label="Redo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13"/></svg></button>
                     </div>
                 </div>
             </div>
@@ -323,10 +323,10 @@
             <div class="home-header-surplus-panel">
                 <input type="number" id="surplus-adjust-val" name="surplus-adjust" placeholder="Amount..." data-currency-placeholder class="home-header-surplus-input" autocomplete="off">
                 <div class="flex flex-wrap gap-2 flex-shrink-0">
-                    <button onclick="adjustGlobalSurplus(1)" class="home-header-surplus-btn home-header-surplus-add">Add</button>
-                    <button onclick="adjustGlobalSurplus(-1)" class="home-header-surplus-btn home-header-surplus-deduct">Deduct</button>
-                    <button onclick="openTool('Surplus', 'Extra Fund', true)" class="home-header-surplus-btn home-header-surplus-transfer">Transfer</button>
-                    <button type="button" id="surplus-controls-resolve" onclick="openDeficitModal()" class="home-header-surplus-btn home-header-resolve-btn hidden">Resolve</button>
+                    <button id="surplus-add-btn" class="home-header-surplus-btn home-header-surplus-add">Add</button>
+                    <button id="surplus-deduct-btn" class="home-header-surplus-btn home-header-surplus-deduct">Deduct</button>
+                    <button id="surplus-transfer-btn" class="home-header-surplus-btn home-header-surplus-transfer">Transfer</button>
+                    <button type="button" id="surplus-controls-resolve" class="home-header-surplus-btn home-header-resolve-btn hidden">Resolve</button>
                 </div>
             </div>
         </div>
@@ -501,70 +501,70 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-1.5 flex-shrink-0">
-                        <button type="button" id="bank-balance-info-btn" onclick="document.getElementById('bank-balance-info').classList.toggle('hidden')" class="bank-balance-info-btn w-8 h-8 rounded-full border border-slate-300 text-slate-500 hover:bg-slate-100 flex items-center justify-center text-xs font-bold transition" aria-label="What is Bank Balance?">i</button>
-                        <button type="button" id="bank-balance-filter-btn" onclick="toggleBankBalanceFilterDropdown()" class="w-8 h-8 rounded-full border border-slate-200 text-slate-400 hover:bg-slate-50 hover:text-slate-600 flex items-center justify-center text-xs font-bold transition" aria-label="Choose which parts of your balance to show in the bar">
+                        <button type="button" id="bank-balance-info-btn" class="bank-balance-info-btn w-8 h-8 rounded-full border border-slate-300 text-slate-500 hover:bg-slate-100 flex items-center justify-center text-xs font-bold transition" aria-label="What is Bank Balance?">i</button>
+                        <button type="button" id="bank-balance-filter-btn" class="w-8 h-8 rounded-full border border-slate-200 text-slate-400 hover:bg-slate-50 hover:text-slate-600 flex items-center justify-center text-xs font-bold transition" aria-label="Choose which parts of your balance to show in the bar">
                             &#8942;
                         </button>
-                        <button type="button" onclick="openLiquidityBreakdown()" class="text-[10px] font-bold uppercase tracking-wider text-indigo-600 hover:text-indigo-700 px-3 py-1.5 rounded-lg hover:bg-indigo-50 transition">Breakdown</button>
+                        <button type="button" id="bank-balance-breakdown-btn" class="text-[10px] font-bold uppercase tracking-wider text-indigo-600 hover:text-indigo-700 px-3 py-1.5 rounded-lg hover:bg-indigo-50 transition">Breakdown</button>
                     </div>
                 </div>
                 <p id="bank-balance-info" class="hidden text-[10px] text-slate-500 leading-snug mb-3">This is the reality check of what should read in your bank account. The bar below shows how it’s split (Extra, Weekly, Food, categories, etc.).</p>
                 <div class="bank-balance-bar-wrap relative rounded-xl overflow-hidden bg-slate-100 h-8 flex" id="bank-balance-bar" role="img" aria-label="Bank balance breakdown by source"></div>
                 <div id="bank-balance-tooltip" class="bank-balance-tooltip hidden" aria-hidden="true"></div>
                 <p class="bank-balance-legend text-[9px] text-slate-400 mt-2 flex items-center gap-x-2.5 gap-y-0 flex-nowrap overflow-x-auto overflow-y-hidden pb-0.5 min-h-[1.25rem]">
-                    <span class="inline-flex items-center gap-1 shrink-0 cursor-pointer" data-bb-group="extra" onclick="toggleBankBalanceGroup('extra')" role="button">
+                    <span class="inline-flex items-center gap-1 shrink-0 cursor-pointer" data-bb-group="extra" role="button">
                         <span class="w-2 h-2 rounded-full bg-emerald-400"></span> Extra
                     </span>
-                    <span class="inline-flex items-center gap-1 shrink-0 cursor-pointer" data-bb-group="savings" onclick="toggleBankBalanceGroup('savings')" role="button">
+                    <span class="inline-flex items-center gap-1 shrink-0 cursor-pointer" data-bb-group="savings" role="button">
                         <span class="w-2 h-2 rounded-full bg-sky-400"></span> Savings
                     </span>
-                    <span class="inline-flex items-center gap-1 shrink-0 cursor-pointer" data-bb-group="payables" onclick="toggleBankBalanceGroup('payables')" role="button">
+                    <span class="inline-flex items-center gap-1 shrink-0 cursor-pointer" data-bb-group="payables" role="button">
                         <span class="w-2 h-2 rounded-full bg-rose-400"></span> Payables
                     </span>
-                    <span class="inline-flex items-center gap-1 shrink-0 cursor-pointer" data-bb-group="car" onclick="toggleBankBalanceGroup('car')" role="button">
+                    <span class="inline-flex items-center gap-1 shrink-0 cursor-pointer" data-bb-group="car" role="button">
                         <span class="w-2 h-2 rounded-full bg-violet-400"></span> Car
                     </span>
-                    <span class="inline-flex items-center gap-1 shrink-0 cursor-pointer" data-bb-group="weekly" onclick="toggleBankBalanceGroup('weekly')" role="button">
+                    <span class="inline-flex items-center gap-1 shrink-0 cursor-pointer" data-bb-group="weekly" role="button">
                         <span class="w-2 h-2 rounded-full bg-indigo-400"></span> Weekly
                     </span>
-                    <span class="inline-flex items-center gap-1 shrink-0 cursor-pointer" data-bb-group="food" onclick="toggleBankBalanceGroup('food')" role="button">
+                    <span class="inline-flex items-center gap-1 shrink-0 cursor-pointer" data-bb-group="food" role="button">
                         <span class="w-2 h-2 rounded-full bg-amber-400"></span> Food
                     </span>
-                    <span class="inline-flex items-center gap-1 shrink-0 cursor-pointer" data-bb-group="categories" onclick="toggleBankBalanceGroup('categories')" role="button">
+                    <span class="inline-flex items-center gap-1 shrink-0 cursor-pointer" data-bb-group="categories" role="button">
                         <span class="w-2 h-2 rounded-full bg-teal-400"></span> Categories
                     </span>
                 </p>
                 <div id="bank-balance-filter-dropdown" class="hidden absolute right-4 top-10 z-40 w-56 max-w-[80vw] bg-white border border-slate-200 rounded-xl shadow-xl shadow-slate-200/70 text-xs">
                     <div class="flex items-center justify-between px-3 py-2 border-b border-slate-100">
                         <span class="text-[10px] font-black uppercase tracking-widest text-slate-500">Show in bar</span>
-                        <button type="button" onclick="bankBalanceFilterSelectAll()" class="text-[10px] font-bold text-indigo-600 hover:text-indigo-700">Select all</button>
+                        <button type="button" id="bank-balance-select-all-btn" class="text-[10px] font-bold text-indigo-600 hover:text-indigo-700">Select all</button>
                     </div>
                     <div class="bank-balance-filter-list py-2">
-                        <div class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" onclick="toggleBankBalanceGroup('extra')">
+                        <div class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" data-bb-group="extra">
                             <input type="checkbox" id="bb-filter-extra" name="bb-filter-extra" class="w-4 h-4 accent-emerald-500">
                             <label for="bb-filter-extra" class="text-[11px] text-slate-700 cursor-pointer">Extra (Unallocated)</label>
                         </div>
-                        <div class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" onclick="toggleBankBalanceGroup('savings')">
+                        <div class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" data-bb-group="savings">
                             <input type="checkbox" id="bb-filter-savings" name="bb-filter-savings" class="w-4 h-4 accent-sky-500">
                             <label for="bb-filter-savings" class="text-[11px] text-slate-700 cursor-pointer">Savings</label>
                         </div>
-                        <div class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" onclick="toggleBankBalanceGroup('payables')">
+                        <div class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" data-bb-group="payables">
                             <input type="checkbox" id="bb-filter-payables" name="bb-filter-payables" class="w-4 h-4 accent-rose-500">
                             <label for="bb-filter-payables" class="text-[11px] text-slate-700 cursor-pointer">Payables</label>
                         </div>
-                        <div class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" onclick="toggleBankBalanceGroup('car')">
+                        <div class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" data-bb-group="car">
                             <input type="checkbox" id="bb-filter-car" name="bb-filter-car" class="w-4 h-4 accent-violet-500">
                             <label for="bb-filter-car" class="text-[11px] text-slate-700 cursor-pointer">Car</label>
                         </div>
-                        <div class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" onclick="toggleBankBalanceGroup('weekly')">
+                        <div class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" data-bb-group="weekly">
                             <input type="checkbox" id="bb-filter-weekly" name="bb-filter-weekly" class="w-4 h-4 accent-indigo-500">
                             <label for="bb-filter-weekly" class="text-[11px] text-slate-700 cursor-pointer">Weekly allowance</label>
                         </div>
-                        <div class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" onclick="toggleBankBalanceGroup('food')">
+                        <div class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" data-bb-group="food">
                             <input type="checkbox" id="bb-filter-food" name="bb-filter-food" class="w-4 h-4 accent-amber-500">
                             <label for="bb-filter-food" class="text-[11px] text-slate-700 cursor-pointer">Food & buffer</label>
                         </div>
-                        <div class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" onclick="toggleBankBalanceGroup('categories')">
+                        <div class="flex items-center gap-2 px-3 py-1.5 cursor-pointer" data-bb-group="categories">
                             <input type="checkbox" id="bb-filter-categories" name="bb-filter-categories" class="w-4 h-4 accent-teal-500">
                             <label for="bb-filter-categories" class="text-[11px] text-slate-700 cursor-pointer">Categories</label>
                         </div>
@@ -579,7 +579,7 @@
                             <div class="flex items-baseline gap-2 flex-wrap">
                                 <span class="text-[10px] font-bold uppercase tracking-widest text-indigo-200">Weekly Allowance</span>
                                 <span id="weekly-mini-totals" class="text-[9px] font-bold text-indigo-200/90">—</span>
-                                <button type="button" id="weekly-rollover-notice-btn" onclick="showWeeklyRolloverNotice()" class="hidden ml-1 px-2 py-1 rounded-lg bg-white/20 hover:bg-white/30 text-[9px] font-black uppercase tracking-wider transition" title="See weekly rollover details">Rollover</button>
+                                <button type="button" id="weekly-rollover-notice-btn" class="hidden ml-1 px-2 py-1 rounded-lg bg-white/20 hover:bg-white/30 text-[9px] font-black uppercase tracking-wider transition" title="See weekly rollover details">Rollover</button>
                             </div>
                             <span class="text-[9px] font-bold uppercase tracking-widest text-indigo-300 block mt-1.5">Week <span id="weekly-week-count">1</span>/4</span>
                             <div class="flex items-baseline gap-2 mt-3">
@@ -589,13 +589,13 @@
                             <p id="weekly-allowance-explanation" class="text-[10px] text-indigo-200/90 mt-5 leading-relaxed">Total amount allocated is split into 4 weeks · Arrows lets you switch between weeks</p>
                         </div>
                         <div class="flex gap-2 ml-4 flex-shrink-0">
-                            <button id="prev-week-btn" onclick="prevWeek()" class="p-2 bg-white/20 rounded-lg hover:bg-white/30 transition group" title="Previous week">
+                            <button id="prev-week-btn" class="p-2 bg-white/20 rounded-lg hover:bg-white/30 transition group" title="Previous week">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="group-hover:-rotate-180 transition-transform"><path d="M19 12H5"/><path d="m12 19-7-7 7-7"/></svg>
                             </button>
-                            <button id="next-week-btn" onclick="nextWeek()" class="p-2 bg-white/20 rounded-lg hover:bg-emerald-500 hover:text-white transition group" title="Next week">
+                            <button id="next-week-btn" class="p-2 bg-white/20 rounded-lg hover:bg-emerald-500 hover:text-white transition group" title="Next week">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="group-hover:rotate-180 transition-transform"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
                             </button>
-                            <button onclick="openTool('Weekly Allowance', 'Weekly Allowance')" class="p-2 bg-white/20 rounded-lg hover:bg-white/30 transition" title="Manage / Transfer">
+                            <button id="weekly-manage-btn" class="p-2 bg-white/20 rounded-lg hover:bg-white/30 transition" title="Manage / Transfer">
                                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 20v-6M9 17h6M12 4v6M9 7h6M21 12H3"/></svg>
                             </button>
                         </div>
@@ -627,8 +627,8 @@
                         </div>
                     </div>
                     <div class="flex gap-2">
-                        <button onclick="inlineWeeklyAdjust(-1)" class="flex-1 bg-white text-indigo-900 px-4 py-2 rounded-lg text-[10px] font-black uppercase">Spend</button>
-                        <button onclick="var v=document.getElementById('weekly-inline-val'); openTool('Weekly Allowance', 'Weekly Allowance', true, v?v.value:'');" class="flex-1 bg-indigo-500 text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase">Transfer</button>
+                        <button id="weekly-spend-btn" class="flex-1 bg-white text-indigo-900 px-4 py-2 rounded-lg text-[10px] font-black uppercase">Spend</button>
+                        <button id="weekly-transfer-btn" class="flex-1 bg-indigo-500 text-white px-3 py-2 rounded-lg text-[10px] font-black uppercase">Transfer</button>
                     </div>
                 </div>
             </div>
@@ -944,7 +944,7 @@
                         <span id="sync-status-wrap" class="flex items-center flex-wrap gap-0.5 mt-1"><p id="sync-status" class="text-[10px] text-emerald-600">Synced</p></span>
                         <p id="edit-lock-status" class="hidden"></p>
                     </div>
-                    <button id="sign-out-btn" onclick="signOut()" class="w-full py-3 bg-red-50 text-red-500 rounded-xl text-[10px] font-black uppercase tracking-widest">Sign Out</button>
+                    <button id="sign-out-btn" class="w-full py-3 bg-red-50 text-red-500 rounded-xl text-[10px] font-black uppercase tracking-widest">Sign Out</button>
                 </div>
             </div>
         </div>
@@ -1270,16 +1270,16 @@
                 
                 <!-- Standard Actions -->
                 <div id="tool-actions-standard" class="flex gap-2">
-                    <button onclick="executeAction('deduct')" class="flex-1 py-4 bg-red-500 text-white rounded-xl text-[10px] font-black uppercase shadow-lg shadow-red-100">Deduct</button>
-                    <button onclick="executeAction('add')" class="flex-1 py-4 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase shadow-lg shadow-emerald-100">Add</button>
-                    <button onclick="toggleTransferMode()" class="flex-1 py-4 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase shadow-lg shadow-indigo-100">Transfer</button>
+                    <button id="tool-action-deduct-btn" class="flex-1 py-4 bg-red-500 text-white rounded-xl text-[10px] font-black uppercase shadow-lg shadow-red-100">Deduct</button>
+                    <button id="tool-action-add-btn" class="flex-1 py-4 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase shadow-lg shadow-emerald-100">Add</button>
+                    <button id="tool-action-transfer-btn" class="flex-1 py-4 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase shadow-lg shadow-indigo-100">Transfer</button>
                 </div>
 
                 <!-- Transfer Interface (Hidden by default) -->
                 <div id="tool-transfer-interface" class="hidden space-y-3 bg-slate-50 p-4 rounded-xl">
                     <div class="flex justify-between items-center">
                         <p class="text-[10px] font-bold text-slate-400 uppercase">Transfer To:</p>
-                        <button onclick="toggleTransferMode()" class="text-[10px] font-bold text-slate-400 hover:text-slate-600">Cancel</button>
+                        <button id="tool-transfer-cancel-btn" class="text-[10px] font-bold text-slate-400 hover:text-slate-600">Cancel</button>
                     </div>
                     <div id="transfer-target-list" class="space-y-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar"></div>
                 </div>
@@ -1312,7 +1312,7 @@
                         <span id="amort-preview" class="text-sm font-black text-indigo-600 leading-tight">—</span>
                     </div>
                 </div>
-                <button type="button" onclick="confirmEditItem()" class="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest">Save Changes</button>
+                <button type="button" id="amortization-save-btn" class="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest">Save Changes</button>
             </div>
         </div>
     </div>
