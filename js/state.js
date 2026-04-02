@@ -739,6 +739,13 @@ function sumFoodFundedUnconsumed() {
     return sum;
 }
 
+function getOutstandingFoodBalanceTotal() {
+    var coreOutstanding = sumFoodFundedUnconsumed();
+    var overflowOutstanding = typeof sumOverflowFunded === 'function' ? sumOverflowFunded() : 0;
+    return Math.max(0, coreOutstanding + overflowOutstanding);
+}
+if (typeof window !== 'undefined') window.getOutstandingFoodBalanceTotal = getOutstandingFoodBalanceTotal;
+
 function migrateLegacyFoodFunding() {
     ensureFoodConsumedDays();
     getFoodFundingMap();
@@ -878,11 +885,17 @@ function reconcileFoodFundingWithLedger() {
     (state.food.consumedDays || []).forEach(function (cd) {
         consumed[cd] = true;
     });
-    var bal = (state.balances && state.balances['Daily Food'] !== undefined) ? Number(state.balances['Daily Food']) : 0;
-    if (bal < 0) bal = 0;
     var sumF = sumFoodFundedAll();
     var sumOv = typeof sumOverflowFunded === 'function' ? sumOverflowFunded() : 0;
     var totalAlloc = sumF + sumOv;
+    var recordedBal = (state.balances && state.balances['Daily Food'] !== undefined) ? Number(state.balances['Daily Food']) : 0;
+    var bal = Number.isFinite(recordedBal) ? recordedBal : 0;
+    if (bal < totalAlloc - 0.02) {
+        // Overflow/core day states are the source of truth; avoid destroying valid funding
+        // when a stale ledger balance fell behind.
+        bal = totalAlloc;
+    }
+    if (bal < 0) bal = 0;
     var diff = bal - totalAlloc;
     if (Math.abs(diff) >= 0.02) {
         if (diff > 0) {
@@ -972,6 +985,8 @@ function reconcileFoodFundingWithLedger() {
             }
         }
     }
+    if (!state.balances || typeof state.balances !== 'object') state.balances = {};
+    state.balances['Daily Food'] = getOutstandingFoodBalanceTotal();
 }
 
 function ensureFoodFundingState() {
@@ -1108,7 +1123,7 @@ function setWeeklyBalance(weekNum, value) {
 function getFoodRemainderInfo() {
     ensureFoodFundingState();
     var core = computeFoodPlanCore();
-    var remainder = sumFoodFundedUnconsumed();
+    var remainder = getOutstandingFoodBalanceTotal();
     var daysLeftFunded = 0;
     var consumedMap = {};
     ((state.food && state.food.consumedDays) || []).forEach(function (cd) {
@@ -1118,6 +1133,12 @@ function getFoodRemainderInfo() {
         if (consumedMap[d]) continue;
         if (getFoodFundedForDay(d) > 0.001) daysLeftFunded++;
     }
+    var overflowUsage = (state.food && state.food.overflowUsage) || {};
+    Object.keys(overflowUsage).forEach(function (key) {
+        if ((Number(state.food.overflowFunded && state.food.overflowFunded[key]) || 0) > 0.001) {
+            daysLeftFunded++;
+        }
+    });
     return {
         fItem: core.fItem,
         foodBase: core.foodBase,

@@ -1672,11 +1672,18 @@ function _bindOverflowDayPanel(dayKey, ui) {
     if (ui.sourceBtn) ui.sourceBtn.classList.toggle('hidden', !!usage || isConsumed);
     if (ui.redistributeBtn) ui.redistributeBtn.classList.toggle('hidden', !!usage || isConsumed);
     if (ui.undoBtn) {
-        ui.undoBtn.classList.toggle('hidden', usage !== 'redistributed' || isConsumed);
+        ui.undoBtn.classList.toggle('hidden', !usage || isConsumed);
+        ui.undoBtn.textContent = 'De-distribute';
         ui.undoBtn.onclick = function () {
             var key = ui.rootEl.getAttribute('data-overflow-key');
             if (!key) return;
-            if (typeof applyOverflowRedistributionUndo === 'function') applyOverflowRedistributionUndo(key);
+            if (usage === 'source') {
+                if (typeof applyOverflowDaySourceUndo === 'function') applyOverflowDaySourceUndo(key);
+            } else if (usage === 'redistributed') {
+                if (typeof applyOverflowRedistributionUndo === 'function') applyOverflowRedistributionUndo(key);
+            } else {
+                return;
+            }
             if (typeof ui.close === 'function') ui.close();
             if (typeof updateFoodUI === 'function') updateFoodUI();
         };
@@ -1693,7 +1700,7 @@ function _bindOverflowDayPanel(dayKey, ui) {
     if (ui.subtitleEl) {
         if (isTransferred) ui.subtitleEl.textContent = 'This overflow day was transferred to another fund and is already resolved.';
         else if (isConsumed) ui.subtitleEl.textContent = 'Marked consumed. Unmark to restore the previous overflow funding method for this day.';
-        else if (usage === 'source') ui.subtitleEl.textContent = 'Funded from your chosen source. Mark consumed or transfer when you use this extra day.';
+        else if (usage === 'source') ui.subtitleEl.textContent = 'Funded from your chosen source. De-distribute to undo it, or mark consumed / transfer when you use this extra day.';
         else if (usage === 'redistributed') ui.subtitleEl.textContent = 'Daily Food is split across more calendar days. De-distribute to revert, or mark consumed / transfer.';
         else ui.subtitleEl.textContent = 'Days between the end of your 28-day plan and your next pay day. Choose how to account for this day.';
     }
