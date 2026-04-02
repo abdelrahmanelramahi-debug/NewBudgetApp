@@ -2285,6 +2285,61 @@ body.theme-dark .funding-priority-region header p {
     }
 }
 
+.budget-food-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 999px;
+    border: 1px solid rgba(226, 232, 240, 0.95);
+    background: rgba(255, 255, 255, 0.92);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.budget-food-toggle-indicator {
+    width: 16px;
+    height: 16px;
+    border-radius: 999px;
+    border: 1.5px solid #94a3b8;
+    background: #ffffff;
+    position: relative;
+    transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.budget-food-toggle-indicator::after {
+    content: "";
+    position: absolute;
+    inset: 3px;
+    border-radius: 999px;
+    background: transparent;
+    transition: background-color 0.15s ease;
+}
+#budget-show-food-plan:checked + .budget-food-toggle-indicator {
+    border-color: #d97706;
+    box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.16);
+}
+#budget-show-food-plan:checked + .budget-food-toggle-indicator::after {
+    background: #d97706;
+}
+body.theme-dark .budget-food-toggle {
+    background: rgba(15, 23, 42, 0.82);
+    border-color: rgba(71, 85, 105, 0.95);
+}
+body.theme-dark .budget-food-toggle-indicator {
+    background: #0f172a;
+    border-color: #64748b;
+}
+@media (max-width: 640px) {
+    .budget-food-toggle {
+        width: 28px;
+        height: 28px;
+    }
+    .budget-food-toggle-indicator {
+        width: 14px;
+        height: 14px;
+    }
+}
+
 .budget-savings-section {
     background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
     border-radius: 12px;

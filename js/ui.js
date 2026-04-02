@@ -843,7 +843,10 @@ function renderStrategy(opts) {
                     </div>
                     <div class="flex items-center gap-1.5 no-drag ${isFoodBase ? 'budget-food-controls' : ''}" onmousedown="event.stopPropagation()">
                         ${isFoodBase ? `
-                            <input type="checkbox" id="budget-show-food-plan" class="w-4 h-4 accent-amber-500 rounded" ${(state.settings && state.settings.showFoodPlan === false) ? '' : 'checked'} onchange="toggleBudgetFoodPlan(this, '${sid}', ${idx})">
+                            <label class="budget-food-toggle" aria-label="${(state.settings && state.settings.showFoodPlan === false) ? 'Enable Daily Food budget' : 'Disable Daily Food budget'}">
+                                <input type="checkbox" id="budget-show-food-plan" class="sr-only" ${(state.settings && state.settings.showFoodPlan === false) ? '' : 'checked'} onchange="toggleBudgetFoodPlan(this, '${sid}', ${idx})">
+                                <span class="budget-food-toggle-indicator" aria-hidden="true"></span>
+                            </label>
                             <button
                                 type="button"
                                 class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 transition hover:border-slate-300 hover:text-slate-700"
