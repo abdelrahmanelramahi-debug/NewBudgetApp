@@ -2968,6 +2968,7 @@ function budgetPlanAmountKeydown(e, sid, idx, el) {
 window.budgetPlanAmountKeydown = budgetPlanAmountKeydown;
 
 function budgetPlanSavingsBucketInput(bucketKey, bucketIdx, el) {
+    if (typeof beginBudgetPlanEditing === 'function') beginBudgetPlanEditing();
     if (!el) return;
     var raw = String(el.value ?? '');
     if (typeof clampMoneyInputString === 'function') {
@@ -2978,10 +2979,12 @@ function budgetPlanSavingsBucketInput(bucketKey, bucketIdx, el) {
         }
     }
     if (!isProbablyPartialNumber(raw)) return;
-    if (raw.trim() === '' || raw === '-' || raw === '.' || raw === '-.') return;
+    if (raw.trim() === '' || raw === '-' || raw === '.' || raw === '-.') {
+        budgetPlanSavingsBucketSyncLabel(bucketIdx, 0);
+        return;
+    }
     var num = typeof parseMoney === 'function' ? parseMoney(raw) : Math.round((parseFloat(raw) || 0) * 100) / 100;
     if (Number.isNaN(num) || num < 0) num = 0;
-    syncSavingsBucketBudgetAmount(bucketKey, num);
     var slider = document.getElementById('savings-bucket-slider-' + bucketIdx);
     if (slider) slider.value = String(Math.round(num / 50) * 50);
     budgetPlanSavingsBucketSyncLabel(bucketIdx, num);
@@ -3004,7 +3007,7 @@ function budgetPlanSavingsBucketCommit(bucketKey, bucketIdx, el) {
     var slider = document.getElementById('savings-bucket-slider-' + bucketIdx);
     if (slider) slider.value = String(Math.round(num / 50) * 50);
     budgetPlanSavingsBucketSyncLabel(bucketIdx, num);
-    if (typeof updateBudgetPlanAllocated === 'function') updateBudgetPlanAllocated();
+    if (typeof scheduleBudgetPlanAllocatedRefresh === 'function') scheduleBudgetPlanAllocatedRefresh();
 }
 window.budgetPlanSavingsBucketCommit = budgetPlanSavingsBucketCommit;
 
@@ -3028,10 +3031,9 @@ window.budgetPlanSavingsBucketSyncLabel = budgetPlanSavingsBucketSyncLabel;
 
 function refreshSavingsPlanTotalsUI() {
     var rm = typeof roundMoney === 'function' ? roundMoney : function (x) { return Math.round(Number(x) * 100) / 100; };
-    var total = 0;
-    Object.keys((state.accounts && state.accounts.savingsBudgetPlan) || {}).forEach(function (k) {
-        total += Number(state.accounts.savingsBudgetPlan[k]) || 0;
-    });
+    var total = (typeof getCanonicalSavingsBudgetPlanTotal === 'function')
+        ? getCanonicalSavingsBudgetPlanTotal()
+        : 0;
     total = rm(total);
     var nodes = document.querySelectorAll('.budget-savings-total');
     if (!nodes || !nodes.length) return;
@@ -3042,10 +3044,11 @@ function refreshSavingsPlanTotalsUI() {
 window.refreshSavingsPlanTotalsUI = refreshSavingsPlanTotalsUI;
 
 function budgetPlanSavingsBucketSliderInput(bucketKey, bucketIdx, sliderEl) {
+    if (typeof beginBudgetPlanEditing === 'function') beginBudgetPlanEditing();
     if (!sliderEl) return;
     var num = typeof parseMoney === 'function' ? parseMoney(sliderEl.value) : Math.round((parseFloat(sliderEl.value) || 0) * 100) / 100;
     if (Number.isNaN(num) || num < 0) num = 0;
-    syncSavingsBucketBudgetAmount(bucketKey, num);
+    syncSavingsBucketBudgetAmount(bucketKey, num, { save: false });
     var input = document.getElementById('savings-bucket-input-' + bucketIdx);
     if (input && document.activeElement !== input) input.value = typeof formatMoneyPlain === 'function' ? formatMoneyPlain(num) : String(num);
     budgetPlanSavingsBucketSyncLabel(bucketIdx, num);
@@ -3993,24 +3996,24 @@ function syncSavingsBudgetPlanItemAmount() {
     if (!sec) return;
     var item = (sec.items || []).find(function (i) { return i && i.label === 'Savings'; });
     if (!item) return;
-    var total = 0;
     var rm = typeof roundMoney === 'function' ? roundMoney : function (x) { return Math.round(Number(x) * 100) / 100; };
-    Object.keys(state.accounts.savingsBudgetPlan || {}).forEach(function (k) {
-        total += Number(state.accounts.savingsBudgetPlan[k]) || 0;
-    });
+    var total = (typeof getCanonicalSavingsBudgetPlanTotal === 'function')
+        ? getCanonicalSavingsBudgetPlanTotal()
+        : 0;
     item.amount = rm(total);
     if (typeof refreshSavingsPlanTotalsUI === 'function') refreshSavingsPlanTotalsUI();
 }
 
-function syncSavingsBucketBudgetAmount(bucketKey, rawValue) {
+function syncSavingsBucketBudgetAmount(bucketKey, rawValue, opts) {
+    opts = opts || {};
     ensureGeneralSavingsBudgetConfig();
     if (!bucketKey || state.accounts.savingsBuckets[bucketKey] === undefined) return;
     var amount = typeof roundMoney === 'function' ? roundMoney(rawValue) : Number(rawValue);
     if (Number.isNaN(amount) || amount < 0) amount = 0;
     state.accounts.savingsBudgetPlan[bucketKey] = amount;
     syncSavingsBudgetPlanItemAmount();
-    saveState();
-    if (typeof updateBudgetPlanAllocated === 'function') updateBudgetPlanAllocated();
+    if (opts.save !== false) saveState();
+    if (typeof scheduleBudgetPlanAllocatedRefresh === 'function') scheduleBudgetPlanAllocatedRefresh();
     if (typeof updateAllocatedTotalUI === 'function') {
         var rm2 = typeof roundMoney === 'function' ? roundMoney : function (v) { return Math.round(Number(v) * 100) / 100; };
         var total = rm2(typeof state.monthlyIncome === 'number' ? state.monthlyIncome : 0);

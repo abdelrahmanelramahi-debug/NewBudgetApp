@@ -13,6 +13,73 @@ function refreshUI() {
 }
 if (typeof window !== 'undefined') window.refreshUI = refreshUI;
 
+function getBudgetPlanUiState() {
+    if (typeof window === 'undefined') return { editing: false, pendingRender: false, commitTimer: null };
+    if (!window.__budgetPlanUiState) {
+        window.__budgetPlanUiState = { editing: false, pendingRender: false, commitTimer: null };
+    }
+    return window.__budgetPlanUiState;
+}
+
+function isBudgetPlanPageVisible() {
+    var page = document.getElementById('page-budget-plan');
+    return !!(page && !page.classList.contains('hidden'));
+}
+
+function isBudgetPlanEditingActive() {
+    return !!(isBudgetPlanPageVisible() && getBudgetPlanUiState().editing);
+}
+
+function scheduleBudgetPlanDeferredRender() {
+    var uiState = getBudgetPlanUiState();
+    uiState.pendingRender = true;
+}
+
+function flushBudgetPlanDeferredRender() {
+    var uiState = getBudgetPlanUiState();
+    if (!uiState.pendingRender) return;
+    uiState.pendingRender = false;
+    renderStrategy({ force: true });
+    scheduleBudgetPlanAllocatedRefresh();
+}
+
+function beginBudgetPlanEditing() {
+    var uiState = getBudgetPlanUiState();
+    uiState.editing = true;
+    if (uiState.commitTimer) {
+        clearTimeout(uiState.commitTimer);
+        uiState.commitTimer = null;
+    }
+}
+
+function endBudgetPlanEditing() {
+    var uiState = getBudgetPlanUiState();
+    if (uiState.commitTimer) clearTimeout(uiState.commitTimer);
+    uiState.commitTimer = setTimeout(function () {
+        uiState.editing = false;
+        uiState.commitTimer = null;
+        flushBudgetPlanDeferredRender();
+    }, 150);
+}
+
+function handleBudgetPlanFieldFocus(el) {
+    beginBudgetPlanEditing();
+    if (!el) return;
+    var raw = String(el.value == null ? '' : el.value).trim();
+    var num = parseFloat(raw);
+    if (!raw || (!Number.isNaN(num) && Math.abs(num) < 0.0001)) {
+        setTimeout(function () {
+            try { if (document.activeElement === el && el.select) el.select(); } catch (e) {}
+        }, 0);
+    }
+}
+if (typeof window !== 'undefined') window.handleBudgetPlanFieldFocus = handleBudgetPlanFieldFocus;
+
+function handleBudgetPlanFieldBlur() {
+    endBudgetPlanEditing();
+}
+if (typeof window !== 'undefined') window.handleBudgetPlanFieldBlur = handleBudgetPlanFieldBlur;
+
 // --- In-app Alert / Confirm (replaces browser alert/confirm) ---
 var _appAlertConfirmCallback = null;
 var _appAlertCancelCallback = null;
@@ -409,6 +476,10 @@ function updateBudgetPlanAllocated() {
                     allocated += rm(getFoodPlanBudgetAmount());
                     return;
                 }
+                if (item.label === 'Savings' && typeof getCanonicalSavingsBudgetPlanTotal === 'function') {
+                    allocated += rm(getCanonicalSavingsBudgetPlanTotal());
+                    return;
+                }
                 allocated += typeof item.amount === 'number' ? rm(item.amount) : 0;
             });
         });
@@ -486,6 +557,11 @@ function renderFundingPriorityCard() {
 
 function renderStrategy(opts) {
     opts = opts || {};
+    if (!opts.force && !opts.onboarding && isBudgetPlanEditingActive()) {
+        scheduleBudgetPlanDeferredRender();
+        scheduleBudgetPlanAllocatedRefresh();
+        return;
+    }
     var containerId = opts.containerId || 'strategy-sections';
     var forOnboarding = !!opts.onboarding;
     var container = document.getElementById(containerId);
@@ -509,11 +585,12 @@ function renderStrategy(opts) {
 
     function buildSavingsPlanCardHtml() {
         if (typeof ensureGeneralSavingsBudgetConfig === 'function') ensureGeneralSavingsBudgetConfig();
-        var savingsBuckets = Object.keys((state.accounts && state.accounts.savingsBuckets) || {});
-        var savingsPlannedTotal = 0;
-        savingsBuckets.forEach(function (bucketName) {
-            savingsPlannedTotal += Number((state.accounts && state.accounts.savingsBudgetPlan && state.accounts.savingsBudgetPlan[bucketName]) || 0);
-        });
+        var savingsBuckets = typeof getCanonicalSavingsBucketOrder === 'function'
+            ? getCanonicalSavingsBucketOrder()
+            : Object.keys((state.accounts && state.accounts.savingsBuckets) || {});
+        var savingsPlannedTotal = typeof getCanonicalSavingsBudgetPlanTotal === 'function'
+            ? getCanonicalSavingsBudgetPlanTotal()
+            : 0;
         if (!savingsBuckets.length) return '';
 
         var rowsHtml = `
@@ -546,7 +623,7 @@ function renderStrategy(opts) {
                             <span class="text-xs font-bold text-slate-600">${escapeHtml(bucketName)}</span>
                         </div>
                         <div class="flex items-center gap-2 no-drag" onmousedown="event.stopPropagation()">
-                            <input id="savings-bucket-input-${bucketIdx}" type="text" inputmode="decimal" value="${formatMoneyPlain(planned)}" class="input-pill text-slate-900 budget-item-input" onfocus="pushToUndo()" oninput="budgetPlanSavingsBucketInput(${bucketArg}, ${bucketIdx}, this)" onblur="budgetPlanSavingsBucketCommit(${bucketArg}, ${bucketIdx}, this)" onkeydown="budgetPlanSavingsBucketKeydown(event, ${bucketArg}, ${bucketIdx}, this)" autocomplete="off">
+                            <input id="savings-bucket-input-${bucketIdx}" type="text" inputmode="decimal" value="${formatMoneyPlain(planned)}" class="input-pill text-slate-900 budget-item-input" onfocus="pushToUndo(); handleBudgetPlanFieldFocus(this)" oninput="budgetPlanSavingsBucketInput(${bucketArg}, ${bucketIdx}, this)" onblur="budgetPlanSavingsBucketCommit(${bucketArg}, ${bucketIdx}, this); handleBudgetPlanFieldBlur()" onkeydown="budgetPlanSavingsBucketKeydown(event, ${bucketArg}, ${bucketIdx}, this)" autocomplete="off">
                             <button onclick="openSavingsBuckets()" class="p-1.5 text-slate-300 hover:text-slate-600 hover:bg-slate-50 rounded">⋯</button>
                         </div>
                     </div>
@@ -555,7 +632,7 @@ function renderStrategy(opts) {
                             <span>Monthly</span>
                             <span id="savings-bucket-slider-label-${bucketIdx}">${Math.round(planned)} ${getCurrencyLabel()}</span>
                         </div>
-                        <input type="range" id="savings-bucket-slider-${bucketIdx}" min="0" max="${max}" step="${step}" value="${snapped}" oninput="budgetPlanSavingsBucketSliderInput(${bucketArg}, ${bucketIdx}, this)" class="w-full">
+                        <input type="range" id="savings-bucket-slider-${bucketIdx}" min="0" max="${max}" step="${step}" value="${snapped}" oninput="budgetPlanSavingsBucketSliderInput(${bucketArg}, ${bucketIdx}, this)" onchange="handleBudgetPlanFieldBlur()" onblur="handleBudgetPlanFieldBlur()" class="w-full">
                         <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mt-1">
                             <span>0</span>
                             <span>${max}</span>
@@ -586,7 +663,7 @@ function renderStrategy(opts) {
         if (sec && sec.id === 'sys_savings') return;
         const budgetPlanItems = sec.items.filter(i => i.label !== 'Payables');
         const plannedTotalForRow = (item) => {
-            if (item && item.amortData && typeof item.amortData.total === 'number') return Number(item.amortData.total) || 0;
+            if (item && item.label === 'Savings' && typeof getCanonicalSavingsBudgetPlanTotal === 'function') return Number(getCanonicalSavingsBudgetPlanTotal()) || 0;
             return typeof item.amount === 'number' ? item.amount : 0;
         };
         const secTotalBase = budgetPlanItems.reduce((a, b) => a + plannedTotalForRow(b), 0);
@@ -643,8 +720,8 @@ function renderStrategy(opts) {
             }
 
             const inputAttr = isFoodBase
-                ? `onfocus="pushToUndo()" oninput="budgetPlanAmountInput('${sid}', ${idx}, this)" onblur="budgetPlanAmountCommit('${sid}', ${idx}, this)" onkeydown="budgetPlanAmountKeydown(event, '${sid}', ${idx}, this)"`
-                : `onfocus="pushToUndo()" oninput="budgetPlanAmountInput('${sid}', ${idx}, this)" onblur="budgetPlanAmountCommit('${sid}', ${idx}, this)" onkeydown="budgetPlanAmountKeydown(event, '${sid}', ${idx}, this)"`;
+                ? `onfocus="pushToUndo(); handleBudgetPlanFieldFocus(this)" oninput="budgetPlanAmountInput('${sid}', ${idx}, this)" onblur="budgetPlanAmountCommit('${sid}', ${idx}, this); handleBudgetPlanFieldBlur()" onkeydown="budgetPlanAmountKeydown(event, '${sid}', ${idx}, this)"`
+                : `onfocus="pushToUndo(); handleBudgetPlanFieldFocus(this)" oninput="budgetPlanAmountInput('${sid}', ${idx}, this)" onblur="budgetPlanAmountCommit('${sid}', ${idx}, this); handleBudgetPlanFieldBlur()" onkeydown="budgetPlanAmountKeydown(event, '${sid}', ${idx}, this)"`;
 
             // Core "Must Have" lines are locked: no edit/delete controls (amounts use sliders/inputs only)
             const actions = item.isCore
@@ -672,7 +749,7 @@ function renderStrategy(opts) {
                         <span>Daily Rate</span>
                         <span id="food-daily-slider-label-${sid}-${idx}">${dailyRateLabel} ${getCurrencyLabel()}</span>
                     </div>
-                    <input type="range" id="food-daily-slider-${sid}-${idx}" min="0" max="${dailyRateMax}" step="1" value="${dailyRateRounded}" oninput="syncFoodDailyRate('${sid}', ${idx}, this.value)" class="w-full" ${isFoodPlanOff ? 'disabled' : ''}>
+                    <input type="range" id="food-daily-slider-${sid}-${idx}" min="0" max="${dailyRateMax}" step="1" value="${dailyRateRounded}" oninput="syncFoodDailyRate('${sid}', ${idx}, this.value)" onchange="handleBudgetPlanFieldBlur()" onblur="handleBudgetPlanFieldBlur()" class="w-full" ${isFoodPlanOff ? 'disabled' : ''}>
                     <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mt-1">
                         <span>0</span>
                         <span>${dailyRateMax}</span>
@@ -696,7 +773,7 @@ function renderStrategy(opts) {
                         <span>Monthly (4 weeks)</span>
                         <span id="weekly-slider-label-${sid}-${idx}">${displayAmount} ${getCurrencyLabel()}</span>
                     </div>
-                    <input type="range" id="weekly-amount-slider-${sid}-${idx}" min="0" max="${weeklyAmountMax}" step="${WEEKLY_SLIDER_STEP}" value="${weeklySnapped}" oninput="syncWeeklyAmount('${sid}', ${idx}, this.value)" class="w-full">
+                    <input type="range" id="weekly-amount-slider-${sid}-${idx}" min="0" max="${weeklyAmountMax}" step="${WEEKLY_SLIDER_STEP}" value="${weeklySnapped}" oninput="syncWeeklyAmount('${sid}', ${idx}, this.value)" onchange="handleBudgetPlanFieldBlur()" onblur="handleBudgetPlanFieldBlur()" class="w-full">
                     <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mt-1">
                         <span>0</span>
                         <span>${weeklyAmountMax}</span>
@@ -720,7 +797,7 @@ function renderStrategy(opts) {
                         <span>Monthly</span>
                         <span id="savings-slider-label-${sid}-${idx}">${displayAmount} ${getCurrencyLabel()}</span>
                     </div>
-                    <input type="range" id="general-savings-slider-${sid}-${idx}" min="0" max="${savingsMax}" step="${SAVINGS_SLIDER_STEP}" value="${savingsSnapped}" oninput="syncGeneralSavingsAmount('${sid}', ${idx}, this.value)" class="w-full">
+                    <input type="range" id="general-savings-slider-${sid}-${idx}" min="0" max="${savingsMax}" step="${SAVINGS_SLIDER_STEP}" value="${savingsSnapped}" oninput="syncGeneralSavingsAmount('${sid}', ${idx}, this.value)" onchange="handleBudgetPlanFieldBlur()" onblur="handleBudgetPlanFieldBlur()" class="w-full">
                     <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mt-1">
                         <span>0</span>
                         <span>${savingsMax}</span>
@@ -744,7 +821,7 @@ function renderStrategy(opts) {
                         <span>Monthly (4 weeks)</span>
                         <span id="car-slider-label-${sid}-${idx}">${displayAmount} ${getCurrencyLabel()}</span>
                     </div>
-                    <input type="range" id="car-fund-slider-${sid}-${idx}" min="0" max="${carMax}" step="${CAR_SLIDER_STEP}" value="${carSnapped}" oninput="syncCarFundAmount('${sid}', ${idx}, this.value)" class="w-full">
+                    <input type="range" id="car-fund-slider-${sid}-${idx}" min="0" max="${carMax}" step="${CAR_SLIDER_STEP}" value="${carSnapped}" oninput="syncCarFundAmount('${sid}', ${idx}, this.value)" onchange="handleBudgetPlanFieldBlur()" onblur="handleBudgetPlanFieldBlur()" class="w-full">
                     <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mt-1">
                         <span>0</span>
                         <span>${carMax}</span>
@@ -872,10 +949,11 @@ function toggleBudgetFoodPlan(el, sid, idx) {
     if (typeof state === 'undefined') return;
     if (!state.settings) state.settings = {};
     var enabled = !!(el && el.checked);
+    beginBudgetPlanEditing();
     state.settings.showFoodPlan = enabled;
     if (typeof saveState === 'function') saveState();
-    renderStrategy();
     scheduleBudgetPlanAllocatedRefresh();
+    endBudgetPlanEditing();
 }
 if (typeof window !== 'undefined') window.toggleBudgetFoodPlan = toggleBudgetFoodPlan;
 

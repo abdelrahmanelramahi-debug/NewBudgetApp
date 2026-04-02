@@ -124,6 +124,9 @@ function purgeDeletedSavingsBuckets() {
         if (name && state.accounts.savingsBuckets[name] !== undefined) {
             delete state.accounts.savingsBuckets[name];
         }
+        if (name && state.accounts.savingsBudgetPlan && state.accounts.savingsBudgetPlan[name] !== undefined) {
+            delete state.accounts.savingsBudgetPlan[name];
+        }
     });
 }
 
@@ -191,6 +194,29 @@ function ensureGeneralSavingsBucketState() {
         unmarkSavingsBucketDeleted(GENERAL_SAVINGS_BUCKET_NAME);
     }
 }
+
+function getCanonicalSavingsBucketOrder() {
+    ensureGeneralSavingsBucketState();
+    var buckets = (state.accounts && state.accounts.savingsBuckets) ? state.accounts.savingsBuckets : {};
+    var ordered = [];
+    if (buckets[GENERAL_SAVINGS_BUCKET_NAME] !== undefined) ordered.push(GENERAL_SAVINGS_BUCKET_NAME);
+    Object.keys(buckets).forEach(function (key) {
+        if (!key || key === GENERAL_SAVINGS_BUCKET_NAME) return;
+        if (ordered.indexOf(key) === -1) ordered.push(key);
+    });
+    return ordered;
+}
+if (typeof window !== 'undefined') window.getCanonicalSavingsBucketOrder = getCanonicalSavingsBucketOrder;
+
+function getCanonicalSavingsBudgetPlanTotal() {
+    ensureGeneralSavingsBucketState();
+    var total = 0;
+    getCanonicalSavingsBucketOrder().forEach(function (key) {
+        total += Number((state.accounts && state.accounts.savingsBudgetPlan && state.accounts.savingsBudgetPlan[key]) || 0);
+    });
+    return total;
+}
+if (typeof window !== 'undefined') window.getCanonicalSavingsBudgetPlanTotal = getCanonicalSavingsBudgetPlanTotal;
 
 function buildPaycheckPriorityCatalog() {
     var catalog = [];
