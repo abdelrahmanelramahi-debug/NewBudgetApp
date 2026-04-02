@@ -14,14 +14,14 @@ var onboardingBudgetTipPhase = 'must';
 
 var ONBOARDING_BUDGET_TIPS_MUST_HAVES = [
     {
-        title: 'Start With Essentials',
-        body: 'Fund your essential categories first so the rest of your plan has a stable base.',
-        target: '#onboarding-must-haves-heading'
-    },
-    {
         title: 'Watch Your Total',
         body: 'Keep your plan at or under 100% of your monthly income.',
         target: '#onboarding-cat-header'
+    },
+    {
+        title: 'Start With Essentials',
+        body: 'Fund your essential categories first so the rest of your plan has a stable base.',
+        target: '#onboarding-must-haves-heading'
     },
     {
         title: 'Set Core Amounts',
@@ -238,6 +238,7 @@ function showBudgetPlanTip(index) {
     // Clear previous highlights
     step.querySelectorAll('.onboarding-tip-highlight').forEach(function (el) {
         el.classList.remove('onboarding-tip-highlight');
+        el.classList.remove('onboarding-tip-highlight-contrast');
     });
 
     var targetEl = null;
@@ -247,6 +248,7 @@ function showBudgetPlanTip(index) {
 
     if (targetEl) {
         targetEl.classList.add('onboarding-tip-highlight');
+        targetEl.classList.add('onboarding-tip-highlight-contrast');
 
         var vw = window.innerWidth || document.documentElement.clientWidth || 0;
         var isMobile = vw <= 640;
@@ -320,6 +322,13 @@ function finishBudgetPlanTips() {
         card.style.transform = '';
         card.style.width = '';
     }
+    var step = document.getElementById('onboarding-step-categories');
+    if (step) {
+        step.querySelectorAll('.onboarding-tip-highlight').forEach(function (el) {
+            el.classList.remove('onboarding-tip-highlight');
+            el.classList.remove('onboarding-tip-highlight-contrast');
+        });
+    }
     if (typeof state !== 'undefined') {
         state._sawBudgetPlanTips = true;
         if (typeof saveState === 'function') saveState();
@@ -343,7 +352,10 @@ var HOME_TOUR_STEPS = [
     {
         title: 'Track Food Days',
         body: 'Mark the days you use your food budget so it stays paced through the month.',
-        target: '#food-tracker-card'
+        target: '#food-tracker-card',
+        includeWhen: function () {
+            return !(typeof state !== 'undefined' && state.settings && state.settings.showFoodPlan === false);
+        }
     },
     {
         title: 'Manage Categories',
@@ -352,6 +364,14 @@ var HOME_TOUR_STEPS = [
     }
 ];
 var homeTourStepIndex = 0;
+
+function getActiveHomeTourSteps() {
+    return HOME_TOUR_STEPS.filter(function (step) {
+        if (!step) return false;
+        if (typeof step.includeWhen === 'function' && !step.includeWhen()) return false;
+        return true;
+    });
+}
 
 function positionHomeTourCard(targetEl) {
     var page = document.getElementById('page-ledger');
@@ -423,26 +443,31 @@ function startHomeTour() {
     var overlay = document.getElementById('home-tour-overlay');
     var card = document.getElementById('home-tour-card');
     if (!overlay || !card) return;
-    var first = HOME_TOUR_STEPS[0];
+    var activeSteps = getActiveHomeTourSteps();
+    var first = activeSteps[0];
     if (first && first.target && !document.querySelector(first.target)) {
         return;
     }
+    if (!first) return;
     showHomeTourStep(0);
     overlay.classList.remove('hidden');
     card.classList.remove('hidden');
 }
 function showHomeTourStep(index) {
+    var activeSteps = getActiveHomeTourSteps();
+    var stepLabel = document.getElementById('home-tour-step');
     var stepNum = document.getElementById('home-tour-step-num');
     var titleEl = document.getElementById('home-tour-title');
     var bodyEl = document.getElementById('home-tour-body');
     var nextBtn = document.getElementById('home-tour-next-btn');
     if (!titleEl || !bodyEl) return;
-    var step = HOME_TOUR_STEPS[index];
+    var step = activeSteps[index];
     if (!step) return;
     if (stepNum) stepNum.textContent = index + 1;
+    if (stepLabel) stepLabel.textContent = 'Step ' + (index + 1) + ' of ' + activeSteps.length;
     titleEl.textContent = step.title;
     bodyEl.textContent = step.body;
-    if (nextBtn) nextBtn.textContent = index >= HOME_TOUR_STEPS.length - 1 ? 'Done' : 'Next';
+    if (nextBtn) nextBtn.textContent = index >= activeSteps.length - 1 ? 'Done' : 'Next';
 
     // Scroll and highlight the relevant area on the home screen
     if (step.target) {
@@ -451,6 +476,7 @@ function showHomeTourStep(index) {
         // Clear previous highlights
         root.querySelectorAll('.home-tour-highlight').forEach(function (el) {
             el.classList.remove('home-tour-highlight');
+            el.classList.remove('home-tour-highlight-contrast');
         });
 
         var targetEl = root.querySelector(step.target);
@@ -460,6 +486,7 @@ function showHomeTourStep(index) {
         }
 
         targetEl.classList.add('home-tour-highlight');
+        if (index <= 2) targetEl.classList.add('home-tour-highlight-contrast');
 
         var isMobile = (window.innerWidth || document.documentElement.clientWidth || 0) <= 640;
         if (isMobile) {
@@ -494,8 +521,9 @@ function showHomeTourStep(index) {
     }
 }
 function nextHomeTourStep() {
+    var activeSteps = getActiveHomeTourSteps();
     homeTourStepIndex++;
-    if (homeTourStepIndex >= HOME_TOUR_STEPS.length) {
+    if (homeTourStepIndex >= activeSteps.length) {
         finishHomeTour();
         return;
     }
@@ -507,6 +535,10 @@ function skipHomeTour() {
 function finishHomeTour() {
     var overlay = document.getElementById('home-tour-overlay');
     var card = document.getElementById('home-tour-card');
+    document.querySelectorAll('.home-tour-highlight').forEach(function (el) {
+        el.classList.remove('home-tour-highlight');
+        el.classList.remove('home-tour-highlight-contrast');
+    });
     if (overlay) overlay.classList.add('hidden');
     if (card) {
         card.classList.add('hidden');
