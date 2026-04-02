@@ -170,6 +170,19 @@ function ensureGeneralSavingsBucketState() {
     });
     state.accounts.savingsBuckets = ordered;
     state.accounts.savingsDefaultBucket = GENERAL_SAVINGS_BUCKET_NAME;
+    if (!Array.isArray(state.accounts.savingsBucketOrder)) state.accounts.savingsBucketOrder = [];
+    var nextOrder = [];
+    if (ordered[GENERAL_SAVINGS_BUCKET_NAME] !== undefined) nextOrder.push(GENERAL_SAVINGS_BUCKET_NAME);
+    (state.accounts.savingsBucketOrder || []).forEach(function (key) {
+        if (!key || key === GENERAL_SAVINGS_BUCKET_NAME) return;
+        if (ordered[key] === undefined) return;
+        if (nextOrder.indexOf(key) === -1) nextOrder.push(key);
+    });
+    Object.keys(ordered).forEach(function (key) {
+        if (!key || key === GENERAL_SAVINGS_BUCKET_NAME) return;
+        if (nextOrder.indexOf(key) === -1) nextOrder.push(key);
+    });
+    state.accounts.savingsBucketOrder = nextOrder;
     if (!state.accounts.savingsBudgetPlan || typeof state.accounts.savingsBudgetPlan !== 'object') {
         state.accounts.savingsBudgetPlan = {};
     }
@@ -197,14 +210,17 @@ function ensureGeneralSavingsBucketState() {
 
 function getCanonicalSavingsBucketOrder() {
     ensureGeneralSavingsBucketState();
-    var buckets = (state.accounts && state.accounts.savingsBuckets) ? state.accounts.savingsBuckets : {};
-    var ordered = [];
-    if (buckets[GENERAL_SAVINGS_BUCKET_NAME] !== undefined) ordered.push(GENERAL_SAVINGS_BUCKET_NAME);
-    Object.keys(buckets).forEach(function (key) {
-        if (!key || key === GENERAL_SAVINGS_BUCKET_NAME) return;
-        if (ordered.indexOf(key) === -1) ordered.push(key);
-    });
-    return ordered;
+    var order = (state.accounts && Array.isArray(state.accounts.savingsBucketOrder))
+        ? state.accounts.savingsBucketOrder.slice()
+        : [];
+    if (!order.length && state.accounts && state.accounts.savingsBuckets) {
+        if (state.accounts.savingsBuckets[GENERAL_SAVINGS_BUCKET_NAME] !== undefined) order.push(GENERAL_SAVINGS_BUCKET_NAME);
+        Object.keys(state.accounts.savingsBuckets).forEach(function (key) {
+            if (!key || key === GENERAL_SAVINGS_BUCKET_NAME) return;
+            if (order.indexOf(key) === -1) order.push(key);
+        });
+    }
+    return order;
 }
 if (typeof window !== 'undefined') window.getCanonicalSavingsBucketOrder = getCanonicalSavingsBucketOrder;
 

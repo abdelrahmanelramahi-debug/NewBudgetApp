@@ -3731,7 +3731,14 @@ function doSavingsSendToWeekly(fromBucketKey, amount) {
 
 function renderSavingsBuckets() {
     ensureGeneralSavingsBudgetConfig();
-    var entries = Object.entries(state.accounts.savingsBuckets);
+    var orderedKeys = (typeof getCanonicalSavingsBucketOrder === 'function')
+        ? getCanonicalSavingsBucketOrder()
+        : Object.keys(state.accounts.savingsBuckets || {});
+    var entries = orderedKeys.map(function (key) {
+        return [key, state.accounts.savingsBuckets[key]];
+    }).filter(function (entry) {
+        return entry[0] && state.accounts.savingsBuckets[entry[0]] !== undefined;
+    });
     var esc = function (s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); };
     var bucketOpts = entries.map(function (e) { return '<option value="' + esc(e[0]) + '">' + esc(e[0]) + '</option>'; }).join('');
     var fromToOpts = '<option value="' + SAVINGS_EXTRA + '">Extra</option><option value="' + SAVINGS_WEEKLY + '">Weekly Allowance</option>' + bucketOpts;
@@ -3915,6 +3922,8 @@ function createSavingsBucket() {
     if (typeof unmarkSavingsBucketDeleted === 'function') unmarkSavingsBucketDeleted(name);
     state.accounts.savingsBuckets[name] = 0;
     state.accounts.savingsBudgetPlan[name] = 0;
+    if (!Array.isArray(state.accounts.savingsBucketOrder)) state.accounts.savingsBucketOrder = ['General Savings'];
+    if (state.accounts.savingsBucketOrder.indexOf(name) === -1) state.accounts.savingsBucketOrder.push(name);
     if (typeof normalizePaycheckPriorityOrder === 'function') normalizePaycheckPriorityOrder();
     syncSavingsTotal();
     input.value = '';
@@ -3950,6 +3959,11 @@ function renameSavingsBucket(oldName, newNameFromInline) {
     delete state.accounts.savingsBuckets[oldName];
     state.accounts.savingsBudgetPlan[newName] = Number(state.accounts.savingsBudgetPlan[oldName]) || 0;
     delete state.accounts.savingsBudgetPlan[oldName];
+    if (Array.isArray(state.accounts.savingsBucketOrder)) {
+        state.accounts.savingsBucketOrder = state.accounts.savingsBucketOrder.map(function (key) {
+            return key === oldName ? newName : key;
+        });
+    }
     if (state.accounts.savingsDefaultBucket === oldName) {
         state.accounts.savingsDefaultBucket = newName;
     }
@@ -3978,8 +3992,11 @@ function deleteSavingsBucket(name) {
         if (typeof markSavingsBucketDeleted === 'function') markSavingsBucketDeleted(name);
         delete state.accounts.savingsBuckets[name];
         delete state.accounts.savingsBudgetPlan[name];
+        if (Array.isArray(state.accounts.savingsBucketOrder)) {
+            state.accounts.savingsBucketOrder = state.accounts.savingsBucketOrder.filter(function (key) { return key !== name; });
+        }
         if (state.accounts.savingsDefaultBucket === name) {
-            state.accounts.savingsDefaultBucket = Object.keys(state.accounts.savingsBuckets)[0];
+            state.accounts.savingsDefaultBucket = (typeof getCanonicalSavingsBucketOrder === 'function' ? getCanonicalSavingsBucketOrder() : Object.keys(state.accounts.savingsBuckets))[0];
         }
         if (typeof normalizePaycheckPriorityOrder === 'function') normalizePaycheckPriorityOrder();
         syncSavingsTotal();

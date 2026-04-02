@@ -952,6 +952,7 @@ function toggleBudgetFoodPlan(el, sid, idx) {
     beginBudgetPlanEditing();
     state.settings.showFoodPlan = enabled;
     if (typeof saveState === 'function') saveState();
+    if (typeof renderLedger === 'function') renderLedger();
     scheduleBudgetPlanAllocatedRefresh();
     endBudgetPlanEditing();
 }
@@ -1396,6 +1397,15 @@ function getMonthCalendarInfo() {
 
 // Updates food panel: daily rate, locked funds, days left, buffer source dropdown, pay-cycle calendar.
 function updateFoodUI() {
+    var foodTrackerCard = document.getElementById('food-tracker-card');
+    var foodVisible = !(state.settings && state.settings.showFoodPlan === false);
+    if (foodTrackerCard) foodTrackerCard.classList.toggle('hidden', !foodVisible);
+    if (!foodVisible) {
+        closeOverflowDayPopover();
+        closeFoodDayActionPopover();
+        closeDailyFoodActionsMenu();
+        return;
+    }
     if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
     var payCycle = getPayCycleInfo();
     if (typeof maybeAutoAdvanceFoodCycle === 'function') {
