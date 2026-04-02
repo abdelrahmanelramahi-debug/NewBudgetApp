@@ -483,12 +483,6 @@ function renderStrategy(opts) {
     if (!forOnboarding) {
         var incomeInput = document.getElementById('monthly-income-input');
         if (incomeInput) incomeInput.value = state.monthlyIncome;
-    } else {
-        var obInc = document.getElementById('onboarding-income');
-        if (obInc && obInc.value.trim() !== '') {
-            var parsed = parseFloat(obInc.value);
-            if (!isNaN(parsed) && parsed >= 0) state.monthlyIncome = parsed;
-        }
     }
     if (typeof syncSavingsBudgetPlanItemAmount === 'function') syncSavingsBudgetPlanItemAmount();
 
