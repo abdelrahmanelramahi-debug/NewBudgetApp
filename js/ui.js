@@ -1281,7 +1281,7 @@ function toggleLedgerSection(id) {
 }
 
 function getFoodDayNames() {
-    const names = typeof DAY_NAMES !== 'undefined' ? DAY_NAMES : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const names = DAY_NAMES;
     const start = typeof state.settings?.firstDayOfWeek === 'number' ? state.settings.firstDayOfWeek % 7 : 3;
     const out = [];
     for (let i = 0; i < 7; i++) out.push(names[(start + i) % 7]);
@@ -1289,10 +1289,6 @@ function getFoodDayNames() {
 }
 
 /** Last day of month (1–31) for given year/month. */
-function lastDayOfMonth(y, m) {
-    return new Date(y, m + 1, 0).getDate();
-}
-
 /**
  * Current 28-day pay cycle: pay day = first slot, no empty leading cells.
  * Returns { cycleStart, dates (28 core days), overflowDates, monthNames }.
@@ -1322,7 +1318,7 @@ function getPayCycleInfo() {
     var cycleStartLastDay = lastDayOfMonth(cycleStartYear, cycleStartMonth);
     var cycleStartDay = Math.min(payDate, cycleStartLastDay);
     var cycleStart = new Date(cycleStartYear, cycleStartMonth, cycleStartDay);
-    var monthNames = typeof MONTH_NAMES !== 'undefined' ? MONTH_NAMES : ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var monthNames = MONTH_NAMES;
     var dates = [];
     for (var i = 0; i < 28; i++) {
         var d = new Date(cycleStartYear, cycleStartMonth, cycleStartDay + i);
@@ -1391,7 +1387,7 @@ function getMonthCalendarInfo() {
     var firstDow = new Date(year, month, 1).getDay();
     var start = typeof state.settings?.firstDayOfWeek === 'number' ? state.settings.firstDayOfWeek % 7 : 3;
     var pad = (firstDow - start + 7) % 7;
-    var monthNames = typeof MONTH_NAMES !== 'undefined' ? MONTH_NAMES : ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var monthNames = MONTH_NAMES;
     return { year: year, month: month, lastDay: lastDay, pad: pad, monthName: monthNames[month], firstDow: firstDow, start: start };
 }
 
@@ -2062,91 +2058,6 @@ function closeFoodDayMobileModal() {
     else modal.classList.add('hidden');
 }
 window.closeFoodDayMobileModal = closeFoodDayMobileModal;
-
-function openOverflowDayMobileModal(dayKey) {
-    var modal = document.getElementById('food-day-mobile-modal');
-    if (!modal || !dayKey) return;
-
-    // Prevent competing overflow-specific panels from staying open.
-    if (typeof closeOverflowDayMobileModal === 'function') closeOverflowDayMobileModal();
-    if (typeof closeOverflowDayPopover === 'function') closeOverflowDayPopover();
-
-    var payCycle = (typeof getPayCycleInfo === 'function') ? getPayCycleInfo() : null;
-    var p = payCycle && Array.isArray(payCycle.overflowDates) ? payCycle.overflowDates.find(function (x) { return x.key === dayKey; }) : null;
-
-    var titleEl = document.getElementById('food-day-mobile-title');
-    var subtitleEl = document.getElementById('food-day-mobile-subtitle');
-    if (titleEl) titleEl.textContent = 'Overflow';
-    if (subtitleEl) subtitleEl.textContent = p ? (p.monthName + ' ' + p.date) : 'Overflow day';
-
-    var consumedAmt = Number((state.food && state.food.overflowConsumedAmounts && state.food.overflowConsumedAmounts[dayKey]) || 0);
-    var isConsumed = consumedAmt > 0.001;
-    modal.setAttribute('data-overflow-key', dayKey);
-    modal.setAttribute('data-overflow-consumed', isConsumed ? '1' : '0');
-
-    var consumeBtn = document.getElementById('food-day-mobile-consume-btn');
-    if (consumeBtn) {
-        consumeBtn.textContent = isConsumed ? 'Unconsume day' : 'Consume day';
-        consumeBtn.className = 'w-full py-3 rounded-2xl text-[12px] font-black uppercase tracking-widest transition ' +
-            (isConsumed ? 'bg-slate-900 text-white hover:bg-slate-800' : 'bg-emerald-600 text-white hover:bg-emerald-700');
-        consumeBtn.onclick = function () {
-            if (typeof setOverflowFoodDayConsumed === 'function') {
-                setOverflowFoodDayConsumed(dayKey, isConsumed ? 'unmark' : 'mark');
-            }
-            closeFoodDayMobileModal();
-            if (typeof updateFoodUI === 'function') updateFoodUI();
-            if (typeof renderLedger === 'function') renderLedger();
-            if (typeof updateGlobalUI === 'function') updateGlobalUI();
-        };
-    }
-
-    var rBtn = document.getElementById('food-day-mobile-overflow-redistribute-btn');
-    if (rBtn) {
-        rBtn.classList.remove('hidden');
-        var usage = state.food && state.food.overflowUsage ? state.food.overflowUsage[dayKey] : '';
-        rBtn.textContent = usage === 'redistributed' ? 'Undo distribute' : 'Distribute';
-        rBtn.onclick = function () {
-            if (usage === 'redistributed') {
-                if (typeof applyOverflowRedistributionUndo === 'function') applyOverflowRedistributionUndo(dayKey);
-            } else {
-                if (typeof applyOverflowDayRedistribution === 'function') applyOverflowDayRedistribution(dayKey);
-            }
-            closeFoodDayMobileModal();
-        };
-    }
-
-    var transferTargets = document.getElementById('food-day-mobile-transfer-targets');
-    var transferDisabled = document.getElementById('food-day-mobile-transfer-disabled');
-    if (transferTargets) {
-        transferTargets.innerHTML = '';
-        if (transferDisabled) {
-            if (isConsumed) {
-                transferDisabled.classList.remove('hidden');
-                transferTargets.classList.add('opacity-50', 'pointer-events-none');
-            } else {
-                transferDisabled.classList.add('hidden');
-                transferTargets.classList.remove('opacity-50', 'pointer-events-none');
-            }
-        }
-        if (!isConsumed) {
-            var targets = (typeof getFoodDayTransferTargets === 'function') ? getFoodDayTransferTargets() : [];
-            transferTargets.innerHTML = (targets || []).map(function (t) {
-                var safeLabel = String(t.label).replace(/</g, '&lt;').replace(/"/g, '&quot;');
-                var tid = String(t.id).replace(/"/g, '&quot;');
-                return (
-                    '<button type="button" class="w-full text-left px-4 py-3 text-[12px] font-bold text-slate-800 hover:bg-slate-50 active:bg-slate-100 transition truncate" ' +
-                    'onclick="transferFoodOverflowDayTo(' + '\'' + dayKey + '\'' + ', \'' + tid + '\'); closeFoodDayMobileModal();">' +
-                    safeLabel +
-                    '</button>'
-                );
-            }).join('');
-        }
-    }
-
-    if (typeof toggleModal === 'function') toggleModal('food-day-mobile-modal', true);
-    else modal.classList.remove('hidden');
-}
-window.openOverflowDayMobileModal = openOverflowDayMobileModal;
 
 function openOverflowDayActionPopover(dayKey, anchorEl) {
     if (isTouchOrSmall()) {

@@ -3,9 +3,124 @@ window.onload = function() {
     var byId = (typeof getEl === 'function')
         ? getEl
         : function(id) { return document.getElementById(id); };
+
+    function bindClick(id, handler) {
+        var el = byId(id);
+        if (!el) return;
+        el.addEventListener('click', handler);
+    }
+
+    function wireStaticClickActions() {
+        bindClick('onboarding-currency-back', function () { onboardingBack(); });
+        bindClick('onboarding-currency-next', function () { onboardingNext(); });
+        bindClick('onboarding-income-back', function () { onboardingBack(); });
+        bindClick('onboarding-income-next', function () { onboardingNext(); });
+        bindClick('onboarding-categories-back', function () { onboardingBack(); });
+        bindClick('onboarding-categories-next', function () { onboardingNext(); });
+        bindClick('onboarding-priority-back', function () { onboardingBack(); });
+        bindClick('onboarding-priority-next', function () { onboardingNext(); });
+        bindClick('onboarding-summary-edit-currency', function () { showOnboardingStep(1); });
+        bindClick('onboarding-summary-edit-income', function () { showOnboardingStep(2); });
+        bindClick('onboarding-summary-edit-categories', function () { showOnboardingStep(3); });
+        bindClick('onboarding-summary-edit-priority', function () { showOnboardingStep(4); });
+        bindClick('onboarding-summary-signin', function () { onboardingSignInAndSkip(); });
+        bindClick('onboarding-summary-skip', function () { onboardingSkipAccount(); });
+        bindClick('onboarding-summary-complete', function () { onboardingComplete(); });
+        bindClick('onboarding-tip-skip', function () { skipBudgetPlanTips(); });
+        bindClick('onboarding-tip-next', function () { nextBudgetPlanTip(); });
+
+        document.querySelectorAll('[data-nav-page]').forEach(function (el) {
+            el.addEventListener('click', function () {
+                switchPage(el.getAttribute('data-nav-page'));
+                closeSideMenu();
+            });
+        });
+
+        document.querySelectorAll('[data-theme-value]').forEach(function (el) {
+            el.addEventListener('click', function () {
+                setThemeFromSidebar(el.getAttribute('data-theme-value'));
+            });
+        });
+
+        bindClick('desktop-bug-report', function () { openBugReportModal(); closeSideMenu(); });
+        bindClick('mobile-menu-open', function () { toggleSideMenu(); });
+        bindClick('side-menu-backdrop', function () { closeSideMenu(); });
+        bindClick('mobile-menu-close', function () { closeSideMenu(); });
+        bindClick('mobile-bug-report', function () { openBugReportModal(); closeSideMenu(); });
+        bindClick('home-tour-skip-btn', function () { skipHomeTour(); });
+        bindClick('home-tour-next-btn', function () { nextHomeTourStep(); });
+
+        bindClick('paycheck-trigger-btn', function () { togglePaycheckPanel(); });
+        bindClick('paycheck-distribute-btn', function () { applyPaycheckDistribute(); });
+        bindClick('paycheck-close-btn', function () { togglePaycheckPanel(); });
+        bindClick('food-unused-transfer-btn', function (event) { openFoodRolloverNoticePopover(event); });
+        bindClick('food-actions-btn', function (event) { openDailyFoodActionsMenu(event); });
+        bindClick('food-actions-set-start-date', function () { openDailyFoodPayDayModal(); });
+        bindClick('food-actions-refund-days', function () { openDailyFoodBulkRefillModal(); });
+        bindClick('food-actions-close', function () { closeDailyFoodActionsMenu(); });
+        bindClick('food-day-mobile-backdrop', function () { closeFoodDayMobileModal(); });
+        bindClick('food-day-mobile-close', function () { closeFoodDayMobileModal(); });
+        bindClick('food-overflow-mobile-backdrop', function () { closeOverflowDayMobileModal(); });
+        bindClick('food-overflow-mobile-close', function () { closeOverflowDayMobileModal(); });
+        bindClick('daily-food-actions-backdrop', function () { closeDailyFoodActionsMenu(); });
+        bindClick('daily-food-actions-close-icon', function () { closeDailyFoodActionsMenu(); });
+        bindClick('daily-food-actions-bulk-refill', function () { openDailyFoodBulkRefillModal(); });
+        bindClick('daily-food-actions-close-btn', function () { closeDailyFoodActionsMenu(); });
+        bindClick('daily-food-bulk-backdrop', function () { closeDailyFoodBulkRefillModal(); });
+        bindClick('daily-food-bulk-close', function () { closeDailyFoodBulkRefillModal(); });
+        bindClick('daily-food-select-all-btn', function () { selectAllConsumedDaysForBulkRefill(); });
+        bindClick('daily-food-bulk-cancel', function () { closeDailyFoodBulkRefillModal(); });
+        bindClick('daily-food-bulk-apply', function () { applyDailyFoodBulkRefill(); });
+        bindClick('daily-food-payday-backdrop', function () { closeDailyFoodPayDayModal(); });
+        bindClick('daily-food-payday-close', function () { closeDailyFoodPayDayModal(); });
+        bindClick('daily-food-payday-cancel', function () { closeDailyFoodPayDayModal(); });
+        bindClick('daily-food-payday-apply', function () { applyFoodStartDateFromMenu(); });
+
+        bindClick('budget-plan-back-btn', function () { switchPage('ledger'); });
+        bindClick('profile-back-btn', function () { switchPage('ledger'); });
+        bindClick('settings-back-btn', function () { switchPage('ledger'); });
+        bindClick('profile-auth-open-btn', function () { openAuthModal(); });
+        bindClick('settings-setup-again-btn', function () { showOnboarding(function () { refreshUI(); }); });
+        bindClick('settings-export-btn', function () { exportState(); });
+        bindClick('settings-import-btn', function () { triggerImport(); });
+        bindClick('settings-rebuild-btn', function () { rebuildTotals(); });
+        bindClick('settings-reset-btn', function () { resetAppData(); });
+        bindClick('bug-report-close-btn', function () { closeBugReportModal(); });
+        bindClick('bug-report-submit', function () { submitBugReport(); });
+        bindClick('import-backup-close-btn', function () { closeImportBackupModal(); });
+        bindClick('import-backup-open-file-btn', function () { document.getElementById('settings-import-file').click(); });
+        bindClick('reality-check-close-btn', function () { closeRealityCheck(); });
+        bindClick('reality-check-confirm-btn', function () { confirmRealityCheck(); });
+        bindClick('liquidity-breakdown-close-btn', function () { closeLiquidityBreakdown(); });
+        bindClick('savings-buckets-close-btn', function () { closeSavingsBuckets(); });
+        bindClick('savings-buckets-create-btn', function () { createSavingsBucket(); });
+        bindClick('transportation-buckets-close-btn', function () { closeTransportationBuckets(); });
+        bindClick('transportation-buckets-create-btn', function () { createTransportationBucket(); });
+        bindClick('payables-buckets-close-btn', function () { closePayablesBuckets(); });
+        bindClick('payables-buckets-create-btn', function () { createPayablesBucket(); });
+        bindClick('bucket-transfer-close-btn', function () { closeBucketTransferModal(); });
+        bindClick('bucket-transfer-delete-btn', function () { deleteBucketFromTransferModal(); });
+        bindClick('deficit-close-btn', function () { closeDeficitModal(); });
+        bindClick('tool-close-btn', function () { closeTool(); });
+        bindClick('amortization-close-btn', function () { closeAmortizationTool(); });
+        bindClick('danger-cancel-btn', function () { closeDangerModal(); });
+        bindClick('danger-confirm-btn', function () { confirmDangerAction(); });
+        bindClick('delete-cancel-btn', function () { closeDeleteModal(); });
+        bindClick('delete-confirm-btn', function () { confirmDelete(); });
+        bindClick('auth-close-btn', function () { closeAuthModal(); });
+        bindClick('auth-forgot-password-btn', function () { handleForgotPassword(); });
+        bindClick('auth-sign-in-btn', function () { handleSignIn(); });
+        bindClick('auth-sign-up-btn', function () { handleSignUp(); });
+        bindClick('add-item-close-btn', function () { closeAddItemTool(); });
+        bindClick('add-item-confirm-btn', function () { confirmAddItem(); });
+        bindClick('add-category-close-btn', function () { closeAddCategoryTool(); });
+        bindClick('add-category-confirm-btn', function () { confirmAddCategory(); });
+    }
+
     loadState();
-    if (typeof normalizeMoneyPrecision === 'function') normalizeMoneyPrecision();
-    if (typeof applySettings === 'function') applySettings();
+    normalizeMoneyPrecision();
+    applySettings();
+    wireStaticClickActions();
     // Decide onboarding: use device-local flag so we don't skip onboarding when state was restored from elsewhere
     var hasSavedState = !!localStorage.getItem(STORAGE_KEYS.STATE);
     var onboardingDoneFlag = localStorage.getItem(STORAGE_KEYS.ONBOARDING_DONE);

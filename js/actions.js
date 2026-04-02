@@ -41,7 +41,77 @@ function commitUI(profile) {
         renderStrategy();
         return updateGlobalUI();
     }
-    if (profile === 'refresh' && typeof refreshUI === 'function') return refreshUI();
+    if (profile === 'refresh') return refreshUI();
+}
+
+function commitFullRefresh() {
+    return commitUI('refresh');
+}
+
+function commitLedgerAndGlobal() {
+    return commitUI('ledgerGlobal');
+}
+
+function commitStrategyAndGlobal() {
+    return commitUI('strategyGlobal');
+}
+
+function getBucketStoreMeta(kind) {
+    if (kind === 'savings') {
+        return {
+            bucketsKey: 'savingsBuckets',
+            defaultBucketKey: 'savingsDefaultBucket',
+            defaultBucketName: 'General Savings',
+            syncTotal: syncSavingsTotal
+        };
+    }
+    if (kind === 'payables') {
+        return {
+            bucketsKey: 'payablesBuckets',
+            defaultBucketKey: 'payablesDefaultBucket',
+            defaultBucketName: 'Main',
+            syncTotal: syncPayablesTotal
+        };
+    }
+    if (kind === 'transportation') {
+        return {
+            bucketsKey: 'transportationBuckets',
+            defaultBucketKey: 'transportationDefaultBucket',
+            defaultBucketName: 'Main',
+            syncTotal: syncTransportationTotal
+        };
+    }
+    return null;
+}
+
+function creditBucketStore(kind, amount) {
+    ensureAccountsState();
+    var meta = getBucketStoreMeta(kind);
+    if (!meta) return;
+    var buckets = state.accounts[meta.bucketsKey];
+    var target = state.accounts[meta.defaultBucketKey] || meta.defaultBucketName;
+    if (buckets[target] === undefined) buckets[target] = 0;
+    buckets[target] += amount;
+    meta.syncTotal();
+}
+
+function debitBucketStore(kind, amount) {
+    ensureAccountsState();
+    var meta = getBucketStoreMeta(kind);
+    if (!meta) return;
+    var buckets = state.accounts[meta.bucketsKey];
+    var target = state.accounts[meta.defaultBucketKey] || meta.defaultBucketName;
+    var keys = Object.keys(buckets);
+    var order = [target].concat(keys.filter(function (key) { return key !== target; }));
+    var remaining = amount;
+    order.forEach(function (key) {
+        if (remaining <= 0) return;
+        var available = buckets[key] || 0;
+        var take = Math.min(available, remaining);
+        buckets[key] = available - take;
+        remaining -= take;
+    });
+    meta.syncTotal();
 }
 
 // --- STATE TRANSACTIONS ---
@@ -260,29 +330,11 @@ function adjustPayablesTotal(delta) {
 }
 
 function creditPayables(amount) {
-    ensureAccountsState();
-    const target = state.accounts.payablesDefaultBucket || 'Main';
-    if (state.accounts.payablesBuckets[target] === undefined) {
-        state.accounts.payablesBuckets[target] = 0;
-    }
-    state.accounts.payablesBuckets[target] += amount;
-    syncPayablesTotal();
+    creditBucketStore('payables', amount);
 }
 
 function debitPayables(amount) {
-    ensureAccountsState();
-    let remaining = amount;
-    const target = state.accounts.payablesDefaultBucket || 'Main';
-    const keys = Object.keys(state.accounts.payablesBuckets);
-    const order = [target, ...keys.filter(k => k !== target)];
-    order.forEach(key => {
-        if (remaining <= 0) return;
-        const available = state.accounts.payablesBuckets[key] || 0;
-        const take = Math.min(available, remaining);
-        state.accounts.payablesBuckets[key] = available - take;
-        remaining -= take;
-    });
-    syncPayablesTotal();
+    debitBucketStore('payables', amount);
 }
 
 function adjustSavingsTotal(delta) {
@@ -295,29 +347,11 @@ function adjustSavingsTotal(delta) {
 }
 
 function creditSavings(amount) {
-    ensureAccountsState();
-    const target = state.accounts.savingsDefaultBucket || 'General Savings';
-    if (state.accounts.savingsBuckets[target] === undefined) {
-        state.accounts.savingsBuckets[target] = 0;
-    }
-    state.accounts.savingsBuckets[target] += amount;
-    syncSavingsTotal();
+    creditBucketStore('savings', amount);
 }
 
 function debitSavings(amount) {
-    ensureAccountsState();
-    let remaining = amount;
-    const target = state.accounts.savingsDefaultBucket || 'General Savings';
-    const keys = Object.keys(state.accounts.savingsBuckets);
-    const order = [target, ...keys.filter(k => k !== target)];
-    order.forEach(key => {
-        if (remaining <= 0) return;
-        const available = state.accounts.savingsBuckets[key] || 0;
-        const take = Math.min(available, remaining);
-        state.accounts.savingsBuckets[key] = available - take;
-        remaining -= take;
-    });
-    syncSavingsTotal();
+    debitBucketStore('savings', amount);
 }
 
 function adjustTransportationTotal(delta) {
@@ -330,29 +364,11 @@ function adjustTransportationTotal(delta) {
 }
 
 function creditTransportation(amount) {
-    ensureAccountsState();
-    const target = state.accounts.transportationDefaultBucket || 'Main';
-    if (state.accounts.transportationBuckets[target] === undefined) {
-        state.accounts.transportationBuckets[target] = 0;
-    }
-    state.accounts.transportationBuckets[target] += amount;
-    syncTransportationTotal();
+    creditBucketStore('transportation', amount);
 }
 
 function debitTransportation(amount) {
-    ensureAccountsState();
-    let remaining = amount;
-    const target = state.accounts.transportationDefaultBucket || 'Main';
-    const keys = Object.keys(state.accounts.transportationBuckets);
-    const order = [target, ...keys.filter(k => k !== target)];
-    order.forEach(key => {
-        if (remaining <= 0) return;
-        const available = state.accounts.transportationBuckets[key] || 0;
-        const take = Math.min(available, remaining);
-        state.accounts.transportationBuckets[key] = available - take;
-        remaining -= take;
-    });
-    syncTransportationTotal();
+    debitBucketStore('transportation', amount);
 }
 
 function applyTransaction(tx) {
@@ -1129,10 +1145,7 @@ function confirmAddItem() {
     } else {
         applyTransaction({ type: 'add_item', sid: currentAddSectionId, label, amount: totalRounded });
     }
-    saveState();
-    renderStrategy();
-    if (typeof refreshUI === 'function') refreshUI();
-    else if (typeof renderLedger === 'function') renderLedger();
+    commitFullRefresh();
     closeAddItemTool();
 }
 
@@ -1148,12 +1161,7 @@ function releaseSplitGoalFunds(label) {
     pushToUndo();
     applyTransaction({ type: 'release_split_goal', label: label, amount: bal });
     if (typeof logHistory === 'function') logHistory(label, -bal, 'Unlock early');
-    saveState();
-    if (typeof refreshUI === 'function') refreshUI();
-    else {
-        if (typeof renderLedger === 'function') renderLedger();
-        if (typeof renderStrategy === 'function') renderStrategy();
-    }
+    commitFullRefresh();
 }
 window.releaseSplitGoalFunds = releaseSplitGoalFunds;
 window.updateAddItemCalc = updateAddItemCalc;
@@ -1169,9 +1177,7 @@ function confirmDelete() {
     if(itemToDelete) {
         pushToUndo();
         applyTransaction({ type: 'delete_item', sid: itemToDelete.sid, idx: itemToDelete.idx });
-        saveState();
-        if (typeof refreshUI === 'function') refreshUI();
-        else renderStrategy();
+        commitFullRefresh();
         closeDeleteModal();
     }
 }
@@ -2750,15 +2756,6 @@ function startNewMonth() {
     startNewMonthFoodReset();
 }
 window.startNewMonth = startNewMonth;
-
-function _noopLegacyMonthConfirm() {}
-
-// Legacy global entrypoints retained as no-op shims for backward HTML compatibility.
-function openWeeklyNewMonthConfirm() { _noopLegacyMonthConfirm(); }
-window.openWeeklyNewMonthConfirm = openWeeklyNewMonthConfirm;
-
-function openFoodNewMonthConfirm() { _noopLegacyMonthConfirm(); }
-window.openFoodNewMonthConfirm = openFoodNewMonthConfirm;
 
 // Old header button entrypoint (now unused)
 function openNewMonthConfirm() {

@@ -58,8 +58,8 @@
                     <option value="INR">INR</option>
                 </select>
                 <div class="flex gap-3">
-                    <button type="button" onclick="onboardingBack()" class="py-3 px-6 border border-slate-300 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-100">Back</button>
-                    <button type="button" onclick="onboardingNext()" class="flex-1 py-3 px-6 bg-indigo-600 text-white rounded-xl text-sm font-black uppercase tracking-wider">Next</button>
+                    <button type="button" id="onboarding-currency-back" class="py-3 px-6 border border-slate-300 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-100">Back</button>
+                    <button type="button" id="onboarding-currency-next" class="flex-1 py-3 px-6 bg-indigo-600 text-white rounded-xl text-sm font-black uppercase tracking-wider">Next</button>
                 </div>
             </div>
             <div id="onboarding-step-income" class="onboarding-step hidden">
@@ -70,8 +70,8 @@
                 <input type="number" id="onboarding-income" name="onboarding-income" min="0" step="1" placeholder="5000" class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-800 bg-white mb-2" autocomplete="off">
                 <p id="onboarding-income-error" class="text-xs text-red-500 mb-6 hidden">Please enter a valid number (0 or more).</p>
                 <div class="flex gap-3">
-                    <button type="button" onclick="onboardingBack()" class="py-3 px-6 border border-slate-300 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-100">Back</button>
-                    <button type="button" onclick="onboardingNext()" class="flex-1 py-3 px-6 bg-indigo-600 text-white rounded-xl text-sm font-black uppercase tracking-wider">Next</button>
+                    <button type="button" id="onboarding-income-back" class="py-3 px-6 border border-slate-300 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-100">Back</button>
+                    <button type="button" id="onboarding-income-next" class="flex-1 py-3 px-6 bg-indigo-600 text-white rounded-xl text-sm font-black uppercase tracking-wider">Next</button>
                 </div>
             </div>
             <div id="onboarding-step-categories" class="onboarding-step hidden flex flex-col min-h-0 relative">
@@ -108,13 +108,13 @@
                     <p id="onboarding-tip-title" class="text-xs font-black text-indigo-800 uppercase tracking-wide mb-2">Tip</p>
                     <p id="onboarding-tip-body" class="text-sm text-slate-700 mb-6 leading-relaxed"></p>
                     <div class="flex gap-2">
-                        <button type="button" id="onboarding-tip-skip" onclick="skipBudgetPlanTips()" class="py-2.5 px-4 text-slate-500 text-xs font-bold hover:text-slate-700">Skip tips</button>
-                        <button type="button" id="onboarding-tip-next" onclick="nextBudgetPlanTip()" class="flex-1 py-2.5 px-4 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase">Next</button>
+                        <button type="button" id="onboarding-tip-skip" class="py-2.5 px-4 text-slate-500 text-xs font-bold hover:text-slate-700">Skip tips</button>
+                        <button type="button" id="onboarding-tip-next" class="flex-1 py-2.5 px-4 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase">Next</button>
                     </div>
                 </div>
                 <div class="flex gap-3 flex-shrink-0 pt-2">
-                    <button type="button" onclick="onboardingBack()" class="py-3 px-6 border border-slate-300 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-100">Back</button>
-                    <button type="button" onclick="onboardingNext()" class="flex-1 py-3 px-6 bg-indigo-600 text-white rounded-xl text-sm font-black uppercase tracking-wider">Next</button>
+                    <button type="button" id="onboarding-categories-back" class="py-3 px-6 border border-slate-300 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-100">Back</button>
+                    <button type="button" id="onboarding-categories-next" class="flex-1 py-3 px-6 bg-indigo-600 text-white rounded-xl text-sm font-black uppercase tracking-wider">Next</button>
                 </div>
             </div>
             <div id="onboarding-step-priority" class="onboarding-step hidden">
@@ -123,8 +123,8 @@
                 <p class="text-sm text-slate-600 mb-4">Drag categories and buckets to decide what gets funded first when a paycheck cannot cover everything.</p>
                 <div id="onboarding-priority-content" class="space-y-3 mb-6"></div>
                 <div class="flex gap-3">
-                    <button type="button" onclick="onboardingBack()" class="py-3 px-6 border border-slate-300 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-100">Back</button>
-                    <button type="button" onclick="onboardingNext()" class="flex-1 py-3 px-6 bg-indigo-600 text-white rounded-xl text-sm font-black uppercase tracking-wider">Next</button>
+                    <button type="button" id="onboarding-priority-back" class="py-3 px-6 border border-slate-300 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-100">Back</button>
+                    <button type="button" id="onboarding-priority-next" class="flex-1 py-3 px-6 bg-indigo-600 text-white rounded-xl text-sm font-black uppercase tracking-wider">Next</button>
                 </div>
             </div>
             <div id="onboarding-step-summary" class="onboarding-step hidden">
@@ -135,33 +135,33 @@
                     <div class="flex items-center gap-4">
                         <span class="text-slate-600 flex-1">Currency</span>
                         <span id="onboarding-summary-currency" class="font-bold text-slate-900 w-32 text-center">—</span>
-                        <button type="button" onclick="showOnboardingStep(1)" class="text-indigo-600 text-xs font-bold w-10 text-right">Edit</button>
+                        <button type="button" id="onboarding-summary-edit-currency" class="text-indigo-600 text-xs font-bold w-10 text-right">Edit</button>
                     </div>
                     <div class="flex items-center gap-4">
                         <span class="text-slate-600 flex-1">Monthly income</span>
                         <span id="onboarding-summary-income" class="font-bold text-slate-900 w-32 text-center">—</span>
-                        <button type="button" onclick="showOnboardingStep(2)" class="text-indigo-600 text-xs font-bold w-10 text-right">Edit</button>
+                        <button type="button" id="onboarding-summary-edit-income" class="text-indigo-600 text-xs font-bold w-10 text-right">Edit</button>
                     </div>
                     <div class="flex items-center gap-4">
                         <span class="text-slate-600 flex-1">Categories</span>
                         <span id="onboarding-summary-categories" class="font-bold text-slate-900 w-32 text-center">—</span>
-                        <button type="button" onclick="showOnboardingStep(3)" class="text-indigo-600 text-xs font-bold w-10 text-right">Edit</button>
+                        <button type="button" id="onboarding-summary-edit-categories" class="text-indigo-600 text-xs font-bold w-10 text-right">Edit</button>
                     </div>
                     <div class="flex items-center gap-4">
                         <span class="text-slate-600 flex-1">Funding priority</span>
                         <span class="font-bold text-slate-900 w-32 text-center">Custom</span>
-                        <button type="button" onclick="showOnboardingStep(4)" class="text-indigo-600 text-xs font-bold w-10 text-right">Edit</button>
+                        <button type="button" id="onboarding-summary-edit-priority" class="text-indigo-600 text-xs font-bold w-10 text-right">Edit</button>
                     </div>
                 </div>
                 <div id="onboarding-account-card" class="rounded-xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 to-white p-4 mb-6">
                     <p class="text-xs font-black text-indigo-900 uppercase tracking-wide mb-1">Sync across devices?</p>
                     <p class="text-[11px] text-slate-600 mb-4">Create a free account to access your budget on phone, tablet, and desktop.</p>
                     <div class="flex gap-2">
-                        <button type="button" onclick="onboardingSignInAndSkip()" class="flex-1 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-wider">Sign In / Create account</button>
-                        <button type="button" onclick="onboardingSkipAccount()" class="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl text-[10px] font-bold hover:bg-slate-200">Skip</button>
+                        <button type="button" id="onboarding-summary-signin" class="flex-1 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-wider">Sign In / Create account</button>
+                        <button type="button" id="onboarding-summary-skip" class="flex-1 py-3 bg-slate-100 text-slate-600 rounded-xl text-[10px] font-bold hover:bg-slate-200">Skip</button>
                     </div>
                 </div>
-                <button type="button" onclick="onboardingComplete()" class="w-full py-4 px-6 bg-indigo-600 text-white rounded-xl text-sm font-black uppercase tracking-wider">Go to app</button>
+                <button type="button" id="onboarding-summary-complete" class="w-full py-4 px-6 bg-indigo-600 text-white rounded-xl text-sm font-black uppercase tracking-wider">Go to app</button>
             </div>
         </div>
     </div>
@@ -202,8 +202,7 @@
                     </div>
                 </div>
                 <nav class="px-2 pt-1 pb-3 flex-1 flex flex-col gap-1 text-sm">
-                    <button type="button" class="desktop-nav-item nav-ledger-pill tab-btn tab-active flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-800 hover:bg-indigo-50 data-[active=true]:bg-indigo-600 data-[active=true]:text-white transition"
-                            onclick="switchPage('ledger'); closeSideMenu();">
+                    <button type="button" id="nav-ledger" data-nav-page="ledger" class="desktop-nav-item nav-ledger-pill tab-btn tab-active flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-800 hover:bg-indigo-50 data-[active=true]:bg-indigo-600 data-[active=true]:text-white transition">
                         <span class="inline-flex items-center justify-center w-7 h-7 rounded-xl bg-indigo-50 text-indigo-600">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M3 11l9-8 9 8"></path>
@@ -212,8 +211,7 @@
                         </span>
                         <span>Home</span>
                     </button>
-                    <button type="button" id="nav-budget" class="desktop-nav-item tab-btn tab-inactive flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-700 hover:bg-slate-50 transition"
-                            onclick="switchPage('budget'); closeSideMenu();">
+                    <button type="button" id="nav-budget" data-nav-page="budget" class="desktop-nav-item tab-btn tab-inactive flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-700 hover:bg-slate-50 transition">
                         <span class="inline-flex items-center justify-center w-7 h-7 rounded-xl bg-slate-50 text-slate-500">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <rect x="3" y="3" width="7" height="7" rx="2"></rect>
@@ -224,8 +222,7 @@
                         </span>
                         <span>Budget Plan</span>
                     </button>
-                    <button type="button" id="nav-profile" class="desktop-nav-item tab-btn tab-inactive flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-700 hover:bg-slate-50 transition"
-                            onclick="switchPage('profile'); closeSideMenu();">
+                    <button type="button" id="nav-profile" data-nav-page="profile" class="desktop-nav-item tab-btn tab-inactive flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-700 hover:bg-slate-50 transition">
                         <span class="inline-flex items-center justify-center w-7 h-7 rounded-xl bg-slate-50 text-slate-500">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="12" cy="8" r="3.5"></circle>
@@ -234,8 +231,7 @@
                         </span>
                         <span>Profile</span>
                     </button>
-                    <button type="button" id="nav-settings" class="desktop-nav-item tab-btn tab-inactive flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-700 hover:bg-slate-50 transition"
-                            onclick="switchPage('settings'); closeSideMenu();">
+                    <button type="button" id="nav-settings" data-nav-page="settings" class="desktop-nav-item tab-btn tab-inactive flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-700 hover:bg-slate-50 transition">
                         <span class="inline-flex items-center justify-center w-7 h-7 rounded-xl bg-slate-50 text-slate-500">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="12" cy="12" r="3"></circle>
@@ -244,8 +240,7 @@
                         </span>
                         <span>Settings</span>
                     </button>
-                    <button type="button"
-                       onclick="openBugReportModal(); closeSideMenu();"
+                    <button type="button" id="desktop-bug-report"
                        class="mt-1 flex items-center gap-3 w-full px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-600 hover:bg-slate-50 transition">
                         <span class="inline-flex items-center justify-center w-7 h-7 rounded-xl bg-slate-50 text-slate-500">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -283,9 +278,9 @@
                             </span>
                         </span>
                         <div class="inline-flex rounded-full bg-slate-100 p-0.5 text-[10px] font-semibold whitespace-nowrap">
-                            <button type="button" id="theme-chip-light" onclick="setThemeFromSidebar('light')" class="px-2 py-0.5 rounded-full text-slate-600 bg-slate-100">Light</button>
-                            <button type="button" id="theme-chip-dark" onclick="setThemeFromSidebar('dark')" class="px-2 py-0.5 rounded-full text-slate-600 bg-slate-100">Dark</button>
-                            <button type="button" id="theme-chip-sepia" onclick="setThemeFromSidebar('sepia')" class="px-2 py-0.5 rounded-full text-slate-600 bg-slate-100">Sepia</button>
+                            <button type="button" id="theme-chip-light" data-theme-value="light" class="px-2 py-0.5 rounded-full text-slate-600 bg-slate-100">Light</button>
+                            <button type="button" id="theme-chip-dark" data-theme-value="dark" class="px-2 py-0.5 rounded-full text-slate-600 bg-slate-100">Dark</button>
+                            <button type="button" id="theme-chip-sepia" data-theme-value="sepia" class="px-2 py-0.5 rounded-full text-slate-600 bg-slate-100">Sepia</button>
                         </div>
                     </div>
                 </div>
@@ -297,7 +292,7 @@
         <div class="home-header-inner">
             <div class="home-header-row flex flex-nowrap items-center justify-between gap-2 min-w-0 overflow-x-hidden">
                 <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 min-w-0">
-                    <button type="button" onclick="toggleSideMenu()" class="home-header-icon-btn lg:hidden" aria-label="Open menu">
+                    <button type="button" id="mobile-menu-open" class="home-header-icon-btn lg:hidden" aria-label="Open menu">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
                     </button>
                     <div class="home-header-balance-date flex flex-col leading-tight min-w-0">
@@ -339,7 +334,7 @@
 
     <!-- Side menu drawer (mobile) -->
     <div id="side-menu" class="fixed inset-0 z-[60] hidden">
-        <div id="side-menu-backdrop" onclick="closeSideMenu()" class="absolute inset-0 bg-black/30"></div>
+        <div id="side-menu-backdrop" class="absolute inset-0 bg-black/30"></div>
         <div class="side-menu-panel absolute top-0 left-0 bottom-0 w-72 max-w-[85vw] px-3 py-5">
             <div class="flex flex-col bg-white shadow-2xl rounded-3xl w-full h-full overflow-hidden">
                 <div class="flex items-center justify-between px-4 pt-4 pb-3">
@@ -352,7 +347,7 @@
                             <span class="text-[11px] text-slate-400 leading-tight">Personal budgeting</span>
                         </div>
                     </div>
-                    <button type="button" onclick="closeSideMenu()" class="p-2 rounded-full bg-slate-50 text-slate-500 hover:bg-slate-100">
+                    <button type="button" id="mobile-menu-close" class="p-2 rounded-full bg-slate-50 text-slate-500 hover:bg-slate-100">
                         &#10005;
                     </button>
                 </div>
@@ -376,7 +371,7 @@
                     </div>
                 </div>
                 <nav class="px-2 pt-1 pb-3 flex-1 flex flex-col gap-1 text-sm overflow-y-auto">
-                    <button type="button" id="mobile-nav-ledger" data-nav-page="ledger" onclick="switchPage('ledger'); closeSideMenu();" class="side-menu-nav-btn flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-700 hover:bg-slate-50 transition tab-btn tab-active">
+                    <button type="button" id="mobile-nav-ledger" data-nav-page="ledger" class="side-menu-nav-btn flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-700 hover:bg-slate-50 transition tab-btn tab-active">
                         <span class="inline-flex items-center justify-center w-7 h-7 rounded-xl bg-indigo-100 text-indigo-600">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M3 11l9-8 9 8"></path>
@@ -385,7 +380,7 @@
                         </span>
                         <span>Home</span>
                     </button>
-                    <button type="button" id="mobile-nav-budget" data-nav-page="budget" onclick="switchPage('budget'); closeSideMenu();" class="side-menu-nav-btn flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-700 hover:bg-slate-50 transition tab-btn tab-inactive">
+                    <button type="button" id="mobile-nav-budget" data-nav-page="budget" class="side-menu-nav-btn flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-700 hover:bg-slate-50 transition tab-btn tab-inactive">
                         <span class="inline-flex items-center justify-center w-7 h-7 rounded-xl bg-slate-50 text-slate-500">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <rect x="3" y="3" width="7" height="7" rx="2"></rect>
@@ -396,7 +391,7 @@
                         </span>
                         <span>Budget Plan</span>
                     </button>
-                    <button type="button" id="mobile-nav-profile" data-nav-page="profile" onclick="switchPage('profile'); closeSideMenu();" class="side-menu-nav-btn flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-700 hover:bg-slate-50 transition tab-btn tab-inactive">
+                    <button type="button" id="mobile-nav-profile" data-nav-page="profile" class="side-menu-nav-btn flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-700 hover:bg-slate-50 transition tab-btn tab-inactive">
                         <span class="inline-flex items-center justify-center w-7 h-7 rounded-xl bg-slate-50 text-slate-500">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="12" cy="8" r="3.5"></circle>
@@ -405,7 +400,7 @@
                         </span>
                         <span>Profile</span>
                     </button>
-                    <button type="button" id="mobile-nav-settings" data-nav-page="settings" onclick="switchPage('settings'); closeSideMenu();" class="side-menu-nav-btn flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-700 hover:bg-slate-50 transition tab-btn tab-inactive">
+                    <button type="button" id="mobile-nav-settings" data-nav-page="settings" class="side-menu-nav-btn flex items-center gap-3 w-full text-left px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-700 hover:bg-slate-50 transition tab-btn tab-inactive">
                         <span class="inline-flex items-center justify-center w-7 h-7 rounded-xl bg-slate-50 text-slate-500">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <circle cx="12" cy="12" r="3"></circle>
@@ -414,7 +409,7 @@
                         </span>
                         <span>Settings</span>
                     </button>
-                    <button type="button" onclick="openBugReportModal(); closeSideMenu();" class="mt-1 flex items-center gap-3 w-full px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-600 hover:bg-slate-50 transition">
+                    <button type="button" id="mobile-bug-report" class="mt-1 flex items-center gap-3 w-full px-3 py-2.5 rounded-2xl text-[13px] font-semibold text-slate-600 hover:bg-slate-50 transition">
                         <span class="inline-flex items-center justify-center w-7 h-7 rounded-xl bg-slate-50 text-slate-500">
                             <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M4 4h16v16H4z"></path>
@@ -451,9 +446,9 @@
                             </span>
                         </span>
                         <div class="inline-flex rounded-full bg-slate-100 p-0.5 text-[10px] font-semibold whitespace-nowrap">
-                            <button type="button" id="mobile-theme-chip-light" onclick="setThemeFromSidebar('light')" class="px-2 py-0.5 rounded-full text-slate-800 bg-slate-100">Light</button>
-                            <button type="button" id="mobile-theme-chip-dark" onclick="setThemeFromSidebar('dark')" class="px-2 py-0.5 rounded-full text-slate-800 bg-slate-100">Dark</button>
-                            <button type="button" id="mobile-theme-chip-sepia" onclick="setThemeFromSidebar('sepia')" class="px-2 py-0.5 rounded-full text-slate-800 bg-slate-100">Sepia</button>
+                            <button type="button" id="mobile-theme-chip-light" data-theme-value="light" class="px-2 py-0.5 rounded-full text-slate-800 bg-slate-100">Light</button>
+                            <button type="button" id="mobile-theme-chip-dark" data-theme-value="dark" class="px-2 py-0.5 rounded-full text-slate-800 bg-slate-100">Dark</button>
+                            <button type="button" id="mobile-theme-chip-sepia" data-theme-value="sepia" class="px-2 py-0.5 rounded-full text-slate-800 bg-slate-100">Sepia</button>
                         </div>
                     </div>
                 </div>
@@ -471,14 +466,14 @@
                 <p id="home-tour-title" class="text-sm font-black text-slate-900 mb-2"></p>
                 <p id="home-tour-body" class="text-xs text-slate-600 mb-6 leading-relaxed"></p>
                 <div class="flex gap-2">
-                    <button type="button" onclick="skipHomeTour()" class="py-2.5 px-4 text-slate-500 text-xs font-bold hover:text-slate-700">Skip tour</button>
-                    <button type="button" id="home-tour-next-btn" onclick="nextHomeTourStep()" class="flex-1 py-2.5 px-4 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase">Next</button>
+                    <button type="button" id="home-tour-skip-btn" class="py-2.5 px-4 text-slate-500 text-xs font-bold hover:text-slate-700">Skip tour</button>
+                    <button type="button" id="home-tour-next-btn" class="flex-1 py-2.5 px-4 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase">Next</button>
                 </div>
             </div>
             <div class="ledger-top-grid grid grid-cols-1 lg:grid-cols-1 gap-4">
             <!-- Paycheck / Distribute: long button opens amount form -->
             <div class="paycheck-home-card premium-card overflow-hidden">
-                <button type="button" id="paycheck-trigger-btn" onclick="togglePaycheckPanel()" aria-expanded="false" aria-controls="paycheck-panel" class="paycheck-trigger w-full flex items-center justify-between gap-3 text-left transition">
+                <button type="button" id="paycheck-trigger-btn" aria-expanded="false" aria-controls="paycheck-panel" class="paycheck-trigger w-full flex items-center justify-between gap-3 text-left transition">
                     <div class="min-w-0">
                         <span class="paycheck-title block">Paycheck</span>
                         <p class="paycheck-subtitle mt-0.5">Distribute your paycheck across planned budgets.</p>
@@ -490,8 +485,8 @@
                     <div class="paycheck-row">
                         <input type="number" id="paycheck-amount" name="paycheck-amount" placeholder="Enter amount..." class="paycheck-input" autocomplete="off">
                         <span class="paycheck-currency" data-currency>AED</span>
-                        <button type="button" onclick="applyPaycheckDistribute()" class="paycheck-cta">Distribute</button>
-                        <button type="button" onclick="togglePaycheckPanel()" class="paycheck-close-btn" aria-label="Close paycheck panel">Close</button>
+                        <button type="button" id="paycheck-distribute-btn" class="paycheck-cta">Distribute</button>
+                        <button type="button" id="paycheck-close-btn" class="paycheck-close-btn" aria-label="Close paycheck panel">Close</button>
                     </div>
                 </div>
             </div>
@@ -644,12 +639,12 @@
                     <div class="flex items-center justify-between gap-2">
                         <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Daily Food</span>
                         <div class="flex items-center gap-1.5 min-w-0 flex-shrink">
-                            <button type="button" id="food-unused-transfer-btn" onclick="openFoodRolloverNoticePopover(event)" class="hidden h-7 w-7 rounded-lg border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 transition flex items-center justify-center text-[11px] font-black" title="Pay-cycle rollover" aria-label="Rollover details">i</button>
+                            <button type="button" id="food-unused-transfer-btn" class="hidden h-7 w-7 rounded-lg border border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100 transition flex items-center justify-center text-[11px] font-black" title="Pay-cycle rollover" aria-label="Rollover details">i</button>
                             <span id="daily-food-funded-wrap" class="inline-flex items-baseline gap-0.5 min-w-0 tabular-nums max-w-[7rem] sm:max-w-none" title="">
                                 <span id="daily-food-funded-balance" class="text-[11px] font-black truncate">0.00</span>
                                 <span id="daily-food-funded-currency" class="text-[10px] font-bold shrink-0" data-currency>AED</span>
                             </span>
-                            <button type="button" id="food-actions-btn" onclick="openDailyFoodActionsMenu(event)" class="h-7 w-7 shrink-0 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 transition font-black text-sm leading-none" title="Daily Food actions" aria-label="Daily Food actions">⋯</button>
+                            <button type="button" id="food-actions-btn" class="h-7 w-7 shrink-0 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-100 transition font-black text-sm leading-none" title="Daily Food actions" aria-label="Daily Food actions">⋯</button>
                         </div>
                     </div>
                     <p class="text-[10px] font-bold text-slate-400 mt-1"><span id="daily-food-rate">0.00</span> <span data-currency>AED</span>/Day</p>
@@ -660,8 +655,8 @@
                     <button type="button" id="food-rollover-notice-dismiss" class="mt-3 w-full py-2 rounded-lg bg-amber-600 text-white text-[10px] font-black uppercase tracking-wider hover:bg-amber-700 transition">Got it</button>
                 </div>
                 <div id="daily-food-actions-menu" class="hidden fixed z-[98] w-[260px] p-2 rounded-2xl bg-white border border-slate-200 shadow-xl shadow-slate-300/40 ring-1 ring-slate-900/5">
-                    <button type="button" onclick="openDailyFoodPayDayModal()" class="w-full text-left px-3 py-2.5 rounded-xl text-[12px] font-black uppercase tracking-wider text-slate-700 hover:bg-slate-50 transition">Set start date</button>
-                    <button type="button" onclick="openDailyFoodBulkRefillModal()" class="w-full text-left px-3 py-2.5 rounded-xl text-[12px] font-black uppercase tracking-wider text-emerald-700 hover:bg-emerald-50 transition">Refund Days</button>
+                    <button type="button" id="food-actions-set-start-date" class="w-full text-left px-3 py-2.5 rounded-xl text-[12px] font-black uppercase tracking-wider text-slate-700 hover:bg-slate-50 transition">Set start date</button>
+                    <button type="button" id="food-actions-refund-days" class="w-full text-left px-3 py-2.5 rounded-xl text-[12px] font-black uppercase tracking-wider text-emerald-700 hover:bg-emerald-50 transition">Refund Days</button>
                 </div>
 
                 <!-- Macro: days left, X of 28, progress bar, Week · Day -->
@@ -727,7 +722,7 @@
 
                     <!-- Mobile full-screen day modal (used on small/touch screens instead of tiny popover) -->
                     <div id="food-day-mobile-modal" class="modal-overlay hidden fixed inset-0 z-[80]">
-                        <div class="absolute inset-0 bg-black/40" onclick="closeFoodDayMobileModal()"></div>
+                        <div id="food-day-mobile-backdrop" class="absolute inset-0 bg-black/40"></div>
                         <div class="absolute inset-x-0 bottom-0 max-h-[92dvh] rounded-t-3xl bg-white shadow-2xl overflow-hidden flex flex-col">
                             <div class="px-5 pt-5 pb-4 border-b border-slate-100 flex items-start justify-between gap-3">
                                 <div class="min-w-0">
@@ -735,7 +730,7 @@
                                     <h3 id="food-day-mobile-title" class="text-lg font-black text-slate-900 truncate">Day</h3>
                                     <p id="food-day-mobile-subtitle" class="text-[11px] font-bold text-slate-500 mt-1">—</p>
                                 </div>
-                                <button type="button" onclick="closeFoodDayMobileModal()" class="p-2 rounded-full bg-slate-50 text-slate-600 hover:bg-slate-100" aria-label="Close">✕</button>
+                                <button type="button" id="food-day-mobile-close" class="p-2 rounded-full bg-slate-50 text-slate-600 hover:bg-slate-100" aria-label="Close">✕</button>
                             </div>
 
                             <div class="p-5 space-y-4 overflow-y-auto">
@@ -759,14 +754,14 @@
                     </div>
 
                     <div id="food-overflow-mobile-modal" class="modal-overlay hidden fixed inset-0 z-[85]" aria-hidden="true">
-                        <div class="absolute inset-0 bg-black/40" onclick="closeOverflowDayMobileModal()"></div>
+                        <div id="food-overflow-mobile-backdrop" class="absolute inset-0 bg-black/40"></div>
                         <div class="absolute inset-x-0 bottom-0 max-h-[88dvh] rounded-t-3xl bg-white shadow-2xl overflow-hidden flex flex-col border-t border-red-100">
                             <div class="px-5 pt-4 pb-3 border-b border-slate-100 flex items-start justify-between gap-3">
                                 <div class="min-w-0">
                                     <p class="text-[10px] font-black uppercase tracking-widest text-red-600">Extra</p>
                                     <p id="food-overflow-mobile-subtitle" class="text-[11px] font-semibold text-slate-600 mt-1 leading-snug break-words">Days between the end of your 28-day plan and your next pay day. Choose how to account for this day.</p>
                                 </div>
-                                <button type="button" onclick="closeOverflowDayMobileModal()" class="p-2 rounded-full bg-slate-50 text-slate-600 hover:bg-slate-100 shrink-0" aria-label="Close">✕</button>
+                                <button type="button" id="food-overflow-mobile-close" class="p-2 rounded-full bg-slate-50 text-slate-600 hover:bg-slate-100 shrink-0" aria-label="Close">✕</button>
                             </div>
                             <div class="p-5 space-y-3 overflow-y-auto">
                                 <div id="food-overflow-mobile-day-actions" class="food-overflow-actions-compact pb-2 border-b border-slate-100">
@@ -792,26 +787,26 @@
                 </div>
 
                 <div id="daily-food-actions-modal" class="modal-overlay hidden fixed inset-0 z-[95]">
-                    <div class="absolute inset-0 bg-black/40" onclick="closeDailyFoodActionsMenu()"></div>
+                    <div id="daily-food-actions-backdrop" class="absolute inset-0 bg-black/40"></div>
                     <div class="absolute inset-x-0 bottom-0 sm:inset-auto sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl border border-slate-200 p-5 space-y-3">
                         <div class="flex items-center justify-between gap-3">
                             <h3 class="text-sm font-black uppercase tracking-wider text-slate-900">Daily Food Actions</h3>
-                            <button type="button" onclick="closeDailyFoodActionsMenu()" class="h-8 w-8 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200" aria-label="Close">✕</button>
+                            <button type="button" id="daily-food-actions-close-icon" class="h-8 w-8 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200" aria-label="Close">✕</button>
                         </div>
-                        <button type="button" onclick="openDailyFoodBulkRefillModal()" class="w-full py-3 rounded-xl bg-indigo-600 text-white text-[11px] font-black uppercase tracking-wider hover:bg-indigo-700 transition">Bulk fund consumed days</button>
-                        <button type="button" onclick="closeDailyFoodActionsMenu()" class="w-full py-2.5 rounded-xl bg-slate-100 text-slate-700 text-[10px] font-black uppercase tracking-wider hover:bg-slate-200 transition">Close</button>
+                        <button type="button" id="daily-food-actions-bulk-refill" class="w-full py-3 rounded-xl bg-indigo-600 text-white text-[11px] font-black uppercase tracking-wider hover:bg-indigo-700 transition">Bulk fund consumed days</button>
+                        <button type="button" id="daily-food-actions-close-btn" class="w-full py-2.5 rounded-xl bg-slate-100 text-slate-700 text-[10px] font-black uppercase tracking-wider hover:bg-slate-200 transition">Close</button>
                     </div>
                 </div>
 
                 <div id="daily-food-bulk-refill-modal" class="modal-overlay hidden fixed inset-0 z-[100]">
-                    <div class="absolute inset-0 bg-black/45" onclick="closeDailyFoodBulkRefillModal()"></div>
+                    <div id="daily-food-bulk-backdrop" class="absolute inset-0 bg-black/45"></div>
                     <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(92vw,42rem)] max-h-[88dvh] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
                         <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
                             <div>
                                 <p class="text-[10px] font-black uppercase tracking-widest text-slate-400">Refund Days</p>
                                 <h3 class="text-base font-black text-slate-900">Fund consumed days</h3>
                             </div>
-                            <button type="button" onclick="closeDailyFoodBulkRefillModal()" class="h-8 w-8 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200" aria-label="Close">✕</button>
+                            <button type="button" id="daily-food-bulk-close" class="h-8 w-8 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200" aria-label="Close">✕</button>
                         </div>
                         <div class="p-5 space-y-4 overflow-y-auto">
                             <div class="grid sm:grid-cols-[1fr_auto] gap-2 items-end">
@@ -819,7 +814,7 @@
                                     <label for="daily-food-bulk-source" class="text-[10px] font-bold uppercase tracking-wider text-slate-500">Take from bucket</label>
                                     <select id="daily-food-bulk-source" name="daily-food-bulk-source" class="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-200"></select>
                                 </div>
-                                <button type="button" id="daily-food-select-all-btn" onclick="selectAllConsumedDaysForBulkRefill()" class="h-[42px] px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-[10px] font-black uppercase tracking-wider text-slate-700 transition">Select all consumed</button>
+                                <button type="button" id="daily-food-select-all-btn" class="h-[42px] px-4 rounded-xl bg-slate-100 hover:bg-slate-200 text-[10px] font-black uppercase tracking-wider text-slate-700 transition">Select all consumed</button>
                             </div>
                             <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
                                 <div class="flex items-center justify-between gap-2 mb-2">
@@ -830,14 +825,14 @@
                             </div>
                         </div>
                         <div class="px-5 py-4 border-t border-slate-100 flex items-center justify-end gap-2">
-                            <button type="button" onclick="closeDailyFoodBulkRefillModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-[10px] font-black uppercase tracking-wider hover:bg-slate-200 transition">Cancel</button>
-                            <button type="button" onclick="applyDailyFoodBulkRefill()" class="px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-[10px] font-black uppercase tracking-wider hover:bg-emerald-700 transition">Apply selected days</button>
+                            <button type="button" id="daily-food-bulk-cancel" class="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-[10px] font-black uppercase tracking-wider hover:bg-slate-200 transition">Cancel</button>
+                            <button type="button" id="daily-food-bulk-apply" class="px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-[10px] font-black uppercase tracking-wider hover:bg-emerald-700 transition">Apply selected days</button>
                         </div>
                     </div>
                 </div>
 
                 <div id="daily-food-pay-day-modal" class="modal-overlay hidden fixed inset-0 z-[100]">
-                    <div class="absolute inset-0 bg-black/45" onclick="closeDailyFoodPayDayModal()"></div>
+                    <div id="daily-food-payday-backdrop" class="absolute inset-0 bg-black/45"></div>
                     <div class="absolute left-1/2 top-[max(0.75rem,8vh)] -translate-x-1/2 w-[min(92vw,24rem)] max-h-[min(92vh,calc(100vh-1.5rem))] bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col overflow-hidden">
                         <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
                             <div>
@@ -845,7 +840,7 @@
                                 <h3 class="text-base font-black text-slate-900">Pay date (day of month)</h3>
                                 <p class="text-[11px] font-semibold text-slate-500 mt-1">Same as Settings. The budget calendar starts on this day each month.</p>
                             </div>
-                            <button type="button" onclick="closeDailyFoodPayDayModal()" class="h-8 w-8 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200" aria-label="Close">✕</button>
+                            <button type="button" id="daily-food-payday-close" class="h-8 w-8 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200" aria-label="Close">✕</button>
                         </div>
                         <div class="p-5 space-y-4">
                             <div>
@@ -883,8 +878,8 @@
                             </div>
                         </div>
                         <div class="px-5 py-4 border-t border-slate-100 flex items-center justify-end gap-2">
-                            <button type="button" onclick="closeDailyFoodPayDayModal()" class="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-[10px] font-black uppercase tracking-wider hover:bg-slate-200 transition">Cancel</button>
-                            <button type="button" onclick="applyFoodStartDateFromMenu()" class="px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-[10px] font-black uppercase tracking-wider hover:bg-indigo-700 transition">Apply</button>
+                            <button type="button" id="daily-food-payday-cancel" class="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-[10px] font-black uppercase tracking-wider hover:bg-slate-200 transition">Cancel</button>
+                            <button type="button" id="daily-food-payday-apply" class="px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-[10px] font-black uppercase tracking-wider hover:bg-indigo-700 transition">Apply</button>
                         </div>
                     </div>
                 </div>
@@ -901,7 +896,7 @@
             <header class="budget-plan-page-header premium-card px-4 py-3 flex flex-col gap-3 border border-slate-200 shadow-sm flex-shrink-0">
                 <div class="flex items-center justify-between gap-3">
                     <div class="flex items-center gap-2">
-                        <button type="button" onclick="switchPage('ledger')" class="p-2 -ml-1 rounded-lg text-slate-500 hover:bg-slate-100 transition flex-shrink-0" aria-label="Back">&#8592;</button>
+                        <button type="button" id="budget-plan-back-btn" class="p-2 -ml-1 rounded-lg text-slate-500 hover:bg-slate-100 transition flex-shrink-0" aria-label="Back">&#8592;</button>
                         <h2 class="text-base font-black text-slate-900 uppercase tracking-wider">Budget Plan</h2>
                     </div>
                 </div>
@@ -924,30 +919,6 @@
                 <span id="reality-total-sr" class="hidden" aria-hidden="true">0</span>
             </header>
             <div class="budget-plan-page-body flex-1 min-h-0 overflow-y-auto space-y-6 py-4">
-                <div class="grid grid-cols-2 gap-4 hidden" aria-hidden="true">
-                    <div class="premium-card p-5 bg-slate-50 border-slate-100">
-                        <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Planned Income (legacy)</span>
-                        <div class="flex items-center gap-1">
-                            <span class="text-lg font-bold text-slate-300" data-currency>AED</span>
-                            <input type="number" id="monthly-income-input-legacy" name="monthly-income-legacy" class="w-full bg-transparent text-2xl font-black text-slate-900 outline-none" placeholder="0" autocomplete="off">
-                        </div>
-                        <p class="text-[10px] text-slate-400 mt-2">Used for plan percentages and first-time setup only. Changing it won’t add money.</p>
-                    </div>
-                    <div class="premium-card p-5 border-emerald-100 bg-emerald-50/20 relative">
-                        <span class="text-[10px] font-bold uppercase tracking-widest text-emerald-600">Current Balance</span>
-                        <div class="flex items-center justify-between">
-                            <p id="reality-total-legacy" class="text-3xl font-black text-slate-900 mt-1">0.00</p>
-                            <div class="flex items-center gap-2">
-                                <button onclick="openLiquidityBreakdown()" class="bg-white p-2 rounded-xl text-emerald-600 shadow-sm hover:scale-105 transition" title="View Breakdown">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/></svg>
-                                </button>
-                                <button onclick="openRealityCheck()" class="bg-white p-2 rounded-xl text-emerald-600 shadow-sm hover:scale-105 transition" title="Reality Check">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/></svg>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
                 <div id="strategy-sections" class="space-y-6"></div>
             </div>
         </div>
@@ -955,7 +926,7 @@
         <!-- PAGE: PROFILE -->
         <div id="page-profile" class="space-y-6 hidden">
             <header class="lg:hidden premium-card px-4 py-3 flex items-center gap-3 border border-slate-200 shadow-sm">
-                <button type="button" onclick="switchPage('ledger')" class="p-2 -ml-1 rounded-lg text-slate-500 hover:bg-slate-100 transition flex-shrink-0" aria-label="Back">&#8592;</button>
+                <button type="button" id="profile-back-btn" class="p-2 -ml-1 rounded-lg text-slate-500 hover:bg-slate-100 transition flex-shrink-0" aria-label="Back">&#8592;</button>
                 <h2 class="text-base font-black text-slate-900 uppercase tracking-wider">Profile</h2>
             </header>
             <div class="premium-card p-6 space-y-4">
@@ -964,7 +935,7 @@
                     <p class="text-xs text-slate-500 mt-1">Sign in to sync your data across devices.</p>
                 </div>
                 <div id="auth-section" class="flex flex-col gap-2">
-                    <button onclick="openAuthModal()" class="w-full py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Sign In / Sign Up</button>
+                    <button id="profile-auth-open-btn" class="w-full py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Sign In / Sign Up</button>
                 </div>
                 <div id="user-info-section" class="hidden flex flex-col gap-2">
                     <div class="bg-slate-50 p-3 rounded-xl">
@@ -981,7 +952,7 @@
         <!-- PAGE: SETTINGS -->
         <div id="page-settings" class="space-y-6 hidden">
             <header class="lg:hidden premium-card px-4 py-3 flex items-center gap-3 border border-slate-200 shadow-sm">
-                <button type="button" onclick="switchPage('ledger')" class="p-2 -ml-1 rounded-lg text-slate-500 hover:bg-slate-100 transition flex-shrink-0" aria-label="Back">&#8592;</button>
+                <button type="button" id="settings-back-btn" class="p-2 -ml-1 rounded-lg text-slate-500 hover:bg-slate-100 transition flex-shrink-0" aria-label="Back">&#8592;</button>
                 <h2 class="text-base font-black text-slate-900 uppercase tracking-wider">Settings</h2>
             </header>
             <!-- Setup -->
@@ -991,7 +962,7 @@
                     <p class="text-xs text-slate-500 mt-1">Pay date and calendar. The budget calendar starts on pay day with no empty slots.</p>
                 </div>
                 <div class="pt-2">
-                    <button type="button" onclick="showOnboarding(function(){ if(typeof refreshUI === 'function') refreshUI(); })" class="w-full py-3 bg-slate-100 text-slate-700 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition">Set up again</button>
+                    <button type="button" id="settings-setup-again-btn" class="w-full py-3 bg-slate-100 text-slate-700 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-200 transition">Set up again</button>
                     <p class="text-[10px] text-slate-500 mt-1">Re-run the initial setup (currency, income, bank balance, categories, weekly).</p>
                 </div>
                 <div class="grid grid-cols-1 gap-3">
@@ -1064,10 +1035,10 @@
                     <p class="text-xs text-slate-500 mt-1">Export or import a backup, or reset all data.</p>
                 </div>
                 <div class="flex flex-col gap-2">
-                    <button onclick="exportState()" class="w-full py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Export Backup</button>
-                    <button onclick="triggerImport()" class="w-full py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Import Backup</button>
-                    <button onclick="rebuildTotals()" class="w-full py-3 bg-slate-50 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 transition">Rebuild Totals</button>
-                    <button onclick="resetAppData()" class="w-full py-3 bg-red-50 text-red-500 rounded-xl text-[10px] font-black uppercase tracking-widest">Reset All Data</button>
+                    <button id="settings-export-btn" class="w-full py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Export Backup</button>
+                    <button id="settings-import-btn" class="w-full py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Import Backup</button>
+                    <button id="settings-rebuild-btn" class="w-full py-3 bg-slate-50 text-slate-600 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 transition">Rebuild Totals</button>
+                    <button id="settings-reset-btn" class="w-full py-3 bg-red-50 text-red-500 rounded-xl text-[10px] font-black uppercase tracking-widest">Reset All Data</button>
                     <input type="file" id="settings-import-file" name="settings-import-file" accept="application/json" class="hidden" onchange="importStateFile(this.files[0])">
                 </div>
             </div>
@@ -1083,7 +1054,7 @@
         <div class="modal-content">
             <div class="flex justify-between items-center mb-5">
                 <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Bug report</span>
-                <button type="button" onclick="closeBugReportModal()" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
+                <button type="button" id="bug-report-close-btn" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
             </div>
             <h3 class="text-xl font-black text-slate-900 mb-1">Report an issue</h3>
             <p class="text-xs text-slate-500 mb-5">This opens a Google Form with your details pre-filled.</p>
@@ -1113,7 +1084,7 @@
                     <p class="text-[10px] text-slate-400 mt-2">Tip: a screenshot is best.</p>
                 </div>
                 <p id="bug-report-error" class="text-xs text-red-500 hidden"></p>
-                <button type="button" id="bug-report-submit" onclick="submitBugReport()" class="w-full py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition">Continue to Google Form</button>
+                <button type="button" id="bug-report-submit" class="w-full py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition">Continue to Google Form</button>
             </div>
         </div>
     </div>
@@ -1123,11 +1094,11 @@
         <div class="modal-content">
             <div class="flex justify-between items-center mb-4">
                 <span class="text-[10px] font-bold uppercase tracking-widest text-slate-600">Import Backup</span>
-                <button type="button" onclick="closeImportBackupModal()" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
+                <button type="button" id="import-backup-close-btn" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
             </div>
             <p class="text-xs text-slate-500 mb-4">Restore from a file you downloaded earlier, or from an auto-saved version.</p>
             <div class="flex flex-col gap-3 mb-4">
-                <button type="button" onclick="document.getElementById('settings-import-file').click();" class="w-full py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Import from file</button>
+                <button type="button" id="import-backup-open-file-btn" class="w-full py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Import from file</button>
                 <div class="border-t border-slate-100 pt-3 mt-1">
                     <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400 block mb-2">Restore from auto-saved version</span>
                     <div id="import-auto-backup-list" class="space-y-2 max-h-48 overflow-y-auto"></div>
@@ -1141,7 +1112,7 @@
         <div class="modal-content">
             <div class="flex justify-between items-center mb-6">
                 <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Reality Check</span>
-                <button onclick="closeRealityCheck()" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
+                <button id="reality-check-close-btn" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
             </div>
             <h3 class="text-xl font-black text-slate-900 mb-2">Reconcile Funds</h3>
             <p class="text-xs text-slate-500 mb-6">Adjust the system to match your actual bank balance. The difference will be applied to your Surplus (Unallocated Funds).</p>
@@ -1156,7 +1127,7 @@
                 <input type="number" id="rc-user-val" name="rc-user-val" placeholder="0.00" class="w-full bg-transparent text-2xl font-black text-indigo-900 outline-none mt-1" autocomplete="off">
             </div>
             
-            <button onclick="confirmRealityCheck()" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest">Update & Reconcile</button>
+            <button id="reality-check-confirm-btn" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest">Update & Reconcile</button>
         </div>
     </div>
 
@@ -1165,7 +1136,7 @@
         <div class="modal-content">
             <div class="flex justify-between items-center mb-6">
                 <span class="text-[10px] font-bold uppercase tracking-widest text-emerald-500">Bank Balance</span>
-                <button onclick="closeLiquidityBreakdown()" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
+                <button id="liquidity-breakdown-close-btn" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
             </div>
             <div class="bg-emerald-50 p-4 rounded-xl mb-4">
                 <p class="text-[9px] font-bold uppercase text-emerald-400 m-0">Bank Balance</p>
@@ -1180,7 +1151,7 @@
         <div class="modal-content">
             <div class="flex justify-between items-center mb-2">
                 <span class="text-[10px] font-bold uppercase tracking-widest text-indigo-500">Savings</span>
-                <button onclick="closeSavingsBuckets()" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
+                <button id="savings-buckets-close-btn" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
             </div>
             <p class="text-xs text-slate-500 mb-4">Move money between buckets or to/from Extra and Weekly.</p>
 
@@ -1194,7 +1165,7 @@
             <div class="flex gap-2 items-center">
                 <label for="savings-bucket-name" class="sr-only">New savings bucket name</label>
                 <input type="text" id="savings-bucket-name" name="savings-bucket-name" placeholder="New bucket name" class="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium outline-none" autocomplete="off">
-                <button type="button" onclick="createSavingsBucket()" class="shrink-0 py-2 px-4 bg-indigo-600 text-white rounded-lg text-xs font-bold uppercase">Create</button>
+                <button type="button" id="savings-buckets-create-btn" class="shrink-0 py-2 px-4 bg-indigo-600 text-white rounded-lg text-xs font-bold uppercase">Create</button>
             </div>
         </div>
     </div>
@@ -1204,7 +1175,7 @@
         <div class="modal-content">
             <div class="flex justify-between items-center mb-2">
                 <span class="text-[10px] font-bold uppercase tracking-widest text-slate-600">Transportation</span>
-                <button onclick="closeTransportationBuckets()" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
+                <button id="transportation-buckets-close-btn" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
             </div>
             <p class="text-xs text-slate-500 mb-4">Move money between buckets or to/from Extra and Weekly.</p>
 
@@ -1218,7 +1189,7 @@
             <div class="flex gap-2 items-center">
                 <label for="transportation-bucket-name" class="sr-only">New transportation bucket name</label>
                 <input type="text" id="transportation-bucket-name" name="transportation-bucket-name" placeholder="New bucket name" class="flex-1 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-sm font-medium outline-none" autocomplete="off">
-                <button type="button" onclick="createTransportationBucket()" class="shrink-0 py-2 px-4 bg-slate-600 text-white rounded-lg text-xs font-bold uppercase">Create</button>
+                <button type="button" id="transportation-buckets-create-btn" class="shrink-0 py-2 px-4 bg-slate-600 text-white rounded-lg text-xs font-bold uppercase">Create</button>
             </div>
         </div>
     </div>
@@ -1228,7 +1199,7 @@
         <div class="modal-content">
             <div class="flex justify-between items-center mb-2">
                 <span class="text-[10px] font-bold uppercase tracking-widest text-amber-600">Payables</span>
-                <button onclick="closePayablesBuckets()" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
+                <button id="payables-buckets-close-btn" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
             </div>
             <p class="text-xs text-slate-500 mb-4">Move money between buckets or to/from Extra and Weekly.</p>
 
@@ -1242,7 +1213,7 @@
             <div class="flex gap-2 items-center">
                 <label for="payables-bucket-name" class="sr-only">New payables bucket name</label>
                 <input type="text" id="payables-bucket-name" name="payables-bucket-name" placeholder="New bucket name" class="flex-1 bg-amber-50/50 border border-amber-200 rounded-lg px-3 py-2 text-sm font-medium outline-none" autocomplete="off">
-                <button type="button" onclick="createPayablesBucket()" class="shrink-0 py-2 px-4 bg-amber-600 text-white rounded-lg text-xs font-bold uppercase">Create</button>
+                <button type="button" id="payables-buckets-create-btn" class="shrink-0 py-2 px-4 bg-amber-600 text-white rounded-lg text-xs font-bold uppercase">Create</button>
             </div>
         </div>
     </div>
@@ -1252,7 +1223,7 @@
         <div class="modal-content">
             <div class="flex justify-between items-center mb-2">
                 <span id="bucket-transfer-title" class="text-[10px] font-bold uppercase tracking-widest text-slate-600">Transfer</span>
-                <button type="button" onclick="closeBucketTransferModal()" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
+                <button type="button" id="bucket-transfer-close-btn" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
             </div>
             <p class="text-xs text-slate-500 mb-4">Choose destination and amount.</p>
             <div class="space-y-3">
@@ -1265,7 +1236,7 @@
                     <input type="number" id="bucket-transfer-amount" name="bucket-transfer-amount" placeholder="0" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold outline-none" min="0" step="any" autocomplete="off">
                 </div>
                 <button type="button" id="bucket-transfer-btn" class="w-full py-3 bg-indigo-600 text-white rounded-xl text-xs font-bold uppercase hover:bg-indigo-700 transition">Transfer</button>
-                <button type="button" onclick="deleteBucketFromTransferModal()" class="w-full py-2 mt-2 text-[10px] font-bold text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition">Delete bucket</button>
+                <button type="button" id="bucket-transfer-delete-btn" class="w-full py-2 mt-2 text-[10px] font-bold text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition">Delete bucket</button>
             </div>
         </div>
     </div>
@@ -1275,7 +1246,7 @@
         <div class="modal-content">
             <div class="flex justify-between items-center mb-6">
                 <span class="text-[10px] font-bold uppercase tracking-widest text-red-500">Extra Alert</span>
-                <button onclick="closeDeficitModal()" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
+                <button id="deficit-close-btn" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
             </div>
             <h3 class="text-xl font-black text-slate-900 mb-2">Cover the Shortfall</h3>
             <p class="text-sm text-slate-500 mb-6">Extra is negative. Tap a bucket below to move funds to cover it.</p>
@@ -1289,7 +1260,7 @@
         <div class="modal-content">
             <div class="flex justify-between items-center mb-6">
                 <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Category</span>
-                <button onclick="closeTool()" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
+                <button id="tool-close-btn" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
             </div>
             <h3 id="tool-title" class="text-xl font-black text-slate-900 mb-6">Adjustment</h3>
             
@@ -1322,7 +1293,7 @@
         <div class="modal-content">
             <div class="flex justify-between items-center mb-6">
                 <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Edit Entry</span>
-                <button onclick="closeAmortizationTool()" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
+                <button id="amortization-close-btn" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
             </div>
             <div class="space-y-4">
                 <label for="amort-label" class="sr-only">Item name</label>
@@ -1359,8 +1330,8 @@
             <input type="text" id="danger-input" name="danger-confirm" class="w-full bg-red-50 border-2 border-red-100 rounded-xl px-4 py-3 text-sm font-bold outline-none mb-6 text-red-900 placeholder-red-200 uppercase" placeholder="TYPE HERE..." autocomplete="off">
             
             <div class="flex gap-3">
-                <button onclick="closeDangerModal()" class="flex-1 py-3 bg-slate-100 text-slate-500 rounded-xl text-[10px] font-black uppercase">Cancel</button>
-                <button onclick="confirmDangerAction()" class="flex-1 py-3 bg-red-600 text-white rounded-xl text-[10px] font-black uppercase shadow-lg shadow-red-200">Confirm</button>
+                <button id="danger-cancel-btn" class="flex-1 py-3 bg-slate-100 text-slate-500 rounded-xl text-[10px] font-black uppercase">Cancel</button>
+                <button id="danger-confirm-btn" class="flex-1 py-3 bg-red-600 text-white rounded-xl text-[10px] font-black uppercase shadow-lg shadow-red-200">Confirm</button>
             </div>
         </div>
     </div>
@@ -1373,8 +1344,8 @@
             </div>
             <h3 class="text-xl font-black text-slate-900 mb-2">Delete Item?</h3>
             <div class="flex gap-3 mt-6">
-                <button onclick="closeDeleteModal()" class="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black text-[10px] uppercase">Cancel</button>
-                <button onclick="confirmDelete()" class="flex-1 py-4 bg-red-500 text-white rounded-2xl font-black text-[10px] uppercase">Delete</button>
+                <button id="delete-cancel-btn" class="flex-1 py-4 bg-slate-100 text-slate-500 rounded-2xl font-black text-[10px] uppercase">Cancel</button>
+                <button id="delete-confirm-btn" class="flex-1 py-4 bg-red-500 text-white rounded-2xl font-black text-[10px] uppercase">Delete</button>
             </div>
         </div>
     </div>
@@ -1400,7 +1371,7 @@
         <div class="modal-content">
             <div class="flex justify-between items-center mb-6">
                 <span class="text-[10px] font-bold uppercase tracking-widest text-indigo-500">Account</span>
-                <button onclick="closeAuthModal()" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
+                <button id="auth-close-btn" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
             </div>
             <h3 class="text-xl font-black text-slate-900 mb-2">Sign In or Create Account</h3>
             <p class="text-xs text-slate-500 mb-6">Sync your budget data across all your devices.</p>
@@ -1415,11 +1386,11 @@
                     <input type="password" id="auth-password" name="password" placeholder="••••••" class="w-full bg-transparent text-lg font-bold outline-none mt-1" autocomplete="current-password">
                 </div>
                 <p id="auth-error" class="text-xs text-red-500 min-h-[20px]"></p>
-                <button type="button" onclick="handleForgotPassword()" class="w-full text-center text-[10px] font-bold text-indigo-600 hover:text-indigo-700">Forgot password?</button>
+                <button type="button" id="auth-forgot-password-btn" class="w-full text-center text-[10px] font-bold text-indigo-600 hover:text-indigo-700">Forgot password?</button>
                 <p class="text-[9px] text-slate-400 mt-1">No reset email? Check spam/junk; use the <strong>exact</strong> email you signed up with. Sender: <code class="text-slate-500">noreply@budgetapp-8a20d.firebaseapp.com</code></p>
                 <div class="flex gap-3">
-                    <button type="button" onclick="handleSignIn()" class="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest">Sign In</button>
-                    <button type="button" onclick="handleSignUp()" class="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest">Sign Up</button>
+                    <button type="button" id="auth-sign-in-btn" class="flex-1 py-4 bg-indigo-600 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest">Sign In</button>
+                    <button type="button" id="auth-sign-up-btn" class="flex-1 py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest">Sign Up</button>
                 </div>
             </form>
         </div>
@@ -1430,7 +1401,7 @@
         <div class="modal-content">
             <div class="flex justify-between items-center mb-6">
                 <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">New Entry</span>
-                <button onclick="closeAddItemTool()" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
+                <button id="add-item-close-btn" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
             </div>
             <div class="space-y-4">
                 <div id="new-item-category-row" class="hidden">
@@ -1453,7 +1424,7 @@
                         <span id="new-item-split-preview" class="text-sm font-black text-indigo-600 leading-tight">—</span>
                     </div>
                 </div>
-                <button onclick="confirmAddItem()" class="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest">Create Item</button>
+                <button id="add-item-confirm-btn" class="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest">Create Item</button>
             </div>
         </div>
     </div>
@@ -1463,7 +1434,7 @@
         <div class="modal-content">
             <div class="flex justify-between items-center mb-6">
                 <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">New Category</span>
-                <button onclick="closeAddCategoryTool()" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
+                <button id="add-category-close-btn" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
             </div>
             <div class="space-y-4">
                 <label for="new-cat-label" class="sr-only">Category name</label>
@@ -1474,7 +1445,7 @@
                         <label for="new-cat-single" class="text-xs font-bold text-slate-600">Single Action (Checkmark Completion)</label>
                     </div>
                 </div>
-                <button onclick="confirmAddCategory()" class="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest">Create Category</button>
+                <button id="add-category-confirm-btn" class="w-full py-4 bg-slate-900 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest">Create Category</button>
             </div>
         </div>
     </div>
