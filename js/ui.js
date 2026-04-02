@@ -405,6 +405,10 @@ function updateBudgetPlanAllocated() {
             sec.items.forEach(function (item) {
                 if (item.label === 'Payables') return;
                 if ((state.settings && state.settings.showFoodPlan === false) && item.label === 'Daily Food') return;
+                if (item.label === 'Daily Food' && typeof getFoodPlanBudgetAmount === 'function') {
+                    allocated += rm(getFoodPlanBudgetAmount());
+                    return;
+                }
                 allocated += typeof item.amount === 'number' ? rm(item.amount) : 0;
             });
         });
@@ -621,7 +625,9 @@ function renderStrategy(opts) {
 
             // SMART BADGES FOR CORE ITEMS
             if (itemLabel === 'Daily Food') {
-                const foodAmount = isFoodPlanOff ? 0 : item.amount;
+                const foodAmount = isFoodPlanOff
+                    ? 0
+                    : (typeof getFoodPlanBudgetAmount === 'function' ? getFoodPlanBudgetAmount() : item.amount);
                 const dailyRate = foodAmount / state.food.daysTotal;
                 amortLabel = `<span class="budget-item-badge text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold ml-2" data-sid="${sid}" data-idx="${idx}" data-badge="food">${formatMoney(dailyRate)}/day</span>`;
             } else if (itemLabel === 'Weekly Allowance') {
@@ -644,7 +650,9 @@ function renderStrategy(opts) {
                 <button onclick="openDeleteModal('${sid}', ${idx})" class="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 cursor-pointer rounded">×</button>
             `;
 
-            const effectiveAmount = isFoodPlanOff ? 0 : item.amount;
+            const effectiveAmount = isFoodPlanOff
+                ? 0
+                : (isFoodBase && typeof getFoodPlanBudgetAmount === 'function' ? getFoodPlanBudgetAmount() : item.amount);
             const displayAmount = formatMoneyPlain(effectiveAmount);
             const dailyRateVal = state.food.daysTotal > 0 ? (effectiveAmount / state.food.daysTotal) : 0;
             const dailyRateRounded = Math.round(dailyRateVal);
@@ -861,13 +869,6 @@ function toggleBudgetFoodPlan(el, sid, idx) {
     if (!state.settings) state.settings = {};
     var enabled = !!(el && el.checked);
     state.settings.showFoodPlan = enabled;
-    if (!enabled) {
-        var sec = (state.categories || []).find(function (s) { return s && s.id === sid; });
-        var item = sec && sec.items ? sec.items[idx] : null;
-        if (item && (item.label === 'Daily Food' || item.label === 'Food Base')) {
-            item.amount = 0;
-        }
-    }
     if (typeof saveState === 'function') saveState();
     renderStrategy();
     updateBudgetPlanAllocated();
@@ -1498,7 +1499,7 @@ function updateFoodUI() {
             var labelTint = (0.72 + (overflowFundingRatio * 0.24)).toFixed(3);
             var extraHtml = '<div class="' + rowExtraClass + '" style="--food-overflow-row-tint:' + rowTint + '; --food-overflow-row-border:' + rowBorder + '; --food-overflow-label-tint:' + labelTint + ';">' +
                 '<div class="' + labelExtraClass + '" title="Calendar days after your 28-day plan until your next pay day">Extra</div>' +
-                '<div class="grid grid-cols-7 gap-1 flex-1">';
+                '<div class="food-overflow-cells grid grid-cols-7 gap-1.5 flex-1">';
             for (var ec = 0; ec < 7; ec++) {
                 if (ec < overflowDates.length) {
                     var ex = overflowDates[ec];

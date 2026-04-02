@@ -479,6 +479,9 @@ function applyTransaction(tx) {
             var prevVal = item.amount;
             item.amount = newVal;
             delete item.amortData;
+            if ((item.label === 'Daily Food' || item.label === 'Food Base') && typeof setFoodPlanBudgetAmount === 'function') {
+                setFoodPlanBudgetAmount(newVal);
+            }
             if (isAccountLabel(item.label)) {
                 if (item.label === 'Savings') {
                     ensureGeneralSavingsBudgetConfig();
@@ -547,7 +550,6 @@ function applyTransaction(tx) {
             }
             break;
         case 'food_deficit_raid':
-            state.accounts.surplus += tx.amount;
             state.food.history.unshift({type:'deficit', amt: tx.amount});
             break;
         default:
@@ -820,13 +822,40 @@ function raidWeekly(available) {
 function raidFood(available) {
     const deficit = Math.abs(state.accounts.surplus);
     const take = Math.min(deficit, available);
-    const { fItem } = getFoodRemainderInfo();
-    if (take > 0 && fItem) {
+    if (take > 0) {
         pushToUndo();
-        fItem.amount = Math.max(0, fItem.amount - take);
-        applyTransaction({ type: 'adjust_surplus', delta: take });
-        applyTransaction({ type: 'food_deficit_raid', amount: take });
-        logHistory('Daily Food', -take, 'Deficit Cover');
+        if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
+        var released = 0;
+        var remaining = take;
+        var overflowFunded = (state.food && state.food.overflowFunded) ? state.food.overflowFunded : {};
+        Object.keys(overflowFunded).sort().reverse().forEach(function (key) {
+            if (remaining <= 0.001) return;
+            var current = Number(overflowFunded[key]) || 0;
+            if (current <= 0) return;
+            var cut = Math.min(current, remaining);
+            overflowFunded[key] = current - cut;
+            if (overflowFunded[key] < 0.001) delete overflowFunded[key];
+            remaining -= cut;
+            released += cut;
+        });
+        for (var day = 28; day >= 1 && remaining > 0.001; day--) {
+            if ((state.food.consumedDays || []).indexOf(day) !== -1) continue;
+            var funded = (typeof getFoodFundedForDay === 'function') ? getFoodFundedForDay(day) : 0;
+            if (funded <= 0) continue;
+            var sub = Math.min(funded, remaining);
+            if (typeof setFoodFundedForDay === 'function') setFoodFundedForDay(day, funded - sub);
+            remaining -= sub;
+            released += sub;
+        }
+        if (!state.balances || typeof state.balances !== 'object') state.balances = {};
+        state.balances['Daily Food'] = typeof getOutstandingFoodBalanceTotal === 'function'
+            ? getOutstandingFoodBalanceTotal()
+            : Math.max(0, (Number(state.balances['Daily Food']) || 0) - released);
+        if (released > 0) {
+            applyTransaction({ type: 'adjust_surplus', delta: released });
+            applyTransaction({ type: 'food_deficit_raid', amount: released });
+            logHistory('Daily Food', -released, 'Deficit Cover');
+        }
         saveState();
         renderLedger();
         if(state.accounts.surplus >= 0) closeDeficitModal();

@@ -1979,6 +1979,9 @@ body.theme-dark .food-day-action-popover .food-day-action-transfer span:first-of
     color: rgb(239, 68, 68);
     transition: color 0.2s ease;
 }
+.food-overflow-cells {
+    padding: 0.12rem 0.18rem;
+}
 .food-overflow-row-funded .food-overflow-label,
 .food-overflow-row-complete .food-overflow-label {
     color: rgba(4, 120, 87, var(--food-overflow-label-tint, 0.8));

@@ -673,13 +673,43 @@ function getPayCycleOverflowDayCount() {
  *  Core cycle only (daysTotal, usually 28): pay-cycle overflow days (gap before next pay) do not dilute
  *  the daily rate or inflate “days left” — those days are optional and funded via the overflow UI, not
  *  by spreading the same budget thinner. */
-function computeFoodPlanCore() {
+function getFoodPlanItem() {
     var cid = SECTION_IDS.CORE_ESSENTIALS;
     var fid = SECTION_IDS.FOUNDATIONS;
     var flabel = ITEM_LABELS.FOOD_BASE;
     const fSec = state.categories.find(s => s.id === cid) || state.categories.find(s => s.id === fid);
-    const fItem = fSec ? fSec.items.find(i => i.label === flabel) : null;
-    const foodBase = fItem ? fItem.amount : 0;
+    return fSec ? fSec.items.find(i => i.label === flabel) : null;
+}
+
+function getFoodPlanBudgetAmount() {
+    if (!state.food || typeof state.food !== 'object') state.food = {};
+    var fItem = getFoodPlanItem();
+    var itemAmount = fItem ? (Number(fItem.amount) || 0) : 0;
+    var stored = Number(state.food.planBaseAmount);
+    if (!Number.isFinite(stored) || stored < 0) {
+        stored = itemAmount;
+        state.food.planBaseAmount = stored;
+    }
+    return Math.max(0, stored);
+}
+if (typeof window !== 'undefined') window.getFoodPlanBudgetAmount = getFoodPlanBudgetAmount;
+
+function setFoodPlanBudgetAmount(amount) {
+    if (!state.food || typeof state.food !== 'object') state.food = {};
+    var normalized = Math.max(0, Number(amount) || 0);
+    state.food.planBaseAmount = normalized;
+    var fItem = getFoodPlanItem();
+    if (fItem) fItem.amount = normalized;
+    return normalized;
+}
+if (typeof window !== 'undefined') window.setFoodPlanBudgetAmount = setFoodPlanBudgetAmount;
+
+function computeFoodPlanCore() {
+    const fItem = getFoodPlanItem();
+    const foodBase = getFoodPlanBudgetAmount();
+    if (fItem && Math.abs((Number(fItem.amount) || 0) - foodBase) > 0.01) {
+        fItem.amount = foodBase;
+    }
     var coreDays = (state.food && state.food.daysTotal) ? state.food.daysTotal : 28;
     var overflowCalendarDays = typeof getPayCycleOverflowDayCount === 'function' ? getPayCycleOverflowDayCount() : 0;
     const daysUsed = (state.food && state.food.consumedDays) ? state.food.consumedDays.length : 0;
