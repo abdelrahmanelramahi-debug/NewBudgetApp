@@ -65,7 +65,7 @@
             <div id="onboarding-step-income" class="onboarding-step hidden">
                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Step 2 of 5</p>
                 <h2 class="text-xl font-black text-slate-900 mb-2">Monthly income</h2>
-                <p class="text-sm text-slate-600 mb-6">Your total monthly income (after tax). We use this to suggest savings, weekly allowance, and categories. You can set this to 0 if you only track expenses.</p>
+                <p class="text-sm text-slate-600 mb-6">Your total monthly income (after tax). You will use this to budget savings, weekly allowance, and other categories.</p>
                 <label for="onboarding-income" class="sr-only">Monthly income amount</label>
                 <input type="number" id="onboarding-income" name="onboarding-income" min="0" step="1" placeholder="5000" class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm font-bold text-slate-800 bg-white mb-2" autocomplete="off">
                 <p id="onboarding-income-error" class="text-xs text-red-500 mb-6 hidden">Please enter a valid number (0 or more).</p>
@@ -120,8 +120,8 @@
             </div>
             <div id="onboarding-step-priority" class="onboarding-step hidden">
                 <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-4">Step 4 of 5</p>
-                <h2 class="text-xl font-black text-slate-900 mb-2">Set funding priority</h2>
-                <p class="text-sm text-slate-600 mb-4">Drag categories and buckets to decide what gets funded first when a paycheck cannot cover everything.</p>
+                <h2 class="text-xl font-black text-slate-900 mb-2">Set Paycheck Distribution Priority</h2>
+                <p class="text-sm text-slate-600 mb-4">Drag categories to decide what gets funded by your paycheck first</p>
                 <div id="onboarding-priority-content" class="space-y-3 mb-6"></div>
                 <div class="flex gap-3">
                     <button type="button" id="onboarding-priority-back" class="py-3 px-6 border border-slate-300 text-slate-600 rounded-xl text-sm font-bold hover:bg-slate-100">Back</button>
@@ -149,7 +149,7 @@
                         <button type="button" id="onboarding-summary-edit-categories" class="text-indigo-600 text-xs font-bold w-10 text-right">Edit</button>
                     </div>
                     <div class="flex items-center gap-4">
-                        <span class="text-slate-600 flex-1">Funding priority</span>
+                        <span class="text-slate-600 flex-1">Paycheck Distribution Priority</span>
                         <span class="font-bold text-slate-900 w-32 text-center">Custom</span>
                         <button type="button" id="onboarding-summary-edit-priority" class="text-indigo-600 text-xs font-bold w-10 text-right">Edit</button>
                     </div>

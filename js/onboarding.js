@@ -41,7 +41,7 @@ var ONBOARDING_BUDGET_TIPS_MUST_HAVES = [
 var ONBOARDING_BUDGET_TIPS_MINI_BUDGETS = [
     {
         title: 'Add Flexible Spending',
-        body: 'Use mini-budgets for flexible spending, and adjust or reorder them anytime later.',
+        body: 'Use mini-budgets to budget for items you plan to purchase monthly',
         target: '#onboarding-mini-budgets-heading',
         scrollBlock: 'center',
         cardPlacement: 'above',

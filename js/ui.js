@@ -542,7 +542,7 @@ function renderFundingPriorityCard() {
             <section class="funding-priority-section mb-5">
                 <header class="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between mb-4">
                     <div class="min-w-0">
-                        <h2 id="funding-priority-heading" class="funding-priority-title text-xl sm:text-2xl font-black uppercase tracking-[0.14em] text-slate-900 leading-tight">Funding Priority</h2>
+                        <h2 id="funding-priority-heading" class="funding-priority-title text-xl sm:text-2xl font-black uppercase tracking-[0.14em] text-slate-900 leading-tight">Paycheck Distribution Priority</h2>
                         <p class="text-[11px] font-semibold text-slate-500 mt-2 uppercase tracking-wider">Paycheck funds flow top-to-bottom — order matters.</p>
                     </div>
                     <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">Drag to reorder</span>
