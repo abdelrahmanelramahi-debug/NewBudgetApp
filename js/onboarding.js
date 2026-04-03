@@ -16,12 +16,20 @@ var ONBOARDING_BUDGET_TIPS_MUST_HAVES = [
     {
         title: 'Watch Your Total',
         body: 'Keep your plan at or under 100% of your monthly income.',
-        target: '#onboarding-cat-header'
+        target: '#onboarding-cat-header',
+        scrollBlock: 'nearest'
     },
     {
-        title: 'Start With Essentials',
-        body: 'Fund your essential categories first, then adjust Weekly Allowance, Daily Food, Transportation, and Savings.',
-        target: '#onboarding-must-haves-block'
+        title: 'Savings',
+        body: 'Give Savings its share before moving on to the rest of your plan.',
+        target: '#onboarding-savings-block',
+        scrollBlock: 'start'
+    },
+    {
+        title: 'Must Haves',
+        body: 'Fund Weekly Allowance, Daily Food, and Transportation first so your essential spending is covered.',
+        target: '#onboarding-must-haves-block',
+        scrollBlock: 'start'
     }
 ];
 
@@ -29,7 +37,8 @@ var ONBOARDING_BUDGET_TIPS_MINI_BUDGETS = [
     {
         title: 'Add Flexible Spending',
         body: 'Use mini-budgets for flexible spending, and adjust or reorder them anytime later.',
-        target: '#onboarding-mini-budgets-block'
+        target: '#onboarding-mini-budgets-block',
+        scrollBlock: 'start'
     }
 ];
 
@@ -285,8 +294,9 @@ function showBudgetPlanTip(index) {
         var vw = window.innerWidth || document.documentElement.clientWidth || 0;
         var isMobile = vw <= 640;
 
+        var scrollBlock = tip.scrollBlock || 'center';
         try {
-            targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            targetEl.scrollIntoView({ behavior: 'auto', block: scrollBlock });
         } catch (e) {
             targetEl.scrollIntoView(true);
         }
