@@ -1438,35 +1438,25 @@ function updateFoodUI() {
         closeDailyFoodActionsMenu();
         return;
     }
-    if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
+    if (typeof ensureFoodStateShape === 'function') ensureFoodStateShape();
     var payCycle = getPayCycleInfo();
     if (typeof maybeAutoAdvanceFoodCycle === 'function') {
         var didAutoAdvance = maybeAutoAdvanceFoodCycle(payCycle);
         if (didAutoAdvance) {
-            if (typeof ensureFoodConsumedDays === 'function') ensureFoodConsumedDays();
+            if (typeof ensureFoodStateShape === 'function') ensureFoodStateShape();
         }
     }
     if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
-    var daily = typeof getDailyFoodEffectiveDisplayRate === 'function' ? getDailyFoodEffectiveDisplayRate() : 0;
+    var vm = (typeof buildFoodViewModel === 'function') ? buildFoodViewModel() : null;
+    if (vm && vm.payCycle) payCycle = vm.payCycle;
+    var daily = vm ? vm.dailyRate : (typeof getDailyFoodEffectiveDisplayRate === 'function' ? getDailyFoodEffectiveDisplayRate() : 0);
     var fundedBalEl = document.getElementById('daily-food-funded-balance');
     var fundedWrap = document.getElementById('daily-food-funded-wrap');
-    if (fundedBalEl && typeof getFoodRemainderInfo === 'function' && typeof getItemBalance === 'function') {
-        var fr = getFoodRemainderInfo();
-        var totalBal = getItemBalance('Daily Food', 0);
+    if (fundedBalEl && vm) {
+        var fr = vm.remainderInfo;
+        var totalBal = vm.totalBalance;
         fundedBalEl.textContent = formatMoney(typeof totalBal === 'number' && !Number.isNaN(totalBal) ? totalBal : 0);
-        var rem = fr && typeof fr.remainder === 'number' ? fr.remainder : 0;
-        var target = fr && typeof fr.theoreticalRemainder === 'number' ? fr.theoreticalRemainder : 0;
-        var eps = 0.05;
-        var tone = 'grey';
-        if (rem <= eps && target <= eps) {
-            tone = 'grey';
-        } else if (rem + eps < target && target > eps) {
-            tone = 'red';
-        } else if (rem + eps >= target) {
-            tone = 'green';
-        } else {
-            tone = 'grey';
-        }
+        var tone = vm.tone || 'grey';
         fundedBalEl.classList.remove('text-emerald-600', 'text-red-600', 'text-slate-400');
         if (tone === 'green') fundedBalEl.classList.add('text-emerald-600');
         else if (tone === 'red') fundedBalEl.classList.add('text-red-600');
@@ -1484,12 +1474,12 @@ function updateFoodUI() {
             fundedWrap.setAttribute('aria-label', 'Daily Food balance ' + formatMoney(totalBal) + ', ' + statusWord);
         }
     }
-    var consumedDays = state.food.consumedDays || [];
-    var daysUsed = consumedDays.length;
-    var daysTotal = state.food.daysTotal || 28;
+    var consumedDays = vm ? vm.consumedDays : (state.food.consumedDays || []);
+    var daysUsed = vm ? vm.daysUsed : consumedDays.length;
+    var daysTotal = vm ? vm.daysTotal : (state.food.daysTotal || 28);
     var effectiveDaysTotal = daysTotal;
-    var daysLeftEffective = Math.max(0, effectiveDaysTotal - daysUsed);
-    var lockedAmount = state.food.lockedAmount || 0;
+    var daysLeftEffective = vm ? vm.daysLeft : Math.max(0, effectiveDaysTotal - daysUsed);
+    var lockedAmount = vm ? vm.lockedAmount : (state.food.lockedAmount || 0);
     var currentDayInCycle = daysUsed + 1;
 
     document.getElementById('daily-food-rate').innerText = formatMoney(daily);
@@ -1604,8 +1594,8 @@ function updateFoodUI() {
 
         var overflowDates = payCycle.overflowDates || [];
         if (overflowDates.length > 0) {
-            var overflowUsage = (state.food && state.food.overflowUsage) ? state.food.overflowUsage : {};
-            var overflowConsumedMap = (state.food && state.food.overflowConsumedAmounts) ? state.food.overflowConsumedAmounts : {};
+            var overflowUsage = vm ? vm.overflowUsage : ((state.food && state.food.overflowUsage) ? state.food.overflowUsage : {});
+            var overflowConsumedMap = vm ? vm.overflowConsumedAmounts : ((state.food && state.food.overflowConsumedAmounts) ? state.food.overflowConsumedAmounts : {});
             var fundedOverflowCount = overflowDates.reduce(function (sum, ex) {
                 var isFunded = !!(overflowUsage[ex.key]) || (Number(overflowConsumedMap[ex.key]) > 0.001);
                 return sum + (isFunded ? 1 : 0);
@@ -1796,11 +1786,11 @@ function _positionOverflowDayPopover() {
 function _bindOverflowDayPanel(dayKey, ui) {
     if (!dayKey || !ui || !ui.rootEl) return;
     ui.rootEl.setAttribute('data-overflow-key', dayKey);
-    var usage = (state.food && state.food.overflowUsage && state.food.overflowUsage[dayKey]) || '';
-    var consumedAmt = Number((state.food && state.food.overflowConsumedAmounts && state.food.overflowConsumedAmounts[dayKey]) || 0) || 0;
-    var consumedMeta = (state.food && state.food.overflowConsumedMeta && state.food.overflowConsumedMeta[dayKey]) ? state.food.overflowConsumedMeta[dayKey] : null;
-    var isConsumed = consumedAmt > 0.001;
-    var isTransferred = !!(consumedMeta && consumedMeta.resolution === 'transferred');
+    var panelModel = (typeof buildFoodDayPanelModel === 'function') ? buildFoodDayPanelModel({ kind: 'overflow', key: dayKey }) : null;
+    var stateInfo = panelModel ? panelModel.state : null;
+    var usage = stateInfo ? stateInfo.usage : '';
+    var isConsumed = stateInfo ? stateInfo.isConsumed : false;
+    var isTransferred = stateInfo ? stateInfo.isTransferred : false;
 
     if (ui.sourceWrap) ui.sourceWrap.classList.toggle('hidden', !!usage || isConsumed);
     if (ui.sourceBtn) ui.sourceBtn.classList.toggle('hidden', !!usage || isConsumed);
@@ -1819,27 +1809,22 @@ function _bindOverflowDayPanel(dayKey, ui) {
                 return;
             }
             if (typeof ui.close === 'function') ui.close();
-            if (typeof updateFoodUI === 'function') updateFoodUI();
         };
     }
     var sourceSel = ui.sourceSel;
     if (sourceSel) {
         var currentVal = sourceSel.value;
-        var options = getOverflowFundingSources();
+        var options = (typeof getFoodFundingSources === 'function') ? getFoodFundingSources({ kind: 'overflow' }) : getOverflowFundingSources();
         sourceSel.innerHTML = options.map(function(opt) {
             return '<option value="' + String(opt.id).replace(/"/g, '&quot;') + '">' + String(opt.label).replace(/</g, '&lt;') + '</option>';
         }).join('');
         if (currentVal && options.some(function(opt) { return opt.id === currentVal; })) sourceSel.value = currentVal;
     }
     if (ui.subtitleEl) {
-        if (isTransferred) ui.subtitleEl.textContent = 'This overflow day was transferred to another fund and is already resolved.';
-        else if (isConsumed) ui.subtitleEl.textContent = 'Marked consumed. Unmark to restore the previous overflow funding method for this day.';
-        else if (usage === 'source') ui.subtitleEl.textContent = 'Funded from your chosen source. De-distribute to undo it, or mark consumed / transfer when you use this extra day.';
-        else if (usage === 'redistributed') ui.subtitleEl.textContent = 'Daily Food is split across more calendar days. De-distribute to revert, or mark consumed / transfer.';
-        else ui.subtitleEl.textContent = 'Days between the end of your 28-day plan and your next pay day. Choose how to account for this day.';
+        ui.subtitleEl.textContent = panelModel ? panelModel.subtitle : 'Days between the end of your 28-day plan and your next pay day. Choose how to account for this day.';
     }
     if (ui.consumeBtn) {
-        ui.consumeBtn.disabled = isTransferred || (!isConsumed && !usage);
+        ui.consumeBtn.disabled = !stateInfo || !stateInfo.canConsume;
         ui.consumeBtn.textContent = isConsumed ? 'Unmark consumed' : 'Mark consumed';
         ui.consumeBtn.classList.toggle('opacity-40', ui.consumeBtn.disabled);
         ui.consumeBtn.classList.toggle('cursor-not-allowed', ui.consumeBtn.disabled);
@@ -1847,13 +1832,12 @@ function _bindOverflowDayPanel(dayKey, ui) {
             if (ui.consumeBtn.disabled) return;
             var key = ui.rootEl.getAttribute('data-overflow-key');
             if (!key) return;
-            if (typeof setOverflowFoodDayConsumed === 'function') setOverflowFoodDayConsumed(key, isConsumed ? 'unmark' : 'mark');
+            if (typeof applyFoodDayAction === 'function') applyFoodDayAction({ kind: 'overflow', key: key }, isConsumed ? 'unconsume' : 'consume');
             if (typeof ui.close === 'function') ui.close();
-            if (typeof updateFoodUI === 'function') updateFoodUI();
         };
     }
     if (ui.transferBtn) {
-        var canTransfer = !!usage && !isConsumed;
+        var canTransfer = !!(stateInfo && stateInfo.canTransfer);
         ui.transferBtn.disabled = !canTransfer;
         ui.transferBtn.classList.toggle('opacity-40', !canTransfer);
         ui.transferBtn.classList.toggle('cursor-not-allowed', !canTransfer);
@@ -1872,18 +1856,16 @@ function _bindOverflowDayPanel(dayKey, ui) {
         ui.sourceBtn.onclick = function() {
             var key = ui.rootEl.getAttribute('data-overflow-key');
             if (!key) return;
-            if (typeof applyOverflowDayFromSource === 'function') applyOverflowDayFromSource(key, (sourceSel && sourceSel.value) || 'surplus');
+            if (typeof applyFoodDayAction === 'function') applyFoodDayAction({ kind: 'overflow', key: key }, 'fund_source', { sourceId: (sourceSel && sourceSel.value) || 'surplus' });
             if (typeof ui.close === 'function') ui.close();
-            if (typeof updateFoodUI === 'function') updateFoodUI();
         };
     }
     if (ui.redistributeBtn) {
         ui.redistributeBtn.onclick = function() {
             var key = ui.rootEl.getAttribute('data-overflow-key');
             if (!key) return;
-            if (typeof applyOverflowDayRedistribution === 'function') applyOverflowDayRedistribution(key);
+            if (typeof applyFoodDayAction === 'function') applyFoodDayAction({ kind: 'overflow', key: key }, 'redistribute');
             if (typeof ui.close === 'function') ui.close();
-            if (typeof updateFoodUI === 'function') updateFoodUI();
         };
     }
     if (ui.closeBtn) {
@@ -2007,6 +1989,35 @@ function showFoodDayLockedNotice() {
 }
 window.showFoodDayLockedNotice = showFoodDayLockedNotice;
 
+function renderFoodFundingOptions(options, uiTarget) {
+    if (!uiTarget) return;
+    var list = Array.isArray(options) ? options : [];
+    uiTarget.innerHTML = list.map(function (item) {
+        var label = String(item.label || '').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+        return '<button type="button" class="w-full text-left px-4 py-3 text-[12px] font-bold text-slate-800 hover:bg-slate-50 active:bg-slate-100 transition truncate">' + label + '</button>';
+    }).join('');
+}
+window.renderFoodFundingOptions = renderFoodFundingOptions;
+
+function renderFoodDayPanel(panelModel, uiTarget) {
+    if (!panelModel || !uiTarget) return;
+    if (uiTarget.titleEl) uiTarget.titleEl.textContent = panelModel.title || 'Day';
+    if (uiTarget.subtitleEl) uiTarget.subtitleEl.textContent = panelModel.subtitle || 'Tap an action below';
+    if (uiTarget.rootEl && panelModel.state) {
+        uiTarget.rootEl.setAttribute('data-consumed', panelModel.state.isConsumed ? '1' : '0');
+    }
+}
+window.renderFoodDayPanel = renderFoodDayPanel;
+
+function renderFoodOverflowPanel(panelModel, uiTarget) {
+    if (!panelModel || !uiTarget) return;
+    if (uiTarget.subtitleEl) uiTarget.subtitleEl.textContent = panelModel.subtitle || '';
+    if (uiTarget.rootEl && panelModel.state) {
+        uiTarget.rootEl.setAttribute('data-overflow-key', panelModel.state.key || '');
+    }
+}
+window.renderFoodOverflowPanel = renderFoodOverflowPanel;
+
 function openFoodDayMobileModal(cycleDay, consumed) {
     var modal = document.getElementById('food-day-mobile-modal');
     if (!modal) return;
@@ -2015,31 +2026,33 @@ function openFoodDayMobileModal(cycleDay, consumed) {
     if (overflowRBtn) overflowRBtn.classList.add('hidden');
 
     var day = Math.max(1, Math.min(28, Math.floor(cycleDay)));
-    if (!consumed && typeof getFoodFundedForDay === 'function' && getFoodFundedForDay(day) <= 0.001) {
+    var panelModel = (typeof buildFoodDayPanelModel === 'function') ? buildFoodDayPanelModel({ kind: 'core', day: day }) : null;
+    var stateInfo = panelModel ? panelModel.state : null;
+    var p = null;
+    if (stateInfo && stateInfo.isLocked) {
         showFoodDayLockedNotice();
         return;
     }
-    var payCycle = getPayCycleInfo();
-    var p = payCycle && payCycle.dates ? payCycle.dates[day - 1] : null;
     var titleEl = document.getElementById('food-day-mobile-title');
     var subtitleEl = document.getElementById('food-day-mobile-subtitle');
-    if (titleEl) titleEl.textContent = 'Day ' + day;
+    if (titleEl) titleEl.textContent = panelModel ? panelModel.title : ('Day ' + day);
     if (subtitleEl) {
         subtitleEl.textContent = p ? (p.monthName + ' ' + p.date + ' · ' + 'Tap an action below') : 'Tap an action below';
     }
 
+    if (panelModel && subtitleEl) subtitleEl.textContent = panelModel.subtitle || 'Tap an action below';
     modal.setAttribute('data-cycle-day', String(day));
-    modal.setAttribute('data-consumed', consumed ? '1' : '0');
+    modal.setAttribute('data-consumed', stateInfo && stateInfo.isConsumed ? '1' : '0');
 
     var consumeBtn = document.getElementById('food-day-mobile-consume-btn');
     if (consumeBtn) {
-        consumeBtn.textContent = consumed ? 'Unconsume day' : 'Consume day';
+        consumeBtn.textContent = stateInfo && stateInfo.isConsumed ? 'Unconsume day' : 'Consume day';
         consumeBtn.className = 'w-full py-3 rounded-2xl text-[12px] font-black uppercase tracking-widest transition ' +
-            (consumed ? 'bg-slate-900 text-white hover:bg-slate-800' : 'bg-emerald-600 text-white hover:bg-emerald-700');
+            (stateInfo && stateInfo.isConsumed ? 'bg-slate-900 text-white hover:bg-slate-800' : 'bg-emerald-600 text-white hover:bg-emerald-700');
         consumeBtn.onclick = function () {
             var d = parseInt(modal.getAttribute('data-cycle-day'), 10);
             var isConsumed = modal.getAttribute('data-consumed') === '1';
-            if (typeof setFoodDayFromCalendar === 'function') setFoodDayFromCalendar(d, isConsumed ? 'unmark' : 'mark');
+            if (typeof applyFoodDayAction === 'function') applyFoodDayAction({ kind: 'core', day: d }, isConsumed ? 'unconsume' : 'consume');
             closeFoodDayMobileModal();
         };
     }
@@ -2049,17 +2062,17 @@ function openFoodDayMobileModal(cycleDay, consumed) {
     var transferHint = document.getElementById('food-day-mobile-transfer-hint');
     if (transferTargets) {
         transferTargets.innerHTML = '';
-        if (consumed) {
+        if (stateInfo && stateInfo.isConsumed) {
             if (transferHint) transferHint.textContent = 'Funds the day from a source';
             if (transferDisabled) transferDisabled.classList.add('hidden');
             transferTargets.classList.remove('opacity-50', 'pointer-events-none');
-            var sources = (typeof getDailyFoodBulkSourceOptions === 'function') ? getDailyFoodBulkSourceOptions() : [];
+            var sources = (typeof getFoodFundingSources === 'function') ? getFoodFundingSources({ kind: 'core', mode: 'restore' }) : [];
             transferTargets.innerHTML = (sources || []).map(function (s) {
                 var safeLabel = String(s.label).replace(/</g, '&lt;').replace(/"/g, '&quot;');
                 var sourceValue = String(s.value).replace(/"/g, '&quot;');
                 return (
                     '<button type="button" class="w-full text-left px-4 py-3 text-[12px] font-bold text-slate-800 hover:bg-slate-50 active:bg-slate-100 transition truncate" ' +
-                    'onclick="fundConsumedFoodDayFromSource(' + day + ', \'' + sourceValue + '\'); closeFoodDayMobileModal();">' +
+                    'onclick="applyFoodDayAction({ kind: \'core\', day: ' + day + ' }, \'restore_from_source\', { sourceValue: \'' + sourceValue + '\' }); closeFoodDayMobileModal();">' +
                     safeLabel +
                     '</button>'
                 );
@@ -2074,7 +2087,7 @@ function openFoodDayMobileModal(cycleDay, consumed) {
                 var tid = String(t.id).replace(/"/g, '&quot;');
                 return (
                     '<button type="button" class="w-full text-left px-4 py-3 text-[12px] font-bold text-slate-800 hover:bg-slate-50 active:bg-slate-100 transition truncate" ' +
-                    'onclick="transferFoodDayTo(' + day + ', \'' + tid + '\'); closeFoodDayMobileModal();">' +
+                    'onclick="applyFoodDayAction({ kind: \'core\', day: ' + day + ' }, \'transfer\', { targetId: \'' + tid + '\' }); closeFoodDayMobileModal();">' +
                     safeLabel +
                     '</button>'
                 );
@@ -2107,9 +2120,10 @@ function openOverflowDayActionPopover(dayKey, anchorEl) {
     var rBtn = document.getElementById('food-day-action-overflow-redistribute');
     if (!pop || !consumeBtn || !transferBtn || !rBtn) return;
 
-    var consumedAmt = Number((state.food && state.food.overflowConsumedAmounts && state.food.overflowConsumedAmounts[dayKey]) || 0);
-    var isConsumed = consumedAmt > 0.001;
-    var usage = state.food && state.food.overflowUsage ? state.food.overflowUsage[dayKey] : '';
+    var panelModel = (typeof buildFoodDayPanelModel === 'function') ? buildFoodDayPanelModel({ kind: 'overflow', key: dayKey }) : null;
+    var stateInfo = panelModel ? panelModel.state : null;
+    var isConsumed = stateInfo ? stateInfo.isConsumed : false;
+    var usage = stateInfo ? stateInfo.usage : '';
 
     rBtn.classList.remove('hidden');
     var rLabel = document.getElementById('food-day-action-overflow-redistribute-label');
@@ -2121,11 +2135,8 @@ function openOverflowDayActionPopover(dayKey, anchorEl) {
     if (consumeLabel) consumeLabel.textContent = isConsumed ? 'Unmark' : 'Mark consumed'; else consumeBtn.textContent = isConsumed ? 'Unmark' : 'Mark consumed';
 
     consumeBtn.onclick = function () {
-        if (typeof setOverflowFoodDayConsumed === 'function') setOverflowFoodDayConsumed(dayKey, isConsumed ? 'unmark' : 'mark');
+        if (typeof applyFoodDayAction === 'function') applyFoodDayAction({ kind: 'overflow', key: dayKey }, isConsumed ? 'unconsume' : 'consume');
         closeFoodDayActionPopover();
-        if (typeof updateFoodUI === 'function') updateFoodUI();
-        if (typeof renderLedger === 'function') renderLedger();
-        if (typeof updateGlobalUI === 'function') updateGlobalUI();
     };
 
     transferBtn.onclick = function () {
@@ -2138,14 +2149,11 @@ function openOverflowDayActionPopover(dayKey, anchorEl) {
 
     rBtn.onclick = function () {
         if (usage === 'redistributed') {
-            if (typeof applyOverflowRedistributionUndo === 'function') applyOverflowRedistributionUndo(dayKey);
+            if (typeof applyFoodDayAction === 'function') applyFoodDayAction({ kind: 'overflow', key: dayKey }, 'undo_redistribute');
         } else {
-            if (typeof applyOverflowDayRedistribution === 'function') applyOverflowDayRedistribution(dayKey);
+            if (typeof applyFoodDayAction === 'function') applyFoodDayAction({ kind: 'overflow', key: dayKey }, 'redistribute');
         }
         closeFoodDayActionPopover();
-        if (typeof updateFoodUI === 'function') updateFoodUI();
-        if (typeof renderLedger === 'function') renderLedger();
-        if (typeof updateGlobalUI === 'function') updateGlobalUI();
     };
 
     if (anchorEl && anchorEl.getBoundingClientRect) {
@@ -2161,7 +2169,9 @@ var _foodDayActionPopoverAnchor = null;
 
 function openFoodDayActionPopover(cycleDay, consumed, anchorEl) {
     var dCheck = Math.max(1, Math.min(28, Math.floor(cycleDay)));
-    if (!consumed && typeof getFoodFundedForDay === 'function' && getFoodFundedForDay(dCheck) <= 0.001) {
+    var panelModel = (typeof buildFoodDayPanelModel === 'function') ? buildFoodDayPanelModel({ kind: 'core', day: dCheck }) : null;
+    var stateInfo = panelModel ? panelModel.state : null;
+    if (stateInfo && stateInfo.isLocked) {
         showFoodDayLockedNotice();
         return;
     }
@@ -2179,13 +2189,10 @@ function openFoodDayActionPopover(cycleDay, consumed, anchorEl) {
     pop.removeAttribute('data-buffer');
     pop.setAttribute('data-cycle-day', String(cycleDay));
     var consumeLabel = consumeBtn.querySelector('.food-day-action-consume-label');
-    if (consumeLabel) consumeLabel.textContent = consumed ? 'Unmark' : 'Mark consumed'; else consumeBtn.textContent = consumed ? 'Unmark' : 'Mark consumed';
+    if (consumeLabel) consumeLabel.textContent = stateInfo && stateInfo.isConsumed ? 'Unmark' : 'Mark consumed'; else consumeBtn.textContent = stateInfo && stateInfo.isConsumed ? 'Unmark' : 'Mark consumed';
     consumeBtn.onclick = function() {
-        if (typeof setFoodDayFromCalendar === 'function') setFoodDayFromCalendar(cycleDay, consumed ? 'unmark' : 'mark');
+        if (typeof applyFoodDayAction === 'function') applyFoodDayAction({ kind: 'core', day: cycleDay }, stateInfo && stateInfo.isConsumed ? 'unconsume' : 'consume');
         closeFoodDayActionPopover();
-        if (typeof updateFoodUI === 'function') updateFoodUI();
-        if (typeof renderLedger === 'function') renderLedger();
-        if (typeof updateGlobalUI === 'function') updateGlobalUI();
     };
     transferBtn.onclick = function() {
         closeFoodDayActionPopover();
