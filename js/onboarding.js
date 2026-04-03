@@ -24,7 +24,7 @@ var ONBOARDING_BUDGET_TIPS_MUST_HAVES = [
         title: 'Savings',
         body: 'Give Savings its share before moving on to the rest of your plan.',
         target: '#onboarding-savings-block',
-        scrollBlock: 'center',
+        scrollBlock: 'end',
         cardPlacement: 'above',
         cardOverlapPx: 14
     },
@@ -32,7 +32,7 @@ var ONBOARDING_BUDGET_TIPS_MUST_HAVES = [
         title: 'Must Haves',
         body: 'Fund Weekly Allowance, Daily Food, and Transportation first so your essential spending is covered.',
         target: '#onboarding-must-haves-block',
-        scrollBlock: 'center',
+        scrollBlock: 'end',
         cardPlacement: 'above',
         cardOverlapPx: 14
     }
@@ -43,7 +43,7 @@ var ONBOARDING_BUDGET_TIPS_MINI_BUDGETS = [
         title: 'Add Flexible Spending',
         body: 'Use mini-budgets for flexible spending, and adjust or reorder them anytime later.',
         target: '#onboarding-mini-budgets-block',
-        scrollBlock: 'center',
+        scrollBlock: 'end',
         cardPlacement: 'above',
         cardOverlapPx: 14
     }
@@ -321,16 +321,6 @@ function showBudgetPlanTip(index) {
 
         window.requestAnimationFrame(function () {
             positionBudgetPlanTipCard(targetEl, tip);
-            var card = document.getElementById('onboarding-tip-card');
-            if (card) {
-                window.requestAnimationFrame(function () {
-                    try {
-                        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                    } catch (e) {
-                        card.scrollIntoView(true);
-                    }
-                });
-            }
         });
     } else {
         // If we don't have a specific target, fall back to centering the card
