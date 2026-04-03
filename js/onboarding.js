@@ -24,7 +24,7 @@ var ONBOARDING_BUDGET_TIPS_MUST_HAVES = [
         title: 'Savings',
         body: 'Give Savings its share before moving on to the rest of your plan.',
         target: '#onboarding-savings-block',
-        scrollBlock: 'end',
+        scrollBlock: 'start',
         cardPlacement: 'above',
         cardOverlapPx: 14
     },
@@ -32,7 +32,7 @@ var ONBOARDING_BUDGET_TIPS_MUST_HAVES = [
         title: 'Must Haves',
         body: 'Fund Weekly Allowance, Daily Food, and Transportation first so your essential spending is covered.',
         target: '#onboarding-must-haves-block',
-        scrollBlock: 'end',
+        scrollBlock: 'start',
         cardPlacement: 'above',
         cardOverlapPx: 14
     }
@@ -43,7 +43,7 @@ var ONBOARDING_BUDGET_TIPS_MINI_BUDGETS = [
         title: 'Add Flexible Spending',
         body: 'Use mini-budgets for flexible spending, and adjust or reorder them anytime later.',
         target: '#onboarding-mini-budgets-block',
-        scrollBlock: 'end',
+        scrollBlock: 'start',
         cardPlacement: 'above',
         cardOverlapPx: 14
     }
@@ -231,9 +231,8 @@ function positionBudgetPlanTipCard(targetEl, tip) {
     var placement = (tip && tip.cardPlacement) || 'auto';
     var finalTop = preferredTop;
     if (placement === 'above') {
-        finalTop = preferredAboveTop >= minTop
-            ? Math.min(preferredAboveTop, maxTop)
-            : Math.min(Math.max(preferredTop, minTop), maxTop);
+        // Keep "above" placement truly above; clamp to top edge if needed rather than flipping below.
+        finalTop = Math.min(Math.max(preferredAboveTop, minTop), maxTop);
     } else if (placement === 'below') {
         finalTop = (preferredTop + cardHeight <= maxTop)
             ? Math.min(Math.max(preferredTop, minTop), maxTop)
