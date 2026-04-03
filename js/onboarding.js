@@ -537,6 +537,7 @@ function showHomeTourStep(index) {
         root.querySelectorAll('.home-tour-highlight').forEach(function (el) {
             el.classList.remove('home-tour-highlight');
             el.classList.remove('home-tour-highlight-contrast');
+            el.classList.remove('home-tour-highlight-clip');
         });
         root.querySelectorAll('.home-tour-highlight-ancestor').forEach(function (el) {
             el.classList.remove('home-tour-highlight-ancestor');
@@ -563,6 +564,7 @@ function showHomeTourStep(index) {
 
         targetEl.classList.add('home-tour-highlight');
         if (index <= 2) targetEl.classList.add('home-tour-highlight-contrast');
+        if (step.target === '#ledger-categories') targetEl.classList.add('home-tour-highlight-clip');
 
         var isMobile = (window.innerWidth || document.documentElement.clientWidth || 0) <= 640;
         if (isMobile) {
@@ -619,6 +621,7 @@ function finishHomeTour() {
     document.querySelectorAll('.home-tour-highlight').forEach(function (el) {
         el.classList.remove('home-tour-highlight');
         el.classList.remove('home-tour-highlight-contrast');
+        el.classList.remove('home-tour-highlight-clip');
     });
     document.querySelectorAll('.home-tour-highlight-ancestor').forEach(function (el) {
         el.classList.remove('home-tour-highlight-ancestor');

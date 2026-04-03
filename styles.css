@@ -2706,6 +2706,12 @@ body.theme-sepia .onboarding-tip-highlight.onboarding-tip-highlight-contrast {
     filter: brightness(1.04) saturate(1.02);
 }
 
+/* Final tour step (#ledger-categories): keep child overflow inside spotlight bounds. */
+#page-ledger .home-tour-highlight.home-tour-highlight-clip,
+.home-tour-highlight.home-tour-highlight-clip {
+    overflow: hidden !important;
+}
+
 #page-ledger .bank-balance-card.home-tour-highlight-contrast,
 .bank-balance-card.home-tour-highlight-contrast,
 #page-ledger #food-tracker-card.home-tour-highlight-contrast,
