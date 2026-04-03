@@ -2659,7 +2659,6 @@ body.theme-sepia .onboarding-tip-highlight.onboarding-tip-highlight-contrast {
 #onboarding-step-categories.onboarding-tip-active > p,
 #onboarding-step-categories.onboarding-tip-active > h2,
 #onboarding-step-categories.onboarding-tip-active > #onboarding-cat-header,
-#onboarding-step-categories.onboarding-tip-active > #onboarding-strategy-sections,
 #onboarding-step-categories.onboarding-tip-active > .flex.gap-3.flex-shrink-0.pt-2 {
     opacity: 0.28;
     transition: opacity 160ms ease;
