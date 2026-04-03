@@ -566,10 +566,13 @@ function showHomeTourStep(index) {
 
         var isMobile = (window.innerWidth || document.documentElement.clientWidth || 0) <= 640;
         if (isMobile) {
+            var extraTopRevealPx = 96;
+            var targetTop = (window.pageYOffset || window.scrollY || 0) + targetEl.getBoundingClientRect().top - extraTopRevealPx;
+            if (targetTop < 0) targetTop = 0;
             try {
-                targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                window.scrollTo({ top: targetTop, behavior: 'smooth' });
             } catch (e) {
-                targetEl.scrollIntoView(true);
+                window.scrollTo(0, targetTop);
             }
         } else {
             try {
