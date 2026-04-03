@@ -42,7 +42,7 @@ var ONBOARDING_BUDGET_TIPS_MINI_BUDGETS = [
     {
         title: 'Add Flexible Spending',
         body: 'Use mini-budgets for flexible spending, and adjust or reorder them anytime later.',
-        target: '#onboarding-mini-budgets-block',
+        target: '#onboarding-mini-budgets-heading',
         scrollBlock: 'center',
         cardPlacement: 'above',
         cardGapPx: 8
