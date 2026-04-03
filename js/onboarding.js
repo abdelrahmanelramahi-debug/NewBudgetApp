@@ -359,7 +359,7 @@ function nextBudgetPlanTip() {
     showBudgetPlanTip(onboardingBudgetTipIndex);
 }
 function skipBudgetPlanTips() {
-    skipAllGuidance();
+    finishBudgetPlanTips();
 }
 function finishBudgetPlanTips() {
     if (window._onboardingTipResize) {
