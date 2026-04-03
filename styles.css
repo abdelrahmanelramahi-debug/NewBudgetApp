@@ -1,5 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
+:root {
+    --app-safe-top-gap: max(0.75rem, env(safe-area-inset-top));
+}
+
 body {
     font-family: 'Plus Jakarta Sans', sans-serif;
     background-color: #f8fafc;
@@ -1401,10 +1405,18 @@ body.theme-dark .desktop-nav-item:hover {
     flex-shrink: 0;
     z-index: 20;
     background: white;
+    position: relative;
+    margin-bottom: 0;
+    border-radius: 0 0 24px 24px;
+    box-shadow: 0 10px 24px -16px rgba(15, 23, 42, 0.28), 0 6px 16px -14px rgba(15, 23, 42, 0.22);
 }
 .page-budget-plan .budget-plan-page-body {
     -webkit-overflow-scrolling: touch;
     min-height: 0;
+    position: relative;
+    z-index: 0;
+    margin-top: -24px;
+    padding-top: calc(1rem + 24px);
 }
 
 /* --- STABLE STYLING --- */
@@ -1434,8 +1446,15 @@ body.theme-dark .desktop-nav-item:hover {
     border-radius: 0 0 20px 20px;
     box-shadow: 0 4px 24px -4px rgba(0, 0, 0, 0.06), 0 2px 8px -2px rgba(0, 0, 0, 0.04);
     padding: 0;
-    padding-top: max(0.75rem, env(safe-area-inset-top));
     overflow-x: hidden;
+    isolation: isolate;
+}
+.home-header::before {
+    content: "";
+    display: block;
+    height: var(--app-safe-top-gap);
+    flex-shrink: 0;
+    background: inherit;
 }
 .home-header-inner {
     padding: 1rem 0.75rem 1.25rem;
