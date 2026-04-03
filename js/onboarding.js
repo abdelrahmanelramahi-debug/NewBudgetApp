@@ -17,19 +17,22 @@ var ONBOARDING_BUDGET_TIPS_MUST_HAVES = [
         title: 'Watch Your Total',
         body: 'Keep your plan at or under 100% of your monthly income.',
         target: '#onboarding-cat-header',
-        scrollBlock: 'nearest'
+        scrollBlock: 'nearest',
+        cardPlacement: 'below'
     },
     {
         title: 'Savings',
         body: 'Give Savings its share before moving on to the rest of your plan.',
         target: '#onboarding-savings-block',
-        scrollBlock: 'start'
+        scrollBlock: 'center',
+        cardPlacement: 'above'
     },
     {
         title: 'Must Haves',
         body: 'Fund Weekly Allowance, Daily Food, and Transportation first so your essential spending is covered.',
         target: '#onboarding-must-haves-block',
-        scrollBlock: 'start'
+        scrollBlock: 'center',
+        cardPlacement: 'above'
     }
 ];
 
@@ -38,7 +41,8 @@ var ONBOARDING_BUDGET_TIPS_MINI_BUDGETS = [
         title: 'Add Flexible Spending',
         body: 'Use mini-budgets for flexible spending, and adjust or reorder them anytime later.',
         target: '#onboarding-mini-budgets-block',
-        scrollBlock: 'start'
+        scrollBlock: 'center',
+        cardPlacement: 'above'
     }
 ];
 
@@ -177,14 +181,14 @@ function startBudgetPlanTips() {
             if (!currentTip || !currentTip.target) return;
             var targetEl = step.querySelector(currentTip.target);
             if (targetEl) {
-                positionBudgetPlanTipCard(targetEl);
+                positionBudgetPlanTipCard(targetEl, currentTip);
             }
         };
         window.addEventListener('resize', window._onboardingTipResize);
     }
 }
 
-function positionBudgetPlanTipCard(targetEl) {
+function positionBudgetPlanTipCard(targetEl, tip) {
     var step = document.getElementById('onboarding-step-categories');
     var card = document.getElementById('onboarding-tip-card');
     if (!step || !card || !targetEl) return;
@@ -219,9 +223,19 @@ function positionBudgetPlanTipCard(targetEl) {
     var minTop = Math.max(padding, stepRect.top + padding);
     var maxTop = Math.min(viewportHeight - padding - cardHeight, stepRect.bottom - padding - cardHeight);
 
+    var preferredAboveTop = targetRect.top - cardHeight - 12;
+    var placement = (tip && tip.cardPlacement) || 'auto';
     var finalTop = preferredTop;
-    if (finalTop + cardHeight > maxTop) {
-        finalTop = Math.min(Math.max(targetRect.top - cardHeight - 12, minTop), maxTop);
+    if (placement === 'above') {
+        finalTop = preferredAboveTop >= minTop
+            ? Math.min(preferredAboveTop, maxTop)
+            : Math.min(Math.max(preferredTop, minTop), maxTop);
+    } else if (placement === 'below') {
+        finalTop = (preferredTop + cardHeight <= maxTop)
+            ? Math.min(Math.max(preferredTop, minTop), maxTop)
+            : Math.min(Math.max(preferredAboveTop, minTop), maxTop);
+    } else if (finalTop + cardHeight > maxTop) {
+        finalTop = Math.min(Math.max(preferredAboveTop, minTop), maxTop);
     } else {
         finalTop = Math.min(Math.max(finalTop, minTop), maxTop);
     }
@@ -257,7 +271,7 @@ function showBudgetPlanTip(index) {
     if (!isFinalTip && onboardingBudgetTipPhase === 'must' && isLastInPhase && !hasMiniPhase) isFinalTip = true;
     nextBtn.textContent = isFinalTip ? 'Done' : 'Next';
     if (skipBtn) {
-        skipBtn.textContent = 'Skip';
+        skipBtn.textContent = 'Skip Tips';
     }
 
     var step = document.getElementById('onboarding-step-categories');
@@ -302,7 +316,7 @@ function showBudgetPlanTip(index) {
         }
 
         window.requestAnimationFrame(function () {
-            positionBudgetPlanTipCard(targetEl);
+            positionBudgetPlanTipCard(targetEl, tip);
             var card = document.getElementById('onboarding-tip-card');
             if (card) {
                 window.requestAnimationFrame(function () {
@@ -339,13 +353,7 @@ function nextBudgetPlanTip() {
     showBudgetPlanTip(onboardingBudgetTipIndex);
 }
 function skipBudgetPlanTips() {
-    if (onboardingBudgetTipPhase === 'must' && ONBOARDING_BUDGET_TIPS_MINI_BUDGETS.length > 0) {
-        onboardingBudgetTipPhase = 'mini';
-        onboardingBudgetTipIndex = 0;
-        showBudgetPlanTip(0);
-        return;
-    }
-    finishBudgetPlanTips();
+    skipAllGuidance();
 }
 function finishBudgetPlanTips() {
     if (window._onboardingTipResize) {
@@ -504,6 +512,7 @@ function showHomeTourStep(index) {
     var titleEl = document.getElementById('home-tour-title');
     var bodyEl = document.getElementById('home-tour-body');
     var nextBtn = document.getElementById('home-tour-next-btn');
+    var skipBtn = document.getElementById('home-tour-skip-btn');
     if (!titleEl || !bodyEl) return;
     var step = activeSteps[index];
     if (!step) return;
@@ -512,6 +521,7 @@ function showHomeTourStep(index) {
     titleEl.textContent = step.title;
     bodyEl.textContent = step.body;
     if (nextBtn) nextBtn.textContent = index >= activeSteps.length - 1 ? 'Done' : 'Next';
+    if (skipBtn) skipBtn.textContent = 'Skip Tour';
 
     // Scroll and highlight the relevant area on the home screen
     if (step.target) {
@@ -590,7 +600,7 @@ function nextHomeTourStep() {
     showHomeTourStep(homeTourStepIndex);
 }
 function skipHomeTour() {
-    finishHomeTour();
+    skipAllGuidance();
 }
 function finishHomeTour() {
     var overlay = document.getElementById('home-tour-overlay');
@@ -618,9 +628,14 @@ function finishHomeTour() {
         if (typeof saveState === 'function') saveState();
     }
 }
+function skipAllGuidance() {
+    finishBudgetPlanTips();
+    finishHomeTour();
+}
 window.startHomeTour = startHomeTour;
 window.nextHomeTourStep = nextHomeTourStep;
 window.skipHomeTour = skipHomeTour;
+window.skipAllGuidance = skipAllGuidance;
 
 function initAndRenderOnboardingCategories() {
     if (!onboardingCategoriesInitialized && typeof state !== 'undefined') {
