@@ -514,6 +514,7 @@ function showHomeTourStep(index) {
         });
         root.querySelectorAll('.home-tour-highlight-ancestor').forEach(function (el) {
             el.classList.remove('home-tour-highlight-ancestor');
+            el.classList.remove('home-tour-active-scope');
         });
 
         var targetEl = root.querySelector(step.target);
@@ -530,6 +531,7 @@ function showHomeTourStep(index) {
             }
             if (directSection && directSection !== targetEl) {
                 directSection.classList.add('home-tour-highlight-ancestor');
+                directSection.classList.add('home-tour-active-scope');
             }
         }
 
@@ -589,6 +591,7 @@ function finishHomeTour() {
     });
     document.querySelectorAll('.home-tour-highlight-ancestor').forEach(function (el) {
         el.classList.remove('home-tour-highlight-ancestor');
+        el.classList.remove('home-tour-active-scope');
     });
     if (overlay) overlay.classList.add('hidden');
     if (card) {
