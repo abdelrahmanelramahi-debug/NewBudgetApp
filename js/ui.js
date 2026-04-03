@@ -1146,20 +1146,20 @@ function renderLedger() {
 
     // Category view options (above creatable categories, below Savings / Transportation / Payables)
     var optionsBarHtml = `
-        <div id="ledger-options-bar" class="flex flex-col gap-2 py-2 px-1 mb-2 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-3 sm:py-3">
-            <div class="flex items-center gap-1.5 sm:gap-2">
-                <span class="text-[11px] font-black text-slate-900 uppercase tracking-[0.16em] sm:text-[12px] sm:tracking-[0.2em]">Mini-Budgets</span>
+        <div id="ledger-options-bar" class="flex items-center justify-between gap-2 py-2 px-1 mb-2 sm:gap-3 sm:py-3">
+            <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                <span class="text-[11px] font-black text-slate-900 uppercase tracking-[0.12em] sm:text-[12px] sm:tracking-[0.2em] whitespace-nowrap">Mini-Budgets</span>
                 <button type="button" onclick="openAddItemTool(null, { showCategoryPicker: true })" class="bg-slate-900 text-white w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg text-base sm:text-lg leading-none pb-0.5 hover:bg-slate-700" title="Add item">+</button>
             </div>
-            <div class="ledger-options-controls flex items-center gap-2.5 sm:gap-3">
-                <label class="ledger-hide-empty-control flex items-center gap-1.5 sm:gap-2 cursor-pointer">
+            <div class="ledger-options-controls flex items-center justify-end gap-2 sm:gap-3 flex-nowrap min-w-0">
+                <label class="ledger-hide-empty-control flex items-center gap-1 sm:gap-2 cursor-pointer whitespace-nowrap flex-shrink-0">
                     <input type="checkbox" id="ledger-hide-empty" class="sr-only" onchange="setLedgerViewOptions()">
                     <span class="ledger-hide-empty-indicator" aria-hidden="true"></span>
                     <span class="text-[9px] font-bold uppercase tracking-[0.14em] text-slate-500 sm:text-[10px] sm:tracking-wider">Hide empty</span>
                 </label>
-                <div class="ledger-sort-control flex items-center gap-1.5 sm:gap-2">
-                    <span class="text-[9px] font-bold uppercase tracking-[0.14em] text-slate-500 sm:text-[10px] sm:tracking-wider">Sort:</span>
-                    <select id="ledger-sort" class="min-w-[108px] rounded-lg border border-slate-200 px-2 py-1 text-[11px] sm:px-2 sm:py-1.5 sm:text-xs font-bold text-slate-800 bg-white outline-none focus:ring-2 focus:ring-indigo-200" onchange="setLedgerViewOptions()">
+                <div class="ledger-sort-control flex items-center gap-1 sm:gap-2 whitespace-nowrap flex-shrink-0">
+                    <span class="text-[9px] font-bold uppercase tracking-[0.12em] text-slate-500 sm:text-[10px] sm:tracking-wider">Sort:</span>
+                    <select id="ledger-sort" class="min-w-[96px] rounded-lg border border-slate-200 px-2 py-1 text-[11px] sm:min-w-[108px] sm:px-2 sm:py-1.5 sm:text-xs font-bold text-slate-800 bg-white outline-none focus:ring-2 focus:ring-indigo-200" onchange="setLedgerViewOptions()">
                         <option value="default">Default</option>
                         <option value="balanceDesc">Highest first</option>
                         <option value="balanceAsc">Lowest first</option>
