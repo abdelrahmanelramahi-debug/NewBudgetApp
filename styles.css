@@ -2449,6 +2449,11 @@ body.theme-dark .budget-savings-total {
     pointer-events: auto;
 }
 
+#page-ledger > .home-tour-highlight-ancestor {
+    position: relative;
+    z-index: 30 !important;
+}
+
 /* Soft highlight for tips & home tour: above overlay, inset so outline does not leak, ungreyed background */
 #onboarding-step-categories .onboarding-tip-highlight,
 #page-ledger .home-tour-highlight {

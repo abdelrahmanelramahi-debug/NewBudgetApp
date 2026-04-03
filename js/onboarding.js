@@ -512,11 +512,25 @@ function showHomeTourStep(index) {
             el.classList.remove('home-tour-highlight');
             el.classList.remove('home-tour-highlight-contrast');
         });
+        root.querySelectorAll('.home-tour-highlight-ancestor').forEach(function (el) {
+            el.classList.remove('home-tour-highlight-ancestor');
+        });
 
         var targetEl = root.querySelector(step.target);
         if (!targetEl) {
             finishHomeTour();
             return;
+        }
+
+        var page = document.getElementById('page-ledger');
+        if (page && page.contains(targetEl)) {
+            var directSection = targetEl;
+            while (directSection && directSection.parentElement !== page) {
+                directSection = directSection.parentElement;
+            }
+            if (directSection && directSection !== targetEl) {
+                directSection.classList.add('home-tour-highlight-ancestor');
+            }
         }
 
         targetEl.classList.add('home-tour-highlight');
@@ -572,6 +586,9 @@ function finishHomeTour() {
     document.querySelectorAll('.home-tour-highlight').forEach(function (el) {
         el.classList.remove('home-tour-highlight');
         el.classList.remove('home-tour-highlight-contrast');
+    });
+    document.querySelectorAll('.home-tour-highlight-ancestor').forEach(function (el) {
+        el.classList.remove('home-tour-highlight-ancestor');
     });
     if (overlay) overlay.classList.add('hidden');
     if (card) {
