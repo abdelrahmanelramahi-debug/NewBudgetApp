@@ -24,17 +24,17 @@ var ONBOARDING_BUDGET_TIPS_MUST_HAVES = [
         title: 'Savings',
         body: 'Give Savings its share before moving on to the rest of your plan.',
         target: '#onboarding-savings-block',
-        scrollBlock: 'start',
+        scrollBlock: 'center',
         cardPlacement: 'above',
-        cardOverlapPx: 14
+        cardGapPx: 8
     },
     {
         title: 'Must Haves',
         body: 'Fund Weekly Allowance, Daily Food, and Transportation first so your essential spending is covered.',
         target: '#onboarding-must-haves-block',
-        scrollBlock: 'start',
+        scrollBlock: 'center',
         cardPlacement: 'above',
-        cardOverlapPx: 14
+        cardGapPx: 8
     }
 ];
 
@@ -43,9 +43,9 @@ var ONBOARDING_BUDGET_TIPS_MINI_BUDGETS = [
         title: 'Add Flexible Spending',
         body: 'Use mini-budgets for flexible spending, and adjust or reorder them anytime later.',
         target: '#onboarding-mini-budgets-block',
-        scrollBlock: 'start',
+        scrollBlock: 'center',
         cardPlacement: 'above',
-        cardOverlapPx: 14
+        cardGapPx: 8
     }
 ];
 
@@ -226,13 +226,26 @@ function positionBudgetPlanTipCard(targetEl, tip) {
     var minTop = Math.max(padding, stepRect.top + padding);
     var maxTop = Math.min(viewportHeight - padding - cardHeight, stepRect.bottom - padding - cardHeight);
 
-    var overlapPx = Math.max(0, Number((tip && tip.cardOverlapPx) || 0) || 0);
-    var preferredAboveTop = targetRect.top - cardHeight + overlapPx;
+    var gapPx = Math.max(0, Number((tip && tip.cardGapPx) || 12) || 12);
+    var preferredAboveTop = targetRect.top - cardHeight - gapPx;
     var placement = (tip && tip.cardPlacement) || 'auto';
     var finalTop = preferredTop;
     if (placement === 'above') {
-        // Keep "above" placement truly above; clamp to top edge if needed rather than flipping below.
+        // Keep "above" placement truly above and create headroom by scrolling the strategy panel if needed.
+        if (preferredAboveTop < minTop) {
+            var strategyScroller = document.getElementById('onboarding-strategy-sections');
+            if (strategyScroller && strategyScroller.contains(targetEl)) {
+                var neededHeadroom = Math.ceil(minTop - preferredAboveTop + 6);
+                strategyScroller.scrollTop = Math.max(0, strategyScroller.scrollTop - neededHeadroom);
+                targetRect = targetEl.getBoundingClientRect();
+                preferredAboveTop = targetRect.top - cardHeight - gapPx;
+            }
+        }
         finalTop = Math.min(Math.max(preferredAboveTop, minTop), maxTop);
+        // Final safety: never allow overlap with the top edge of the target.
+        if (finalTop + cardHeight + gapPx > targetRect.top) {
+            finalTop = Math.max(minTop, targetRect.top - cardHeight - gapPx);
+        }
     } else if (placement === 'below') {
         finalTop = (preferredTop + cardHeight <= maxTop)
             ? Math.min(Math.max(preferredTop, minTop), maxTop)
