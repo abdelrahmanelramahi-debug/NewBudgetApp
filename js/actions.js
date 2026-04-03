@@ -55,6 +55,10 @@ function commitLedgerAndGlobal() {
 function commitFoodState() {
     if (typeof ensureFoodStateShape === 'function') ensureFoodStateShape();
     if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
+    if (!state.balances) state.balances = {};
+    if (typeof deriveFoodLedgerBalance === 'function') {
+        state.balances['Daily Food'] = deriveFoodLedgerBalance();
+    }
     if (typeof syncFoodCompatAliases === 'function') syncFoodCompatAliases();
 }
 
@@ -553,7 +557,6 @@ function applyTransaction(tx) {
             state.food.daysUsed = (state.food.consumedDays || []).length;
             state.food.history.unshift({type:'spend', amt: fundedSpend});
             if (typeof setFoodFundedForDay === 'function') setFoodFundedForDay(spentDay, 0);
-            adjustItemBalance('Daily Food', -fundedSpend);
             if (typeof countRedistributedOverflowKeys === 'function' && countRedistributedOverflowKeys() > 0) {
                 _recomputeOverflowRedistributionSplit();
             }
@@ -1446,7 +1449,6 @@ function applyFoodFunding(sourceValue, targetDays) {
         return daysToApply.indexOf(d) === -1;
     }).sort(function (a, b) { return a - b; });
     if (!state.balances) state.balances = {};
-    adjustItemBalance('Daily Food', appliedAmount);
     for (var i = 0; i < daysToApply.length; i++) {
         if (typeof setFoodFundedForDay === 'function') setFoodFundedForDay(daysToApply[i], dailyRate);
     }
@@ -1532,7 +1534,6 @@ function setFoodDayFromCalendar(cycleDay, action) {
         var core = typeof computeFoodPlanCore === 'function' ? computeFoodPlanCore() : null;
         var dailyRateUnmark = (core && core.dailyRate > 0) ? core.dailyRate : (600 / 28);
         if (typeof setFoodFundedForDay === 'function') setFoodFundedForDay(day, dailyRateUnmark);
-        adjustItemBalance('Daily Food', dailyRateUnmark);
         if (typeof countRedistributedOverflowKeys === 'function' && countRedistributedOverflowKeys() > 0) {
             _recomputeOverflowRedistributionSplit();
         }
@@ -1546,7 +1547,6 @@ function setFoodDayFromCalendar(cycleDay, action) {
         }
         state.food.consumedDays = list.concat([day]).sort(function(a, b) { return a - b; });
         if (typeof setFoodFundedForDay === 'function') setFoodFundedForDay(day, 0);
-        adjustItemBalance('Daily Food', -funded);
         if (typeof countRedistributedOverflowKeys === 'function' && countRedistributedOverflowKeys() > 0) {
             _recomputeOverflowRedistributionSplit();
         }

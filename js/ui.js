@@ -1596,7 +1596,6 @@ function updateFoodUI() {
         if (overflowDates.length > 0) {
             var overflowUsage = vm ? vm.overflowUsage : ((state.food && state.food.overflowUsage) ? state.food.overflowUsage : {});
             var overflowConsumedMap = vm ? vm.overflowConsumedAmounts : ((state.food && state.food.overflowConsumedAmounts) ? state.food.overflowConsumedAmounts : {});
-            var overflowConsumedMetaMap = (state.food && state.food.overflowConsumedMeta) ? state.food.overflowConsumedMeta : {};
             var fundedOverflowCount = overflowDates.reduce(function (sum, ex) {
                 var isFunded = !!(overflowUsage[ex.key]) || (Number(overflowConsumedMap[ex.key]) > 0.001);
                 return sum + (isFunded ? 1 : 0);
@@ -1619,26 +1618,18 @@ function updateFoodUI() {
                 if (ec < overflowDates.length) {
                     var ex = overflowDates[ec];
                     var ovConsumed = Number(overflowConsumedMap[ex.key]) > 0.001;
-                    var ovConsumedMeta = overflowConsumedMetaMap[ex.key] || null;
-                    var ovTransferred = !!(ovConsumedMeta && ovConsumedMeta.resolution === 'transferred');
                     var usageMode = overflowUsage[ex.key] || '';
                     var funded = ovConsumed || usageMode === 'source' || usageMode === 'redistributed';
                     var cellTone = funded
                         ? ' food-overflow-cell-funded bg-emerald-500 text-white border border-emerald-600 shadow-sm'
                         : ' food-overflow-cell-unfunded bg-rose-50 text-rose-800 border border-rose-200';
                     var badge = '';
-                    if (ovTransferred) {
-                        badge = '<span class="absolute top-0.5 right-1 text-[7px] font-black uppercase tracking-wide text-emerald-100">T</span>';
-                    } else if (!ovConsumed && usageMode) {
+                    if (!ovConsumed && usageMode) {
                         badge = '<span class="absolute top-0.5 right-1 text-[7px] font-black uppercase tracking-wide ' + (funded ? 'text-emerald-100' : 'text-rose-700') + '">' + (usageMode === 'redistributed' ? 'R' : 'S') + '</span>';
                     }
-                    var overflowCellLabel = ovTransferred ? '↗' : (ovConsumed ? 'âœ“' : ex.date);
-                    var overflowCellTitle = ovTransferred
-                        ? ('Transferred overflow day: ' + ex.monthName + ' ' + ex.date)
-                        : ('Pay-cycle overflow: ' + ex.monthName + ' ' + ex.date);
                     extraHtml += '<div class="food-overview-cell-wrapper group relative overflow-hidden" data-overflow-day="true" data-overflow-key="' + ex.key + '">' +
-                        '<div class="food-overview-cell food-overflow-cell rounded-md flex items-center justify-center text-[9px] font-black min-h-[2rem] cursor-pointer transition' + cellTone + '" role="button" title="' + overflowCellTitle + '">' +
-                        overflowCellLabel + badge + '</div></div>';
+                        '<div class="food-overview-cell food-overflow-cell rounded-md flex items-center justify-center text-[9px] font-black min-h-[2rem] cursor-pointer transition' + cellTone + '" role="button" title="Pay-cycle overflow: ' + ex.monthName + ' ' + ex.date + '">' +
+                        (ovConsumed ? '✓' : ex.date) + badge + '</div></div>';
                 } else {
                     extraHtml += '<div class="food-overview-cell rounded-md min-h-[2rem] bg-transparent"></div>';
                 }
