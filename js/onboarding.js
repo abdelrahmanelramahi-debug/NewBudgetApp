@@ -826,21 +826,20 @@ function seedBalancesFromOnboardingPlan() {
         state.accounts.weekly.balance = state.accounts.weekly.balances[activeWeek - 1];
     }
 
-    if (!state.food || typeof state.food !== 'object') state.food = createDefaultFoodState();
+    if (!state.food || typeof state.food !== 'object') state.food = {};
     state.food.daysTotal = state.food.daysTotal || 28;
     state.food.consumedDays = [];
+    state.food.daysUsed = 0;
     state.food.history = [];
     state.food.lockedAmount = 0;
     state.food.overflowUsage = {};
     state.food.overflowFunded = {};
     state.food.overflowFundingSource = {};
     state.food.overflowConsumedAmounts = {};
-    state.food.overflowConsumedMeta = {};
     if (state.food.redistributedPerSlot !== undefined) delete state.food.redistributedPerSlot;
     state.food.redistributedExtraDays = 0;
     state.food.fundedAmountByDay = {};
     state.food._foodFundingMigrated = true;
-    if (typeof syncFoodCompatAliases === 'function') syncFoodCompatAliases();
 
     if (typeof syncSavingsTotal === 'function') syncSavingsTotal();
     if (typeof syncPayablesTotal === 'function') syncPayablesTotal();

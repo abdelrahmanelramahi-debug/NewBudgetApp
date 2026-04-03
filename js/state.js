@@ -66,19 +66,7 @@ let state = {
         'Snacks': 50, 'Misc': 30, 'Personal': 25, 'Household': 15,
         'Streaming': 50, 'App 1': 20, 'App 2': 15, 'Cloud': 5, 'Sub other': 15
     },
-    food: {
-        plan: { daysTotal: 28, planBaseAmount: 600, lastCycleStartKey: '', viewWeek: 0 },
-        core: { consumedDays: [], fundedAmountByDay: {} },
-        overflow: {
-            usage: {},
-            funded: {},
-            fundingSource: {},
-            consumedAmounts: {},
-            consumedMeta: {},
-            redistributedExtraDays: 0
-        },
-        meta: { history: [], lockedAmount: 0, pendingUnusedTransferNotice: null, _foodFundingMigrated: false }
-    },
+    food: { daysTotal: 28, daysUsed: 0, lockedAmount: 0, history: [], viewWeek: 0, fundedAmountByDay: {}, _foodFundingMigrated: false },
     histories: {}
 };
 
@@ -578,7 +566,7 @@ function migrateState() {
             if (!ACCOUNT_LABELS.includes(key)) acc[key] = legacyBalances[key];
             return acc;
         }, {}),
-        food: state.food || createDefaultFoodState(),
+        food: state.food || { daysTotal: 28, daysUsed: 0, lockedAmount: 0, history: [], viewWeek: 0 },
         histories: state.histories || {}
     };
     if (!Array.isArray(state._deletedPayablesBuckets)) state._deletedPayablesBuckets = [];
@@ -624,191 +612,35 @@ function ensureSettings() {
     state.settings.allowNegativeSurplus = true;
 }
 
-function createDefaultFoodState() {
-    return {
-        plan: {
-            daysTotal: 28,
-            planBaseAmount: 600,
-            lastCycleStartKey: '',
-            viewWeek: 0
-        },
-        core: {
-            consumedDays: [],
-            fundedAmountByDay: {}
-        },
-        overflow: {
-            usage: {},
-            funded: {},
-            fundingSource: {},
-            consumedAmounts: {},
-            consumedMeta: {},
-            redistributedExtraDays: 0
-        },
-        meta: {
-            history: [],
-            lockedAmount: 0,
-            pendingUnusedTransferNotice: null,
-            _foodFundingMigrated: false
-        }
-    };
-}
-
-function cloneFoodObjectMap(map) {
-    if (!map || typeof map !== 'object') return {};
-    return Object.keys(map).reduce(function (acc, key) {
-        acc[key] = map[key];
-        return acc;
-    }, {});
-}
-
-function syncFoodCompatAliases() {
-    if (!state.food || typeof state.food !== 'object') state.food = createDefaultFoodState();
-    if (!state.food.plan || typeof state.food.plan !== 'object') state.food.plan = createDefaultFoodState().plan;
-    if (!state.food.core || typeof state.food.core !== 'object') state.food.core = createDefaultFoodState().core;
-    if (!state.food.overflow || typeof state.food.overflow !== 'object') state.food.overflow = createDefaultFoodState().overflow;
-    if (!state.food.meta || typeof state.food.meta !== 'object') state.food.meta = createDefaultFoodState().meta;
-
-    state.food.daysTotal = state.food.plan.daysTotal;
-    state.food.planBaseAmount = state.food.plan.planBaseAmount;
-    state.food.lastCycleStartKey = state.food.plan.lastCycleStartKey;
-    state.food.viewWeek = state.food.plan.viewWeek;
-
-    state.food.consumedDays = state.food.core.consumedDays;
-    state.food.fundedAmountByDay = state.food.core.fundedAmountByDay;
-    state.food.daysUsed = state.food.core.consumedDays.length;
-
-    state.food.overflowUsage = state.food.overflow.usage;
-    state.food.overflowFunded = state.food.overflow.funded;
-    state.food.overflowFundingSource = state.food.overflow.fundingSource;
-    state.food.overflowConsumedAmounts = state.food.overflow.consumedAmounts;
-    state.food.overflowConsumedMeta = state.food.overflow.consumedMeta;
-    state.food.redistributedExtraDays = state.food.overflow.redistributedExtraDays;
-    if (state.food.overflow.redistributedPerSlot !== undefined) state.food.redistributedPerSlot = state.food.overflow.redistributedPerSlot;
-    else delete state.food.redistributedPerSlot;
-
-    state.food.history = state.food.meta.history;
-    state.food.lockedAmount = state.food.meta.lockedAmount;
-    state.food.pendingUnusedTransferNotice = state.food.meta.pendingUnusedTransferNotice;
-    state.food._foodFundingMigrated = state.food.meta._foodFundingMigrated;
-}
-
-function syncFoodDomainsFromCompat() {
-    if (!state.food || typeof state.food !== 'object') return;
-    if (!state.food.plan || typeof state.food.plan !== 'object') state.food.plan = createDefaultFoodState().plan;
-    if (!state.food.core || typeof state.food.core !== 'object') state.food.core = createDefaultFoodState().core;
-    if (!state.food.overflow || typeof state.food.overflow !== 'object') state.food.overflow = createDefaultFoodState().overflow;
-    if (!state.food.meta || typeof state.food.meta !== 'object') state.food.meta = createDefaultFoodState().meta;
-
-    if (state.food.daysTotal !== undefined) state.food.plan.daysTotal = Math.max(1, Math.floor(Number(state.food.daysTotal) || state.food.plan.daysTotal || 28));
-    if (state.food.planBaseAmount !== undefined) state.food.plan.planBaseAmount = Math.max(0, Number(state.food.planBaseAmount) || 0);
-    if (state.food.lastCycleStartKey !== undefined) state.food.plan.lastCycleStartKey = typeof state.food.lastCycleStartKey === 'string' ? state.food.lastCycleStartKey : '';
-    if (state.food.viewWeek !== undefined) state.food.plan.viewWeek = Number.isFinite(Number(state.food.viewWeek)) ? Number(state.food.viewWeek) : 0;
-
-    if (Array.isArray(state.food.consumedDays)) state.food.core.consumedDays = state.food.consumedDays;
-    if (state.food.fundedAmountByDay && typeof state.food.fundedAmountByDay === 'object') state.food.core.fundedAmountByDay = state.food.fundedAmountByDay;
-
-    if (state.food.overflowUsage && typeof state.food.overflowUsage === 'object') state.food.overflow.usage = state.food.overflowUsage;
-    if (state.food.overflowFunded && typeof state.food.overflowFunded === 'object') state.food.overflow.funded = state.food.overflowFunded;
-    if (state.food.overflowFundingSource && typeof state.food.overflowFundingSource === 'object') state.food.overflow.fundingSource = state.food.overflowFundingSource;
-    if (state.food.overflowConsumedAmounts && typeof state.food.overflowConsumedAmounts === 'object') state.food.overflow.consumedAmounts = state.food.overflowConsumedAmounts;
-    if (state.food.overflowConsumedMeta && typeof state.food.overflowConsumedMeta === 'object') state.food.overflow.consumedMeta = state.food.overflowConsumedMeta;
-    if (state.food.redistributedExtraDays !== undefined) state.food.overflow.redistributedExtraDays = Number.isFinite(Number(state.food.redistributedExtraDays)) ? Number(state.food.redistributedExtraDays) : 0;
-    if (state.food.redistributedPerSlot !== undefined) state.food.overflow.redistributedPerSlot = Number(state.food.redistributedPerSlot);
-
-    if (Array.isArray(state.food.history)) state.food.meta.history = state.food.history;
-    if (state.food.lockedAmount !== undefined) state.food.meta.lockedAmount = Math.max(0, Number(state.food.lockedAmount) || 0);
-    if (state.food.pendingUnusedTransferNotice !== undefined) state.food.meta.pendingUnusedTransferNotice = state.food.pendingUnusedTransferNotice || null;
-    if (state.food._foodFundingMigrated !== undefined) state.food.meta._foodFundingMigrated = !!state.food._foodFundingMigrated;
-}
-
-function migrateLegacyFoodState() {
-    var defaults = createDefaultFoodState();
-    if (!state.food || typeof state.food !== 'object') {
-        state.food = defaults;
-        syncFoodCompatAliases();
-        return state.food;
-    }
-
-    if (!state.food.plan || !state.food.core || !state.food.overflow || !state.food.meta) {
-        var legacy = state.food;
-        state.food = createDefaultFoodState();
-        state.food.plan.daysTotal = Math.max(1, Math.floor(Number(legacy.daysTotal) || defaults.plan.daysTotal));
-        state.food.plan.planBaseAmount = Math.max(0, Number(legacy.planBaseAmount) || 0);
-        state.food.plan.lastCycleStartKey = typeof legacy.lastCycleStartKey === 'string' ? legacy.lastCycleStartKey : '';
-        state.food.plan.viewWeek = Number.isFinite(Number(legacy.viewWeek)) ? Number(legacy.viewWeek) : 0;
-
-        var legacyConsumed = Array.isArray(legacy.consumedDays) ? legacy.consumedDays.slice() : [];
-        if (!legacyConsumed.length) {
-            var used = Math.max(0, Math.min(28, Math.floor(Number(legacy.daysUsed) || 0)));
-            for (var i = 1; i <= used; i++) legacyConsumed.push(i);
-        }
-        state.food.core.consumedDays = legacyConsumed
-            .map(function (day) { return Math.max(1, Math.min(28, Math.floor(Number(day) || 0))); })
-            .filter(function (day, index, arr) { return day > 0 && arr.indexOf(day) === index; })
-            .sort(function (a, b) { return a - b; });
-        state.food.core.fundedAmountByDay = cloneFoodObjectMap(legacy.fundedAmountByDay);
-
-        state.food.overflow.usage = cloneFoodObjectMap(legacy.overflowUsage);
-        state.food.overflow.funded = cloneFoodObjectMap(legacy.overflowFunded);
-        state.food.overflow.fundingSource = cloneFoodObjectMap(legacy.overflowFundingSource);
-        state.food.overflow.consumedAmounts = cloneFoodObjectMap(legacy.overflowConsumedAmounts);
-        state.food.overflow.consumedMeta = cloneFoodObjectMap(legacy.overflowConsumedMeta);
-        state.food.overflow.redistributedExtraDays = Number.isFinite(Number(legacy.redistributedExtraDays)) ? Number(legacy.redistributedExtraDays) : 0;
-        if (legacy.redistributedPerSlot !== undefined && !Number.isNaN(Number(legacy.redistributedPerSlot))) {
-            state.food.overflow.redistributedPerSlot = Number(legacy.redistributedPerSlot);
-        }
-
-        state.food.meta.history = Array.isArray(legacy.history) ? legacy.history.slice() : [];
-        state.food.meta.lockedAmount = Math.max(0, Number(legacy.lockedAmount) || 0);
-        state.food.meta.pendingUnusedTransferNotice = legacy.pendingUnusedTransferNotice || null;
-        state.food.meta._foodFundingMigrated = !!legacy._foodFundingMigrated;
-    }
-
-    if (!state.food.plan || typeof state.food.plan !== 'object') state.food.plan = defaults.plan;
-    if (!state.food.core || typeof state.food.core !== 'object') state.food.core = defaults.core;
-    if (!state.food.overflow || typeof state.food.overflow !== 'object') state.food.overflow = defaults.overflow;
-    if (!state.food.meta || typeof state.food.meta !== 'object') state.food.meta = defaults.meta;
-
-    if (!Array.isArray(state.food.core.consumedDays)) state.food.core.consumedDays = [];
-    if (!state.food.core.fundedAmountByDay || typeof state.food.core.fundedAmountByDay !== 'object') state.food.core.fundedAmountByDay = {};
-    if (!state.food.overflow.usage || typeof state.food.overflow.usage !== 'object') state.food.overflow.usage = {};
-    if (!state.food.overflow.funded || typeof state.food.overflow.funded !== 'object') state.food.overflow.funded = {};
-    if (!state.food.overflow.fundingSource || typeof state.food.overflow.fundingSource !== 'object') state.food.overflow.fundingSource = {};
-    if (!state.food.overflow.consumedAmounts || typeof state.food.overflow.consumedAmounts !== 'object') state.food.overflow.consumedAmounts = {};
-    if (!state.food.overflow.consumedMeta || typeof state.food.overflow.consumedMeta !== 'object') state.food.overflow.consumedMeta = {};
-    if (typeof state.food.overflow.redistributedExtraDays !== 'number' || Number.isNaN(state.food.overflow.redistributedExtraDays)) state.food.overflow.redistributedExtraDays = 0;
-    if (state.food.overflow.redistributedPerSlot !== undefined && (typeof state.food.overflow.redistributedPerSlot !== 'number' || Number.isNaN(state.food.overflow.redistributedPerSlot))) delete state.food.overflow.redistributedPerSlot;
-
-    if (!Array.isArray(state.food.meta.history)) state.food.meta.history = [];
-    if (typeof state.food.meta.lockedAmount !== 'number' || Number.isNaN(state.food.meta.lockedAmount)) state.food.meta.lockedAmount = 0;
-    if (state.food.meta.pendingUnusedTransferNotice === undefined) state.food.meta.pendingUnusedTransferNotice = null;
-    state.food.meta._foodFundingMigrated = !!state.food.meta._foodFundingMigrated;
-
-    state.food.plan.daysTotal = Math.max(1, Math.floor(Number(state.food.plan.daysTotal) || defaults.plan.daysTotal));
-    if (typeof state.food.plan.lastCycleStartKey !== 'string') state.food.plan.lastCycleStartKey = '';
-    if (typeof state.food.plan.viewWeek !== 'number' || Number.isNaN(state.food.plan.viewWeek)) state.food.plan.viewWeek = 0;
-    state.food.plan.planBaseAmount = Math.max(0, Number(state.food.plan.planBaseAmount) || 0);
-    if (!state.food.plan.planBaseAmount) state.food.plan.planBaseAmount = defaults.plan.planBaseAmount;
-
-    state.food.core.consumedDays = state.food.core.consumedDays
-        .map(function (day) { return Math.max(1, Math.min(28, Math.floor(Number(day) || 0))); })
-        .filter(function (day, index, arr) { return day > 0 && arr.indexOf(day) === index; })
-        .sort(function (a, b) { return a - b; });
-
-    syncFoodCompatAliases();
-    return state.food;
-}
-
-function ensureFoodStateShape() {
-    migrateLegacyFoodState();
-    syncFoodDomainsFromCompat();
-    syncFoodCompatAliases();
-    return state.food;
-}
-
 function ensureFoodConsumedDays() {
-    ensureFoodStateShape();
-    syncFoodCompatAliases();
+    if (!state.food) state.food = { daysTotal: 28, daysUsed: 0, lockedAmount: 0, history: [], viewWeek: 0, fundedAmountByDay: {}, _foodFundingMigrated: true };
+    if (!Array.isArray(state.food.consumedDays)) {
+        var n = Math.max(0, Math.min(28, Math.floor(state.food.daysUsed || 0)));
+        state.food.consumedDays = [];
+        for (var i = 1; i <= n; i++) state.food.consumedDays.push(i);
+    }
+    if (!state.food.overflowUsage || typeof state.food.overflowUsage !== 'object') {
+        state.food.overflowUsage = {};
+    }
+    if (typeof state.food.redistributedExtraDays !== 'number' || Number.isNaN(state.food.redistributedExtraDays)) {
+        state.food.redistributedExtraDays = 0;
+    }
+    if (typeof state.food.lastCycleStartKey !== 'string') {
+        state.food.lastCycleStartKey = '';
+    }
+    if (!state.food.overflowFunded || typeof state.food.overflowFunded !== 'object') {
+        state.food.overflowFunded = {};
+    }
+    if (!state.food.overflowFundingSource || typeof state.food.overflowFundingSource !== 'object') {
+        state.food.overflowFundingSource = {};
+    }
+    if (!state.food.overflowConsumedAmounts || typeof state.food.overflowConsumedAmounts !== 'object') {
+        state.food.overflowConsumedAmounts = {};
+    }
+    if (state.food.redistributedPerSlot !== undefined && (typeof state.food.redistributedPerSlot !== 'number' || Number.isNaN(state.food.redistributedPerSlot))) {
+        delete state.food.redistributedPerSlot;
+    }
+    state.food.daysUsed = state.food.consumedDays.length;
 }
 
 /** When overflow days use "Redistribute", per-slot funding cap (frozen until undo or cycle reset). */
@@ -893,7 +725,7 @@ function getFoodPlanItem() {
 }
 
 function getFoodPlanBudgetAmount() {
-    ensureFoodStateShape();
+    if (!state.food || typeof state.food !== 'object') state.food = {};
     var fItem = getFoodPlanItem();
     var itemAmount = fItem ? (Number(fItem.amount) || 0) : 0;
     var stored = Number(state.food.planBaseAmount);
@@ -906,7 +738,7 @@ function getFoodPlanBudgetAmount() {
 if (typeof window !== 'undefined') window.getFoodPlanBudgetAmount = getFoodPlanBudgetAmount;
 
 function setFoodPlanBudgetAmount(amount) {
-    ensureFoodStateShape();
+    if (!state.food || typeof state.food !== 'object') state.food = {};
     var normalized = Math.max(0, Number(amount) || 0);
     state.food.planBaseAmount = normalized;
     var fItem = getFoodPlanItem();
@@ -1391,156 +1223,6 @@ function getFoodRemainderInfo() {
         effectiveDaysTotal: core.effectiveDaysTotal
     };
 }
-
-function deriveFoodLedgerBalance() {
-    ensureFoodFundingState();
-    return getOutstandingFoodBalanceTotal();
-}
-if (typeof window !== 'undefined') window.deriveFoodLedgerBalance = deriveFoodLedgerBalance;
-
-function buildFoodViewModel() {
-    ensureFoodStateShape();
-    var payCycle = typeof getPayCycleInfo === 'function' ? getPayCycleInfo() : { dates: [], overflowDates: [] };
-    var info = getFoodRemainderInfo();
-    var totalBal = deriveFoodLedgerBalance();
-    var daysUsed = state.food.core.consumedDays.length;
-    var daysTotal = state.food.plan.daysTotal || 28;
-    var daysLeft = Math.max(0, daysTotal - daysUsed);
-    var daily = typeof getDailyFoodEffectiveDisplayRate === 'function' ? getDailyFoodEffectiveDisplayRate() : info.dailyRate;
-    var eps = 0.05;
-    var tone = 'grey';
-    if (!(info.remainder <= eps && info.theoreticalRemainder <= eps)) {
-        if (info.remainder + eps < info.theoreticalRemainder && info.theoreticalRemainder > eps) tone = 'red';
-        else if (info.remainder + eps >= info.theoreticalRemainder) tone = 'green';
-    }
-    return {
-        payCycle: payCycle,
-        remainderInfo: info,
-        totalBalance: totalBal,
-        dailyRate: daily,
-        tone: tone,
-        daysUsed: daysUsed,
-        daysTotal: daysTotal,
-        daysLeft: daysLeft,
-        consumedDays: state.food.core.consumedDays.slice(),
-        lockedAmount: state.food.meta.lockedAmount || 0,
-        overflowUsage: state.food.overflow.usage,
-        overflowConsumedAmounts: state.food.overflow.consumedAmounts,
-        pendingUnusedTransferNotice: state.food.meta.pendingUnusedTransferNotice
-    };
-}
-if (typeof window !== 'undefined') window.buildFoodViewModel = buildFoodViewModel;
-
-function normalizeFoodDayRef(dayRef) {
-    if (typeof dayRef === 'number') return { kind: 'core', day: Math.max(1, Math.min(28, Math.floor(dayRef))) };
-    if (!dayRef || typeof dayRef !== 'object') return null;
-    if (dayRef.kind === 'overflow') return { kind: 'overflow', key: String(dayRef.key || '') };
-    return { kind: 'core', day: Math.max(1, Math.min(28, Math.floor(dayRef.day))) };
-}
-
-function getFoodDayState(dayRef) {
-    ensureFoodStateShape();
-    var ref = normalizeFoodDayRef(dayRef);
-    if (!ref) return null;
-    if (ref.kind === 'overflow') {
-        var key = ref.key;
-        var usage = state.food.overflow.usage[key] || '';
-        var consumedAmount = Number(state.food.overflow.consumedAmounts[key]) || 0;
-        var consumedMeta = state.food.overflow.consumedMeta[key] || null;
-        var isConsumed = consumedAmount > 0.001;
-        var isTransferred = !!(consumedMeta && consumedMeta.resolution === 'transferred');
-        var spendable = 0;
-        if (isConsumed) spendable = consumedAmount;
-        else if ((Number(state.food.overflow.funded[key]) || 0) > 0.001) spendable = Number(state.food.overflow.funded[key]) || 0;
-        else if (usage === 'redistributed') spendable = Number(state.food.overflow.redistributedPerSlot) || 0;
-        return {
-            ref: ref,
-            kind: 'overflow',
-            key: key,
-            usage: usage,
-            isConsumed: isConsumed,
-            isTransferred: isTransferred,
-            consumedAmount: consumedAmount,
-            consumedMeta: consumedMeta,
-            spendableAmount: spendable,
-            canConsume: !isTransferred && (!!usage || isConsumed),
-            canTransfer: !!usage && !isConsumed,
-            canFundFromSource: !usage && !isConsumed,
-            canRedistribute: !usage && !isConsumed,
-            canUndoSource: usage === 'source' && !isConsumed,
-            canUndoRedistribute: usage === 'redistributed' && !isConsumed
-        };
-    }
-
-    var day = ref.day;
-    var consumed = state.food.core.consumedDays.indexOf(day) !== -1;
-    var funded = getFoodFundedForDay(day);
-    var isLocked = !consumed && funded <= 0.001;
-    return {
-        ref: ref,
-        kind: 'core',
-        day: day,
-        isConsumed: consumed,
-        fundedAmount: funded,
-        isLocked: isLocked,
-        canConsume: consumed || funded > 0.001,
-        canTransfer: !consumed && funded > 0.001,
-        canRestoreFromSource: consumed
-    };
-}
-if (typeof window !== 'undefined') window.getFoodDayState = getFoodDayState;
-
-function getFoodDayActions(dayRef) {
-    var stateInfo = getFoodDayState(dayRef);
-    if (!stateInfo) return [];
-    if (stateInfo.kind === 'overflow') {
-        return [
-            { id: stateInfo.isConsumed ? 'unconsume' : 'consume', label: stateInfo.isConsumed ? 'Unmark consumed' : 'Mark consumed', disabled: !stateInfo.canConsume },
-            { id: 'transfer', label: 'Transfer day to...', disabled: !stateInfo.canTransfer },
-            { id: 'fund_source', label: 'Use source for +1 day', disabled: !stateInfo.canFundFromSource },
-            { id: 'redistribute', label: 'Redistribute Daily Food', disabled: !stateInfo.canRedistribute },
-            { id: 'undo_source', label: 'De-distribute', disabled: !stateInfo.canUndoSource },
-            { id: 'undo_redistribute', label: 'De-distribute', disabled: !stateInfo.canUndoRedistribute }
-        ];
-    }
-    return [
-        { id: stateInfo.isConsumed ? 'unconsume' : 'consume', label: stateInfo.isConsumed ? 'Unconsume day' : 'Consume day', disabled: !stateInfo.canConsume },
-        { id: 'transfer', label: stateInfo.isConsumed ? 'Restore from source' : 'Transfer day to...', disabled: stateInfo.isConsumed ? false : !stateInfo.canTransfer }
-    ];
-}
-if (typeof window !== 'undefined') window.getFoodDayActions = getFoodDayActions;
-
-function buildFoodDayPanelModel(dayRef) {
-    var stateInfo = getFoodDayState(dayRef);
-    if (!stateInfo) return null;
-    if (stateInfo.kind === 'overflow') {
-        return {
-            dayRef: stateInfo.ref,
-            title: 'Extra',
-            subtitle: stateInfo.isTransferred
-                ? 'This overflow day was transferred to another fund and is already resolved.'
-                : stateInfo.isConsumed
-                    ? 'Marked consumed. Unmark to restore the previous overflow funding method for this day.'
-                    : stateInfo.usage === 'source'
-                        ? 'Funded from your chosen source. De-distribute to undo it, or mark consumed / transfer when you use this extra day.'
-                        : stateInfo.usage === 'redistributed'
-                            ? 'Daily Food is split across more calendar days. De-distribute to revert, or mark consumed / transfer.'
-                            : 'Days between the end of your 28-day plan and your next pay day. Choose how to account for this day.',
-            state: stateInfo,
-            actions: getFoodDayActions(dayRef)
-        };
-    }
-    var payCycle = typeof getPayCycleInfo === 'function' ? getPayCycleInfo() : null;
-    var p = payCycle && payCycle.dates ? payCycle.dates[stateInfo.day - 1] : null;
-    return {
-        dayRef: stateInfo.ref,
-        title: 'Day ' + stateInfo.day,
-        subtitle: p ? (p.monthName + ' ' + p.date + ' · Tap an action below') : 'Tap an action below',
-        state: stateInfo,
-        actions: getFoodDayActions(dayRef)
-    };
-}
-if (typeof window !== 'undefined') window.buildFoodDayPanelModel = buildFoodDayPanelModel;
 
 function initSurplusFromOpening() {
     let allocated = 0;
