@@ -2,6 +2,11 @@
 
 :root {
     --app-safe-top-gap: max(0.75rem, env(safe-area-inset-top));
+    --focus-ring: 0 0 0 3px rgba(99, 102, 241, 0.25);
+}
+
+html {
+    overflow-x: hidden;
 }
 
 body {
@@ -29,6 +34,7 @@ body {
 body.theme-dark {
     background-color: #020617;
     color: #e5e7eb;
+    color-scheme: dark;
 }
 body.theme-dark .nav-header {
     border-bottom-color: #1e293b;
@@ -1425,7 +1431,17 @@ body.theme-dark .desktop-nav-item:hover {
     border-radius: 24px;
     border: 1px solid #e2e8f0;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    transition: all 0.2s;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
 }
 
 /* Nav — sticky header (Home page only; app-header is hidden on other pages) */
@@ -2199,8 +2215,9 @@ body.theme-dark .food-overflow-row-complete .food-overflow-label {
     align-items: center;
     justify-content: center;
     padding: 1.5rem;
-    transition: all 0.3s ease;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
     opacity: 1;
+    overscroll-behavior: contain;
 }
 .modal-content {
     background: white;
@@ -2218,6 +2235,23 @@ body.theme-dark .food-overflow-row-complete .food-overflow-label {
 
 .modal-open .modal-content { transform: translateY(0); }
 .modal-closed .modal-content { transform: translateY(100%); }
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    .modal-content,
+    .modal-overlay,
+    .premium-card {
+        transition: none !important;
+    }
+}
 
 /* Force Hide */
 .hidden { display: none !important; }

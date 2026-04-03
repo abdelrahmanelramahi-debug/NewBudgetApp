@@ -260,26 +260,43 @@ function closeAuthModal() {
     }
 }
 
+function setAuthBusyState(isBusy) {
+    ['auth-sign-in-btn', 'auth-sign-up-btn', 'auth-forgot-password-btn'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.disabled = !!isBusy;
+        el.setAttribute('aria-disabled', isBusy ? 'true' : 'false');
+        el.classList.toggle('opacity-60', !!isBusy);
+        el.classList.toggle('cursor-not-allowed', !!isBusy);
+    });
+}
+
 async function handleSignUp() {
     const email = document.getElementById('auth-email').value;
     const password = document.getElementById('auth-password').value;
     const errorEl = document.getElementById('auth-error');
     
     if (!email || !password) {
-        errorEl.textContent = 'Please enter email and password';
+        errorEl.textContent = 'Enter your email and password.';
         return;
     }
     
     if (password.trim().length < 6) {
-        errorEl.textContent = 'Password must be at least 6 characters';
+        errorEl.textContent = 'Password must be at least 6 characters.';
         return;
     }
-    
-    errorEl.textContent = 'Creating account...';
-    const result = await signUp(email, password);
-    
-    if (!result.success) {
-        errorEl.textContent = result.error || 'Sign up failed';
+
+    setAuthBusyState(true);
+    errorEl.className = 'text-xs text-slate-600 min-h-[20px]';
+    errorEl.textContent = 'Creating account…';
+    try {
+        const result = await signUp(email, password);
+        if (!result.success) {
+            errorEl.className = 'text-xs text-red-500 min-h-[20px]';
+            errorEl.textContent = result.error || 'Sign up failed. Try again.';
+        }
+    } finally {
+        setAuthBusyState(false);
     }
 }
 
@@ -289,15 +306,21 @@ async function handleSignIn() {
     const errorEl = document.getElementById('auth-error');
     
     if (!email || !password) {
-        errorEl.textContent = 'Please enter email and password';
+        errorEl.textContent = 'Enter your email and password.';
         return;
     }
-    
-    errorEl.textContent = 'Signing in...';
-    const result = await signIn(email, password);
-    
-    if (!result.success) {
-        errorEl.textContent = result.error || 'Sign in failed';
+
+    setAuthBusyState(true);
+    errorEl.className = 'text-xs text-slate-600 min-h-[20px]';
+    errorEl.textContent = 'Signing in…';
+    try {
+        const result = await signIn(email, password);
+        if (!result.success) {
+            errorEl.className = 'text-xs text-red-500 min-h-[20px]';
+            errorEl.textContent = result.error || 'Sign in failed. Try again.';
+        }
+    } finally {
+        setAuthBusyState(false);
     }
 }
 
@@ -312,14 +335,17 @@ async function handleForgotPassword() {
     }
     
     try {
-        errorEl.textContent = 'Sending reset email...';
+        setAuthBusyState(true);
+        errorEl.textContent = 'Sending reset email…';
         errorEl.className = 'text-xs text-slate-600 min-h-[20px]';
         await window.firebaseAuth.sendPasswordResetEmail(email);
-        errorEl.innerHTML = 'Email sent to <strong>' + email + '</strong>. Check <strong>inbox and spam/junk</strong> (wait 2–5 min). Still nothing? See steps below.';
+        errorEl.innerHTML = 'Email sent to <strong>' + email + '</strong>. Check <strong>inbox and spam/junk</strong> and wait 2-5 minutes. Still nothing? Use the sender note below.';
         errorEl.className = 'text-xs text-emerald-600 min-h-[20px]';
     } catch (error) {
         errorEl.textContent = getAuthErrorMessage(error);
         errorEl.className = 'text-xs text-red-500 min-h-[20px]';
+    } finally {
+        setAuthBusyState(false);
     }
 }
 
