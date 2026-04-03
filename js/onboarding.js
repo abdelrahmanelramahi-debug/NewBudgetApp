@@ -566,7 +566,9 @@ function showHomeTourStep(index) {
 
         var isMobile = (window.innerWidth || document.documentElement.clientWidth || 0) <= 640;
         if (isMobile) {
-            var extraTopRevealPx = 96;
+            // Scroll a bit higher on mobile so the highlighted target sits lower
+            // in the viewport and the user can see the full top edge clearly.
+            var extraTopRevealPx = 260;
             var targetTop = (window.pageYOffset || window.scrollY || 0) + targetEl.getBoundingClientRect().top - extraTopRevealPx;
             if (targetTop < 0) targetTop = 0;
             try {
