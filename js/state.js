@@ -1131,11 +1131,6 @@ function reconcileFoodFundingWithLedger() {
     var totalAlloc = sumF + sumOv;
     var recordedBal = (state.balances && state.balances['Daily Food'] !== undefined) ? Number(state.balances['Daily Food']) : 0;
     var bal = Number.isFinite(recordedBal) ? recordedBal : 0;
-    if (bal < totalAlloc - 0.02) {
-        // Overflow/core day states are the source of truth; avoid destroying valid funding
-        // when a stale ledger balance fell behind.
-        bal = totalAlloc;
-    }
     if (bal < 0) bal = 0;
     var diff = bal - totalAlloc;
     if (Math.abs(diff) >= 0.02) {
@@ -1217,17 +1212,12 @@ function reconcileFoodFundingWithLedger() {
                 }
                 newSum = sumFoodFundedAll();
             }
-            if (state.balances) {
-                state.balances['Daily Food'] = newSum;
-            }
             var spillToExtra = ledgerBeforeCap - newSum;
             if (spillToExtra > 0.02 && state.accounts) {
                 state.accounts.surplus = (Number(state.accounts.surplus) || 0) + spillToExtra;
             }
         }
     }
-    if (!state.balances || typeof state.balances !== 'object') state.balances = {};
-    state.balances['Daily Food'] = getOutstandingFoodBalanceTotal();
 }
 
 function ensureFoodFundingState() {
@@ -1237,10 +1227,11 @@ function ensureFoodFundingState() {
         delete state.food.pendingDistributionExtraNotice;
     }
     getFoodFundingMap();
-    if (!state.food._foodFundingMigrated) {
+    var needsMigrationRepair = !state.food._foodFundingMigrated;
+    if (needsMigrationRepair) {
         migrateLegacyFoodFunding();
+        reconcileFoodFundingWithLedger();
     }
-    reconcileFoodFundingWithLedger();
 }
 
 function ensureSystemSavings() {
@@ -1402,7 +1393,9 @@ function buildFoodViewModel() {
     ensureFoodStateShape();
     var payCycle = typeof getPayCycleInfo === 'function' ? getPayCycleInfo() : { dates: [], overflowDates: [] };
     var info = getFoodRemainderInfo();
-    var totalBal = deriveFoodLedgerBalance();
+    var totalBal = (state.balances && state.balances['Daily Food'] !== undefined)
+        ? (Number(state.balances['Daily Food']) || 0)
+        : deriveFoodLedgerBalance();
     var daysUsed = state.food.core.consumedDays.length;
     var daysTotal = state.food.plan.daysTotal || 28;
     var daysLeft = Math.max(0, daysTotal - daysUsed);
