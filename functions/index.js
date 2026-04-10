@@ -17,6 +17,13 @@ function getBearerToken(authHeader) {
     return match ? match[1].trim() : '';
 }
 
+function getHeaderUid(uidHeader) {
+    if (!uidHeader || typeof uidHeader !== 'string') return '';
+    const uid = uidHeader.trim();
+    if (!uid) return '';
+    return uid;
+}
+
 function toNumber(value) {
     const num = Number(value);
     return Number.isFinite(num) ? num : 0;
@@ -136,19 +143,27 @@ exports.getBudgetSummary = onRequest({ secrets: ['DASHBOARD_SECRET'] }, async fu
             return res.status(401).json({ error: 'Unauthorized.' });
         }
 
+        const headerUid = getHeaderUid(req.get('X-Firebase-UID'));
+        let uid = headerUid;
+
+        // DashYourBoard server-to-server path: shared secret + linked Firebase uid.
+        // If no uid header is present, fall back to Firebase ID token verification.
+        if (!uid) {
         const idToken = getBearerToken(req.get('Authorization'));
         if (!idToken) {
             return res.status(401).json({ error: 'Unauthorized.' });
         }
 
-        let decodedToken;
-        try {
-            decodedToken = await admin.auth().verifyIdToken(idToken);
-        } catch (authError) {
-            return res.status(401).json({ error: 'Unauthorized.' });
+            let decodedToken;
+            try {
+                decodedToken = await admin.auth().verifyIdToken(idToken);
+            } catch (authError) {
+                return res.status(401).json({ error: 'Unauthorized.' });
+            }
+
+            uid = decodedToken && decodedToken.uid;
         }
 
-        const uid = decodedToken && decodedToken.uid;
         if (!uid) {
             return res.status(401).json({ error: 'Unauthorized.' });
         }
