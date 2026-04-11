@@ -2218,25 +2218,6 @@ body.theme-dark .food-overflow-row-complete .food-overflow-label {
     background: #ffe4e6;
     color: #be123c;
 }
-.payment-day-setup-wrap {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-}
-.payment-day-setup-value {
-    display: inline-flex;
-    align-items: center;
-    height: 2rem;
-    padding: 0 0.7rem;
-    border-radius: 0.6rem;
-    background: #eff6ff;
-    border: 1px solid #bfdbfe;
-    color: #1d4ed8;
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-}
 .food-week-tab:focus {
     outline: none;
 }

@@ -574,13 +574,7 @@ function getMiniBudgetScheduleSetupButtonHtml(sid, idx, item) {
         ? ('Expected payment date saved: ' + status.nextDateLabel)
         : 'Set expected payment day';
     var buttonLabel = status ? 'Edit date' : 'Set date';
-    var savedBadge = status
-        ? '<span class="payment-day-setup-value" title="' + escapeAttr(title) + '">' + escapeHtml(status.nextDateLabel) + '</span>'
-        : '';
-    return '<span class="payment-day-setup-wrap">' +
-        savedBadge +
-        '<button type="button" onclick="event.stopPropagation(); openMiniBudgetPaymentDayModal(\'' + escapeAttr(sid) + '\', ' + idx + ')" class="payment-day-trigger" title="' + escapeAttr(title) + '" aria-label="' + escapeAttr(title) + '">' + escapeHtml(buttonLabel) + '</button>' +
-        '</span>';
+    return '<button type="button" onclick="event.stopPropagation(); openMiniBudgetPaymentDayModal(\'' + escapeAttr(sid) + '\', ' + idx + ')" class="payment-day-trigger" title="' + escapeAttr(title) + '" aria-label="' + escapeAttr(title) + '">' + escapeHtml(buttonLabel) + '</button>';
 }
 
 function renderStrategy(opts) {
