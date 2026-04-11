@@ -555,6 +555,27 @@ function renderFundingPriorityCard() {
     `;
 }
 
+function getMiniBudgetPaymentBadgeHtml(item) {
+    if (!item || typeof getExpectedPaymentStatus !== 'function') return '';
+    var status = getExpectedPaymentStatus(item.expectedPaymentDay);
+    if (!status) return '';
+    var label = status.isDueToday ? 'Due today' : ('Next ' + status.nextDateLabel);
+    var title = status.isDueToday
+        ? 'Expected payment is due today (' + status.ordinalLabel + ' of the month).'
+        : 'Expected on the ' + status.ordinalLabel + ' of each month. Next: ' + status.nextDateLabel + '.';
+    return '<span class="payment-day-badge ' + (status.isDueToday ? 'is-due-today' : '') + '" title="' + escapeAttr(title) + '">' + escapeHtml(label) + '</span>';
+}
+
+function getMiniBudgetPaymentTriggerHtml(sid, idx, item) {
+    var status = (item && typeof getExpectedPaymentStatus === 'function')
+        ? getExpectedPaymentStatus(item.expectedPaymentDay)
+        : null;
+    var title = status
+        ? (status.isDueToday ? 'Expected payment is due today' : 'Expected payment: ' + status.nextDateLabel)
+        : 'Set expected payment day';
+    return '<button type="button" onclick="event.stopPropagation(); openMiniBudgetPaymentDayModal(\'' + escapeAttr(sid) + '\', ' + idx + ')" class="payment-day-trigger ' + (status && status.isDueToday ? 'is-due-today' : '') + '" title="' + escapeAttr(title) + '" aria-label="' + escapeAttr(title) + '">Due</button>';
+}
+
 function renderStrategy(opts) {
     opts = opts || {};
     if (!opts.force && !opts.onboarding && isBudgetPlanEditingActive()) {
@@ -700,6 +721,8 @@ function renderStrategy(opts) {
         function buildBudgetPlanRowHtml(sid, idx, item, optsRow) {
             optsRow = optsRow || {};
             const itemLabel = item.label === 'Food Base' ? 'Daily Food' : item.label;
+            const paymentStatus = typeof getExpectedPaymentStatus === 'function' ? getExpectedPaymentStatus(item.expectedPaymentDay) : null;
+            const paymentBadgeHtml = getMiniBudgetPaymentBadgeHtml(item);
             let amortLabel = item.amortData ? `<span class="text-[9px] bg-indigo-50 text-indigo-600 px-1 rounded font-bold ml-2">${item.amortData.total}/${item.amortData.months}mo</span>` : '';
             const isFoodBase = itemLabel === 'Daily Food';
             const isFoodPlanOff = isFoodBase && state.settings && state.settings.showFoodPlan === false;
@@ -729,6 +752,7 @@ function renderStrategy(opts) {
             const actions = item.isCore
                 ? ''
                 : `
+                ${getMiniBudgetPaymentTriggerHtml(sid, idx, item)}
                 <button onclick="openAmortTool('${sec.id}', ${idx})" class="p-1.5 text-indigo-400 hover:bg-indigo-50 rounded">✎</button>
                 <button onclick="openDeleteModal('${sid}', ${idx})" class="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 cursor-pointer rounded">×</button>
             `;
@@ -832,14 +856,14 @@ function renderStrategy(opts) {
             ` : '';
 
             return `
-                <div class="draggable-row flex justify-between items-center gap-2 py-3 border-b border-slate-50 last:border-0 ${isFoodPlanOff ? 'opacity-50 grayscale' : ''}"
+                <div class="draggable-row flex justify-between items-center gap-2 py-3 border-b border-slate-50 last:border-0 ${isFoodPlanOff ? 'opacity-50 grayscale' : ''} ${paymentStatus && paymentStatus.isDueToday ? 'budget-row-due-today' : ''}"
                      draggable="${isDragAllowed}"
                      ondragstart="${isDragAllowed ? `handleItemDragStart(event, '${sid}', ${idx})` : ''}"
                      ondragover="handleDragOver(event)"
                      ondrop="handleItemDrop(event, '${sid}', ${idx})">
                     <div class="flex items-center gap-2.5 min-w-0 flex-1">
                         <span class="text-slate-300 ${isDragAllowed ? 'cursor-move' : 'opacity-0'}">::</span>
-                        <span class="text-xs font-bold text-slate-600 truncate">${itemLabel} ${amortLabel}</span>
+                        <span class="text-xs font-bold text-slate-600 truncate">${itemLabel} ${amortLabel} ${paymentBadgeHtml}</span>
                     </div>
                     <div class="flex items-center gap-1.5 no-drag ${isFoodBase ? 'budget-food-controls' : ''}" onmousedown="event.stopPropagation()">
                         ${isFoodBase ? `
@@ -1172,9 +1196,45 @@ function renderLedger() {
     `;
     container.innerHTML += optionsBarHtml;
 
-    // Create categorical dropdowns matching the strategy structure
     var majorLabels = typeof MAJOR_FUND_LABELS !== 'undefined' ? MAJOR_FUND_LABELS : ['Weekly Allowance', 'Daily Food', 'Savings', 'Transportation', 'Payables'];
     var skipLabels = majorLabels.slice();
+    var dueTodayEntries = [];
+    (state.categories || []).forEach(function (sec) {
+        (sec.items || []).forEach(function (item, idx) {
+            if (!item || skipLabels.indexOf(item.label) !== -1) return;
+            var status = typeof getExpectedPaymentStatus === 'function' ? getExpectedPaymentStatus(item.expectedPaymentDay) : null;
+            if (!status || !status.isDueToday) return;
+            dueTodayEntries.push({
+                sid: sec.id,
+                idx: idx,
+                label: item.label,
+                category: sec.label,
+                amount: getItemBalance(item.label, 0)
+            });
+        });
+    });
+    if (dueTodayEntries.length) {
+        var dueTodayHtml = dueTodayEntries.map(function (entry) {
+            return '<button type="button" onclick="openMiniBudgetPaymentDayModal(\'' + escapeAttr(entry.sid) + '\',' + entry.idx + ')" class="mini-budget-due-chip">' +
+                '<span class="mini-budget-due-chip-label">' + escapeHtml(entry.label) + '</span>' +
+                '<span class="mini-budget-due-chip-meta">' + escapeHtml(entry.category) + ' · ' + formatMoney(entry.amount) + '</span>' +
+                '</button>';
+        }).join('');
+        container.innerHTML += `
+            <div class="mini-budget-due-card premium-card p-4 mb-4 border border-rose-200 bg-rose-50/80">
+                <div class="flex items-start justify-between gap-3">
+                    <div>
+                        <p class="text-[10px] font-black uppercase tracking-widest text-rose-600">Due today</p>
+                        <h3 class="text-sm font-black text-slate-900 mt-1">Expect ${dueTodayEntries.length} mini-budget payment${dueTodayEntries.length === 1 ? '' : 's'} today.</h3>
+                        <p class="text-[11px] font-semibold text-slate-600 mt-1">These categories are scheduled for this date.</p>
+                    </div>
+                </div>
+                <div class="mini-budget-due-chip-row mt-3">${dueTodayHtml}</div>
+            </div>
+        `;
+    }
+
+    // Create categorical dropdowns matching the strategy structure
     var hideEmpty = !!state.settings?.hideEmptyCategories;
     var sortBy = state.settings?.categorySort || 'default';
 
@@ -1202,24 +1262,29 @@ function renderLedger() {
         const secId = `ledger-sec-${sec.id}`;
         let sumLeft = 0;
         let sumAllocated = 0;
-        const plannedTotalForLedger = (item) => {
+        const plannedMonthlyForLedgerSection = (item) => {
+            return typeof item.amount === 'number' ? item.amount : 0;
+        };
+        const plannedTotalForLedgerItem = (item) => {
             if (item && item.amortData && typeof item.amortData.total === 'number') return Number(item.amortData.total) || 0;
             return typeof item.amount === 'number' ? item.amount : 0;
         };
         items.forEach(item => {
             sumLeft += getItemBalance(item.label, 0);
-            sumAllocated += plannedTotalForLedger(item);
+            sumAllocated += plannedMonthlyForLedgerSection(item);
         });
 
         let barsHtml = '';
         items.forEach(item => {
             let bal = getItemBalance(item.label, 0);
-            const goalTotal = plannedTotalForLedger(item);
+            const goalTotal = plannedTotalForLedgerItem(item);
             const plannedDenom = goalTotal > 0 ? goalTotal : (typeof item.amount === 'number' && item.amount > 0 ? item.amount : 1);
             const pct = Math.min(100, Math.max(0, (bal / plannedDenom) * 100));
             const safeLabel = escapeAttr(item.label);
             const safeLabelAttr = escapeAttr(item.label);
             const safeLabelText = escapeHtml(item.label);
+            const paymentStatus = typeof getExpectedPaymentStatus === 'function' ? getExpectedPaymentStatus(item.expectedPaymentDay) : null;
+            const paymentBadgeHtml = getMiniBudgetPaymentBadgeHtml(item);
             const splitLocked = !!(item.amortData && goalTotal > 0 && bal < goalTotal - 0.005);
             const splitBadge = item.amortData
                 ? (splitLocked
@@ -1241,9 +1306,9 @@ function renderLedger() {
                 : `<p class="text-[9px] font-bold text-slate-400 uppercase hidden sm:block">${getCurrencyLabel()} left</p>`;
 
             barsHtml += `
-                <div class="ledger-bar flex items-center gap-2 sm:gap-3 w-full py-2.5 px-3 sm:px-4 rounded-xl border border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm transition-all group ${bal === 0 ? 'opacity-70' : ''}">
+                <div class="ledger-bar flex items-center gap-2 sm:gap-3 w-full py-2.5 px-3 sm:px-4 rounded-xl border border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm transition-all group ${bal === 0 ? 'opacity-70' : ''} ${paymentStatus && paymentStatus.isDueToday ? 'ledger-bar-due-today' : ''}">
                     <div class="flex-1 min-w-0 flex flex-col gap-0.5">
-                        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 truncate" title="${safeLabelAttr}">${safeLabelText}${splitBadge}</span>
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 truncate" title="${safeLabelAttr}">${safeLabelText}${splitBadge} ${paymentBadgeHtml}</span>
                         <div class="h-1.5 w-full max-w-[100px] rounded-full bg-slate-100 overflow-hidden">
                             <div class="ledger-bar-fill h-full rounded-full transition-all duration-300" style="width:${pct}%"></div>
                         </div>
@@ -1259,6 +1324,7 @@ function renderLedger() {
                             <button type="button" onclick="var b=this.closest('.ledger-bar'); var v=b.querySelector('.ledger-bar-amount').value; applyItemAdjustment('${safeLabel}', v, 'deduct'); b.querySelector('.ledger-bar-amount').value='';" class="w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none border-t border-slate-200">−</button>
                         </div>
                         <button type="button" onclick="var b=this.closest('.ledger-bar'); var v=b&&b.querySelector('.ledger-bar-amount')?b.querySelector('.ledger-bar-amount').value:''; openTool('${safeLabel}', undefined, false, v);" class="h-8 w-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-sm font-bold transition" title="Transfer">⋯</button>
+                        ${getMiniBudgetPaymentTriggerHtml(sec.id, sec.items.indexOf(item), item)}
                         ${unlockBtn}
                         ${actionBtn}
                     </div>

@@ -422,6 +422,9 @@ function applyTransaction(tx) {
             if (!sec) break;
             const splitMonths = Math.max(1, Math.floor(Number(tx.splitMonths) || 1));
             const totalPrice = Number(tx.totalPrice);
+            const expectedPaymentDay = typeof normalizeExpectedPaymentDay === 'function'
+                ? normalizeExpectedPaymentDay(tx.expectedPaymentDay)
+                : null;
             const useSplit =
                 tx.splitMonths != null &&
                 splitMonths > 1 &&
@@ -433,13 +436,14 @@ function applyTransaction(tx) {
                 sec.items.push({
                     label: tx.label,
                     amount: monthly,
-                    amortData: { total: rm(totalPrice), months: splitMonths }
+                    amortData: { total: rm(totalPrice), months: splitMonths },
+                    expectedPaymentDay: expectedPaymentDay || undefined
                 });
                 setItemBalance(tx.label, 0);
             } else {
                 const amt = typeof roundMoney === 'function' ? roundMoney(tx.amount) : Number(tx.amount);
                 if (Number.isNaN(amt)) break;
-                sec.items.push({ label: tx.label, amount: amt });
+                sec.items.push({ label: tx.label, amount: amt, expectedPaymentDay: expectedPaymentDay || undefined });
                 state.accounts.surplus -= amt;
                 setItemBalance(tx.label, amt);
             }
@@ -507,6 +511,18 @@ function applyTransaction(tx) {
                 break;
             }
             // Budget Plan is plan-only: editing amounts must not touch live ledger balances or Extra.
+            break;
+        }
+        case 'update_item_expected_payment_day': {
+            const sec = state.categories.find(s => s.id === tx.sid);
+            if (!sec) break;
+            const item = sec.items[tx.idx];
+            if (!item) break;
+            const normalizedDay = typeof normalizeExpectedPaymentDay === 'function'
+                ? normalizeExpectedPaymentDay(tx.expectedPaymentDay)
+                : null;
+            if (normalizedDay) item.expectedPaymentDay = normalizedDay;
+            else delete item.expectedPaymentDay;
             break;
         }
         case 'weekly_adjust':
@@ -764,6 +780,22 @@ function openDeficitModal() {
         sec.items.forEach(item => {
             if(['Weekly Allowance', 'Daily Food'].includes(item.label)) return;
 
+            if (item.label === 'Savings') {
+                ensureAccountsState();
+                var generalSavingsKey = (typeof GENERAL_SAVINGS_BUCKET_NAME !== 'undefined' && GENERAL_SAVINGS_BUCKET_NAME) ? GENERAL_SAVINGS_BUCKET_NAME : 'General Savings';
+                var generalSavingsBal = Number((state.accounts && state.accounts.savingsBuckets && state.accounts.savingsBuckets[generalSavingsKey]) || 0);
+                list.innerHTML += `
+                    <div class="flex justify-between items-center gap-2 p-3 bg-slate-50 rounded-xl min-w-0">
+                        <div class="min-w-0 flex-1">
+                            <span class="block text-xs font-bold text-slate-800 truncate">Savings</span>
+                            <span class="text-[10px] text-slate-400">General Savings bucket: ${formatMoney(generalSavingsBal)}</span>
+                        </div>
+                        <button onclick="raidGeneralSavingsForDeficit()" class="bg-indigo-100 text-indigo-600 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase whitespace-nowrap flex-shrink-0">Use</button>
+                    </div>
+                `;
+                return;
+            }
+
             const bal = getItemBalance(item.label, 0);
             if(bal > 0) {
                 if (typeof isSplitGoalLocked === 'function' && isSplitGoalLocked(item.label)) return;
@@ -783,6 +815,29 @@ function openDeficitModal() {
     toggleModal('deficit-modal', true);
 }
 function closeDeficitModal() { toggleModal('deficit-modal', false); }
+
+function raidGeneralSavingsForDeficit() {
+    ensureAccountsState();
+    var generalSavingsKey = (typeof GENERAL_SAVINGS_BUCKET_NAME !== 'undefined' && GENERAL_SAVINGS_BUCKET_NAME) ? GENERAL_SAVINGS_BUCKET_NAME : 'General Savings';
+    if (!state.accounts.savingsBuckets) state.accounts.savingsBuckets = {};
+    if (state.accounts.savingsBuckets[generalSavingsKey] === undefined) {
+        state.accounts.savingsBuckets[generalSavingsKey] = 0;
+    }
+    const deficit = Math.abs(state.accounts.surplus);
+    if (deficit <= 0) return;
+
+    pushToUndo();
+    state.accounts.savingsBuckets[generalSavingsKey] = Number(state.accounts.savingsBuckets[generalSavingsKey] || 0) - deficit;
+    if (typeof syncSavingsTotal === 'function') syncSavingsTotal();
+    applyTransaction({ type: 'adjust_surplus', delta: deficit });
+
+    logHistory('Savings', -deficit, 'Deficit Cover');
+    saveState();
+    renderLedger();
+    if(state.accounts.surplus >= 0) closeDeficitModal();
+    else openDeficitModal();
+}
+window.raidGeneralSavingsForDeficit = raidGeneralSavingsForDeficit;
 
 function raidBucket(label, available) {
     if (typeof isSplitGoalLocked === 'function' && isSplitGoalLocked(label)) {
@@ -1083,6 +1138,7 @@ function openAddItemTool(sid, opts) {
     var explicitSid = sid || '';
     document.getElementById('new-item-label').value = '';
     document.getElementById('new-item-amount').value = '';
+    populateExpectedPaymentDaySelect(document.getElementById('new-item-payment-day'), null, true);
     var monthsEl = document.getElementById('new-item-split-months');
     if (monthsEl) monthsEl.value = '1';
     var catRow = document.getElementById('new-item-category-row');
@@ -1126,6 +1182,8 @@ function confirmAddItem() {
     const totalRounded = typeof parseMoney === 'function' ? parseMoney(amtRaw) : Math.round((parseFloat(amtRaw) || 0) * 100) / 100;
     const monthsEl = document.getElementById('new-item-split-months');
     const months = Math.max(1, Math.floor(parseFloat(monthsEl && monthsEl.value) || 1));
+    const paymentDayEl = document.getElementById('new-item-payment-day');
+    const expectedPaymentDay = paymentDayEl ? normalizeExpectedPaymentDay(paymentDayEl.value) : null;
     var catSel = document.getElementById('new-item-category');
     var catRow = document.getElementById('new-item-category-row');
     if (catRow && !catRow.classList.contains('hidden') && catSel && catSel.value) {
@@ -1134,12 +1192,76 @@ function confirmAddItem() {
     if (!label || isNaN(totalRounded) || totalRounded <= 0 || !currentAddSectionId) return;
     pushToUndo();
     if (months > 1) {
-        applyTransaction({ type: 'add_item', sid: currentAddSectionId, label, splitMonths: months, totalPrice: totalRounded });
+        applyTransaction({ type: 'add_item', sid: currentAddSectionId, label, splitMonths: months, totalPrice: totalRounded, expectedPaymentDay: expectedPaymentDay });
     } else {
-        applyTransaction({ type: 'add_item', sid: currentAddSectionId, label, amount: totalRounded });
+        applyTransaction({ type: 'add_item', sid: currentAddSectionId, label, amount: totalRounded, expectedPaymentDay: expectedPaymentDay });
     }
     commitFullRefresh();
     closeAddItemTool();
+}
+
+function populateExpectedPaymentDaySelect(selectEl, selectedDay, includeNoneOption) {
+    if (!selectEl) return;
+    var normalizedDay = typeof normalizeExpectedPaymentDay === 'function'
+        ? normalizeExpectedPaymentDay(selectedDay)
+        : null;
+    var html = '';
+    if (includeNoneOption !== false) {
+        html += '<option value="">No expected date</option>';
+    }
+    for (var day = 1; day <= 31; day++) {
+        var label = typeof getOrdinalDayLabel === 'function' ? getOrdinalDayLabel(day) : String(day);
+        html += '<option value="' + day + '"' + (normalizedDay === day ? ' selected' : '') + '>' + label + ' of each month</option>';
+    }
+    selectEl.innerHTML = html;
+    if (!normalizedDay && includeNoneOption !== false) selectEl.value = '';
+}
+
+function openMiniBudgetPaymentDayModal(sid, idx) {
+    var sec = (state.categories || []).find(function (entry) { return entry && entry.id === sid; });
+    var item = sec && sec.items ? sec.items[idx] : null;
+    if (!item) return;
+    currentPaymentDayTarget = { sid: sid, idx: idx };
+    var titleEl = document.getElementById('mini-budget-payment-day-title');
+    var subtitleEl = document.getElementById('mini-budget-payment-day-subtitle');
+    var selectEl = document.getElementById('mini-budget-payment-day-select');
+    if (titleEl) titleEl.textContent = item.label || 'Mini-budget';
+    if (subtitleEl) {
+        var status = typeof getExpectedPaymentStatus === 'function' ? getExpectedPaymentStatus(item.expectedPaymentDay) : null;
+        subtitleEl.textContent = status
+            ? (status.isDueToday ? 'Due today. Expect this payment now.' : 'Currently expected on ' + status.nextDateLabel + '.')
+            : 'Choose the day of the month you expect this payment.';
+    }
+    populateExpectedPaymentDaySelect(selectEl, item.expectedPaymentDay, true);
+    toggleModal('mini-budget-payment-day-modal', true);
+}
+
+function closeMiniBudgetPaymentDayModal() {
+    toggleModal('mini-budget-payment-day-modal', false);
+}
+
+function applyMiniBudgetPaymentDay() {
+    var sid = currentPaymentDayTarget && currentPaymentDayTarget.sid;
+    var idx = currentPaymentDayTarget && currentPaymentDayTarget.idx;
+    if (sid == null || idx == null) return;
+    var selectEl = document.getElementById('mini-budget-payment-day-select');
+    var expectedPaymentDay = selectEl ? normalizeExpectedPaymentDay(selectEl.value) : null;
+    pushToUndo();
+    applyTransaction({ type: 'update_item_expected_payment_day', sid: sid, idx: idx, expectedPaymentDay: expectedPaymentDay });
+    saveState();
+    if (typeof refreshUI === 'function') refreshUI();
+    closeMiniBudgetPaymentDayModal();
+}
+
+function clearMiniBudgetPaymentDay() {
+    var sid = currentPaymentDayTarget && currentPaymentDayTarget.sid;
+    var idx = currentPaymentDayTarget && currentPaymentDayTarget.idx;
+    if (sid == null || idx == null) return;
+    pushToUndo();
+    applyTransaction({ type: 'update_item_expected_payment_day', sid: sid, idx: idx, expectedPaymentDay: null });
+    saveState();
+    if (typeof refreshUI === 'function') refreshUI();
+    closeMiniBudgetPaymentDayModal();
 }
 
 /** Move funds from a locked split-goal line to Extra (surplus). Full release clears amortData when balance hits zero. */
@@ -1159,6 +1281,10 @@ function releaseSplitGoalFunds(label) {
 window.releaseSplitGoalFunds = releaseSplitGoalFunds;
 window.updateAddItemCalc = updateAddItemCalc;
 window.openAddItemTool = openAddItemTool;
+window.openMiniBudgetPaymentDayModal = openMiniBudgetPaymentDayModal;
+window.closeMiniBudgetPaymentDayModal = closeMiniBudgetPaymentDayModal;
+window.applyMiniBudgetPaymentDay = applyMiniBudgetPaymentDay;
+window.clearMiniBudgetPaymentDay = clearMiniBudgetPaymentDay;
 
 // Delete Items
 function openDeleteModal(sid, idx) {

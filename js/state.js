@@ -76,6 +76,7 @@ let dragType = null;
 let currentAddSectionId = null;
 let itemToDelete = null;
 let currentAmort = { sid: null, idx: null };
+let currentPaymentDayTarget = { sid: null, idx: null };
 let activeCat = null;
 let undoStack = [];
 let redoStack = [];
@@ -466,6 +467,19 @@ function migrateLabelRename() {
     });
 }
 
+function normalizeMiniBudgetPaymentDays() {
+    (state.categories || []).forEach(function (sec) {
+        (sec.items || []).forEach(function (item) {
+            if (!item) return;
+            var normalizedDay = typeof normalizeExpectedPaymentDay === 'function'
+                ? normalizeExpectedPaymentDay(item.expectedPaymentDay)
+                : null;
+            if (normalizedDay) item.expectedPaymentDay = normalizedDay;
+            else delete item.expectedPaymentDay;
+        });
+    });
+}
+
 function migrateState() {
     const schema = state.schemaVersion || 1;
     if (schema >= 2) {
@@ -523,6 +537,7 @@ function migrateState() {
             if (state.balances[label] !== undefined) delete state.balances[label];
         });
         normalizePaycheckPriorityOrder();
+        normalizeMiniBudgetPaymentDays();
         state.schemaVersion = 2;
         return;
     }
@@ -574,6 +589,7 @@ function migrateState() {
     if (!Array.isArray(state._deletedTransportationBuckets)) state._deletedTransportationBuckets = [];
     ensureGeneralSavingsBucketState();
     normalizePaycheckPriorityOrder();
+    normalizeMiniBudgetPaymentDays();
 }
 
 function isAccountLabel(label) {
