@@ -1302,7 +1302,9 @@ body.theme-dark .bucket-dropdown button:hover {
     background: rgba(255, 255, 255, 0.17);
 }
 .major-fund-wide-card-copy {
+    flex: 1 1 auto;
     min-width: 0;
+    max-width: 100%;
 }
 .major-fund-wide-card-label {
     display: block;
@@ -1313,12 +1315,15 @@ body.theme-dark .bucket-dropdown button:hover {
 }
 .major-fund-wide-card-amount {
     margin-top: 0.3rem;
-    font-size: clamp(1.2rem, 2.8vw, 2rem);
+    font-size: clamp(1.05rem, 2vw, 1.6rem);
     font-weight: 900;
     line-height: 1.15;
     word-break: normal;
     overflow-wrap: normal;
     white-space: nowrap;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .major-fund-wide-card-action {
     width: 100%;
@@ -1344,7 +1349,7 @@ body.theme-dark .bucket-dropdown button:hover {
         align-self: stretch;
     }
     .major-fund-wide-card-amount {
-        font-size: clamp(1.35rem, 2vw, 1.8rem);
+        font-size: clamp(1.15rem, 1.6vw, 1.55rem);
         line-height: 1.05;
     }
 }
