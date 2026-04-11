@@ -1511,9 +1511,6 @@ function renderMiniBudgetTransferGroups(mode) {
     var groups = getMiniBudgetTransferGroups(mode);
     ui.panel._miniTransferGroups = groups;
     if (!ui.panel._miniTransferExpanded) ui.panel._miniTransferExpanded = {};
-    if (mode === 'send' && groups.length && Object.keys(ui.panel._miniTransferExpanded).length === 0) {
-        ui.panel._miniTransferExpanded[groups[0].id] = true;
-    }
     if (!groups.length) {
         ui.list.innerHTML = '';
         ui.empty.classList.remove('hidden');
@@ -1653,7 +1650,7 @@ function setMiniBudgetTransferMode(mode) {
     ui.panel.classList.remove('hidden');
     ui.panel.setAttribute('data-mode', mode === 'receive' ? 'receive' : 'send');
     ui.panel._miniTransferExpanded = {};
-    ui.title.textContent = mode === 'receive' ? 'Sources' : 'Destinations';
+    ui.title.textContent = 'Choose a group';
     ui.hint.textContent = mode === 'receive'
         ? 'Choose a source group, then select where funds should come from.'
         : 'Choose a destination group, then select a target item.';
@@ -4331,9 +4328,6 @@ function renderBucketTransferGroups(contextName, bucketKey, mode) {
     var groups = getBucketTransferGroupData(contextName, bucketKey, mode);
     ui.modal._bucketTransferGroups = groups;
     if (!ui.modal._bucketTransferExpanded) ui.modal._bucketTransferExpanded = {};
-    if (groups.length && Object.keys(ui.modal._bucketTransferExpanded).length === 0) {
-        ui.modal._bucketTransferExpanded[groups[0].id] = true;
-    }
     if (!groups.length) {
         ui.targets.innerHTML = '';
         ui.empty.classList.remove('hidden');
@@ -4377,7 +4371,7 @@ function renderBucketTransferModal() {
     if (ui.currency) ui.currency.textContent = getCurrencyLabel();
     if (ui.sendBtn) ui.sendBtn.classList.toggle('is-active', mode === 'send');
     if (ui.receiveBtn) ui.receiveBtn.classList.toggle('is-active', mode === 'receive');
-    if (ui.pickerTitle) ui.pickerTitle.textContent = mode === 'send' ? 'Send to' : 'Receive from';
+    if (ui.pickerTitle) ui.pickerTitle.textContent = 'Choose a group';
     if (ui.pickerHint) ui.pickerHint.textContent = mode === 'send'
         ? 'Choose a destination group, then select a bucket or category item.'
         : 'Choose a source group, then select where funds should come from.';
@@ -4618,11 +4612,8 @@ function renderSavingsBuckets() {
             '</div>' +
             '<div class="ledger-bar-actions bucket-row-controls flex items-center gap-1.5 flex-shrink-0">' +
             '<input type="number" class="bucket-amount-input ledger-bar-amount w-14 sm:w-16 h-8 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-200" placeholder="0" min="0" step="any" inputmode="decimal" autocomplete="off">' +
-            '<div class="flex flex-col gap-0 rounded-lg border border-slate-200 overflow-hidden bg-slate-50/80">' +
-            '<button type="button" class="bucket-stepper-minus w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none border-t border-slate-200" data-dir="-1" aria-label="Subtract">−</button>' +
-            '</div>' +
+            '<button type="button" class="bucket-stepper-minus w-8 h-8 rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 flex items-center justify-center text-sm font-bold transition leading-none" data-dir="-1" aria-label="Subtract">−</button>' +
             '<button type="button" onclick="var b=this.closest(\'.bucket-row\'); var k=b.getAttribute(\'data-bucket-key\'); var v=b.querySelector(\'.bucket-amount-input\'); openBucketTransferModal(\'savings\', k, v?v.value:\'\');" class="h-8 w-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-sm font-bold transition" title="Open bucket options">⋯</button>' +
-            '<button type="button" class="bucket-row-apply ledger-bar-complete flex-shrink-0 w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center text-sm font-bold hover:bg-emerald-600 transition shadow-sm" title="Apply amount">✓</button>' +
             '</div></div>';
     }).join('');
 
@@ -4648,18 +4639,11 @@ function renderSavingsBuckets() {
                 return;
             }
 
-            var stepperBtn = e.target.closest('.bucket-stepper-plus, .bucket-stepper-minus');
+            var stepperBtn = e.target.closest('.bucket-stepper-minus');
             if (stepperBtn) {
                 var dir = parseInt(stepperBtn.getAttribute('data-dir'), 10);
                 var input = row.querySelector('.bucket-amount-input');
                 if (dir && input) applySavingsBucketDelta(key, dir, input);
-                return;
-            }
-
-            var applyBtn = e.target.closest('.bucket-row-apply');
-            if (applyBtn) {
-                var input = row.querySelector('.bucket-amount-input');
-                if (input) applySavingsBucketDelta(key, 1, input);
                 return;
             }
         });
@@ -4971,12 +4955,8 @@ function renderTransportationBuckets() {
             '</div>' +
             '<div class="ledger-bar-actions bucket-row-controls flex items-center gap-1.5 flex-shrink-0">' +
             '<input type="number" class="bucket-amount-input ledger-bar-amount w-14 sm:w-16 h-8 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-slate-200" placeholder="0" min="0" step="any" inputmode="decimal" autocomplete="off">' +
-            '<div class="flex flex-col gap-0 rounded-lg border border-slate-200 overflow-hidden bg-slate-50/80">' +
-            '<button type="button" class="bucket-stepper-plus w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none" data-dir="1" aria-label="Add">+</button>' +
-            '<button type="button" class="bucket-stepper-minus w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none border-t border-slate-200" data-dir="-1" aria-label="Subtract">−</button>' +
-            '</div>' +
+            '<button type="button" class="bucket-stepper-minus w-8 h-8 rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 flex items-center justify-center text-sm font-bold transition leading-none" data-dir="-1" aria-label="Subtract">−</button>' +
             '<button type="button" onclick="var b=this.closest(\'.bucket-row\'); var k=b.getAttribute(\'data-bucket-key\'); var v=b.querySelector(\'.bucket-amount-input\'); openBucketTransferModal(\'transportation\', k, v?v.value:\'\');" class="h-8 w-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-sm font-bold transition" title="Open bucket options">⋯</button>' +
-            '<button type="button" class="bucket-row-apply ledger-bar-complete flex-shrink-0 w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center text-sm font-bold hover:bg-emerald-600 transition shadow-sm" title="Apply amount">✓</button>' +
             '</div></div>';
     }).join('');
 
@@ -5001,18 +4981,11 @@ function renderTransportationBuckets() {
                 return;
             }
 
-            var stepperBtn = e.target.closest('.bucket-stepper-plus, .bucket-stepper-minus');
+            var stepperBtn = e.target.closest('.bucket-stepper-minus');
             if (stepperBtn) {
                 var dir = parseInt(stepperBtn.getAttribute('data-dir'), 10);
                 var input = row.querySelector('.bucket-amount-input');
                 if (dir && input) applyTransportationBucketDelta(key, dir, input);
-                return;
-            }
-
-            var applyBtn = e.target.closest('.bucket-row-apply');
-            if (applyBtn) {
-                var input = row.querySelector('.bucket-amount-input');
-                if (input) applyTransportationBucketDelta(key, 1, input);
                 return;
             }
         });
@@ -5300,12 +5273,8 @@ function renderPayablesBuckets() {
             '</div>' +
             '<div class="ledger-bar-actions bucket-row-controls flex items-center gap-1.5 flex-shrink-0">' +
             '<input type="number" class="bucket-amount-input ledger-bar-amount w-14 sm:w-16 h-8 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-amber-200" placeholder="0" min="0" step="any" inputmode="decimal" autocomplete="off">' +
-            '<div class="flex flex-col gap-0 rounded-lg border border-slate-200 overflow-hidden bg-slate-50/80">' +
-            '<button type="button" class="bucket-stepper-plus w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none" data-dir="1" aria-label="Add">+</button>' +
-            '<button type="button" class="bucket-stepper-minus w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none border-t border-slate-200" data-dir="-1" aria-label="Subtract">−</button>' +
-            '</div>' +
+            '<button type="button" class="bucket-stepper-minus w-8 h-8 rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 flex items-center justify-center text-sm font-bold transition leading-none" data-dir="-1" aria-label="Subtract">−</button>' +
             '<button type="button" onclick="var b=this.closest(\'.bucket-row\'); var k=b.getAttribute(\'data-bucket-key\'); var v=b.querySelector(\'.bucket-amount-input\'); openBucketTransferModal(\'payables\', k, v?v.value:\'\');" class="h-8 w-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-sm font-bold transition" title="Open bucket options">⋯</button>' +
-            '<button type="button" class="bucket-row-apply ledger-bar-complete flex-shrink-0 w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center text-sm font-bold hover:bg-emerald-600 transition shadow-sm" title="Apply amount">✓</button>' +
             '</div></div>';
     }).join('');
 
@@ -5330,18 +5299,11 @@ function renderPayablesBuckets() {
                 return;
             }
 
-            var stepperBtn = e.target.closest('.bucket-stepper-plus, .bucket-stepper-minus');
+            var stepperBtn = e.target.closest('.bucket-stepper-minus');
             if (stepperBtn) {
                 var dir = parseInt(stepperBtn.getAttribute('data-dir'), 10);
                 var input = row.querySelector('.bucket-amount-input');
                 if (dir && input) applyPayablesBucketDelta(key, dir, input);
-                return;
-            }
-
-            var applyBtn = e.target.closest('.bucket-row-apply');
-            if (applyBtn) {
-                var input = row.querySelector('.bucket-amount-input');
-                if (input) applyPayablesBucketDelta(key, 1, input);
                 return;
             }
         });

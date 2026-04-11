@@ -1354,34 +1354,51 @@ body.theme-dark .bucket-dropdown button:hover {
     width: min(42rem, calc(100vw - 1.5rem));
     max-width: 42rem;
 }
+/* Bucket transfer/detail modal gets the same roomy desktop width. */
+#bucket-transfer-modal .modal-content {
+    width: min(40rem, calc(100vw - 1.5rem));
+    max-width: 40rem;
+}
 @media (min-width: 1024px) {
     #savings-buckets-modal .modal-content,
     #transportation-buckets-modal .modal-content,
     #payables-buckets-modal .modal-content {
-        width: min(48rem, calc(100vw - 3rem));
-        max-width: 48rem;
+        width: min(56rem, calc(100vw - 3rem));
+        max-width: 56rem;
+    }
+    #bucket-transfer-modal .modal-content {
+        width: min(54rem, calc(100vw - 3rem));
+        max-width: 54rem;
     }
     #savings-buckets-modal .premium-card,
     #transportation-buckets-modal .premium-card,
     #payables-buckets-modal .premium-card {
-        padding-left: 1.1rem;
-        padding-right: 1.1rem;
+        padding-left: 1.25rem;
+        padding-right: 1.25rem;
     }
     #savings-buckets-modal .bucket-row-card,
     #transportation-buckets-modal .bucket-row-card,
     #payables-buckets-modal .bucket-row-card {
+        flex-wrap: nowrap;
+        align-items: center;
         padding-left: 1rem;
         padding-right: 1rem;
     }
     #savings-buckets-modal .bucket-amount-input,
     #transportation-buckets-modal .bucket-amount-input,
     #payables-buckets-modal .bucket-amount-input {
-        width: 4rem;
+        width: 4.5rem;
     }
     #savings-buckets-modal .bucket-row-balance,
     #transportation-buckets-modal .bucket-row-balance,
     #payables-buckets-modal .bucket-row-balance {
-        font-size: 1.1rem;
+        font-size: 1.15rem;
+    }
+    #savings-buckets-modal .bucket-row-controls,
+    #transportation-buckets-modal .bucket-row-controls,
+    #payables-buckets-modal .bucket-row-controls {
+        flex: 0 0 auto;
+        gap: 0.5rem;
     }
 }
 body.theme-dark .bucket-detail-balance-card,
