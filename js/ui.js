@@ -559,7 +559,7 @@ function getMiniBudgetPaymentBadgeHtml(item) {
     if (!item || typeof getExpectedPaymentStatus !== 'function') return '';
     var status = getExpectedPaymentStatus(item.expectedPaymentDay);
     if (!status) return '';
-    var label = status.isDueToday ? 'Due today' : ('Next ' + status.nextDateLabel);
+    var label = status.isDueToday ? 'Due today' : ('Expected ' + status.nextDateLabel);
     var title = status.isDueToday
         ? 'Expected payment is due today (' + status.ordinalLabel + ' of the month).'
         : 'Expected on the ' + status.ordinalLabel + ' of each month. Next: ' + status.nextDateLabel + '.';
@@ -573,8 +573,14 @@ function getMiniBudgetScheduleSetupButtonHtml(sid, idx, item) {
     var title = status
         ? ('Expected payment date saved: ' + status.nextDateLabel)
         : 'Set expected payment day';
-    var label = status ? 'Date set' : 'Set date';
-    return '<button type="button" onclick="event.stopPropagation(); openMiniBudgetPaymentDayModal(\'' + escapeAttr(sid) + '\', ' + idx + ')" class="payment-day-trigger" title="' + escapeAttr(title) + '" aria-label="' + escapeAttr(title) + '">' + escapeHtml(label) + '</button>';
+    var buttonLabel = status ? 'Edit date' : 'Set date';
+    var savedBadge = status
+        ? '<span class="payment-day-setup-value" title="' + escapeAttr(title) + '">' + escapeHtml(status.nextDateLabel) + '</span>'
+        : '';
+    return '<span class="payment-day-setup-wrap">' +
+        savedBadge +
+        '<button type="button" onclick="event.stopPropagation(); openMiniBudgetPaymentDayModal(\'' + escapeAttr(sid) + '\', ' + idx + ')" class="payment-day-trigger" title="' + escapeAttr(title) + '" aria-label="' + escapeAttr(title) + '">' + escapeHtml(buttonLabel) + '</button>' +
+        '</span>';
 }
 
 function renderStrategy(opts) {
@@ -1197,41 +1203,6 @@ function renderLedger() {
 
     var majorLabels = typeof MAJOR_FUND_LABELS !== 'undefined' ? MAJOR_FUND_LABELS : ['Weekly Allowance', 'Daily Food', 'Savings', 'Transportation', 'Payables'];
     var skipLabels = majorLabels.slice();
-    var dueTodayEntries = [];
-    (state.categories || []).forEach(function (sec) {
-        (sec.items || []).forEach(function (item, idx) {
-            if (!item || skipLabels.indexOf(item.label) !== -1) return;
-            var status = typeof getExpectedPaymentStatus === 'function' ? getExpectedPaymentStatus(item.expectedPaymentDay) : null;
-            if (!status || !status.isDueToday) return;
-            dueTodayEntries.push({
-                sid: sec.id,
-                idx: idx,
-                label: item.label,
-                category: sec.label,
-                amount: getItemBalance(item.label, 0)
-            });
-        });
-    });
-    if (dueTodayEntries.length) {
-        var dueTodayHtml = dueTodayEntries.map(function (entry) {
-            return '<button type="button" onclick="openMiniBudgetPaymentDayModal(\'' + escapeAttr(entry.sid) + '\',' + entry.idx + ')" class="mini-budget-due-chip">' +
-                '<span class="mini-budget-due-chip-label">' + escapeHtml(entry.label) + '</span>' +
-                '<span class="mini-budget-due-chip-meta">' + escapeHtml(entry.category) + ' · ' + formatMoney(entry.amount) + '</span>' +
-                '</button>';
-        }).join('');
-        container.innerHTML += `
-            <div class="mini-budget-due-card premium-card p-4 mb-4 border border-rose-200 bg-rose-50/80">
-                <div class="flex items-start justify-between gap-3">
-                    <div>
-                        <p class="text-[10px] font-black uppercase tracking-widest text-rose-600">Due today</p>
-                        <h3 class="text-sm font-black text-slate-900 mt-1">Expect ${dueTodayEntries.length} mini-budget payment${dueTodayEntries.length === 1 ? '' : 's'} today.</h3>
-                        <p class="text-[11px] font-semibold text-slate-600 mt-1">These categories are scheduled for this date.</p>
-                    </div>
-                </div>
-                <div class="mini-budget-due-chip-row mt-3">${dueTodayHtml}</div>
-            </div>
-        `;
-    }
 
     // Create categorical dropdowns matching the strategy structure
     var hideEmpty = !!state.settings?.hideEmptyCategories;

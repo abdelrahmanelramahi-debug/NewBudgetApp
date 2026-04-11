@@ -1232,6 +1232,9 @@ function openMiniBudgetPaymentDayModal(sid, idx) {
             ? ('Saved for ' + status.nextDateLabel + '. This is a reminder date only and does not change balances.')
             : 'Choose the day of the month you expect this payment.';
     }
+    var modal = document.getElementById('mini-budget-payment-day-modal');
+    var closeBtn = modal ? modal.querySelector('button[aria-label="Close"]') : null;
+    if (closeBtn) closeBtn.textContent = 'x';
     populateExpectedPaymentDaySelect(selectEl, item.expectedPaymentDay, true);
     toggleModal('mini-budget-payment-day-modal', true);
 }
@@ -1306,6 +1309,8 @@ function openTool(label, displayTitle, autoTransfer = false, prefillAmount, sid,
     activeCat = label;
     currentToolItemContext = { sid: sid != null ? sid : null, idx: idx != null ? idx : null };
     document.getElementById('tool-title').innerText = displayTitle || label;
+    var toolCloseBtn = document.getElementById('tool-close-btn');
+    if (toolCloseBtn) toolCloseBtn.textContent = 'x';
 
     var amountInput = document.getElementById('tool-value');
     if (label === 'Surplus' && autoTransfer) {

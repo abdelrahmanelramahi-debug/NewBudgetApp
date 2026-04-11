@@ -2218,38 +2218,25 @@ body.theme-dark .food-overflow-row-complete .food-overflow-label {
     background: #ffe4e6;
     color: #be123c;
 }
-.mini-budget-due-card {
-    box-shadow: 0 18px 36px -28px rgba(225, 29, 72, 0.7);
-}
-.mini-budget-due-chip-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-}
-.mini-budget-due-chip {
+.payment-day-setup-wrap {
     display: inline-flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.15rem;
-    min-width: 0;
-    padding: 0.7rem 0.85rem;
-    border-radius: 0.9rem;
-    border: 1px solid #fecdd3;
-    background: rgba(255, 255, 255, 0.92);
-    color: #881337;
+    align-items: center;
+    gap: 0.4rem;
 }
-.mini-budget-due-chip-label {
-    font-size: 11px;
+.payment-day-setup-value {
+    display: inline-flex;
+    align-items: center;
+    height: 2rem;
+    padding: 0 0.7rem;
+    border-radius: 0.6rem;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1d4ed8;
+    font-size: 10px;
     font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
 }
-.mini-budget-due-chip-meta {
-    font-size: 11px;
-    font-weight: 700;
-    color: #475569;
-}
-
 .food-week-tab:focus {
     outline: none;
 }
