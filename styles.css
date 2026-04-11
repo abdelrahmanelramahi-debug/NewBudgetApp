@@ -1685,7 +1685,7 @@ textarea,
 
     /* Constrain width; main area scrolls so home header can stick to top */
     #app-main {
-        max-width: 42rem;
+        max-width: 62rem;
         min-height: 0;
         max-height: 100vh;
         overflow-y: auto;
