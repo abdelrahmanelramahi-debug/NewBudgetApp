@@ -1131,7 +1131,7 @@ function renderLedger() {
                 </div>
             </div>
             <!-- Desktop: three compact cards (≥640px); display toggled in styles.css -->
-            <div class="major-funds-desktop-stack hidden sm:grid">
+            <div class="major-funds-desktop-stack">
                 <div class="major-fund-bar flex items-center justify-between gap-2 py-2.5 px-3 rounded-xl bg-indigo-600 text-white border border-indigo-500">
                     <div class="flex items-center gap-2 min-w-0">
                         <span class="flex-shrink-0 w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
