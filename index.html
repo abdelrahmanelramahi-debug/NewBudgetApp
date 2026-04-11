@@ -1288,16 +1288,18 @@
                     <button id="tool-action-deduct-btn" class="flex-1 py-4 bg-red-500 text-white rounded-xl text-[10px] font-black uppercase shadow-lg shadow-red-100">Deduct</button>
                     <button id="tool-action-add-btn" class="flex-1 py-4 bg-emerald-500 text-white rounded-xl text-[10px] font-black uppercase shadow-lg shadow-emerald-100">Add</button>
                     <button id="tool-action-transfer-btn" class="flex-1 py-4 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase shadow-lg shadow-indigo-100">Transfer</button>
+                    <button id="tool-action-receive-btn" class="hidden flex-1 py-4 bg-indigo-100 text-indigo-700 rounded-xl text-[10px] font-black uppercase border border-indigo-200">Receive from</button>
                 </div>
                 <button id="tool-payment-day-btn" class="hidden w-full py-3 border border-slate-200 bg-slate-50 text-slate-700 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-100 transition">Set expected date</button>
 
                 <!-- Transfer Interface (Hidden by default) -->
                 <div id="tool-transfer-interface" class="hidden space-y-3 bg-slate-50 p-4 rounded-xl">
-                    <div class="flex justify-between items-center">
-                        <p class="text-[10px] font-bold text-slate-400 uppercase">Transfer To:</p>
-                        <button id="tool-transfer-cancel-btn" class="text-[10px] font-bold text-slate-400 hover:text-slate-600">Cancel</button>
+                    <div class="bucket-detail-picker-head">
+                        <p id="tool-transfer-title" class="bucket-detail-picker-title">Send to</p>
+                        <p id="tool-transfer-hint" class="bucket-detail-picker-hint">Choose a destination group, then select a target item.</p>
                     </div>
-                    <div id="transfer-target-list" class="space-y-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar"></div>
+                    <div id="transfer-target-list" class="bucket-transfer-targets max-h-56 overflow-y-auto pr-1 custom-scrollbar"></div>
+                    <p id="tool-transfer-empty" class="bucket-transfer-empty hidden">No sources or destinations are available right now.</p>
                 </div>
             </div>
             <div id="category-history-log" class="mt-6 space-y-2 border-t border-slate-100 pt-4"></div>

@@ -169,7 +169,7 @@ window.onload = function() {
         bindClick('tool-action-deduct-btn', function () { executeAction('deduct'); });
         bindClick('tool-action-add-btn', function () { executeAction('add'); });
         bindClick('tool-action-transfer-btn', function () { toggleTransferMode(); });
-        bindClick('tool-transfer-cancel-btn', function () { toggleTransferMode(); });
+        bindClick('tool-action-receive-btn', function () { executeAction('receive'); });
     }
 
     loadState();

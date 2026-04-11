@@ -1330,9 +1330,17 @@ function openTool(label, displayTitle, autoTransfer = false, prefillAmount, sid,
     const std = document.getElementById('tool-actions-standard');
     const trf = document.getElementById('tool-transfer-interface');
     const paymentBtn = document.getElementById('tool-payment-day-btn');
+    const addBtn = document.getElementById('tool-action-add-btn');
+    const transferBtn = document.getElementById('tool-action-transfer-btn');
+    const receiveBtn = document.getElementById('tool-action-receive-btn');
 
     std.classList.remove('hidden');
     trf.classList.add('hidden');
+    if (trf) {
+        trf.setAttribute('data-mode', 'send');
+        trf._miniTransferGroups = [];
+        trf._miniTransferExpanded = {};
+    }
     if (paymentBtn) {
         var sec = sid != null ? (state.categories || []).find(function (entry) { return entry && entry.id === sid; }) : null;
         var item = (sec && sec.items && idx != null) ? sec.items[idx] : null;
@@ -1349,21 +1357,48 @@ function openTool(label, displayTitle, autoTransfer = false, prefillAmount, sid,
             paymentBtn.onclick = null;
         }
     }
+    var isMiniContext = isMiniBudgetToolContext();
+    if (addBtn) addBtn.classList.toggle('hidden', isMiniContext);
+    if (receiveBtn) receiveBtn.classList.toggle('hidden', !isMiniContext);
+    if (transferBtn) transferBtn.textContent = isMiniContext ? 'Send to' : 'Transfer';
+    if (isMiniContext) {
+        setMiniBudgetTransferMode('send');
+    }
 
     toggleModal('input-tool', true);
     renderCategoryHistory();
 
     // Auto Open Transfer Mode if requested
     if(autoTransfer) {
-        toggleTransferMode();
+        if (isMiniContext) {
+            setMiniBudgetTransferMode('send');
+        } else {
+            toggleTransferMode();
+        }
     }
 }
 function closeTool() { toggleModal('input-tool', false); }
+
+function isMiniBudgetToolContext() {
+    if (!currentToolItemContext || currentToolItemContext.sid == null || currentToolItemContext.idx == null) return false;
+    var sec = (state.categories || []).find(function (entry) { return entry && entry.id === currentToolItemContext.sid; });
+    if (!sec || !Array.isArray(sec.items)) return false;
+    var item = sec.items[currentToolItemContext.idx];
+    if (!item || item.isCore) return false;
+    if (!item.label || item.label !== activeCat) return false;
+    if (item.label === 'Savings' || item.label === 'Payables' || item.label === 'Transportation') return false;
+    if (item.label === 'Weekly Allowance' || item.label === 'Daily Food' || item.label === 'Surplus') return false;
+    return true;
+}
 
 function toggleTransferMode() {
     const std = document.getElementById('tool-actions-standard');
     const trf = document.getElementById('tool-transfer-interface');
     const list = document.getElementById('transfer-target-list');
+    if (isMiniBudgetToolContext()) {
+        setMiniBudgetTransferMode('send');
+        return;
+    }
 
     if(trf.classList.contains('hidden')) {
         std.classList.add('hidden');
@@ -1372,6 +1407,272 @@ function toggleTransferMode() {
     } else {
         std.classList.remove('hidden');
         trf.classList.add('hidden');
+    }
+}
+
+function getMiniBudgetTransferElements() {
+    return {
+        panel: document.getElementById('tool-transfer-interface'),
+        title: document.getElementById('tool-transfer-title'),
+        hint: document.getElementById('tool-transfer-hint'),
+        list: document.getElementById('transfer-target-list'),
+        empty: document.getElementById('tool-transfer-empty')
+    };
+}
+
+function getMiniBudgetTransferGroups(mode) {
+    var groups = [];
+    var sec = (state.categories || []).find(function (entry) { return entry && entry.id === currentToolItemContext.sid; });
+    if (!sec || !Array.isArray(sec.items)) return groups;
+    var currentLabel = activeCat;
+    var siblingOptions = sec.items.filter(function (item) {
+        if (!item || !item.label || item.label === currentLabel) return false;
+        if (item.isCore) return false;
+        var amount = getItemBalance(item.label, item.amount || 0);
+        return mode !== 'receive' || amount > 0.001;
+    }).map(function (item) {
+        return {
+            type: 'item',
+            label: item.label,
+            amount: getItemBalance(item.label, item.amount || 0)
+        };
+    });
+    if (siblingOptions.length) {
+        groups.push({
+            id: 'siblings',
+            title: 'This Category',
+            subtitle: siblingOptions.length + ' sibling item' + (siblingOptions.length === 1 ? '' : 's'),
+            options: siblingOptions
+        });
+    }
+
+    var extraAmount = Number((state.accounts && state.accounts.surplus) || 0);
+    if (mode === 'send' || extraAmount > 0.001) {
+        groups.push({
+            id: 'extra',
+            title: 'Extra',
+            subtitle: mode === 'send' ? 'Move money into Extra' : formatMoney(extraAmount) + ' available',
+            options: [{ type: 'extra', label: 'Extra', amount: extraAmount }]
+        });
+    }
+
+    var weeklyOptions = [];
+    for (var week = 1; week <= WEEKLY_MAX_WEEKS; week++) {
+        var weekAmount = getWeeklyBalance(week);
+        if (mode === 'send' || weekAmount > 0.001) {
+            weeklyOptions.push({
+                type: 'weekly_week',
+                week: week,
+                label: 'Week ' + week,
+                amount: weekAmount
+            });
+        }
+    }
+    if (weeklyOptions.length) {
+        groups.push({
+            id: 'weekly',
+            title: 'Weekly Allowance',
+            subtitle: 'Pick a week',
+            options: weeklyOptions
+        });
+    }
+
+    (state.categories || []).forEach(function (category) {
+        if (!category || !Array.isArray(category.items)) return;
+        if (category.id === sec.id) return;
+        if (String(category.id || '').indexOf('sys_') === 0) return;
+        var options = category.items.filter(function (item) {
+            if (!item || !item.label || item.isCore) return false;
+            if (item.label === 'Savings' || item.label === 'Transportation' || item.label === 'Payables' || item.label === 'Daily Food' || item.label === getWeeklyLabel()) return false;
+            var amount = getItemBalance(item.label, item.amount || 0);
+            return mode === 'send' || amount > 0.001;
+        }).map(function (item) {
+            return {
+                type: 'item',
+                label: item.label,
+                amount: getItemBalance(item.label, item.amount || 0)
+            };
+        });
+        if (!options.length) return;
+        groups.push({
+            id: 'category-' + category.id,
+            title: category.label || 'Category',
+            subtitle: options.length + ' item' + (options.length === 1 ? '' : 's'),
+            options: options
+        });
+    });
+
+    return groups;
+}
+
+function renderMiniBudgetTransferGroups(mode) {
+    var ui = getMiniBudgetTransferElements();
+    if (!ui.panel || !ui.list || !ui.empty) return;
+    var groups = getMiniBudgetTransferGroups(mode);
+    ui.panel._miniTransferGroups = groups;
+    if (!ui.panel._miniTransferExpanded) ui.panel._miniTransferExpanded = {};
+    if (groups.length && Object.keys(ui.panel._miniTransferExpanded).length === 0) {
+        ui.panel._miniTransferExpanded[groups[0].id] = true;
+    }
+    if (!groups.length) {
+        ui.list.innerHTML = '';
+        ui.empty.classList.remove('hidden');
+        return;
+    }
+    ui.empty.classList.add('hidden');
+    ui.list.innerHTML = groups.map(function (group, groupIndex) {
+        var isOpen = !!ui.panel._miniTransferExpanded[group.id];
+        var optionsHtml = group.options.map(function (option, optionIndex) {
+            var idx = String(groupIndex) + ':' + String(optionIndex);
+            return '<button type="button" class="bucket-transfer-option" data-mini-option-ref="' + idx + '">' +
+                '<span class="bucket-transfer-option-label">' + escapeHtml(option.label) + '</span>' +
+                '<span class="bucket-transfer-option-meta">' + formatMoney(option.amount || 0) + '</span>' +
+            '</button>';
+        }).join('');
+        return '<div class="bucket-transfer-group ' + (isOpen ? 'is-open' : '') + '" data-mini-group-id="' + escapeAttr(group.id) + '">' +
+            '<button type="button" class="bucket-transfer-group-toggle" data-mini-group-toggle="' + escapeAttr(group.id) + '">' +
+                '<span class="bucket-transfer-group-meta">' +
+                    '<span class="bucket-transfer-group-title">' + escapeHtml(group.title) + '</span>' +
+                    '<span class="bucket-transfer-group-subtitle">' + escapeHtml(group.subtitle) + '</span>' +
+                '</span>' +
+                '<span class="bucket-transfer-group-chevron">></span>' +
+            '</button>' +
+            '<div class="bucket-transfer-group-items">' + optionsHtml + '</div>' +
+        '</div>';
+    }).join('');
+}
+
+function getMiniBudgetTransferOptionFromRef(ref) {
+    var ui = getMiniBudgetTransferElements();
+    var parts = String(ref || '').split(':');
+    if (!ui.panel || parts.length !== 2) return null;
+    var groups = ui.panel._miniTransferGroups || [];
+    var group = groups[parseInt(parts[0], 10)];
+    if (!group) return null;
+    return group.options[parseInt(parts[1], 10)] || null;
+}
+
+function runMiniBudgetTransferSelection(mode, option, amount) {
+    if (!option) return false;
+    if (mode === 'send' && typeof isSplitGoalLocked === 'function' && isSplitGoalLocked(activeCat)) {
+        if (typeof showAppAlert === 'function') showAppAlert('This line is a locked split goal. Reach the target, or use Unlock early on the ledger.');
+        return false;
+    }
+    var currentAmount = getItemBalance(activeCat, 0);
+    var take = 0;
+    if (mode === 'send') {
+        if (currentAmount <= 0.001) {
+            if (typeof showAppAlert === 'function') showAppAlert('This item is already at 0.00.');
+            return false;
+        }
+        take = Math.min(amount, currentAmount);
+        pushToUndo();
+        if (option.type === 'extra') {
+            applyTransaction({ type: 'transfer', from: activeCat, to: 'Surplus', amount: take });
+            logHistory(activeCat, -take, 'Send to Extra');
+            logHistory('Surplus', take, 'Receive from ' + activeCat);
+            return true;
+        }
+        if (option.type === 'weekly_week') {
+            applyTransaction({ type: 'transfer', from: activeCat, to: 'weekly_week_' + option.week, amount: take });
+            logHistory(activeCat, -take, 'Send to Week ' + option.week);
+            logHistory(getWeeklyLabel(), take, 'Receive from ' + activeCat);
+            return true;
+        }
+        applyTransaction({ type: 'transfer', from: activeCat, to: option.label, amount: take });
+        logHistory(activeCat, -take, 'Send to ' + option.label);
+        logHistory(option.label, take, 'Receive from ' + activeCat);
+        return true;
+    }
+
+    if (option.type === 'extra') {
+        var extraAmount = Number((state.accounts && state.accounts.surplus) || 0);
+        if (extraAmount <= 0.001) {
+            if (typeof showAppAlert === 'function') showAppAlert('Extra has no funds available right now.');
+            return false;
+        }
+        take = Math.min(amount, extraAmount);
+        pushToUndo();
+        applyTransaction({ type: 'transfer', from: 'Surplus', to: activeCat, amount: take });
+        logHistory('Surplus', -take, 'Send to ' + activeCat);
+        logHistory(activeCat, take, 'Receive from Extra');
+        return true;
+    }
+    if (option.type === 'weekly_week') {
+        var weekAvailable = getWeeklyBalance(option.week);
+        if (weekAvailable <= 0.001) {
+            if (typeof showAppAlert === 'function') showAppAlert('That week has no available balance right now.');
+            return false;
+        }
+        take = Math.min(amount, weekAvailable);
+        pushToUndo();
+        setWeeklyBalance(option.week, weekAvailable - take);
+        adjustItemBalance(getWeeklyLabel(), -take);
+        adjustItemBalance(activeCat, take);
+        logHistory(getWeeklyLabel(), -take, 'Send to ' + activeCat);
+        logHistory(activeCat, take, 'Receive from Week ' + option.week);
+        return true;
+    }
+    if (typeof isSplitGoalLocked === 'function' && isSplitGoalLocked(option.label)) {
+        if (typeof showAppAlert === 'function') showAppAlert('This source line is a locked split goal. Use Unlock early on the ledger first.');
+        return false;
+    }
+    var itemAvailable = getItemBalance(option.label, 0);
+    if (itemAvailable <= 0.001) {
+        if (typeof showAppAlert === 'function') showAppAlert('There is nothing available in that item right now.');
+        return false;
+    }
+    take = Math.min(amount, itemAvailable);
+    pushToUndo();
+    applyTransaction({ type: 'transfer', from: option.label, to: activeCat, amount: take });
+    logHistory(option.label, -take, 'Send to ' + activeCat);
+    logHistory(activeCat, take, 'Receive from ' + option.label);
+    return true;
+}
+
+function executeMiniBudgetTransferSelection(option) {
+    if (!isMiniBudgetToolContext()) return;
+    var ui = getMiniBudgetTransferElements();
+    var rawAmount = document.getElementById('tool-value') ? document.getElementById('tool-value').value : '';
+    var amount = parseFloat(rawAmount);
+    if (!amount || amount <= 0) {
+        if (typeof showAppAlert === 'function') showAppAlert('Enter an amount before choosing where funds should move.');
+        return;
+    }
+    var mode = (ui.panel && ui.panel.getAttribute('data-mode')) === 'receive' ? 'receive' : 'send';
+    if (!runMiniBudgetTransferSelection(mode, option, amount)) return;
+    saveState();
+    if (typeof refreshUI === 'function') refreshUI();
+    closeTool();
+}
+
+function setMiniBudgetTransferMode(mode) {
+    if (!isMiniBudgetToolContext()) return;
+    var ui = getMiniBudgetTransferElements();
+    if (!ui.panel || !ui.title || !ui.hint) return;
+    ui.panel.classList.remove('hidden');
+    ui.panel.setAttribute('data-mode', mode === 'receive' ? 'receive' : 'send');
+    ui.title.textContent = mode === 'receive' ? 'Receive from' : 'Send to';
+    ui.hint.textContent = mode === 'receive'
+        ? 'Choose a source group, then select where funds should come from.'
+        : 'Choose a destination group, then select a target item.';
+    renderMiniBudgetTransferGroups(mode === 'receive' ? 'receive' : 'send');
+    if (!ui.panel._miniTransferWired) {
+        ui.panel._miniTransferWired = true;
+        ui.panel.addEventListener('click', function (e) {
+            var groupToggle = e.target.closest('[data-mini-group-toggle]');
+            if (groupToggle) {
+                var groupId = groupToggle.getAttribute('data-mini-group-toggle');
+                if (!ui.panel._miniTransferExpanded) ui.panel._miniTransferExpanded = {};
+                ui.panel._miniTransferExpanded[groupId] = !ui.panel._miniTransferExpanded[groupId];
+                renderMiniBudgetTransferGroups(ui.panel.getAttribute('data-mode') === 'receive' ? 'receive' : 'send');
+                return;
+            }
+            var optionBtn = e.target.closest('[data-mini-option-ref]');
+            if (!optionBtn) return;
+            var option = getMiniBudgetTransferOptionFromRef(optionBtn.getAttribute('data-mini-option-ref'));
+            executeMiniBudgetTransferSelection(option);
+        });
     }
 }
 
@@ -1464,6 +1765,25 @@ function executeTransfer(targetId) {
 
 function executeAction(type) {
     const val = parseFloat(document.getElementById('tool-value').value);
+    if (isMiniBudgetToolContext()) {
+        if (type === 'add') {
+            if (typeof showAppAlert === 'function') showAppAlert('Use "Receive from" to move funds into this item.');
+            return;
+        }
+        if (type === 'transfer') {
+            setMiniBudgetTransferMode('send');
+            return;
+        }
+        if (type === 'receive') {
+            setMiniBudgetTransferMode('receive');
+            return;
+        }
+        if (!val || val <= 0) return;
+        if (type === 'deduct') {
+            burnActiveMiniBudgetItem(val);
+            return;
+        }
+    }
     if(val) {
         if (activeCat === 'Surplus') {
             const delta = type === 'deduct' ? -val : val;
@@ -1480,6 +1800,27 @@ function executeAction(type) {
         pushToUndo();
         applySurplusOrItemFromTool(type, val);
     }
+}
+
+function burnActiveMiniBudgetItem(amount) {
+    if (typeof isSplitGoalLocked === 'function' && isSplitGoalLocked(activeCat)) {
+        if (typeof showAppAlert === 'function') {
+            showAppAlert('This line is a locked split goal. Reach the target, or use Unlock early on the ledger.');
+        }
+        return;
+    }
+    var current = getItemBalance(activeCat, 0);
+    if (current <= 0.001) {
+        if (typeof showAppAlert === 'function') showAppAlert('This item is already at 0.00.');
+        return;
+    }
+    var take = Math.min(amount, current);
+    pushToUndo();
+    applyTransaction({ type: 'adjust_item_balance', label: activeCat, delta: -take });
+    logHistory(activeCat, -take, 'Deduct');
+    saveState();
+    if (typeof refreshUI === 'function') refreshUI();
+    closeTool();
 }
 
 function applySurplusOrItemFromTool(type, val) {
@@ -1511,9 +1852,17 @@ function applyItemAdjustment(label, amountStr, type) {
         }
         return;
     }
+    if (type === 'deduct') {
+        var current = getItemBalance(label, 0);
+        if (current <= 0.001) {
+            if (typeof showAppAlert === 'function') showAppAlert('This item is already at 0.00.');
+            return;
+        }
+        mod = -Math.min(val, current);
+    }
     pushToUndo();
     applyTransaction({ type: 'adjust_item_balance', label: label, delta: mod });
-    logHistory(label, mod, 'Manual');
+    logHistory(label, mod, type === 'deduct' ? 'Deduct' : 'Manual');
     saveState();
     if (typeof refreshUI === 'function') refreshUI();
 }
