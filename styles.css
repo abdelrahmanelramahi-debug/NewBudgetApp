@@ -1363,6 +1363,9 @@ body.theme-dark .bucket-dropdown button:hover {
         font-size: clamp(1.15rem, 1.6vw, 1.55rem);
         line-height: 1.05;
     }
+    .major-fund-wide-card-copy {
+        margin-left: -0.2rem;
+    }
 }
 #savings-buckets-modal .modal-content,
 #transportation-buckets-modal .modal-content,
