@@ -1633,7 +1633,7 @@ function executeMiniBudgetTransferSelection(mode) {
     if (!isMiniBudgetToolContext()) return;
     var option = getMiniBudgetSelectedTransferOption();
     if (!option) {
-        if (typeof showAppAlert === 'function') showAppAlert('Choose a group item first, then use Send to or Receive from.');
+        if (typeof showAppAlert === 'function') showAppAlert('Choose a source item first, then use Send to or Receive from.');
         return;
     }
     var rawAmount = document.getElementById('tool-value') ? document.getElementById('tool-value').value : '';
@@ -1653,8 +1653,8 @@ function setMiniBudgetTransferMode() {
     var ui = getMiniBudgetTransferElements();
     if (!ui.panel || !ui.title || !ui.hint) return;
     ui.panel.classList.remove('hidden');
-    ui.title.textContent = 'Choose a group';
-    ui.hint.textContent = 'Choose a group item once, then use Send to or Receive from.';
+    ui.title.textContent = 'Choose a source';
+    ui.hint.textContent = 'Choose a source item once, then use Send to or Receive from.';
     renderMiniBudgetTransferGroups();
     if (!ui.panel._miniTransferWired) {
         ui.panel._miniTransferWired = true;
@@ -4363,8 +4363,8 @@ function renderBucketTransferModal() {
     if (ui.name) ui.name.textContent = bucketKey;
     if (ui.balance) ui.balance.textContent = formatMoney(amount);
     if (ui.currency) ui.currency.textContent = getCurrencyLabel();
-    if (ui.pickerTitle) ui.pickerTitle.textContent = 'Choose a group';
-    if (ui.pickerHint) ui.pickerHint.textContent = 'Choose a group item once, then use Send to or Receive from.';
+    if (ui.pickerTitle) ui.pickerTitle.textContent = 'Choose a source';
+    if (ui.pickerHint) ui.pickerHint.textContent = 'Choose a source item once, then use Send to or Receive from.';
     renderBucketTransferGroups(contextName, bucketKey);
     renderBucketTransferHistory(contextName, bucketKey);
 }
@@ -4399,7 +4399,7 @@ function executeBucketTransferSelection(mode) {
     var option = getBucketTransferSelectedOption();
     if (!ui.modal) return;
     if (!option) {
-        if (typeof showAppAlert === 'function') showAppAlert('Choose a group item first, then use Send to or Receive from.');
+        if (typeof showAppAlert === 'function') showAppAlert('Choose a source item first, then use Send to or Receive from.');
         return;
     }
     var contextName = ui.modal.getAttribute('data-context');
