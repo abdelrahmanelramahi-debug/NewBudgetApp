@@ -1137,9 +1137,7 @@ function renderLedger() {
                         <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                     </div>
                     <div class="major-fund-wide-card-main">
-                        <div class="major-fund-wide-card-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                        </div>
+                        <div class="major-fund-wide-card-icon major-fund-wide-card-icon-hidden" aria-hidden="true"></div>
                         <div class="major-fund-wide-card-copy">
                             <span class="major-fund-wide-card-label text-slate-900">Savings</span>
                             <div class="major-fund-wide-card-amount"><span class="major-fund-wide-card-amount-value" data-major-fund="savings">${formatMoney(savBal)}</span><span class="major-fund-wide-card-amount-currency text-sm text-indigo-200">${getCurrencyLabel()}</span></div>
@@ -1152,9 +1150,7 @@ function renderLedger() {
                         <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
                     </div>
                     <div class="major-fund-wide-card-main">
-                        <div class="major-fund-wide-card-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
-                        </div>
+                        <div class="major-fund-wide-card-icon major-fund-wide-card-icon-hidden" aria-hidden="true"></div>
                         <div class="major-fund-wide-card-copy">
                             <span class="major-fund-wide-card-label text-slate-300">Transportation</span>
                             <div class="major-fund-wide-card-amount"><span class="major-fund-wide-card-amount-value" data-major-fund="transportation">${formatMoney(carBal)}</span><span class="major-fund-wide-card-amount-currency text-sm text-slate-400">${getCurrencyLabel()}</span></div>
@@ -1167,9 +1163,7 @@ function renderLedger() {
                         <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><path d="M4 8h16"/><path d="M6 12h12"/><path d="M8 16h8"/><path d="M10 20h4"/></svg>
                     </div>
                     <div class="major-fund-wide-card-main">
-                        <div class="major-fund-wide-card-icon">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><path d="M4 8h16"/><path d="M6 12h12"/><path d="M8 16h8"/><path d="M10 20h4"/></svg>
-                        </div>
+                        <div class="major-fund-wide-card-icon major-fund-wide-card-icon-hidden" aria-hidden="true"></div>
                         <div class="major-fund-wide-card-copy">
                             <span class="major-fund-wide-card-label text-slate-900">Payables</span>
                             <div class="major-fund-wide-card-amount text-slate-900"><span class="major-fund-wide-card-amount-value" data-major-fund="payables">${formatMoney(payBal)}</span><span class="major-fund-wide-card-amount-currency text-sm text-slate-700">${getCurrencyLabel()}</span></div>

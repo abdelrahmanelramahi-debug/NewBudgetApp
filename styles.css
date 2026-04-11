@@ -1301,6 +1301,9 @@ body.theme-dark .bucket-dropdown button:hover {
     flex-shrink: 0;
     background: rgba(255, 255, 255, 0.17);
 }
+.major-fund-wide-card-icon-hidden {
+    opacity: 0;
+}
 .major-fund-wide-card-copy {
     flex: 1 1 auto;
     min-width: 0;
