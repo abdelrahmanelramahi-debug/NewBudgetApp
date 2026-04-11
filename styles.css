@@ -888,35 +888,26 @@ body.theme-dark .bank-balance-info-btn:hover { background: #334155; color: #e2e8
     border-color: #94a3b8;
     box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.2);
 }
-.bucket-stepper {
-    display: flex;
-    flex-direction: column;
-    border-radius: 8px;
-    overflow: hidden;
-    border: 1px solid #e2e8f0;
-    background: #f8fafc;
-    flex-shrink: 0;
-}
-.bucket-stepper button {
-    width: 2rem;
-    height: 1.375rem;
+.bucket-stepper-minus {
+    width: 2.25rem;
+    height: 2rem;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.9375rem;
-    font-weight: 700;
-    color: #64748b;
-    background: #f8fafc;
-    border: none;
-    border-bottom: 1px solid #e2e8f0;
+    font-size: 1rem;
+    font-weight: 800;
+    color: #dc2626;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
     cursor: pointer;
     padding: 0;
     line-height: 1;
+    flex-shrink: 0;
 }
-.bucket-stepper button:last-child { border-bottom: none; }
-.bucket-stepper button:hover {
-    background: #e2e8f0;
-    color: #0f172a;
+.bucket-stepper-minus:hover {
+    background: #fee2e2;
+    color: #b91c1c;
 }
 .bucket-more-btn {
     width: 2rem;
@@ -936,6 +927,10 @@ body.theme-dark .bank-balance-info-btn:hover { background: #334155; color: #e2e8
 .bucket-more-btn:hover {
     background: #e2e8f0;
     color: #475569;
+}
+.bucket-stepper-plus,
+.bucket-row-apply {
+    display: none !important;
 }
 .bucket-more-wrap {
     position: relative;
@@ -993,18 +988,14 @@ body.theme-dark .bucket-amount-input {
     border-color: #475569;
     color: #e2e8f0;
 }
-body.theme-dark .bucket-stepper {
-    background: #1e293b;
-    border-color: #475569;
+body.theme-dark .bucket-stepper-minus {
+    background: rgba(127, 29, 29, 0.28);
+    border-color: rgba(248, 113, 113, 0.45);
+    color: #fda4af;
 }
-body.theme-dark .bucket-stepper button {
-    background: #1e293b;
-    color: #94a3b8;
-    border-color: #334155;
-}
-body.theme-dark .bucket-stepper button:hover {
-    background: #334155;
-    color: #e2e8f0;
+body.theme-dark .bucket-stepper-minus:hover {
+    background: rgba(127, 29, 29, 0.42);
+    color: #fecdd3;
 }
 body.theme-dark .bucket-more-btn {
     background: #334155;
@@ -1024,6 +1015,325 @@ body.theme-dark .bucket-dropdown button {
 }
 body.theme-dark .bucket-dropdown button:hover {
     background: #334155;
+}
+.bucket-detail-balance-card {
+    padding: 1rem 1.1rem;
+    border-radius: 1.25rem;
+    background: #f8fafc;
+}
+.bucket-detail-amount-input {
+    width: 100%;
+    border: none;
+    background: transparent;
+    color: #0f172a;
+    font-size: 2.2rem;
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    outline: none;
+    padding: 0;
+}
+.bucket-detail-amount-input::placeholder {
+    color: #94a3b8;
+}
+.bucket-detail-balance-row {
+    display: flex;
+    align-items: baseline;
+    justify-content: flex-end;
+    gap: 0.35rem;
+    margin-top: 0.75rem;
+}
+.bucket-detail-balance {
+    font-size: 1.3rem;
+    font-weight: 900;
+    color: #0f172a;
+}
+.bucket-detail-currency {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+.bucket-detail-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+.bucket-detail-mode-btn {
+    border: none;
+    border-radius: 1rem;
+    padding: 0.95rem 0.75rem;
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: transform 0.16s ease, filter 0.16s ease, box-shadow 0.16s ease;
+}
+.bucket-detail-mode-btn:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.03);
+}
+.bucket-detail-mode-send {
+    background: #4f46e5;
+    box-shadow: 0 16px 28px rgba(79, 70, 229, 0.18);
+}
+.bucket-detail-mode-receive {
+    background: #10b981;
+    box-shadow: 0 16px 28px rgba(16, 185, 129, 0.18);
+}
+.bucket-detail-mode-btn.is-active {
+    outline: 3px solid rgba(15, 23, 42, 0.08);
+}
+.bucket-detail-picker {
+    border: 1px solid #e2e8f0;
+    border-radius: 1.25rem;
+    background: #fff;
+    padding: 0.95rem;
+}
+.bucket-detail-picker-head {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin-bottom: 0.85rem;
+}
+.bucket-detail-picker-title,
+.bucket-detail-history-label {
+    margin: 0;
+    font-size: 0.67rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.11em;
+    color: #64748b;
+}
+.bucket-detail-picker-hint {
+    margin: 0;
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: #64748b;
+    line-height: 1.35;
+}
+.bucket-transfer-targets {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+.bucket-transfer-group {
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    overflow: hidden;
+    background: #f8fafc;
+}
+.bucket-transfer-group-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.8rem 0.9rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+}
+.bucket-transfer-group-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 0;
+}
+.bucket-transfer-group-title {
+    font-size: 0.76rem;
+    font-weight: 900;
+    color: #0f172a;
+}
+.bucket-transfer-group-subtitle {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #64748b;
+}
+.bucket-transfer-group-chevron {
+    font-size: 0.85rem;
+    font-weight: 900;
+    color: #64748b;
+    transition: transform 0.14s ease;
+}
+.bucket-transfer-group-items {
+    display: none;
+    border-top: 1px solid #e2e8f0;
+    background: #fff;
+}
+.bucket-transfer-group.is-open .bucket-transfer-group-items {
+    display: block;
+}
+.bucket-transfer-group.is-open .bucket-transfer-group-chevron {
+    transform: rotate(90deg);
+}
+.bucket-transfer-option {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.85rem 0.95rem;
+    border: none;
+    border-bottom: 1px solid #f1f5f9;
+    background: #fff;
+    text-align: left;
+    cursor: pointer;
+}
+.bucket-transfer-option:last-child {
+    border-bottom: none;
+}
+.bucket-transfer-option:hover {
+    background: #f8fafc;
+}
+.bucket-transfer-option-label {
+    min-width: 0;
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #0f172a;
+}
+.bucket-transfer-option-meta {
+    flex-shrink: 0;
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: #64748b;
+}
+.bucket-transfer-empty {
+    margin: 0.85rem 0 0;
+    padding: 0.8rem 0.9rem;
+    border-radius: 0.95rem;
+    background: #f8fafc;
+    color: #94a3b8;
+    font-size: 0.76rem;
+    font-weight: 700;
+}
+.bucket-detail-history-wrap {
+    margin-top: 1rem;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 1rem;
+}
+.bucket-detail-history-list {
+    margin-top: 0.75rem;
+}
+.bucket-detail-history-item {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.7rem 0;
+    border-bottom: 1px solid #f8fafc;
+}
+.bucket-detail-history-item:last-child {
+    border-bottom: none;
+}
+.bucket-detail-history-res {
+    font-size: 0.72rem;
+    font-weight: 900;
+    color: #64748b;
+    text-transform: uppercase;
+}
+.bucket-detail-history-note {
+    margin-top: 0.15rem;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #94a3b8;
+}
+.bucket-detail-history-amt {
+    font-size: 0.78rem;
+    font-weight: 900;
+}
+.bucket-detail-history-amt.is-positive {
+    color: #10b981;
+}
+.bucket-detail-history-amt.is-negative {
+    color: #ef4444;
+}
+.major-funds-desktop-stack {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.9rem;
+}
+.major-fund-wide-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem;
+    padding: 1.2rem 1.35rem;
+    min-height: 7.5rem;
+}
+.major-fund-wide-card-main {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-width: 0;
+    flex: 1;
+}
+.major-fund-wide-card-icon {
+    width: 3.25rem;
+    height: 3.25rem;
+    border-radius: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.17);
+}
+.major-fund-wide-card-copy {
+    min-width: 0;
+}
+.major-fund-wide-card-label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+}
+.major-fund-wide-card-amount {
+    margin-top: 0.3rem;
+    font-size: 2rem;
+    font-weight: 900;
+    line-height: 1;
+}
+.major-fund-wide-card-action {
+    width: auto;
+    min-width: 8rem;
+    padding: 0.85rem 1rem;
+    border-radius: 0.95rem;
+}
+body.theme-dark .bucket-detail-balance-card,
+body.theme-dark .bucket-transfer-group,
+body.theme-dark .bucket-transfer-option,
+body.theme-dark .bucket-detail-picker {
+    background: #0f172a;
+    border-color: #334155;
+}
+body.theme-dark .bucket-detail-amount-input,
+body.theme-dark .bucket-detail-balance,
+body.theme-dark .bucket-transfer-option-label,
+body.theme-dark .bucket-transfer-group-title {
+    color: #f8fafc;
+}
+body.theme-dark .bucket-detail-currency,
+body.theme-dark .bucket-detail-picker-title,
+body.theme-dark .bucket-detail-picker-hint,
+body.theme-dark .bucket-transfer-group-subtitle,
+body.theme-dark .bucket-transfer-option-meta,
+body.theme-dark .bucket-detail-history-res,
+body.theme-dark .bucket-detail-history-note {
+    color: #94a3b8;
+}
+body.theme-dark .bucket-transfer-group-items {
+    background: #0f172a;
+    border-top-color: #334155;
+}
+body.theme-dark .bucket-transfer-option {
+    border-bottom-color: #1e293b;
+}
+body.theme-dark .bucket-transfer-option:hover {
+    background: #111827;
 }
 
 body.theme-dark .food-calendar-buffer {

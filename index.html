@@ -1154,7 +1154,7 @@
                 <span class="text-[10px] font-bold uppercase tracking-widest text-indigo-500">Savings</span>
                 <button id="savings-buckets-close-btn" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
             </div>
-            <p class="text-xs text-slate-500 mb-4">Move money between buckets or to/from Extra and Weekly.</p>
+            <p class="text-xs text-slate-500 mb-4">Deduct from each bucket directly, or use the menu to send and receive funds.</p>
 
             <div class="premium-card p-4 border border-slate-200 rounded-xl mb-4">
                 <div class="flex justify-between items-center mb-3 pb-3 border-b border-slate-100">
@@ -1178,7 +1178,7 @@
                 <span class="text-[10px] font-bold uppercase tracking-widest text-slate-600">Transportation</span>
                 <button id="transportation-buckets-close-btn" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
             </div>
-            <p class="text-xs text-slate-500 mb-4">Move money between buckets or to/from Extra and Weekly.</p>
+            <p class="text-xs text-slate-500 mb-4">Deduct from each bucket directly, or use the menu to send and receive funds.</p>
 
             <div class="premium-card p-4 border border-slate-200 rounded-xl mb-4">
                 <div class="flex justify-between items-center mb-3 pb-3 border-b border-slate-100">
@@ -1202,7 +1202,7 @@
                 <span class="text-[10px] font-bold uppercase tracking-widest text-amber-600">Payables</span>
                 <button id="payables-buckets-close-btn" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
             </div>
-            <p class="text-xs text-slate-500 mb-4">Move money between buckets or to/from Extra and Weekly.</p>
+            <p class="text-xs text-slate-500 mb-4">Deduct from each bucket directly, or use the menu to send and receive funds.</p>
 
             <div class="premium-card p-4 border border-amber-200 rounded-xl mb-4">
                 <div class="flex justify-between items-center mb-3 pb-3 border-b border-amber-100">
@@ -1220,24 +1220,38 @@
     </div>
 
     <!-- Bucket transfer modal (from 3-dots → Transfer in Savings or Payables) -->
-    <div id="bucket-transfer-modal" class="modal-overlay hidden" data-context="" data-bucket-key="">
+    <div id="bucket-transfer-modal" class="modal-overlay hidden" data-context="" data-bucket-key="" data-mode="send">
         <div class="modal-content">
             <div class="flex justify-between items-center mb-2">
-                <span id="bucket-transfer-title" class="text-[10px] font-bold uppercase tracking-widest text-slate-600">Transfer</span>
+                <span id="bucket-transfer-title" class="text-[10px] font-bold uppercase tracking-widest text-slate-600">Category</span>
                 <button type="button" id="bucket-transfer-close-btn" class="p-2 bg-slate-100 rounded-full text-slate-500">✕</button>
             </div>
-            <p class="text-xs text-slate-500 mb-4">Choose destination and amount.</p>
-            <div class="space-y-3">
-                <div>
-                    <label for="bucket-transfer-to" class="text-[9px] font-bold uppercase text-slate-500 block mb-1">To</label>
-                    <select id="bucket-transfer-to" name="bucket-transfer-to" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold outline-none"></select>
+            <h3 id="bucket-transfer-name" class="text-xl font-black text-slate-900 mb-5">Bucket</h3>
+            <div class="bucket-detail-balance-card mb-4">
+                <input type="number" id="bucket-transfer-amount" name="bucket-transfer-amount" placeholder="0.00" class="bucket-detail-amount-input" min="0" step="any" autocomplete="off">
+                <div class="bucket-detail-balance-row">
+                    <span id="bucket-transfer-balance" class="bucket-detail-balance">0.00</span>
+                    <span id="bucket-transfer-currency" class="bucket-detail-currency" data-currency>AED</span>
                 </div>
-                <div>
-                    <label for="bucket-transfer-amount" class="text-[9px] font-bold uppercase text-slate-500 block mb-1">Amount</label>
-                    <input type="number" id="bucket-transfer-amount" name="bucket-transfer-amount" placeholder="0" class="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-sm font-bold outline-none" min="0" step="any" autocomplete="off">
+            </div>
+            <div class="bucket-detail-actions">
+                <button type="button" id="bucket-transfer-send-btn" class="bucket-detail-mode-btn bucket-detail-mode-send">Send to</button>
+                <button type="button" id="bucket-transfer-receive-btn" class="bucket-detail-mode-btn bucket-detail-mode-receive">Receive from</button>
+            </div>
+            <div class="bucket-detail-picker">
+                <div class="bucket-detail-picker-head">
+                    <p id="bucket-transfer-picker-title" class="bucket-detail-picker-title">Send to</p>
+                    <p id="bucket-transfer-picker-hint" class="bucket-detail-picker-hint">Choose a destination group, then select a bucket or category item.</p>
                 </div>
-                <button type="button" id="bucket-transfer-btn" class="w-full py-3 bg-indigo-600 text-white rounded-xl text-xs font-bold uppercase hover:bg-indigo-700 transition">Transfer</button>
-                <button type="button" id="bucket-transfer-delete-btn" class="w-full py-2 mt-2 text-[10px] font-bold text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition">Delete bucket</button>
+                <div id="bucket-transfer-targets" class="bucket-transfer-targets"></div>
+                <p id="bucket-transfer-empty" class="bucket-transfer-empty hidden">No sources or destinations are available right now.</p>
+            </div>
+            <button type="button" id="bucket-transfer-delete-btn" class="w-full py-2 mt-4 text-[10px] font-bold text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition">Delete bucket</button>
+            <div class="bucket-detail-history-wrap">
+                <div class="bucket-detail-history-head">
+                    <p class="bucket-detail-history-label">History</p>
+                </div>
+                <div id="bucket-transfer-history" class="bucket-detail-history-list"></div>
             </div>
         </div>
     </div>

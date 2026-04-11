@@ -3723,6 +3723,65 @@ function getBucketStore(ctx) {
     return state.accounts[ctx.bucketsKey];
 }
 
+function getBucketContextLabel(contextName) {
+    if (contextName === 'savings') return 'Savings';
+    if (contextName === 'transportation') return 'Transportation';
+    return 'Payables';
+}
+
+function getBucketHistoryKey(contextName, bucketKey) {
+    return getBucketContextLabel(contextName) + ': ' + bucketKey;
+}
+
+function moveBucketHistoryKey(contextName, oldName, newName) {
+    if (!state.histories) state.histories = {};
+    var oldKey = getBucketHistoryKey(contextName, oldName);
+    var newKey = getBucketHistoryKey(contextName, newName);
+    if (!state.histories[oldKey]) return;
+    state.histories[newKey] = state.histories[oldKey];
+    delete state.histories[oldKey];
+}
+
+function getBucketAmountByContext(contextName, bucketKey) {
+    return getBucketValue(getBucketContext(contextName), bucketKey);
+}
+
+function renderBucketsForContext(contextName) {
+    if (contextName === 'savings') renderSavingsBuckets();
+    else if (contextName === 'transportation') renderTransportationBuckets();
+    else renderPayablesBuckets();
+}
+
+function refreshBucketContextUI(contextName) {
+    saveState();
+    renderBucketsForContext(contextName);
+    if (typeof updateGlobalUI === 'function') updateGlobalUI();
+    if (typeof renderStrategy === 'function') renderStrategy();
+}
+
+function logBucketHistory(contextName, bucketKey, amt, res, note) {
+    logHistory(getBucketHistoryKey(contextName, bucketKey), amt, res, note);
+}
+
+function burnBucketAmount(contextName, bucketKey, rawAmount) {
+    var val = parseFloat(rawAmount);
+    if (!val || val <= 0) {
+        if (typeof showAppAlert === 'function') showAppAlert('Enter an amount to deduct from this bucket.');
+        return false;
+    }
+    var available = getBucketAmountByContext(contextName, bucketKey);
+    if (available <= 0.001) {
+        if (typeof showAppAlert === 'function') showAppAlert('This bucket is already at 0.00.');
+        return false;
+    }
+    var take = Math.min(val, available);
+    pushToUndo();
+    adjustBucketValue(getBucketContext(contextName), bucketKey, -take);
+    logBucketHistory(contextName, bucketKey, -take, 'Deduct');
+    refreshBucketContextUI(contextName);
+    return true;
+}
+
 function adjustBucketValue(ctx, bucketKey, delta) {
     var store = getBucketStore(ctx);
     if (store[bucketKey] === undefined) store[bucketKey] = 0;
@@ -3790,6 +3849,340 @@ function transferBucketToWeekly(ctx, fromBucketKey, amount) {
     pushToUndo();
     adjustBucketValue(ctx, fromBucketKey, -take);
     adjustItemBalance(getWeeklyLabel(), take);
+    return true;
+}
+
+function getBucketTransferModalElements() {
+    return {
+        modal: document.getElementById('bucket-transfer-modal'),
+        title: document.getElementById('bucket-transfer-title'),
+        name: document.getElementById('bucket-transfer-name'),
+        amount: document.getElementById('bucket-transfer-amount'),
+        balance: document.getElementById('bucket-transfer-balance'),
+        currency: document.getElementById('bucket-transfer-currency'),
+        sendBtn: document.getElementById('bucket-transfer-send-btn'),
+        receiveBtn: document.getElementById('bucket-transfer-receive-btn'),
+        pickerTitle: document.getElementById('bucket-transfer-picker-title'),
+        pickerHint: document.getElementById('bucket-transfer-picker-hint'),
+        targets: document.getElementById('bucket-transfer-targets'),
+        empty: document.getElementById('bucket-transfer-empty'),
+        history: document.getElementById('bucket-transfer-history')
+    };
+}
+
+function getBucketTransferGroupData(contextName, bucketKey, mode) {
+    ensureAccountsState();
+    var groups = [];
+    var store = getBucketStore(getBucketContext(contextName));
+    var sameStoreLabel = getBucketContextLabel(contextName) + ' Buckets';
+    var otherBuckets = Object.keys(store).filter(function (key) { return key !== bucketKey; }).map(function (key) {
+        return {
+            type: 'bucket',
+            key: key,
+            label: key,
+            amount: Number(store[key]) || 0
+        };
+    }).filter(function (entry) {
+        return mode !== 'receive' || entry.amount > 0.001;
+    });
+    if (otherBuckets.length) {
+        groups.push({
+            id: 'same-store',
+            title: sameStoreLabel,
+            subtitle: otherBuckets.length + ' option' + (otherBuckets.length === 1 ? '' : 's'),
+            options: otherBuckets
+        });
+    }
+
+    var extraAmount = Number((state.accounts && state.accounts.surplus) || 0);
+    if (mode === 'send' || extraAmount > 0.001) {
+        groups.push({
+            id: 'extra',
+            title: 'Extra',
+            subtitle: mode === 'send' ? 'Move money into Extra' : formatMoney(extraAmount) + ' available',
+            options: [{
+                type: 'extra',
+                label: 'Extra',
+                amount: extraAmount
+            }]
+        });
+    }
+
+    var weeklyOptions = [];
+    for (var week = 1; week <= WEEKLY_MAX_WEEKS; week++) {
+        var weeklyBal = getWeeklyBalance(week);
+        if (mode === 'send' || weeklyBal > 0.001) {
+            weeklyOptions.push({
+                type: 'weekly_week',
+                week: week,
+                label: 'Week ' + week,
+                amount: weeklyBal
+            });
+        }
+    }
+    if (weeklyOptions.length) {
+        groups.push({
+            id: 'weekly',
+            title: 'Weekly Allowance',
+            subtitle: 'Pick a week',
+            options: weeklyOptions
+        });
+    }
+
+    (state.categories || []).forEach(function (sec) {
+        if (!sec || !Array.isArray(sec.items)) return;
+        if (String(sec.id || '').indexOf('sys_') === 0) return;
+        var options = sec.items.filter(function (item) {
+            if (!item || !item.label) return false;
+            if (item.label === 'Savings' || item.label === 'Transportation' || item.label === 'Payables' || item.label === 'Daily Food' || item.label === getWeeklyLabel()) return false;
+            var amount = getItemBalance(item.label, item.amount || 0);
+            return mode === 'send' || amount > 0.001;
+        }).map(function (item) {
+            return {
+                type: 'item',
+                label: item.label,
+                amount: getItemBalance(item.label, item.amount || 0)
+            };
+        });
+        if (!options.length) return;
+        groups.push({
+            id: 'category-' + sec.id,
+            title: sec.label || 'Mini-Budget',
+            subtitle: options.length + ' item' + (options.length === 1 ? '' : 's'),
+            options: options
+        });
+    });
+
+    return groups;
+}
+
+function renderBucketTransferHistory(contextName, bucketKey) {
+    var ui = getBucketTransferModalElements();
+    if (!ui.history) return;
+    var historyKey = getBucketHistoryKey(contextName, bucketKey);
+    var data = (state.histories && state.histories[historyKey]) ? state.histories[historyKey] : [];
+    if (!data.length) {
+        ui.history.innerHTML = '<div class="text-center text-slate-300 text-[10px] py-2">No History</div>';
+        return;
+    }
+    ui.history.innerHTML = data.map(function (entry) {
+        var amtClass = entry.amt < 0 ? 'is-negative' : 'is-positive';
+        var noteHtml = entry.note ? '<div class="bucket-detail-history-note">' + escapeHtml(entry.note) + '</div>' : '';
+        return '<div class="bucket-detail-history-item">' +
+            '<div><div class="bucket-detail-history-res">' + escapeHtml(entry.res || 'Update') + '</div>' + noteHtml + '</div>' +
+            '<div class="bucket-detail-history-amt ' + amtClass + '">' + formatMoney(entry.amt || 0) + '</div>' +
+        '</div>';
+    }).join('');
+}
+
+function renderBucketTransferGroups(contextName, bucketKey, mode) {
+    var ui = getBucketTransferModalElements();
+    if (!ui.targets || !ui.empty || !ui.modal) return;
+    var groups = getBucketTransferGroupData(contextName, bucketKey, mode);
+    ui.modal._bucketTransferGroups = groups;
+    if (!ui.modal._bucketTransferExpanded) ui.modal._bucketTransferExpanded = {};
+    if (groups.length && Object.keys(ui.modal._bucketTransferExpanded).length === 0) {
+        ui.modal._bucketTransferExpanded[groups[0].id] = true;
+    }
+    if (!groups.length) {
+        ui.targets.innerHTML = '';
+        ui.empty.classList.remove('hidden');
+        return;
+    }
+    ui.empty.classList.add('hidden');
+    ui.targets.innerHTML = groups.map(function (group, groupIndex) {
+        var isOpen = !!ui.modal._bucketTransferExpanded[group.id];
+        var optionsHtml = group.options.map(function (option, optionIndex) {
+            var idx = String(groupIndex) + ':' + String(optionIndex);
+            return '<button type="button" class="bucket-transfer-option" data-option-ref="' + idx + '">' +
+                '<span class="bucket-transfer-option-label">' + escapeHtml(option.label) + '</span>' +
+                '<span class="bucket-transfer-option-meta">' + formatMoney(option.amount || 0) + '</span>' +
+            '</button>';
+        }).join('');
+        return '<div class="bucket-transfer-group ' + (isOpen ? 'is-open' : '') + '" data-group-id="' + escapeAttr(group.id) + '">' +
+            '<button type="button" class="bucket-transfer-group-toggle" data-group-toggle="' + escapeAttr(group.id) + '">' +
+                '<span class="bucket-transfer-group-meta">' +
+                    '<span class="bucket-transfer-group-title">' + escapeHtml(group.title) + '</span>' +
+                    '<span class="bucket-transfer-group-subtitle">' + escapeHtml(group.subtitle) + '</span>' +
+                '</span>' +
+                '<span class="bucket-transfer-group-chevron">></span>' +
+            '</button>' +
+            '<div class="bucket-transfer-group-items">' + optionsHtml + '</div>' +
+        '</div>';
+    }).join('');
+}
+
+function renderBucketTransferModal() {
+    var ui = getBucketTransferModalElements();
+    var modal = ui.modal;
+    if (!modal) return;
+    var contextName = modal.getAttribute('data-context');
+    var bucketKey = modal.getAttribute('data-bucket-key');
+    var mode = modal.getAttribute('data-mode') || 'send';
+    if (!contextName || !bucketKey) return;
+    var amount = getBucketAmountByContext(contextName, bucketKey);
+    if (ui.title) ui.title.textContent = getBucketContextLabel(contextName);
+    if (ui.name) ui.name.textContent = bucketKey;
+    if (ui.balance) ui.balance.textContent = formatMoney(amount);
+    if (ui.currency) ui.currency.textContent = getCurrencyLabel();
+    if (ui.sendBtn) ui.sendBtn.classList.toggle('is-active', mode === 'send');
+    if (ui.receiveBtn) ui.receiveBtn.classList.toggle('is-active', mode === 'receive');
+    if (ui.pickerTitle) ui.pickerTitle.textContent = mode === 'send' ? 'Send to' : 'Receive from';
+    if (ui.pickerHint) ui.pickerHint.textContent = mode === 'send'
+        ? 'Choose a destination group, then select a bucket or category item.'
+        : 'Choose a source group, then select where funds should come from.';
+    renderBucketTransferGroups(contextName, bucketKey, mode);
+    renderBucketTransferHistory(contextName, bucketKey);
+}
+
+function setBucketTransferMode(mode) {
+    var ui = getBucketTransferModalElements();
+    if (!ui.modal) return;
+    ui.modal.setAttribute('data-mode', mode === 'receive' ? 'receive' : 'send');
+    renderBucketTransferModal();
+}
+
+function getBucketTransferAmountInputValue() {
+    var ui = getBucketTransferModalElements();
+    return ui.amount ? ui.amount.value : '';
+}
+
+function getBucketTransferOptionFromRef(ref) {
+    var ui = getBucketTransferModalElements();
+    var parts = String(ref || '').split(':');
+    if (!ui.modal || parts.length !== 2) return null;
+    var groups = ui.modal._bucketTransferGroups || [];
+    var group = groups[parseInt(parts[0], 10)];
+    if (!group) return null;
+    return group.options[parseInt(parts[1], 10)] || null;
+}
+
+function executeBucketTransferSelection(option) {
+    var ui = getBucketTransferModalElements();
+    if (!ui.modal || !option) return;
+    var contextName = ui.modal.getAttribute('data-context');
+    var bucketKey = ui.modal.getAttribute('data-bucket-key');
+    var mode = ui.modal.getAttribute('data-mode') || 'send';
+    var rawAmount = getBucketTransferAmountInputValue();
+    var amount = parseFloat(rawAmount);
+    if (!amount || amount <= 0) {
+        if (typeof showAppAlert === 'function') showAppAlert('Enter an amount before choosing where funds should move.');
+        return;
+    }
+    if (!runBucketTransferSelection(contextName, bucketKey, mode, option, amount)) return;
+    if (ui.amount) ui.amount.value = '';
+    refreshBucketContextUI(contextName);
+    renderBucketTransferModal();
+}
+
+function runBucketTransferSelection(contextName, bucketKey, mode, option, amount) {
+    var ctx = getBucketContext(contextName);
+    var store = getBucketStore(ctx);
+    var currentAmount = Number(store[bucketKey]) || 0;
+    var take = 0;
+    var sourceTitle = getBucketHistoryKey(contextName, bucketKey);
+    var targetTitle = option.type === 'item'
+        ? option.label
+        : option.type === 'weekly_week'
+            ? ('Weekly Allowance - Week ' + option.week)
+            : option.type === 'extra'
+                ? 'Extra'
+                : getBucketHistoryKey(contextName, option.key);
+
+    if (mode === 'send') {
+        if (currentAmount <= 0.001) {
+            if (typeof showAppAlert === 'function') showAppAlert('This bucket is already at 0.00.');
+            return false;
+        }
+        take = Math.min(amount, currentAmount);
+        pushToUndo();
+        if (option.type === 'bucket') {
+            store[bucketKey] = currentAmount - take;
+            store[option.key] = (Number(store[option.key]) || 0) + take;
+            ctx.syncTotal();
+            logBucketHistory(contextName, bucketKey, -take, 'Send to', option.key);
+            logBucketHistory(contextName, option.key, take, 'Receive from', bucketKey);
+            return true;
+        }
+        if (option.type === 'extra') {
+            adjustBucketValue(ctx, bucketKey, -take);
+            applyTransaction({ type: 'adjust_surplus', delta: take });
+            logBucketHistory(contextName, bucketKey, -take, 'Send to', 'Extra');
+            return true;
+        }
+        if (option.type === 'weekly_week') {
+            adjustBucketValue(ctx, bucketKey, -take);
+            setWeeklyBalance(option.week, getWeeklyBalance(option.week) + take);
+            adjustItemBalance(getWeeklyLabel(), take);
+            logBucketHistory(contextName, bucketKey, -take, 'Send to', 'Week ' + option.week);
+            logHistory(getWeeklyLabel(), take, 'Trf from ' + sourceTitle);
+            return true;
+        }
+        adjustBucketValue(ctx, bucketKey, -take);
+        adjustItemBalance(option.label, take);
+        logBucketHistory(contextName, bucketKey, -take, 'Send to', option.label);
+        logHistory(option.label, take, 'Trf from ' + sourceTitle);
+        return true;
+    }
+
+    if (option.type === 'bucket') {
+        var sourceBucketAmount = Number(store[option.key]) || 0;
+        if (sourceBucketAmount <= 0.001) {
+            if (typeof showAppAlert === 'function') showAppAlert('There is nothing available in that bucket right now.');
+            return false;
+        }
+        take = Math.min(amount, sourceBucketAmount);
+        pushToUndo();
+        store[option.key] = sourceBucketAmount - take;
+        store[bucketKey] = currentAmount + take;
+        ctx.syncTotal();
+        logBucketHistory(contextName, option.key, -take, 'Send to', bucketKey);
+        logBucketHistory(contextName, bucketKey, take, 'Receive from', option.key);
+        return true;
+    }
+    if (option.type === 'extra') {
+        var surplus = Number((state.accounts && state.accounts.surplus) || 0);
+        if (surplus <= 0.001) {
+            if (typeof showAppAlert === 'function') showAppAlert('Extra has no funds available right now.');
+            return false;
+        }
+        take = Math.min(amount, surplus);
+        pushToUndo();
+        adjustBucketValue(ctx, bucketKey, take);
+        applyTransaction({ type: 'adjust_surplus', delta: -take });
+        logBucketHistory(contextName, bucketKey, take, 'Receive from', 'Extra');
+        return true;
+    }
+    if (option.type === 'weekly_week') {
+        var weekAvailable = getWeeklyBalance(option.week);
+        if (weekAvailable <= 0.001) {
+            if (typeof showAppAlert === 'function') showAppAlert('That week has no available balance right now.');
+            return false;
+        }
+        take = Math.min(amount, weekAvailable);
+        pushToUndo();
+        setWeeklyBalance(option.week, weekAvailable - take);
+        adjustItemBalance(getWeeklyLabel(), -take);
+        adjustBucketValue(ctx, bucketKey, take);
+        logHistory(getWeeklyLabel(), -take, 'Trf to ' + sourceTitle);
+        logBucketHistory(contextName, bucketKey, take, 'Receive from', 'Week ' + option.week);
+        return true;
+    }
+    if (typeof isSplitGoalLocked === 'function' && isSplitGoalLocked(option.label)) {
+        if (typeof showAppAlert === 'function') showAppAlert('This line is a locked split goal. Use Unlock early on the ledger first.');
+        return false;
+    }
+    var itemAvailable = getItemBalance(option.label, 0);
+    if (itemAvailable <= 0.001) {
+        if (typeof showAppAlert === 'function') showAppAlert('There is nothing available in that item right now.');
+        return false;
+    }
+    take = Math.min(amount, itemAvailable);
+    pushToUndo();
+    adjustItemBalance(option.label, -take);
+    adjustBucketValue(ctx, bucketKey, take);
+    logHistory(option.label, -take, 'Trf to ' + sourceTitle);
+    logBucketHistory(contextName, bucketKey, take, 'Receive from', option.label);
     return true;
 }
 
@@ -3876,10 +4269,9 @@ function renderSavingsBuckets() {
             '<div class="ledger-bar-actions bucket-row-controls flex items-center gap-1.5 flex-shrink-0">' +
             '<input type="number" class="bucket-amount-input ledger-bar-amount w-14 sm:w-16 h-8 rounded-lg border border-slate-200 px-2 text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-indigo-200" placeholder="0" min="0" step="any" inputmode="decimal" autocomplete="off">' +
             '<div class="flex flex-col gap-0 rounded-lg border border-slate-200 overflow-hidden bg-slate-50/80">' +
-            '<button type="button" class="bucket-stepper-plus w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none" data-dir="1" aria-label="Add">+</button>' +
             '<button type="button" class="bucket-stepper-minus w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none border-t border-slate-200" data-dir="-1" aria-label="Subtract">−</button>' +
             '</div>' +
-            '<button type="button" onclick="var b=this.closest(\'.bucket-row\'); var k=b.getAttribute(\'data-bucket-key\'); var v=b.querySelector(\'.bucket-amount-input\'); openBucketTransferModal(\'savings\', k, v?v.value:\'\');" class="h-8 w-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-sm font-bold transition" title="Transfer">⋯</button>' +
+            '<button type="button" onclick="var b=this.closest(\'.bucket-row\'); var k=b.getAttribute(\'data-bucket-key\'); var v=b.querySelector(\'.bucket-amount-input\'); openBucketTransferModal(\'savings\', k, v?v.value:\'\');" class="h-8 w-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-sm font-bold transition" title="Open bucket options">⋯</button>' +
             '<button type="button" class="bucket-row-apply ledger-bar-complete flex-shrink-0 w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center text-sm font-bold hover:bg-emerald-600 transition shadow-sm" title="Apply amount">✓</button>' +
             '</div></div>';
     }).join('');
@@ -3979,25 +4371,11 @@ function renderSavingsBuckets() {
 }
 
 function applySavingsBucketDelta(bucketKey, dir, amountEl) {
-    var el = amountEl || document.getElementById('savings-bucket-amount');
-    var val = el ? parseFloat(el.value) : NaN;
-    if (!val || val <= 0) return;
-    pushToUndo();
-    if (dir > 0) {
-        if(!canApplySurplusDelta(-val)) return;
-        adjustSavingsBucket(bucketKey, val);
-        applyTransaction({ type: 'adjust_surplus', delta: -val });
-    } else {
-        const available = getSavingsBucketAmount(bucketKey);
-        const take = Math.min(val, available);
-        if (take <= 0) return;
-        adjustSavingsBucket(bucketKey, -take);
-        applyTransaction({ type: 'adjust_surplus', delta: take });
+    if (dir >= 0) {
+        if (typeof showAppAlert === 'function') showAppAlert('Use Receive from in the bucket menu to add money into this bucket.');
+        return;
     }
-    saveState();
-    updateSavingsBucketRowAmount(bucketKey);
-    updateGlobalUI();
-    if (typeof renderStrategy === 'function') renderStrategy();
+    burnBucketAmount('savings', bucketKey, amountEl ? amountEl.value : '');
 }
 
 function updateSavingsBucketRowAmount(bucketKey) {
@@ -4071,6 +4449,7 @@ function renameSavingsBucket(oldName, newNameFromInline) {
     if (state.accounts.savingsDefaultBucket === oldName) {
         state.accounts.savingsDefaultBucket = newName;
     }
+    moveBucketHistoryKey('savings', oldName, newName);
     if (typeof normalizePaycheckPriorityOrder === 'function') normalizePaycheckPriorityOrder();
     syncSavingsTotal();
     saveState();
@@ -4246,7 +4625,7 @@ function renderTransportationBuckets() {
             '<button type="button" class="bucket-stepper-plus w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none" data-dir="1" aria-label="Add">+</button>' +
             '<button type="button" class="bucket-stepper-minus w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none border-t border-slate-200" data-dir="-1" aria-label="Subtract">−</button>' +
             '</div>' +
-            '<button type="button" onclick="var b=this.closest(\'.bucket-row\'); var k=b.getAttribute(\'data-bucket-key\'); var v=b.querySelector(\'.bucket-amount-input\'); openBucketTransferModal(\'transportation\', k, v?v.value:\'\');" class="h-8 w-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-sm font-bold transition" title="Transfer">⋯</button>' +
+            '<button type="button" onclick="var b=this.closest(\'.bucket-row\'); var k=b.getAttribute(\'data-bucket-key\'); var v=b.querySelector(\'.bucket-amount-input\'); openBucketTransferModal(\'transportation\', k, v?v.value:\'\');" class="h-8 w-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-sm font-bold transition" title="Open bucket options">⋯</button>' +
             '<button type="button" class="bucket-row-apply ledger-bar-complete flex-shrink-0 w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center text-sm font-bold hover:bg-emerald-600 transition shadow-sm" title="Apply amount">✓</button>' +
             '</div></div>';
     }).join('');
@@ -4345,24 +4724,11 @@ function renderTransportationBuckets() {
 }
 
 function applyTransportationBucketDelta(bucketKey, dir, amountEl) {
-    var el = amountEl || document.getElementById('transportation-bucket-amount');
-    var val = el ? parseFloat(el.value) : NaN;
-    if (!val || val <= 0) return;
-    pushToUndo();
-    if (dir > 0) {
-        if (!canApplySurplusDelta(-val)) return;
-        adjustTransportationBucket(bucketKey, val);
-        applyTransaction({ type: 'adjust_surplus', delta: -val });
-    } else {
-        const available = getTransportationBucketAmount(bucketKey);
-        const take = Math.min(val, available);
-        if (take <= 0) return;
-        adjustTransportationBucket(bucketKey, -take);
-        applyTransaction({ type: 'adjust_surplus', delta: take });
+    if (dir >= 0) {
+        if (typeof showAppAlert === 'function') showAppAlert('Use Receive from in the bucket menu to add money into this bucket.');
+        return;
     }
-    saveState();
-    updateTransportationBucketRowAmount(bucketKey);
-    updateGlobalUI();
+    burnBucketAmount('transportation', bucketKey, amountEl ? amountEl.value : '');
 }
 
 function updateTransportationBucketRowAmount(bucketKey) {
@@ -4420,6 +4786,7 @@ function renameTransportationBucket(oldName, newNameFromInline) {
     if (state.accounts.transportationDefaultBucket === oldName) {
         state.accounts.transportationDefaultBucket = newName;
     }
+    moveBucketHistoryKey('transportation', oldName, newName);
     syncTransportationTotal();
     saveState();
     renderTransportationBuckets();
@@ -4466,59 +4833,37 @@ window.closePayablesBuckets = closePayablesBuckets;
 
 function openBucketTransferModal(context, bucketKey, prefillAmount) {
     ensureAccountsState();
-    var modal = document.getElementById('bucket-transfer-modal');
-    var titleEl = document.getElementById('bucket-transfer-title');
-    var toSelect = document.getElementById('bucket-transfer-to');
-    var amountInput = document.getElementById('bucket-transfer-amount');
-    if (!modal || !toSelect || !amountInput) return;
-    var esc = function (s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); };
-    modal.setAttribute('data-context', context);
-    modal.setAttribute('data-bucket-key', bucketKey);
-    if (titleEl) titleEl.textContent = 'Transfer from ' + bucketKey;
-    amountInput.value = (prefillAmount !== undefined && prefillAmount !== null && String(prefillAmount).trim() !== '') ? String(prefillAmount).trim() : '';
-    var toOpts = '';
-    if (context === 'savings') {
-        toOpts = '<option value="' + SAVINGS_EXTRA + '">Extra</option><option value="' + SAVINGS_WEEKLY + '">Weekly Allowance</option>';
-        (Object.keys(state.accounts.savingsBuckets || {})).forEach(function (k) {
-            if (k !== bucketKey) toOpts += '<option value="' + esc(k) + '">' + esc(k) + '</option>';
-        });
-    } else if (context === 'transportation') {
-        toOpts = '<option value="' + TRANSPORTATION_EXTRA + '">Extra</option><option value="' + TRANSPORTATION_WEEKLY + '">Weekly Allowance</option>';
-        (Object.keys(state.accounts.transportationBuckets || {})).forEach(function (k) {
-            if (k !== bucketKey) toOpts += '<option value="' + esc(k) + '">' + esc(k) + '</option>';
-        });
-    } else {
-        toOpts = '<option value="' + PAYABLES_EXTRA + '">Extra</option><option value="' + PAYABLES_WEEKLY + '">Weekly Allowance</option>';
-        (Object.keys(state.accounts.payablesBuckets || {})).forEach(function (k) {
-            if (k !== bucketKey) toOpts += '<option value="' + esc(k) + '">' + esc(k) + '</option>';
-        });
+    var ui = getBucketTransferModalElements();
+    if (!ui.modal) return;
+    ui.modal.setAttribute('data-context', context);
+    ui.modal.setAttribute('data-bucket-key', bucketKey);
+    ui.modal.setAttribute('data-mode', 'send');
+    ui.modal._bucketTransferExpanded = {};
+    if (ui.amount) {
+        ui.amount.value = (prefillAmount !== undefined && prefillAmount !== null && String(prefillAmount).trim() !== '') ? String(prefillAmount).trim() : '';
     }
-    toSelect.innerHTML = toOpts;
-    toggleModal('bucket-transfer-modal', true);
-    var btn = document.getElementById('bucket-transfer-btn');
-    if (btn && !modal._transferWired) {
-        modal._transferWired = true;
-        btn.addEventListener('click', function () {
-            var ctx = modal.getAttribute('data-context');
-            var fromKey = modal.getAttribute('data-bucket-key');
-            var toKey = toSelect.value;
-            var amount = amountInput.value;
-            if (!fromKey || !toKey || fromKey === toKey) return;
-            if (ctx === 'savings') {
-                doSavingsTransfer(fromKey, toKey, amount);
-                renderSavingsBuckets();
-            } else if (ctx === 'transportation') {
-                doTransportationTransfer(fromKey, toKey, amount);
-                renderTransportationBuckets();
-            } else {
-                doPayablesTransfer(fromKey, toKey, amount);
-                renderPayablesBuckets();
+    if (!ui.modal._bucketTransferWired) {
+        ui.modal._bucketTransferWired = true;
+        if (ui.sendBtn) ui.sendBtn.addEventListener('click', function () { setBucketTransferMode('send'); });
+        if (ui.receiveBtn) ui.receiveBtn.addEventListener('click', function () { setBucketTransferMode('receive'); });
+        ui.modal.addEventListener('click', function (e) {
+            var groupToggle = e.target.closest('[data-group-toggle]');
+            if (groupToggle) {
+                var groupId = groupToggle.getAttribute('data-group-toggle');
+                if (!ui.modal._bucketTransferExpanded) ui.modal._bucketTransferExpanded = {};
+                ui.modal._bucketTransferExpanded[groupId] = !ui.modal._bucketTransferExpanded[groupId];
+                renderBucketTransferModal();
+                return;
             }
-            amountInput.value = '';
-            closeBucketTransferModal();
-            if (typeof updateGlobalUI === 'function') updateGlobalUI();
+            var optionBtn = e.target.closest('[data-option-ref]');
+            if (optionBtn) {
+                var option = getBucketTransferOptionFromRef(optionBtn.getAttribute('data-option-ref'));
+                executeBucketTransferSelection(option);
+            }
         });
     }
+    toggleModal('bucket-transfer-modal', true);
+    renderBucketTransferModal();
 }
 window.openBucketTransferModal = openBucketTransferModal;
 
@@ -4609,7 +4954,7 @@ function renderPayablesBuckets() {
             '<button type="button" class="bucket-stepper-plus w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none" data-dir="1" aria-label="Add">+</button>' +
             '<button type="button" class="bucket-stepper-minus w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none border-t border-slate-200" data-dir="-1" aria-label="Subtract">−</button>' +
             '</div>' +
-            '<button type="button" onclick="var b=this.closest(\'.bucket-row\'); var k=b.getAttribute(\'data-bucket-key\'); var v=b.querySelector(\'.bucket-amount-input\'); openBucketTransferModal(\'payables\', k, v?v.value:\'\');" class="h-8 w-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-sm font-bold transition" title="Transfer">⋯</button>' +
+            '<button type="button" onclick="var b=this.closest(\'.bucket-row\'); var k=b.getAttribute(\'data-bucket-key\'); var v=b.querySelector(\'.bucket-amount-input\'); openBucketTransferModal(\'payables\', k, v?v.value:\'\');" class="h-8 w-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-sm font-bold transition" title="Open bucket options">⋯</button>' +
             '<button type="button" class="bucket-row-apply ledger-bar-complete flex-shrink-0 w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center text-sm font-bold hover:bg-emerald-600 transition shadow-sm" title="Apply amount">✓</button>' +
             '</div></div>';
     }).join('');
@@ -4708,24 +5053,11 @@ function renderPayablesBuckets() {
 }
 
 function applyPayablesBucketDelta(bucketKey, dir, amountEl) {
-    var el = amountEl || document.getElementById('payables-bucket-amount');
-    var val = el ? parseFloat(el.value) : NaN;
-    if (!val || val <= 0) return;
-    pushToUndo();
-    if (dir > 0) {
-        if (!canApplySurplusDelta(-val)) return;
-        adjustPayablesBucket(bucketKey, val);
-        applyTransaction({ type: 'adjust_surplus', delta: -val });
-    } else {
-        const available = getPayablesBucketAmount(bucketKey);
-        const take = Math.min(val, available);
-        if (take <= 0) return;
-        adjustPayablesBucket(bucketKey, -take);
-        applyTransaction({ type: 'adjust_surplus', delta: take });
+    if (dir >= 0) {
+        if (typeof showAppAlert === 'function') showAppAlert('Use Receive from in the bucket menu to add money into this bucket.');
+        return;
     }
-    saveState();
-    updatePayablesBucketRowAmount(bucketKey);
-    updateGlobalUI();
+    burnBucketAmount('payables', bucketKey, amountEl ? amountEl.value : '');
 }
 
 function updatePayablesBucketRowAmount(bucketKey) {
@@ -4783,6 +5115,7 @@ function renamePayablesBucket(oldName, newNameFromInline) {
     if (state.accounts.payablesDefaultBucket === oldName) {
         state.accounts.payablesDefaultBucket = newName;
     }
+    moveBucketHistoryKey('payables', oldName, newName);
     syncPayablesTotal();
     saveState();
     renderPayablesBuckets();
