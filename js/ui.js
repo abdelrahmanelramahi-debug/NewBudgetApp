@@ -2261,9 +2261,9 @@ function getBankBalanceBarSegments() {
         segments.push({ label: 'Extra (Unallocated)', amount: surplus, group: 'extra', colorClass: extraColor });
     }
 
-    if (getSavings > 0) segments.push({ label: gsLabel, amount: getSavings, group: 'savings' });
-    if (getBal(payLabel, 0) > 0) segments.push({ label: payLabel, amount: getBal(payLabel, 0), group: 'payables' });
-    if (getBal(carLabel, 0) > 0) segments.push({ label: carLabel, amount: getBal(carLabel, 0), group: 'car' });
+    if (getSavings > 0) segments.push({ label: gsLabel, amount: getSavings, group: 'savings', colorClass: 'bg-sky-400' });
+    if (getBal(payLabel, 0) > 0) segments.push({ label: payLabel, amount: getBal(payLabel, 0), group: 'payables', colorClass: 'bg-rose-400' });
+    if (getBal(carLabel, 0) > 0) segments.push({ label: carLabel, amount: getBal(carLabel, 0), group: 'car', colorClass: 'bg-violet-400' });
 
     if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
     var w1 = Math.max(0, (state.accounts.weekly.balances && state.accounts.weekly.balances[0]) || 0);
@@ -2275,10 +2275,10 @@ function getBankBalanceBarSegments() {
 
     if (typeof getFoodRemainderInfo === 'function') {
         var foodInfo = getFoodRemainderInfo();
-        if (foodInfo.remainder > 0) segments.push({ label: 'Food Remainder', amount: foodInfo.remainder, meta: foodInfo.daysLeft + ' days', group: 'food' });
+        if (foodInfo.remainder > 0) segments.push({ label: 'Food Remainder', amount: foodInfo.remainder, meta: foodInfo.daysLeft + ' days', group: 'food', colorClass: 'bg-amber-400' });
     }
     var locked = state.food?.lockedAmount || 0;
-    if (locked > 0) segments.push({ label: 'Food Buffer', amount: locked, meta: 'Locked', group: 'food' });
+    if (locked > 0) segments.push({ label: 'Food Buffer', amount: locked, meta: 'Locked', group: 'food', colorClass: 'bg-amber-300' });
 
     // One segment per category section (Health, Groceries, Misc, Subscriptions, etc.) – not per item.
     var skipLabels = [foodLabel, weeklyLabel, gsLabel, payLabel, carLabel];
@@ -2289,7 +2289,7 @@ function getBankBalanceBarSegments() {
             if (skipLabels.indexOf(item.label) !== -1) return;
             sectionSum += getBal(item.label, 0);
         });
-        if (sectionSum > 0) segments.push({ label: sec.label, amount: sectionSum, group: 'categories' });
+        if (sectionSum > 0) segments.push({ label: sec.label, amount: sectionSum, group: 'categories', colorClass: 'bg-teal-400' });
     });
 
     return segments;
@@ -2297,8 +2297,11 @@ function getBankBalanceBarSegments() {
 
 var _bankBalanceColorMap = {
     'extra (unallocated)': 'bg-emerald-400',
+    'savings': 'bg-sky-400',
     'general savings': 'bg-sky-400',
     'payables': 'bg-rose-400',
+    'transportation': 'bg-violet-400',
+    'car': 'bg-violet-400',
     'car fund': 'bg-violet-400',
     'weekly allowance': 'bg-indigo-400',
     'food remainder': 'bg-amber-400',
