@@ -1253,8 +1253,9 @@ body.theme-dark .bucket-dropdown button:hover {
 }
 .major-funds-desktop-stack {
     display: grid;
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.9rem;
+    align-items: stretch;
 }
 .major-fund-wide-card {
     display: flex;
