@@ -1142,7 +1142,7 @@ function renderLedger() {
                         </div>
                         <div class="major-fund-wide-card-copy">
                             <span class="major-fund-wide-card-label text-slate-900">Savings</span>
-                            <div class="major-fund-wide-card-amount"><span data-major-fund="savings">${formatMoney(savBal)}</span> <span class="text-sm text-indigo-200">${getCurrencyLabel()}</span></div>
+                            <div class="major-fund-wide-card-amount"><span class="major-fund-wide-card-amount-value" data-major-fund="savings">${formatMoney(savBal)}</span><span class="major-fund-wide-card-amount-currency text-sm text-indigo-200">${getCurrencyLabel()}</span></div>
                         </div>
                     </div>
                     <button onclick="openSavingsBuckets()" class="major-fund-wide-card-action bg-white text-slate-900 hover:bg-indigo-50 text-[10px] font-black uppercase transition text-center">Manage</button>
@@ -1157,7 +1157,7 @@ function renderLedger() {
                         </div>
                         <div class="major-fund-wide-card-copy">
                             <span class="major-fund-wide-card-label text-slate-300">Transportation</span>
-                            <div class="major-fund-wide-card-amount"><span data-major-fund="transportation">${formatMoney(carBal)}</span> <span class="text-sm text-slate-400">${getCurrencyLabel()}</span></div>
+                            <div class="major-fund-wide-card-amount"><span class="major-fund-wide-card-amount-value" data-major-fund="transportation">${formatMoney(carBal)}</span><span class="major-fund-wide-card-amount-currency text-sm text-slate-400">${getCurrencyLabel()}</span></div>
                         </div>
                     </div>
                     <button onclick="openTransportationBuckets()" class="major-fund-wide-card-action bg-white text-slate-800 hover:bg-slate-100 text-[10px] font-black uppercase transition text-center">Manage</button>
@@ -1172,7 +1172,7 @@ function renderLedger() {
                         </div>
                         <div class="major-fund-wide-card-copy">
                             <span class="major-fund-wide-card-label text-slate-900">Payables</span>
-                            <div class="major-fund-wide-card-amount text-slate-900"><span data-major-fund="payables">${formatMoney(payBal)}</span> <span class="text-sm text-slate-700">${getCurrencyLabel()}</span></div>
+                            <div class="major-fund-wide-card-amount text-slate-900"><span class="major-fund-wide-card-amount-value" data-major-fund="payables">${formatMoney(payBal)}</span><span class="major-fund-wide-card-amount-currency text-sm text-slate-700">${getCurrencyLabel()}</span></div>
                         </div>
                     </div>
                     <button onclick="openPayablesBuckets()" class="major-fund-wide-card-action bg-white text-amber-900 hover:bg-amber-50 text-[10px] font-black uppercase transition text-center">Manage</button>

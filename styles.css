@@ -1305,6 +1305,7 @@ body.theme-dark .bucket-dropdown button:hover {
     flex: 1 1 auto;
     min-width: 0;
     max-width: 100%;
+    text-align: center;
 }
 .major-fund-wide-card-label {
     display: block;
@@ -1318,12 +1319,22 @@ body.theme-dark .bucket-dropdown button:hover {
     font-size: clamp(1.05rem, 2vw, 1.6rem);
     font-weight: 900;
     line-height: 1.15;
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 0.2rem;
     word-break: normal;
     overflow-wrap: normal;
     white-space: nowrap;
     max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow: visible;
+}
+.major-fund-wide-card-amount-value {
+    display: inline-block;
+}
+.major-fund-wide-card-amount-currency {
+    display: inline-block;
+    transform: translateX(-0.05rem);
 }
 .major-fund-wide-card-action {
     width: 100%;
