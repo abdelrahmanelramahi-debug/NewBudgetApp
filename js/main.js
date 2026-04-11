@@ -149,6 +149,14 @@ window.onload = function() {
         bindClick('bank-balance-select-all-btn', function () { bankBalanceFilterSelectAll(); });
         var bankBalanceGroupsRoot = byId('bank-balance-bar') ? byId('bank-balance-bar').parentElement : null;
         if (bankBalanceGroupsRoot) {
+            bankBalanceGroupsRoot.addEventListener('change', function (event) {
+                var input = event.target;
+                if (!input || input.tagName !== 'INPUT' || input.type !== 'checkbox') return;
+                if (!input.id || input.id.indexOf('bb-filter-') !== 0) return;
+                var group = input.id.replace('bb-filter-', '');
+                if (!group) return;
+                onBankBalanceFilterChanged(group, input.checked);
+            });
             bankBalanceGroupsRoot.addEventListener('click', function (event) {
                 var trigger = event.target.closest('[data-bb-group]');
                 if (!trigger || !bankBalanceGroupsRoot.contains(trigger)) return;
