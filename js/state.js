@@ -77,6 +77,7 @@ let currentAddSectionId = null;
 let itemToDelete = null;
 let currentAmort = { sid: null, idx: null };
 let currentPaymentDayTarget = { sid: null, idx: null };
+let currentToolItemContext = { sid: null, idx: null };
 let activeCat = null;
 let undoStack = [];
 let redoStack = [];

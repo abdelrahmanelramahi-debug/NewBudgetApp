@@ -1229,7 +1229,7 @@ function openMiniBudgetPaymentDayModal(sid, idx) {
     if (subtitleEl) {
         var status = typeof getExpectedPaymentStatus === 'function' ? getExpectedPaymentStatus(item.expectedPaymentDay) : null;
         subtitleEl.textContent = status
-            ? (status.isDueToday ? 'Due today. Expect this payment now.' : 'Currently expected on ' + status.nextDateLabel + '.')
+            ? ('Saved for ' + status.nextDateLabel + '. This is a reminder date only and does not change balances.')
             : 'Choose the day of the month you expect this payment.';
     }
     populateExpectedPaymentDaySelect(selectEl, item.expectedPaymentDay, true);
@@ -1302,8 +1302,9 @@ function confirmDelete() {
 }
 
 // Ledger Actions
-function openTool(label, displayTitle, autoTransfer = false, prefillAmount) {
+function openTool(label, displayTitle, autoTransfer = false, prefillAmount, sid, idx) {
     activeCat = label;
+    currentToolItemContext = { sid: sid != null ? sid : null, idx: idx != null ? idx : null };
     document.getElementById('tool-title').innerText = displayTitle || label;
 
     var amountInput = document.getElementById('tool-value');
@@ -1323,9 +1324,26 @@ function openTool(label, displayTitle, autoTransfer = false, prefillAmount) {
     // Reset UI state
     const std = document.getElementById('tool-actions-standard');
     const trf = document.getElementById('tool-transfer-interface');
+    const paymentBtn = document.getElementById('tool-payment-day-btn');
 
     std.classList.remove('hidden');
     trf.classList.add('hidden');
+    if (paymentBtn) {
+        var sec = sid != null ? (state.categories || []).find(function (entry) { return entry && entry.id === sid; }) : null;
+        var item = (sec && sec.items && idx != null) ? sec.items[idx] : null;
+        var shouldShow = !!(item && !item.isCore && label !== 'Savings' && label !== 'Payables' && label !== 'Transportation' && label !== 'Weekly Allowance' && label !== 'Daily Food');
+        if (shouldShow) {
+            var status = typeof getExpectedPaymentStatus === 'function' ? getExpectedPaymentStatus(item.expectedPaymentDay) : null;
+            paymentBtn.textContent = status ? 'Edit expected date' : 'Set expected date';
+            paymentBtn.classList.remove('hidden');
+            paymentBtn.onclick = function () {
+                openMiniBudgetPaymentDayModal(sid, idx);
+            };
+        } else {
+            paymentBtn.classList.add('hidden');
+            paymentBtn.onclick = null;
+        }
+    }
 
     toggleModal('input-tool', true);
     renderCategoryHistory();

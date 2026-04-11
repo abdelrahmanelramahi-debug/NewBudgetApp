@@ -566,14 +566,15 @@ function getMiniBudgetPaymentBadgeHtml(item) {
     return '<span class="payment-day-badge ' + (status.isDueToday ? 'is-due-today' : '') + '" title="' + escapeAttr(title) + '">' + escapeHtml(label) + '</span>';
 }
 
-function getMiniBudgetPaymentTriggerHtml(sid, idx, item) {
+function getMiniBudgetScheduleSetupButtonHtml(sid, idx, item) {
     var status = (item && typeof getExpectedPaymentStatus === 'function')
         ? getExpectedPaymentStatus(item.expectedPaymentDay)
         : null;
     var title = status
-        ? (status.isDueToday ? 'Expected payment is due today' : 'Expected payment: ' + status.nextDateLabel)
+        ? ('Expected payment date saved: ' + status.nextDateLabel)
         : 'Set expected payment day';
-    return '<button type="button" onclick="event.stopPropagation(); openMiniBudgetPaymentDayModal(\'' + escapeAttr(sid) + '\', ' + idx + ')" class="payment-day-trigger ' + (status && status.isDueToday ? 'is-due-today' : '') + '" title="' + escapeAttr(title) + '" aria-label="' + escapeAttr(title) + '">Due</button>';
+    var label = status ? 'Date set' : 'Set date';
+    return '<button type="button" onclick="event.stopPropagation(); openMiniBudgetPaymentDayModal(\'' + escapeAttr(sid) + '\', ' + idx + ')" class="payment-day-trigger" title="' + escapeAttr(title) + '" aria-label="' + escapeAttr(title) + '">' + escapeHtml(label) + '</button>';
 }
 
 function renderStrategy(opts) {
@@ -721,8 +722,6 @@ function renderStrategy(opts) {
         function buildBudgetPlanRowHtml(sid, idx, item, optsRow) {
             optsRow = optsRow || {};
             const itemLabel = item.label === 'Food Base' ? 'Daily Food' : item.label;
-            const paymentStatus = typeof getExpectedPaymentStatus === 'function' ? getExpectedPaymentStatus(item.expectedPaymentDay) : null;
-            const paymentBadgeHtml = getMiniBudgetPaymentBadgeHtml(item);
             let amortLabel = item.amortData ? `<span class="text-[9px] bg-indigo-50 text-indigo-600 px-1 rounded font-bold ml-2">${item.amortData.total}/${item.amortData.months}mo</span>` : '';
             const isFoodBase = itemLabel === 'Daily Food';
             const isFoodPlanOff = isFoodBase && state.settings && state.settings.showFoodPlan === false;
@@ -752,7 +751,7 @@ function renderStrategy(opts) {
             const actions = item.isCore
                 ? ''
                 : `
-                ${getMiniBudgetPaymentTriggerHtml(sid, idx, item)}
+                ${getMiniBudgetScheduleSetupButtonHtml(sid, idx, item)}
                 <button onclick="openAmortTool('${sec.id}', ${idx})" class="p-1.5 text-indigo-400 hover:bg-indigo-50 rounded">✎</button>
                 <button onclick="openDeleteModal('${sid}', ${idx})" class="p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 cursor-pointer rounded">×</button>
             `;
@@ -856,14 +855,14 @@ function renderStrategy(opts) {
             ` : '';
 
             return `
-                <div class="draggable-row flex justify-between items-center gap-2 py-3 border-b border-slate-50 last:border-0 ${isFoodPlanOff ? 'opacity-50 grayscale' : ''} ${paymentStatus && paymentStatus.isDueToday ? 'budget-row-due-today' : ''}"
+                <div class="draggable-row flex justify-between items-center gap-2 py-3 border-b border-slate-50 last:border-0 ${isFoodPlanOff ? 'opacity-50 grayscale' : ''}"
                      draggable="${isDragAllowed}"
                      ondragstart="${isDragAllowed ? `handleItemDragStart(event, '${sid}', ${idx})` : ''}"
                      ondragover="handleDragOver(event)"
                      ondrop="handleItemDrop(event, '${sid}', ${idx})">
                     <div class="flex items-center gap-2.5 min-w-0 flex-1">
                         <span class="text-slate-300 ${isDragAllowed ? 'cursor-move' : 'opacity-0'}">::</span>
-                        <span class="text-xs font-bold text-slate-600 truncate">${itemLabel} ${amortLabel} ${paymentBadgeHtml}</span>
+                        <span class="text-xs font-bold text-slate-600 truncate">${itemLabel} ${amortLabel}</span>
                     </div>
                     <div class="flex items-center gap-1.5 no-drag ${isFoodBase ? 'budget-food-controls' : ''}" onmousedown="event.stopPropagation()">
                         ${isFoodBase ? `
@@ -1323,8 +1322,7 @@ function renderLedger() {
                             <button type="button" onclick="var b=this.closest('.ledger-bar'); var v=b.querySelector('.ledger-bar-amount').value; applyItemAdjustment('${safeLabel}', v, 'add'); b.querySelector('.ledger-bar-amount').value='';" class="w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none">+</button>
                             <button type="button" onclick="var b=this.closest('.ledger-bar'); var v=b.querySelector('.ledger-bar-amount').value; applyItemAdjustment('${safeLabel}', v, 'deduct'); b.querySelector('.ledger-bar-amount').value='';" class="w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none border-t border-slate-200">−</button>
                         </div>
-                        <button type="button" onclick="var b=this.closest('.ledger-bar'); var v=b&&b.querySelector('.ledger-bar-amount')?b.querySelector('.ledger-bar-amount').value:''; openTool('${safeLabel}', undefined, false, v);" class="h-8 w-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-sm font-bold transition" title="Transfer">⋯</button>
-                        ${getMiniBudgetPaymentTriggerHtml(sec.id, sec.items.indexOf(item), item)}
+                        <button type="button" onclick="var b=this.closest('.ledger-bar'); var v=b&&b.querySelector('.ledger-bar-amount')?b.querySelector('.ledger-bar-amount').value:''; openTool('${safeLabel}', undefined, false, v, '${sec.id}', ${sec.items.indexOf(item)});" class="h-8 w-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-sm font-bold transition" title="Transfer">⋯</button>
                         ${unlockBtn}
                         ${actionBtn}
                     </div>
