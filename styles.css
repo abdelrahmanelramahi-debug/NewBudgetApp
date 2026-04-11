@@ -1316,7 +1316,9 @@ body.theme-dark .bucket-dropdown button:hover {
     font-size: clamp(1.2rem, 2.8vw, 2rem);
     font-weight: 900;
     line-height: 1.15;
-    word-break: break-word;
+    word-break: normal;
+    overflow-wrap: normal;
+    white-space: nowrap;
 }
 .major-fund-wide-card-action {
     width: 100%;
@@ -1685,7 +1687,7 @@ textarea,
 
     /* Constrain width; main area scrolls so home header can stick to top */
     #app-main {
-        max-width: 62rem;
+        max-width: 42rem;
         min-height: 0;
         max-height: 100vh;
         overflow-y: auto;
