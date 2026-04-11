@@ -1171,8 +1171,8 @@ function renderLedger() {
                             <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><path d="M4 8h16"/><path d="M6 12h12"/><path d="M8 16h8"/><path d="M10 20h4"/></svg>
                         </div>
                         <div class="major-fund-wide-card-copy">
-                            <span class="major-fund-wide-card-label text-amber-50">Payables</span>
-                            <div class="major-fund-wide-card-amount"><span data-major-fund="payables">${formatMoney(payBal)}</span> <span class="text-sm text-amber-100">${getCurrencyLabel()}</span></div>
+                            <span class="major-fund-wide-card-label text-slate-900">Payables</span>
+                            <div class="major-fund-wide-card-amount text-slate-900"><span data-major-fund="payables">${formatMoney(payBal)}</span> <span class="text-sm text-slate-700">${getCurrencyLabel()}</span></div>
                         </div>
                     </div>
                     <button onclick="openPayablesBuckets()" class="major-fund-wide-card-action bg-white text-amber-900 hover:bg-amber-50 text-[10px] font-black uppercase transition text-center">Manage</button>
