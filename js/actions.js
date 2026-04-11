@@ -1337,9 +1337,9 @@ function openTool(label, displayTitle, autoTransfer = false, prefillAmount, sid,
     std.classList.remove('hidden');
     trf.classList.add('hidden');
     if (trf) {
-        trf.setAttribute('data-mode', 'send');
         trf._miniTransferGroups = [];
         trf._miniTransferExpanded = {};
+        trf.removeAttribute('data-selected-ref');
     }
     if (paymentBtn) {
         var sec = sid != null ? (state.categories || []).find(function (entry) { return entry && entry.id === sid; }) : null;
@@ -1362,7 +1362,7 @@ function openTool(label, displayTitle, autoTransfer = false, prefillAmount, sid,
     if (receiveBtn) receiveBtn.classList.toggle('hidden', !isMiniContext);
     if (transferBtn) transferBtn.textContent = isMiniContext ? 'Send to' : 'Transfer';
     if (isMiniContext) {
-        setMiniBudgetTransferMode('send');
+        setMiniBudgetTransferMode();
     }
 
     toggleModal('input-tool', true);
@@ -1371,7 +1371,7 @@ function openTool(label, displayTitle, autoTransfer = false, prefillAmount, sid,
     // Auto Open Transfer Mode if requested
     if(autoTransfer) {
         if (isMiniContext) {
-            setMiniBudgetTransferMode('send');
+            setMiniBudgetTransferMode();
         } else {
             toggleTransferMode();
         }
@@ -1396,7 +1396,7 @@ function toggleTransferMode() {
     const trf = document.getElementById('tool-transfer-interface');
     const list = document.getElementById('transfer-target-list');
     if (isMiniBudgetToolContext()) {
-        setMiniBudgetTransferMode('send');
+        setMiniBudgetTransferMode();
         return;
     }
 
@@ -1420,7 +1420,7 @@ function getMiniBudgetTransferElements() {
     };
 }
 
-function getMiniBudgetTransferGroups(mode) {
+function getMiniBudgetTransferGroups() {
     var groups = [];
     var sec = (state.categories || []).find(function (entry) { return entry && entry.id === currentToolItemContext.sid; });
     if (!sec || !Array.isArray(sec.items)) return groups;
@@ -1428,8 +1428,7 @@ function getMiniBudgetTransferGroups(mode) {
     var siblingOptions = sec.items.filter(function (item) {
         if (!item || !item.label || item.label === currentLabel) return false;
         if (item.isCore) return false;
-        var amount = getItemBalance(item.label, item.amount || 0);
-        return mode !== 'receive' || amount > 0.001;
+        return true;
     }).map(function (item) {
         return {
             type: 'item',
@@ -1447,26 +1446,22 @@ function getMiniBudgetTransferGroups(mode) {
     }
 
     var extraAmount = Number((state.accounts && state.accounts.surplus) || 0);
-    if (mode === 'send' || extraAmount > 0.001) {
-        groups.push({
-            id: 'extra',
-            title: 'Extra',
-            subtitle: mode === 'send' ? 'Move money into Extra' : formatMoney(extraAmount) + ' available',
-            options: [{ type: 'extra', label: 'Extra', amount: extraAmount }]
-        });
-    }
+    groups.push({
+        id: 'extra',
+        title: 'Extra',
+        subtitle: extraAmount > 0.001 ? formatMoney(extraAmount) + ' available' : 'Move money into Extra',
+        options: [{ type: 'extra', label: 'Extra', amount: extraAmount }]
+    });
 
     var weeklyOptions = [];
     for (var week = 1; week <= WEEKLY_MAX_WEEKS; week++) {
         var weekAmount = getWeeklyBalance(week);
-        if (mode === 'send' || weekAmount > 0.001) {
-            weeklyOptions.push({
-                type: 'weekly_week',
-                week: week,
-                label: 'Week ' + week,
-                amount: weekAmount
-            });
-        }
+        weeklyOptions.push({
+            type: 'weekly_week',
+            week: week,
+            label: 'Week ' + week,
+            amount: weekAmount
+        });
     }
     if (weeklyOptions.length) {
         groups.push({
@@ -1484,8 +1479,7 @@ function getMiniBudgetTransferGroups(mode) {
         var options = category.items.filter(function (item) {
             if (!item || !item.label || item.isCore) return false;
             if (item.label === 'Savings' || item.label === 'Transportation' || item.label === 'Payables' || item.label === 'Daily Food' || item.label === getWeeklyLabel()) return false;
-            var amount = getItemBalance(item.label, item.amount || 0);
-            return mode === 'send' || amount > 0.001;
+            return true;
         }).map(function (item) {
             return {
                 type: 'item',
@@ -1508,7 +1502,7 @@ function getMiniBudgetTransferGroups(mode) {
 function renderMiniBudgetTransferGroups(mode) {
     var ui = getMiniBudgetTransferElements();
     if (!ui.panel || !ui.list || !ui.empty) return;
-    var groups = getMiniBudgetTransferGroups(mode);
+    var groups = getMiniBudgetTransferGroups();
     ui.panel._miniTransferGroups = groups;
     if (!ui.panel._miniTransferExpanded) ui.panel._miniTransferExpanded = {};
     if (!groups.length) {
@@ -1521,7 +1515,8 @@ function renderMiniBudgetTransferGroups(mode) {
         var isOpen = !!ui.panel._miniTransferExpanded[group.id];
         var optionsHtml = group.options.map(function (option, optionIndex) {
             var idx = String(groupIndex) + ':' + String(optionIndex);
-            return '<button type="button" class="bucket-transfer-option" data-mini-option-ref="' + idx + '">' +
+            var isSelected = ui.panel.getAttribute('data-selected-ref') === idx;
+            return '<button type="button" class="bucket-transfer-option ' + (isSelected ? 'is-selected' : '') + '" data-mini-option-ref="' + idx + '">' +
                 '<span class="bucket-transfer-option-label">' + escapeHtml(option.label) + '</span>' +
                 '<span class="bucket-transfer-option-meta">' + formatMoney(option.amount || 0) + '</span>' +
             '</button>';
@@ -1627,34 +1622,40 @@ function runMiniBudgetTransferSelection(mode, option, amount) {
     return true;
 }
 
-function executeMiniBudgetTransferSelection(option) {
-    if (!isMiniBudgetToolContext()) return;
+function getMiniBudgetSelectedTransferOption() {
+    if (!isMiniBudgetToolContext()) return null;
     var ui = getMiniBudgetTransferElements();
+    if (!ui.panel) return null;
+    return getMiniBudgetTransferOptionFromRef(ui.panel.getAttribute('data-selected-ref'));
+}
+
+function executeMiniBudgetTransferSelection(mode) {
+    if (!isMiniBudgetToolContext()) return;
+    var option = getMiniBudgetSelectedTransferOption();
+    if (!option) {
+        if (typeof showAppAlert === 'function') showAppAlert('Choose a group item first, then use Send to or Receive from.');
+        return;
+    }
     var rawAmount = document.getElementById('tool-value') ? document.getElementById('tool-value').value : '';
     var amount = parseFloat(rawAmount);
     if (!amount || amount <= 0) {
-        if (typeof showAppAlert === 'function') showAppAlert('Enter an amount before choosing where funds should move.');
+        if (typeof showAppAlert === 'function') showAppAlert('Enter an amount before moving funds.');
         return;
     }
-    var mode = (ui.panel && ui.panel.getAttribute('data-mode')) === 'receive' ? 'receive' : 'send';
-    if (!runMiniBudgetTransferSelection(mode, option, amount)) return;
+    if (!runMiniBudgetTransferSelection(mode === 'receive' ? 'receive' : 'send', option, amount)) return;
     saveState();
     if (typeof refreshUI === 'function') refreshUI();
     closeTool();
 }
 
-function setMiniBudgetTransferMode(mode) {
+function setMiniBudgetTransferMode() {
     if (!isMiniBudgetToolContext()) return;
     var ui = getMiniBudgetTransferElements();
     if (!ui.panel || !ui.title || !ui.hint) return;
     ui.panel.classList.remove('hidden');
-    ui.panel.setAttribute('data-mode', mode === 'receive' ? 'receive' : 'send');
-    ui.panel._miniTransferExpanded = {};
     ui.title.textContent = 'Choose a group';
-    ui.hint.textContent = mode === 'receive'
-        ? 'Choose a source group, then select where funds should come from.'
-        : 'Choose a destination group, then select a target item.';
-    renderMiniBudgetTransferGroups(mode === 'receive' ? 'receive' : 'send');
+    ui.hint.textContent = 'Choose a group item once, then use Send to or Receive from.';
+    renderMiniBudgetTransferGroups();
     if (!ui.panel._miniTransferWired) {
         ui.panel._miniTransferWired = true;
         ui.panel.addEventListener('click', function (e) {
@@ -1663,13 +1664,13 @@ function setMiniBudgetTransferMode(mode) {
                 var groupId = groupToggle.getAttribute('data-mini-group-toggle');
                 if (!ui.panel._miniTransferExpanded) ui.panel._miniTransferExpanded = {};
                 ui.panel._miniTransferExpanded[groupId] = !ui.panel._miniTransferExpanded[groupId];
-                renderMiniBudgetTransferGroups(ui.panel.getAttribute('data-mode') === 'receive' ? 'receive' : 'send');
+                renderMiniBudgetTransferGroups();
                 return;
             }
             var optionBtn = e.target.closest('[data-mini-option-ref]');
             if (!optionBtn) return;
-            var option = getMiniBudgetTransferOptionFromRef(optionBtn.getAttribute('data-mini-option-ref'));
-            executeMiniBudgetTransferSelection(option);
+            ui.panel.setAttribute('data-selected-ref', optionBtn.getAttribute('data-mini-option-ref'));
+            renderMiniBudgetTransferGroups();
         });
     }
 }
@@ -1769,11 +1770,11 @@ function executeAction(type) {
             return;
         }
         if (type === 'transfer') {
-            setMiniBudgetTransferMode('send');
+            executeMiniBudgetTransferSelection('send');
             return;
         }
         if (type === 'receive') {
-            setMiniBudgetTransferMode('receive');
+            executeMiniBudgetTransferSelection('receive');
             return;
         }
         if (!val || val <= 0) return;
@@ -4217,7 +4218,7 @@ function getBucketTransferModalElements() {
     };
 }
 
-function getBucketTransferGroupData(contextName, bucketKey, mode) {
+function getBucketTransferGroupData(contextName, bucketKey) {
     ensureAccountsState();
     var groups = [];
     var store = getBucketStore(getBucketContext(contextName));
@@ -4229,8 +4230,6 @@ function getBucketTransferGroupData(contextName, bucketKey, mode) {
             label: key,
             amount: Number(store[key]) || 0
         };
-    }).filter(function (entry) {
-        return mode !== 'receive' || entry.amount > 0.001;
     });
     if (otherBuckets.length) {
         groups.push({
@@ -4242,30 +4241,26 @@ function getBucketTransferGroupData(contextName, bucketKey, mode) {
     }
 
     var extraAmount = Number((state.accounts && state.accounts.surplus) || 0);
-    if (mode === 'send' || extraAmount > 0.001) {
-        groups.push({
-            id: 'extra',
-            title: 'Extra',
-            subtitle: mode === 'send' ? 'Move money into Extra' : formatMoney(extraAmount) + ' available',
-            options: [{
-                type: 'extra',
-                label: 'Extra',
-                amount: extraAmount
-            }]
-        });
-    }
+    groups.push({
+        id: 'extra',
+        title: 'Extra',
+        subtitle: extraAmount > 0.001 ? formatMoney(extraAmount) + ' available' : 'Move money into Extra',
+        options: [{
+            type: 'extra',
+            label: 'Extra',
+            amount: extraAmount
+        }]
+    });
 
     var weeklyOptions = [];
     for (var week = 1; week <= WEEKLY_MAX_WEEKS; week++) {
         var weeklyBal = getWeeklyBalance(week);
-        if (mode === 'send' || weeklyBal > 0.001) {
-            weeklyOptions.push({
-                type: 'weekly_week',
-                week: week,
-                label: 'Week ' + week,
-                amount: weeklyBal
-            });
-        }
+        weeklyOptions.push({
+            type: 'weekly_week',
+            week: week,
+            label: 'Week ' + week,
+            amount: weeklyBal
+        });
     }
     if (weeklyOptions.length) {
         groups.push({
@@ -4282,8 +4277,7 @@ function getBucketTransferGroupData(contextName, bucketKey, mode) {
         var options = sec.items.filter(function (item) {
             if (!item || !item.label) return false;
             if (item.label === 'Savings' || item.label === 'Transportation' || item.label === 'Payables' || item.label === 'Daily Food' || item.label === getWeeklyLabel()) return false;
-            var amount = getItemBalance(item.label, item.amount || 0);
-            return mode === 'send' || amount > 0.001;
+            return true;
         }).map(function (item) {
             return {
                 type: 'item',
@@ -4325,7 +4319,7 @@ function renderBucketTransferHistory(contextName, bucketKey) {
 function renderBucketTransferGroups(contextName, bucketKey, mode) {
     var ui = getBucketTransferModalElements();
     if (!ui.targets || !ui.empty || !ui.modal) return;
-    var groups = getBucketTransferGroupData(contextName, bucketKey, mode);
+    var groups = getBucketTransferGroupData(contextName, bucketKey);
     ui.modal._bucketTransferGroups = groups;
     if (!ui.modal._bucketTransferExpanded) ui.modal._bucketTransferExpanded = {};
     if (!groups.length) {
@@ -4338,7 +4332,8 @@ function renderBucketTransferGroups(contextName, bucketKey, mode) {
         var isOpen = !!ui.modal._bucketTransferExpanded[group.id];
         var optionsHtml = group.options.map(function (option, optionIndex) {
             var idx = String(groupIndex) + ':' + String(optionIndex);
-            return '<button type="button" class="bucket-transfer-option" data-option-ref="' + idx + '">' +
+            var isSelected = ui.modal.getAttribute('data-selected-ref') === idx;
+            return '<button type="button" class="bucket-transfer-option ' + (isSelected ? 'is-selected' : '') + '" data-option-ref="' + idx + '">' +
                 '<span class="bucket-transfer-option-label">' + escapeHtml(option.label) + '</span>' +
                 '<span class="bucket-transfer-option-meta">' + formatMoney(option.amount || 0) + '</span>' +
             '</button>';
@@ -4362,28 +4357,20 @@ function renderBucketTransferModal() {
     if (!modal) return;
     var contextName = modal.getAttribute('data-context');
     var bucketKey = modal.getAttribute('data-bucket-key');
-    var mode = modal.getAttribute('data-mode') || 'send';
     if (!contextName || !bucketKey) return;
     var amount = getBucketAmountByContext(contextName, bucketKey);
     if (ui.title) ui.title.textContent = getBucketContextLabel(contextName);
     if (ui.name) ui.name.textContent = bucketKey;
     if (ui.balance) ui.balance.textContent = formatMoney(amount);
     if (ui.currency) ui.currency.textContent = getCurrencyLabel();
-    if (ui.sendBtn) ui.sendBtn.classList.toggle('is-active', mode === 'send');
-    if (ui.receiveBtn) ui.receiveBtn.classList.toggle('is-active', mode === 'receive');
     if (ui.pickerTitle) ui.pickerTitle.textContent = 'Choose a group';
-    if (ui.pickerHint) ui.pickerHint.textContent = mode === 'send'
-        ? 'Choose a destination group, then select a bucket or category item.'
-        : 'Choose a source group, then select where funds should come from.';
-    renderBucketTransferGroups(contextName, bucketKey, mode);
+    if (ui.pickerHint) ui.pickerHint.textContent = 'Choose a group item once, then use Send to or Receive from.';
+    renderBucketTransferGroups(contextName, bucketKey);
     renderBucketTransferHistory(contextName, bucketKey);
 }
 
 function setBucketTransferMode(mode) {
-    var ui = getBucketTransferModalElements();
-    if (!ui.modal) return;
-    ui.modal.setAttribute('data-mode', mode === 'receive' ? 'receive' : 'send');
-    renderBucketTransferModal();
+    executeBucketTransferSelection(mode === 'receive' ? 'receive' : 'send');
 }
 
 function getBucketTransferAmountInputValue() {
@@ -4401,19 +4388,29 @@ function getBucketTransferOptionFromRef(ref) {
     return group.options[parseInt(parts[1], 10)] || null;
 }
 
-function executeBucketTransferSelection(option) {
+function getBucketTransferSelectedOption() {
     var ui = getBucketTransferModalElements();
-    if (!ui.modal || !option) return;
+    if (!ui.modal) return null;
+    return getBucketTransferOptionFromRef(ui.modal.getAttribute('data-selected-ref'));
+}
+
+function executeBucketTransferSelection(mode) {
+    var ui = getBucketTransferModalElements();
+    var option = getBucketTransferSelectedOption();
+    if (!ui.modal) return;
+    if (!option) {
+        if (typeof showAppAlert === 'function') showAppAlert('Choose a group item first, then use Send to or Receive from.');
+        return;
+    }
     var contextName = ui.modal.getAttribute('data-context');
     var bucketKey = ui.modal.getAttribute('data-bucket-key');
-    var mode = ui.modal.getAttribute('data-mode') || 'send';
     var rawAmount = getBucketTransferAmountInputValue();
     var amount = parseFloat(rawAmount);
     if (!amount || amount <= 0) {
-        if (typeof showAppAlert === 'function') showAppAlert('Enter an amount before choosing where funds should move.');
+        if (typeof showAppAlert === 'function') showAppAlert('Enter an amount before moving funds.');
         return;
     }
-    if (!runBucketTransferSelection(contextName, bucketKey, mode, option, amount)) return;
+    if (!runBucketTransferSelection(contextName, bucketKey, mode === 'receive' ? 'receive' : 'send', option, amount)) return;
     if (ui.amount) ui.amount.value = '';
     refreshBucketContextUI(contextName);
     renderBucketTransferModal();
@@ -5160,7 +5157,7 @@ function openBucketTransferModal(context, bucketKey, prefillAmount) {
     if (!ui.modal) return;
     ui.modal.setAttribute('data-context', context);
     ui.modal.setAttribute('data-bucket-key', bucketKey);
-    ui.modal.setAttribute('data-mode', 'send');
+    ui.modal.removeAttribute('data-selected-ref');
     ui.modal._bucketTransferExpanded = {};
     if (ui.amount) {
         ui.amount.value = (prefillAmount !== undefined && prefillAmount !== null && String(prefillAmount).trim() !== '') ? String(prefillAmount).trim() : '';
@@ -5180,8 +5177,8 @@ function openBucketTransferModal(context, bucketKey, prefillAmount) {
             }
             var optionBtn = e.target.closest('[data-option-ref]');
             if (optionBtn) {
-                var option = getBucketTransferOptionFromRef(optionBtn.getAttribute('data-option-ref'));
-                executeBucketTransferSelection(option);
+                ui.modal.setAttribute('data-selected-ref', optionBtn.getAttribute('data-option-ref'));
+                renderBucketTransferModal();
             }
         });
     }
