@@ -1130,43 +1130,52 @@ function renderLedger() {
                     </div>
                 </div>
             </div>
-            <!-- Desktop: three compact cards (≥640px); display toggled in styles.css -->
+            <!-- Desktop: three wide cards (≥640px); display toggled in styles.css -->
             <div class="major-funds-desktop-stack">
-                <div class="major-fund-bar flex items-center justify-between gap-2 py-2.5 px-3 rounded-xl bg-indigo-600 text-white border border-indigo-500">
-                    <div class="flex items-center gap-2 min-w-0">
-                        <span class="flex-shrink-0 w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                        </span>
-                        <span class="text-[12px] font-black uppercase tracking-[0.18em] truncate">Savings</span>
+                <div class="premium-card major-fund-wide-card bg-indigo-600 text-white border-indigo-500 shadow-md relative overflow-hidden group rounded-xl">
+                    <div class="absolute top-0 right-0 p-2 opacity-10 pointer-events-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
                     </div>
-                    <div class="flex items-center gap-2 flex-shrink-0">
-                        <span class="text-base font-black" data-major-fund="savings">${formatMoney(savBal)}</span>
-                        <button onclick="openSavingsBuckets()" class="py-1.5 px-2.5 rounded-lg bg-white/20 hover:bg-white/30 text-[10px] font-black uppercase">Manage</button>
+                    <div class="major-fund-wide-card-main">
+                        <div class="major-fund-wide-card-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                        </div>
+                        <div class="major-fund-wide-card-copy">
+                            <span class="major-fund-wide-card-label text-slate-900">Savings</span>
+                            <div class="major-fund-wide-card-amount"><span data-major-fund="savings">${formatMoney(savBal)}</span> <span class="text-sm text-indigo-200">${getCurrencyLabel()}</span></div>
+                        </div>
                     </div>
+                    <button onclick="openSavingsBuckets()" class="major-fund-wide-card-action bg-white text-slate-900 hover:bg-indigo-50 text-[10px] font-black uppercase transition text-center">Manage</button>
                 </div>
-                <div class="major-fund-bar flex items-center justify-between gap-2 py-2.5 px-3 rounded-xl bg-slate-800 text-white border border-slate-700">
-                    <div class="flex items-center gap-2 min-w-0">
-                        <span class="flex-shrink-0 w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
-                        </span>
-                        <span class="text-[11px] font-bold uppercase tracking-wider truncate">Transportation</span>
+                <div class="premium-card major-fund-wide-card bg-slate-800 text-white border-slate-700 shadow-md relative overflow-hidden group rounded-xl">
+                    <div class="absolute top-0 right-0 p-2 opacity-10 pointer-events-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
                     </div>
-                    <div class="flex items-center gap-2 flex-shrink-0">
-                        <span class="text-base font-black" data-major-fund="transportation">${formatMoney(carBal)}</span>
-                        <button onclick="openTransportationBuckets()" class="py-1.5 px-2.5 rounded-lg bg-white text-slate-800 hover:bg-slate-100 text-[10px] font-black uppercase">Manage</button>
+                    <div class="major-fund-wide-card-main">
+                        <div class="major-fund-wide-card-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
+                        </div>
+                        <div class="major-fund-wide-card-copy">
+                            <span class="major-fund-wide-card-label text-slate-300">Transportation</span>
+                            <div class="major-fund-wide-card-amount"><span data-major-fund="transportation">${formatMoney(carBal)}</span> <span class="text-sm text-slate-400">${getCurrencyLabel()}</span></div>
+                        </div>
                     </div>
+                    <button onclick="openTransportationBuckets()" class="major-fund-wide-card-action bg-white text-slate-800 hover:bg-slate-100 text-[10px] font-black uppercase transition text-center">Manage</button>
                 </div>
-                <div class="major-fund-bar flex items-center justify-between gap-2 py-2.5 px-3 rounded-xl bg-amber-500 text-white border border-amber-400">
-                    <div class="flex items-center gap-2 min-w-0">
-                        <span class="flex-shrink-0 w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><path d="M4 8h16"/><path d="M6 12h12"/><path d="M8 16h8"/><path d="M10 20h4"/></svg>
-                        </span>
-                        <span class="text-[11px] font-bold uppercase tracking-wider truncate">Payables</span>
+                <div class="premium-card major-fund-wide-card bg-amber-500 text-white border-amber-400 shadow-md relative overflow-hidden group rounded-xl">
+                    <div class="absolute top-0 right-0 p-2 opacity-10 pointer-events-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><path d="M4 8h16"/><path d="M6 12h12"/><path d="M8 16h8"/><path d="M10 20h4"/></svg>
                     </div>
-                    <div class="flex items-center gap-2 flex-shrink-0">
-                        <span class="text-base font-black" data-major-fund="payables">${formatMoney(payBal)}</span>
-                        <button onclick="openPayablesBuckets()" class="py-1.5 px-2.5 rounded-lg bg-white text-amber-900 hover:bg-amber-50 text-[10px] font-black uppercase">Manage</button>
+                    <div class="major-fund-wide-card-main">
+                        <div class="major-fund-wide-card-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8V4H8"/><path d="M4 8h16"/><path d="M6 12h12"/><path d="M8 16h8"/><path d="M10 20h4"/></svg>
+                        </div>
+                        <div class="major-fund-wide-card-copy">
+                            <span class="major-fund-wide-card-label text-amber-50">Payables</span>
+                            <div class="major-fund-wide-card-amount"><span data-major-fund="payables">${formatMoney(payBal)}</span> <span class="text-sm text-amber-100">${getCurrencyLabel()}</span></div>
+                        </div>
                     </div>
+                    <button onclick="openPayablesBuckets()" class="major-fund-wide-card-action bg-white text-amber-900 hover:bg-amber-50 text-[10px] font-black uppercase transition text-center">Manage</button>
                 </div>
             </div>
         </div>

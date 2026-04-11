@@ -1511,7 +1511,7 @@ function renderMiniBudgetTransferGroups(mode) {
     var groups = getMiniBudgetTransferGroups(mode);
     ui.panel._miniTransferGroups = groups;
     if (!ui.panel._miniTransferExpanded) ui.panel._miniTransferExpanded = {};
-    if (groups.length && Object.keys(ui.panel._miniTransferExpanded).length === 0) {
+    if (mode === 'send' && groups.length && Object.keys(ui.panel._miniTransferExpanded).length === 0) {
         ui.panel._miniTransferExpanded[groups[0].id] = true;
     }
     if (!groups.length) {
@@ -1652,7 +1652,8 @@ function setMiniBudgetTransferMode(mode) {
     if (!ui.panel || !ui.title || !ui.hint) return;
     ui.panel.classList.remove('hidden');
     ui.panel.setAttribute('data-mode', mode === 'receive' ? 'receive' : 'send');
-    ui.title.textContent = mode === 'receive' ? 'Receive from' : 'Send to';
+    ui.panel._miniTransferExpanded = {};
+    ui.title.textContent = mode === 'receive' ? 'Sources' : 'Destinations';
     ui.hint.textContent = mode === 'receive'
         ? 'Choose a source group, then select where funds should come from.'
         : 'Choose a destination group, then select a target item.';
