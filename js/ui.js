@@ -1091,8 +1091,8 @@ function renderLedger() {
 
     const majorHtml = `
         <div class="major-funds mb-3 sm:mb-4">
-            <!-- Mobile: compact bars; hidden sm+ (desktop uses wide cards only). -->
-            <div class="space-y-1.5 block sm:hidden">
+            <!-- Mobile: compact bars (<640px); see .major-funds-mobile-only in styles.css -->
+            <div class="space-y-1.5 major-funds-mobile-only">
                 <div class="major-fund-bar flex items-center justify-between gap-2 py-2.5 px-3 rounded-xl bg-indigo-600 text-white border border-indigo-500">
                     <div class="flex items-center gap-2 min-w-0">
                         <span class="flex-shrink-0 w-8 h-8 rounded-lg bg-white/20 flex items-center justify-center">
@@ -1130,8 +1130,8 @@ function renderLedger() {
                     </div>
                 </div>
             </div>
-            <!-- Desktop: three wide cards (display:grid from sm:grid; template in styles.css). -->
-            <div class="hidden sm:grid major-funds-desktop-stack">
+            <!-- Desktop: three wide cards (≥640px); display toggled in styles.css -->
+            <div class="major-funds-desktop-stack">
                 <div class="premium-card major-fund-wide-card bg-indigo-600 text-white border-indigo-500 shadow-md relative overflow-hidden group rounded-xl">
                     <div class="absolute top-0 right-0 p-2 opacity-10 pointer-events-none">
                         <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>

@@ -1251,11 +1251,23 @@ body.theme-dark .bucket-dropdown button:hover {
 .bucket-detail-history-amt.is-negative {
     color: #ef4444;
 }
-/* Grid template only — display:none / display:grid come from Tailwind (hidden sm:grid) so mobile is not overridden. */
+/* Major funds: responsive layout without Tailwind hidden/sm:grid (avoids cascade/purge issues → blank desktop). */
+.major-funds-mobile-only {
+    display: block;
+}
 .major-funds-desktop-stack {
+    display: none;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 0.9rem;
     align-items: stretch;
+}
+@media (min-width: 640px) {
+    .major-funds-mobile-only {
+        display: none;
+    }
+    .major-funds-desktop-stack {
+        display: grid;
+    }
 }
 .major-fund-wide-card {
     display: flex;
