@@ -559,7 +559,7 @@ function getMiniBudgetPaymentBadgeHtml(item) {
     if (!item || typeof getExpectedPaymentStatus !== 'function') return '';
     var status = getExpectedPaymentStatus(item.expectedPaymentDay);
     if (!status) return '';
-    var label = status.isDueToday ? 'Due today' : ('Expected ' + status.nextDateLabel);
+    var label = status.isDueToday ? 'Due today' : ('Due ' + status.nextDateLabel);
     var title = status.isDueToday
         ? 'Expected payment is due today (' + status.ordinalLabel + ' of the month).'
         : 'Expected on the ' + status.ordinalLabel + ' of each month. Next: ' + status.nextDateLabel + '.';
