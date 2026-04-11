@@ -1330,6 +1330,7 @@ function openTool(label, displayTitle, autoTransfer = false, prefillAmount, sid,
     const std = document.getElementById('tool-actions-standard');
     const trf = document.getElementById('tool-transfer-interface');
     const paymentBtn = document.getElementById('tool-payment-day-btn');
+    const deductBtn = document.getElementById('tool-action-deduct-btn');
     const addBtn = document.getElementById('tool-action-add-btn');
     const transferBtn = document.getElementById('tool-action-transfer-btn');
     const receiveBtn = document.getElementById('tool-action-receive-btn');
@@ -1358,6 +1359,7 @@ function openTool(label, displayTitle, autoTransfer = false, prefillAmount, sid,
         }
     }
     var isMiniContext = isMiniBudgetToolContext();
+    if (deductBtn) deductBtn.classList.toggle('hidden', isMiniContext);
     if (addBtn) addBtn.classList.toggle('hidden', isMiniContext);
     if (receiveBtn) receiveBtn.classList.toggle('hidden', !isMiniContext);
     if (transferBtn) transferBtn.textContent = isMiniContext ? 'Send to' : 'Transfer';
@@ -1415,9 +1417,19 @@ function getMiniBudgetTransferElements() {
         panel: document.getElementById('tool-transfer-interface'),
         title: document.getElementById('tool-transfer-title'),
         hint: document.getElementById('tool-transfer-hint'),
+        toggle: document.getElementById('tool-transfer-picker-toggle'),
+        body: document.getElementById('tool-transfer-picker-body'),
         list: document.getElementById('transfer-target-list'),
         empty: document.getElementById('tool-transfer-empty')
     };
+}
+
+function syncMiniBudgetTransferPickerState() {
+    var ui = getMiniBudgetTransferElements();
+    if (!ui.panel || !ui.toggle || !ui.body) return;
+    var collapsed = ui.panel.getAttribute('data-picker-collapsed') !== 'false';
+    ui.toggle.classList.toggle('is-collapsed', collapsed);
+    ui.body.classList.toggle('hidden', collapsed);
 }
 
 function getMiniBudgetTransferGroups() {
@@ -1653,12 +1665,21 @@ function setMiniBudgetTransferMode() {
     var ui = getMiniBudgetTransferElements();
     if (!ui.panel || !ui.title || !ui.hint) return;
     ui.panel.classList.remove('hidden');
+    ui.panel.setAttribute('data-picker-collapsed', 'true');
     ui.title.textContent = 'Choose a source';
     ui.hint.textContent = 'Choose a source item once, then use Send to or Receive from.';
     renderMiniBudgetTransferGroups();
+    syncMiniBudgetTransferPickerState();
     if (!ui.panel._miniTransferWired) {
         ui.panel._miniTransferWired = true;
         ui.panel.addEventListener('click', function (e) {
+            var pickerToggle = e.target.closest('#tool-transfer-picker-toggle');
+            if (pickerToggle) {
+                var collapsed = ui.panel.getAttribute('data-picker-collapsed') !== 'false';
+                ui.panel.setAttribute('data-picker-collapsed', collapsed ? 'false' : 'true');
+                syncMiniBudgetTransferPickerState();
+                return;
+            }
             var groupToggle = e.target.closest('[data-mini-group-toggle]');
             if (groupToggle) {
                 var groupId = groupToggle.getAttribute('data-mini-group-toggle');
@@ -4210,12 +4231,22 @@ function getBucketTransferModalElements() {
         currency: document.getElementById('bucket-transfer-currency'),
         sendBtn: document.getElementById('bucket-transfer-send-btn'),
         receiveBtn: document.getElementById('bucket-transfer-receive-btn'),
+        pickerToggle: document.getElementById('bucket-transfer-picker-toggle'),
+        pickerBody: document.getElementById('bucket-transfer-picker-body'),
         pickerTitle: document.getElementById('bucket-transfer-picker-title'),
         pickerHint: document.getElementById('bucket-transfer-picker-hint'),
         targets: document.getElementById('bucket-transfer-targets'),
         empty: document.getElementById('bucket-transfer-empty'),
         history: document.getElementById('bucket-transfer-history')
     };
+}
+
+function syncBucketTransferPickerState() {
+    var ui = getBucketTransferModalElements();
+    if (!ui.modal || !ui.pickerToggle || !ui.pickerBody) return;
+    var collapsed = ui.modal.getAttribute('data-picker-collapsed') !== 'false';
+    ui.pickerToggle.classList.toggle('is-collapsed', collapsed);
+    ui.pickerBody.classList.toggle('hidden', collapsed);
 }
 
 function getBucketTransferGroupData(contextName, bucketKey) {
@@ -4366,6 +4397,7 @@ function renderBucketTransferModal() {
     if (ui.pickerTitle) ui.pickerTitle.textContent = 'Choose a source';
     if (ui.pickerHint) ui.pickerHint.textContent = 'Choose a source item once, then use Send to or Receive from.';
     renderBucketTransferGroups(contextName, bucketKey);
+    syncBucketTransferPickerState();
     renderBucketTransferHistory(contextName, bucketKey);
 }
 
@@ -5157,6 +5189,7 @@ function openBucketTransferModal(context, bucketKey, prefillAmount) {
     if (!ui.modal) return;
     ui.modal.setAttribute('data-context', context);
     ui.modal.setAttribute('data-bucket-key', bucketKey);
+    ui.modal.setAttribute('data-picker-collapsed', 'true');
     ui.modal.removeAttribute('data-selected-ref');
     ui.modal._bucketTransferExpanded = {};
     if (ui.amount) {
@@ -5167,6 +5200,13 @@ function openBucketTransferModal(context, bucketKey, prefillAmount) {
         if (ui.sendBtn) ui.sendBtn.addEventListener('click', function () { setBucketTransferMode('send'); });
         if (ui.receiveBtn) ui.receiveBtn.addEventListener('click', function () { setBucketTransferMode('receive'); });
         ui.modal.addEventListener('click', function (e) {
+            var pickerToggle = e.target.closest('#bucket-transfer-picker-toggle');
+            if (pickerToggle) {
+                var collapsed = ui.modal.getAttribute('data-picker-collapsed') !== 'false';
+                ui.modal.setAttribute('data-picker-collapsed', collapsed ? 'false' : 'true');
+                syncBucketTransferPickerState();
+                return;
+            }
             var groupToggle = e.target.closest('[data-group-toggle]');
             if (groupToggle) {
                 var groupId = groupToggle.getAttribute('data-group-toggle');

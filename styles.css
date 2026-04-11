@@ -1095,9 +1095,40 @@ body.theme-dark .bucket-dropdown button:hover {
 }
 .bucket-detail-picker-head {
     display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+}
+.bucket-detail-picker-toggle {
+    width: 100%;
+    padding: 0;
+    border: none;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+}
+.bucket-detail-picker-meta {
+    display: flex;
     flex-direction: column;
     gap: 0.25rem;
-    margin-bottom: 0.85rem;
+    min-width: 0;
+}
+.bucket-detail-picker-chevron {
+    flex-shrink: 0;
+    font-size: 0.9rem;
+    font-weight: 900;
+    color: #64748b;
+    transition: transform 0.14s ease;
+}
+.bucket-detail-picker-toggle.is-collapsed .bucket-detail-picker-chevron {
+    transform: rotate(0deg);
+}
+.bucket-detail-picker-toggle:not(.is-collapsed) .bucket-detail-picker-chevron {
+    transform: rotate(90deg);
+}
+.bucket-detail-picker-body {
+    margin-top: 0.2rem;
 }
 .bucket-detail-picker-title,
 .bucket-detail-history-label {
@@ -1461,6 +1492,9 @@ body.theme-dark .bucket-detail-history-note {
 body.theme-dark .bucket-transfer-group-items {
     background: #0f172a;
     border-top-color: #334155;
+}
+body.theme-dark .bucket-detail-picker-chevron {
+    color: #94a3b8;
 }
 body.theme-dark .bucket-transfer-option {
     border-bottom-color: #1e293b;

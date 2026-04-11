@@ -1239,12 +1239,17 @@
                 <button type="button" id="bucket-transfer-receive-btn" class="bucket-detail-mode-btn bucket-detail-mode-receive">Receive from</button>
             </div>
             <div class="bucket-detail-picker">
-                <div class="bucket-detail-picker-head">
-                    <p id="bucket-transfer-picker-title" class="bucket-detail-picker-title">Send to</p>
-                    <p id="bucket-transfer-picker-hint" class="bucket-detail-picker-hint">Choose a destination group, then select a bucket or category item.</p>
+                <button type="button" id="bucket-transfer-picker-toggle" class="bucket-detail-picker-head bucket-detail-picker-toggle is-collapsed">
+                    <span class="bucket-detail-picker-meta">
+                        <p id="bucket-transfer-picker-title" class="bucket-detail-picker-title">Send to</p>
+                        <p id="bucket-transfer-picker-hint" class="bucket-detail-picker-hint">Choose a destination group, then select a bucket or category item.</p>
+                    </span>
+                    <span class="bucket-detail-picker-chevron">></span>
+                </button>
+                <div id="bucket-transfer-picker-body" class="bucket-detail-picker-body hidden">
+                    <div id="bucket-transfer-targets" class="bucket-transfer-targets"></div>
+                    <p id="bucket-transfer-empty" class="bucket-transfer-empty hidden">No sources or destinations are available right now.</p>
                 </div>
-                <div id="bucket-transfer-targets" class="bucket-transfer-targets"></div>
-                <p id="bucket-transfer-empty" class="bucket-transfer-empty hidden">No sources or destinations are available right now.</p>
             </div>
             <button type="button" id="bucket-transfer-delete-btn" class="w-full py-2 mt-4 text-[10px] font-bold text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition">Delete bucket</button>
             <div class="bucket-detail-history-wrap">
@@ -1294,12 +1299,17 @@
 
                 <!-- Transfer Interface (Hidden by default) -->
                 <div id="tool-transfer-interface" class="hidden space-y-3 bg-slate-50 p-4 rounded-xl">
-                    <div class="bucket-detail-picker-head">
-                        <p id="tool-transfer-title" class="bucket-detail-picker-title">Send to</p>
-                        <p id="tool-transfer-hint" class="bucket-detail-picker-hint">Choose a destination group, then select a target item.</p>
+                    <button type="button" id="tool-transfer-picker-toggle" class="bucket-detail-picker-head bucket-detail-picker-toggle is-collapsed">
+                        <span class="bucket-detail-picker-meta">
+                            <p id="tool-transfer-title" class="bucket-detail-picker-title">Send to</p>
+                            <p id="tool-transfer-hint" class="bucket-detail-picker-hint">Choose a destination group, then select a target item.</p>
+                        </span>
+                        <span class="bucket-detail-picker-chevron">></span>
+                    </button>
+                    <div id="tool-transfer-picker-body" class="bucket-detail-picker-body hidden">
+                        <div id="transfer-target-list" class="bucket-transfer-targets max-h-56 overflow-y-auto pr-1 custom-scrollbar"></div>
+                        <p id="tool-transfer-empty" class="bucket-transfer-empty hidden">No sources or destinations are available right now.</p>
                     </div>
-                    <div id="transfer-target-list" class="bucket-transfer-targets max-h-56 overflow-y-auto pr-1 custom-scrollbar"></div>
-                    <p id="tool-transfer-empty" class="bucket-transfer-empty hidden">No sources or destinations are available right now.</p>
                 </div>
             </div>
             <div id="category-history-log" class="mt-6 space-y-2 border-t border-slate-100 pt-4"></div>
