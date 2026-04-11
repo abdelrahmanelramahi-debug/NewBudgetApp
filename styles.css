@@ -1359,12 +1359,20 @@ body.theme-dark .bucket-dropdown button:hover {
         min-width: 0;
         align-self: stretch;
     }
+    .major-fund-wide-card-main {
+        justify-content: flex-start;
+    }
     .major-fund-wide-card-amount {
         font-size: clamp(1.15rem, 1.6vw, 1.55rem);
         line-height: 1.05;
     }
     .major-fund-wide-card-copy {
-        margin-left: -0.2rem;
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: calc(100% - 4.75rem);
+        margin-left: 0;
     }
 }
 #savings-buckets-modal .modal-content,
