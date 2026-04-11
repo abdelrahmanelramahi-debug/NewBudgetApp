@@ -1269,79 +1269,43 @@ body.theme-dark .bucket-dropdown button:hover {
         display: grid;
     }
 }
-.major-fund-wide-card {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    justify-content: flex-start;
-    gap: 1rem;
-    padding: 1.1rem 1.15rem;
-    min-height: 0;
-    position: relative;
-    isolation: isolate;
-}
-.major-fund-wide-card-main {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    min-width: 0;
-    flex: 1;
-    position: relative;
-    z-index: 1;
-}
-.major-fund-wide-card-icon {
-    width: 3.25rem;
-    height: 3.25rem;
-    border-radius: 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    background: rgba(255, 255, 255, 0.17);
-}
-.major-fund-wide-card-copy {
+.major-funds-desktop-stack .major-fund-bar {
     min-width: 0;
 }
-.major-fund-wide-card-label {
-    display: block;
-    font-size: 0.72rem;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0.14em;
-}
-.major-fund-wide-card-amount {
-    margin-top: 0.3rem;
-    font-size: clamp(1.2rem, 2.8vw, 2rem);
-    font-weight: 900;
-    line-height: 1.15;
-    word-break: break-word;
-}
-.major-fund-wide-card-action {
-    width: 100%;
-    min-width: 0;
-    flex-shrink: 0;
-    padding: 0.75rem 1rem;
-    border-radius: 0.95rem;
-    position: relative;
-    z-index: 1;
+#savings-buckets-modal .modal-content,
+#transportation-buckets-modal .modal-content,
+#payables-buckets-modal .modal-content {
+    width: min(42rem, calc(100vw - 1.5rem));
+    max-width: 42rem;
 }
 @media (min-width: 1024px) {
-    .major-fund-wide-card {
-        flex-direction: row;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1.25rem;
-        padding: 1.2rem 1.35rem;
-        min-height: 7.5rem;
+    #savings-buckets-modal .modal-content,
+    #transportation-buckets-modal .modal-content,
+    #payables-buckets-modal .modal-content {
+        width: min(48rem, calc(100vw - 3rem));
+        max-width: 48rem;
     }
-    .major-fund-wide-card-action {
-        width: auto;
-        min-width: 7rem;
-        align-self: center;
+    #savings-buckets-modal .premium-card,
+    #transportation-buckets-modal .premium-card,
+    #payables-buckets-modal .premium-card {
+        padding-left: 1.1rem;
+        padding-right: 1.1rem;
     }
-    .major-fund-wide-card-amount {
-        font-size: 2rem;
-        line-height: 1;
+    #savings-buckets-modal .bucket-row-card,
+    #transportation-buckets-modal .bucket-row-card,
+    #payables-buckets-modal .bucket-row-card {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    #savings-buckets-modal .bucket-amount-input,
+    #transportation-buckets-modal .bucket-amount-input,
+    #payables-buckets-modal .bucket-amount-input {
+        width: 4rem;
+    }
+    #savings-buckets-modal .bucket-row-balance,
+    #transportation-buckets-modal .bucket-row-balance,
+    #payables-buckets-modal .bucket-row-balance {
+        font-size: 1.1rem;
     }
 }
 body.theme-dark .bucket-detail-balance-card,
