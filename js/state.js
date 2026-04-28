@@ -105,6 +105,9 @@ function purgeDeletedPayablesBuckets() {
         if (name && state.accounts.payablesBuckets[name] !== undefined) {
             delete state.accounts.payablesBuckets[name];
         }
+        if (name && state.accounts.payablesBudgetPlan && state.accounts.payablesBudgetPlan[name] !== undefined) {
+            delete state.accounts.payablesBudgetPlan[name];
+        }
     });
 }
 
@@ -237,6 +240,84 @@ function getCanonicalSavingsBudgetPlanTotal() {
 }
 if (typeof window !== 'undefined') window.getCanonicalSavingsBudgetPlanTotal = getCanonicalSavingsBudgetPlanTotal;
 
+function ensurePayablesBudgetConfig() {
+    if (!state.accounts) state.accounts = {};
+    if (!state.accounts.payablesBuckets || typeof state.accounts.payablesBuckets !== 'object') {
+        state.accounts.payablesBuckets = {};
+    }
+    var buckets = state.accounts.payablesBuckets;
+    var seed = Number((state.accounts.buckets && state.accounts.buckets['Payables']) || 0) || 0;
+    if (!Object.keys(buckets).length) {
+        buckets.Main = seed;
+    }
+    if (!state.accounts.payablesDefaultBucket) state.accounts.payablesDefaultBucket = 'Main';
+    if (state.accounts.payablesDefaultBucket && buckets[state.accounts.payablesDefaultBucket] === undefined) {
+        var firstPayablesBucket = Object.keys(buckets)[0];
+        if (firstPayablesBucket) state.accounts.payablesDefaultBucket = firstPayablesBucket;
+    }
+    if (!Array.isArray(state.accounts.payablesBucketOrder)) state.accounts.payablesBucketOrder = [];
+    var ordered = {};
+    var defaultBucket = state.accounts.payablesDefaultBucket || 'Main';
+    if (buckets[defaultBucket] !== undefined) ordered[defaultBucket] = Number(buckets[defaultBucket]) || 0;
+    (state.accounts.payablesBucketOrder || []).forEach(function (key) {
+        if (!key || buckets[key] === undefined || ordered[key] !== undefined) return;
+        ordered[key] = Number(buckets[key]) || 0;
+    });
+    Object.keys(buckets).forEach(function (key) {
+        if (!key || ordered[key] !== undefined) return;
+        ordered[key] = Number(buckets[key]) || 0;
+    });
+    state.accounts.payablesBuckets = ordered;
+    state.accounts.payablesBucketOrder = Object.keys(ordered);
+    if (!state.accounts.payablesBudgetPlan || typeof state.accounts.payablesBudgetPlan !== 'object') {
+        state.accounts.payablesBudgetPlan = {};
+    }
+    var existingPlanKeys = Object.keys(state.accounts.payablesBudgetPlan || {});
+    var planMap = {};
+    var legacyPlan = Number(state.accounts.payablesBudgetPlan.Payables) || 0;
+    var shouldUseLegacyPlan = !existingPlanKeys.length || (existingPlanKeys.length === 1 && existingPlanKeys[0] === 'Payables');
+    if (!legacyPlan) {
+        var sys = (state.categories || []).find(function (s) { return s && s.id === 'sys_savings'; });
+        var payablesItem = sys && Array.isArray(sys.items)
+            ? sys.items.find(function (i) { return i && i.label === 'Payables'; })
+            : null;
+        legacyPlan = shouldUseLegacyPlan ? (Number(payablesItem && payablesItem.amount) || 0) : 0;
+    }
+    Object.keys(ordered).forEach(function (key, idx) {
+        if (state.accounts.payablesBudgetPlan[key] !== undefined) {
+            planMap[key] = Number(state.accounts.payablesBudgetPlan[key]) || 0;
+        } else {
+            planMap[key] = (idx === 0 && shouldUseLegacyPlan) ? legacyPlan : 0;
+        }
+    });
+    state.accounts.payablesBudgetPlan = planMap;
+}
+if (typeof window !== 'undefined') window.ensurePayablesBudgetConfig = ensurePayablesBudgetConfig;
+
+function getCanonicalPayablesBucketOrder() {
+    ensurePayablesBudgetConfig();
+    var order = (state.accounts && Array.isArray(state.accounts.payablesBucketOrder))
+        ? state.accounts.payablesBucketOrder.slice()
+        : [];
+    if (!order.length && state.accounts && state.accounts.payablesBuckets) {
+        order = Object.keys(state.accounts.payablesBuckets);
+    }
+    return order.filter(function (key) {
+        return key && state.accounts && state.accounts.payablesBuckets && state.accounts.payablesBuckets[key] !== undefined;
+    });
+}
+if (typeof window !== 'undefined') window.getCanonicalPayablesBucketOrder = getCanonicalPayablesBucketOrder;
+
+function getCanonicalPayablesBudgetPlanTotal() {
+    ensurePayablesBudgetConfig();
+    var total = 0;
+    getCanonicalPayablesBucketOrder().forEach(function (key) {
+        total += Number((state.accounts && state.accounts.payablesBudgetPlan && state.accounts.payablesBudgetPlan[key]) || 0);
+    });
+    return total;
+}
+if (typeof window !== 'undefined') window.getCanonicalPayablesBudgetPlanTotal = getCanonicalPayablesBudgetPlanTotal;
+
 function buildPaycheckPriorityCatalog() {
     var catalog = [];
     var seen = {};
@@ -258,10 +339,27 @@ function buildPaycheckPriorityCatalog() {
         });
     });
 
+    if (typeof ensurePayablesBudgetConfig === 'function') ensurePayablesBudgetConfig();
+    var payablesBuckets = (state.accounts && state.accounts.payablesBuckets) ? state.accounts.payablesBuckets : {};
+    Object.keys(payablesBuckets).forEach(function (bucketName) {
+        if (!bucketName) return;
+        var entryId = 'payablesBucket:' + bucketName;
+        if (seen[entryId]) return;
+        seen[entryId] = true;
+        catalog.push({
+            id: entryId,
+            type: 'payablesBucket',
+            label: bucketName,
+            title: bucketName,
+            groupLabel: 'Payables Bucket',
+            bucketName: bucketName
+        });
+    });
+
     var sysSavings = (state.categories || []).find(function (s) { return s && s.id === 'sys_savings'; });
     var sysItems = (sysSavings && Array.isArray(sysSavings.items)) ? sysSavings.items : [];
     sysItems.forEach(function (item) {
-        if (!item || !item.label || item.label === 'Savings') return;
+        if (!item || !item.label || item.label === 'Savings' || item.label === 'Payables') return;
         var itemLabel = item.label;
         var entryId = 'mustHave:' + itemLabel;
         if (seen[entryId]) return;
@@ -462,6 +560,9 @@ function loadState() {
     ensureFoodConsumedDays();
     ensureSystemSavings();
     ensureCoreItems();
+    if (typeof ensurePayablesBudgetConfig === 'function') ensurePayablesBudgetConfig();
+    if (typeof purgeDeletedPayablesBuckets === 'function') purgeDeletedPayablesBuckets();
+    if (typeof ensurePayablesBudgetConfig === 'function') ensurePayablesBudgetConfig();
     normalizePaycheckPriorityOrder();
 }
 
@@ -533,6 +634,7 @@ function migrateState() {
         if (!state.accounts.payablesDefaultBucket) {
             state.accounts.payablesDefaultBucket = 'Main';
         }
+        if (typeof ensurePayablesBudgetConfig === 'function') ensurePayablesBudgetConfig();
         if (!state.accounts.transportationBuckets) {
             const seed = state.accounts.buckets['Transportation'] ?? 0;
             state.accounts.transportationBuckets = { Main: seed };
@@ -553,6 +655,8 @@ function migrateState() {
         if (!Array.isArray(state._deletedPayablesBuckets)) state._deletedPayablesBuckets = [];
         if (!Array.isArray(state._deletedSavingsBuckets)) state._deletedSavingsBuckets = [];
         if (!Array.isArray(state._deletedTransportationBuckets)) state._deletedTransportationBuckets = [];
+        purgeDeletedPayablesBuckets();
+        if (typeof ensurePayablesBudgetConfig === 'function') ensurePayablesBudgetConfig();
         ACCOUNT_LABELS.forEach(label => {
             if (state.balances[label] !== undefined) delete state.balances[label];
         });
@@ -592,6 +696,10 @@ function migrateState() {
                 Main: buckets['Payables'] ?? 0
             },
             payablesDefaultBucket: 'Main',
+            payablesBudgetPlan: {
+                Main: buckets['Payables'] ?? 0
+            },
+            payablesBucketOrder: ['Main'],
             transportationBuckets: {
                 Main: buckets['Transportation'] ?? 0
             },
@@ -608,6 +716,7 @@ function migrateState() {
     if (!Array.isArray(state._deletedSavingsBuckets)) state._deletedSavingsBuckets = [];
     if (!Array.isArray(state._deletedTransportationBuckets)) state._deletedTransportationBuckets = [];
     ensureGeneralSavingsBucketState();
+    if (typeof ensurePayablesBudgetConfig === 'function') ensurePayablesBudgetConfig();
     normalizePaycheckPriorityOrder();
     normalizeMiniBudgetPaymentDays();
 }
@@ -1279,6 +1388,7 @@ function initSurplusFromOpening() {
     if (!state.accounts.payablesDefaultBucket) {
         state.accounts.payablesDefaultBucket = 'Main';
     }
+    if (typeof ensurePayablesBudgetConfig === 'function') ensurePayablesBudgetConfig();
     if (!state.accounts.transportationBuckets) {
         state.accounts.transportationBuckets = { Main: state.accounts.buckets['Transportation'] ?? 0 };
     }

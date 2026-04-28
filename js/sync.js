@@ -625,6 +625,7 @@
                 if (state.settings) state.settings.theme = localTheme;
                 if (typeof ensureWeeklyState === 'function') ensureWeeklyState();
                 if (typeof purgeDeletedPayablesBuckets === 'function') purgeDeletedPayablesBuckets();
+                if (typeof ensurePayablesBudgetConfig === 'function') ensurePayablesBudgetConfig();
                 if (typeof purgeDeletedSavingsBuckets === 'function') purgeDeletedSavingsBuckets();
                 if (typeof purgeDeletedTransportationBuckets === 'function') purgeDeletedTransportationBuckets();
                 var stateKey = STORAGE_KEYS.STATE;
@@ -670,6 +671,8 @@
                     if (typeof ensureCoreItems === 'function') ensureCoreItems();
                     if (typeof ensureSettings === 'function') ensureSettings();
                     if (typeof normalizeMoneyPrecision === 'function') normalizeMoneyPrecision();
+                    if (typeof purgeDeletedPayablesBuckets === 'function') purgeDeletedPayablesBuckets();
+                    if (typeof ensurePayablesBudgetConfig === 'function') ensurePayablesBudgetConfig();
                     if ((state.schemaVersion || 1) < 2 &&
                         state.accounts &&
                         state.accounts.surplus === 0 &&

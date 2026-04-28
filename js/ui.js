@@ -479,6 +479,10 @@ function updateBudgetPlanAllocated() {
                     allocated += rm(getCanonicalSavingsBudgetPlanTotal());
                     return;
                 }
+                if (item.label === 'Payables' && typeof getCanonicalPayablesBudgetPlanTotal === 'function') {
+                    allocated += rm(getCanonicalPayablesBudgetPlanTotal());
+                    return;
+                }
                 allocated += typeof item.amount === 'number' ? rm(item.amount) : 0;
             });
         });
@@ -592,6 +596,7 @@ function renderStrategy(opts) {
         if (incomeInput) incomeInput.value = state.monthlyIncome;
     }
     if (typeof syncSavingsBudgetPlanItemAmount === 'function') syncSavingsBudgetPlanItemAmount();
+    if (typeof syncPayablesBudgetPlanItemAmount === 'function') syncPayablesBudgetPlanItemAmount();
 
     let systemHtml = '';
     let savingsCardHtml = '';
@@ -604,6 +609,11 @@ function renderStrategy(opts) {
     if (sysSavingsSec && Array.isArray(sysSavingsSec.items)) {
         var savingsIdxInSys = sysSavingsSec.items.findIndex(function (i) { return i && i.label === 'Savings'; });
         if (savingsIdxInSys >= 0) savingsItemInSys = sysSavingsSec.items[savingsIdxInSys];
+    }
+    var payablesItemInSys = null;
+    if (sysSavingsSec && Array.isArray(sysSavingsSec.items)) {
+        var payablesIdxInSys = sysSavingsSec.items.findIndex(function (i) { return i && i.label === 'Payables'; });
+        if (payablesIdxInSys >= 0) payablesItemInSys = sysSavingsSec.items[payablesIdxInSys];
     }
     var coreEssentialsSec = state.categories.find(function (s) { return s && s.id === 'core_essentials'; }) || null;
     var transportationInCore = null;
@@ -680,6 +690,69 @@ function renderStrategy(opts) {
     if (savingsItemInSys) {
         savingsCardHtml = buildSavingsPlanCardHtml();
     }
+    function buildPayablesPlanCardHtml() {
+        if (typeof ensurePayablesBudgetConfig === 'function') ensurePayablesBudgetConfig();
+        var payablesBuckets = typeof getCanonicalPayablesBucketOrder === 'function'
+            ? getCanonicalPayablesBucketOrder()
+            : Object.keys((state.accounts && state.accounts.payablesBuckets) || {});
+        var payablesPlannedTotal = typeof getCanonicalPayablesBudgetPlanTotal === 'function'
+            ? getCanonicalPayablesBudgetPlanTotal()
+            : 0;
+        if (!payablesBuckets.length) return '';
+
+        var rowsHtml = `
+            <div class="budget-savings-section border-b border-slate-100 pb-3 mb-2">
+                <div class="budget-savings-title-row flex items-center justify-between gap-2">
+                    <span class="budget-savings-title">Payables</span>
+                    <span class="budget-payables-total text-amber-600 font-black">${formatMoney(payablesPlannedTotal)} ${getCurrencyLabel()}</span>
+                </div>
+                <div class="flex items-center gap-2 mt-2 mb-3">
+                    <input id="budget-plan-payables-bucket-name" type="text" maxlength="80" class="input-pill text-left flex-1" placeholder="New payables bucket">
+                    <button onclick="createPayablesBucketFromBudgetPlan()" class="px-3 py-2 rounded-lg bg-slate-900 text-white text-[10px] font-black uppercase tracking-wider">Add</button>
+                    <button onclick="openPayablesBuckets()" class="px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-[10px] font-black uppercase tracking-wider">Manage</button>
+                </div>
+        `;
+
+        payablesBuckets.forEach(function (bucketName, bucketIdx) {
+            var planned = Number((state.accounts && state.accounts.payablesBudgetPlan && state.accounts.payablesBudgetPlan[bucketName]) || 0);
+            var totalBudget = state.monthlyIncome || 0;
+            var step = 50;
+            var budgetCap = totalBudget > 0
+                ? Math.ceil(totalBudget / step) * step
+                : Math.ceil((state.monthlyIncome || 10000) * 1.2 / step) * step;
+            var max = Math.max(step, Math.ceil((planned || 0) / step) * step + step * 2, budgetCap);
+            var snapped = Math.round((planned || 0) / step) * step;
+            var bucketArg = '\'' + String(bucketName).replace(/\\/g, '\\\\').replace(/'/g, '\\\'') + '\'';
+            rowsHtml += `
+                <div class="pb-2 budget-savings-bucket-row">
+                    <div class="draggable-row flex justify-between items-center py-2">
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs font-bold text-slate-600">${escapeHtml(bucketName)}</span>
+                        </div>
+                        <div class="flex items-center gap-2 no-drag" onmousedown="event.stopPropagation()">
+                            <input id="payables-bucket-input-${bucketIdx}" type="text" inputmode="decimal" value="${formatMoneyPlain(planned)}" class="input-pill text-slate-900 budget-item-input" onfocus="pushToUndo(); handleBudgetPlanFieldFocus(this)" oninput="budgetPlanPayablesBucketInput(${bucketArg}, ${bucketIdx}, this)" onblur="budgetPlanPayablesBucketCommit(${bucketArg}, ${bucketIdx}, this); handleBudgetPlanFieldBlur()" onkeydown="budgetPlanPayablesBucketKeydown(event, ${bucketArg}, ${bucketIdx}, this)" autocomplete="off">
+                            <button onclick="openPayablesBuckets()" class="p-1.5 text-slate-300 hover:text-slate-600 hover:bg-slate-50 rounded">⋯</button>
+                        </div>
+                    </div>
+                    <div class="px-6 pb-1">
+                        <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mb-1">
+                            <span>Monthly</span>
+                            <span id="payables-bucket-slider-label-${bucketIdx}">${Math.round(planned)} ${getCurrencyLabel()}</span>
+                        </div>
+                        <input type="range" id="payables-bucket-slider-${bucketIdx}" min="0" max="${max}" step="${step}" value="${snapped}" oninput="budgetPlanPayablesBucketSliderInput(${bucketArg}, ${bucketIdx}, this)" onchange="handleBudgetPlanFieldBlur()" onblur="handleBudgetPlanFieldBlur()" class="w-full">
+                        <div class="flex justify-between text-[9px] font-bold uppercase text-slate-300 mt-1">
+                            <span>0</span>
+                            <span>${max}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        rowsHtml += `</div>`;
+
+        return rowsHtml;
+    }
+    var payablesCardHtml = payablesItemInSys ? buildPayablesPlanCardHtml() : '';
 
     state.categories.forEach((sec, secIdx) => {
         const budgetPlanItems = (sec.items || []).filter(function (i) {
@@ -692,6 +765,7 @@ function renderStrategy(opts) {
             if (item && (item.label === 'Daily Food' || item.label === 'Food Base') && state.settings && state.settings.showFoodPlan === false) return 0;
             if (item && (item.label === 'Daily Food' || item.label === 'Food Base') && typeof getFoodPlanBudgetAmount === 'function') return Number(getFoodPlanBudgetAmount()) || 0;
             if (item && item.label === 'Savings' && typeof getCanonicalSavingsBudgetPlanTotal === 'function') return Number(getCanonicalSavingsBudgetPlanTotal()) || 0;
+            if (item && item.label === 'Payables' && typeof getCanonicalPayablesBudgetPlanTotal === 'function') return Number(getCanonicalPayablesBudgetPlanTotal()) || 0;
             return typeof item.amount === 'number' ? item.amount : 0;
         };
         let secTotalBase = budgetPlanItems.reduce((a, b) => a + plannedTotalForRow(b), 0);
@@ -727,6 +801,10 @@ function renderStrategy(opts) {
         sec.items.forEach((item, idx) => {
             if (sec.id === 'sys_savings' && item.label === 'Savings') {
                 rowsHtml += savingsCardHtml || '';
+                return;
+            }
+            if (sec.id === 'sys_savings' && item.label === 'Payables') {
+                rowsHtml += payablesCardHtml || '';
                 return;
             }
             if (sec.id === 'core_essentials' && item.label === 'Transportation') return;
@@ -1008,6 +1086,7 @@ function renderStrategy(opts) {
                 if (i && (i.label === 'Daily Food' || i.label === 'Food Base') && state.settings && state.settings.showFoodPlan === false) return s;
                 if (i && i.label === 'Daily Food' && typeof getFoodPlanBudgetAmount === 'function') return s + rm(getFoodPlanBudgetAmount());
                 if (i && i.label === 'Savings' && typeof getCanonicalSavingsBudgetPlanTotal === 'function') return s + rm(getCanonicalSavingsBudgetPlanTotal());
+                if (i && i.label === 'Payables' && typeof getCanonicalPayablesBudgetPlanTotal === 'function') return s + rm(getCanonicalPayablesBudgetPlanTotal());
                 return s + rm(i.amount || 0);
             }, 0);
         }, 0);

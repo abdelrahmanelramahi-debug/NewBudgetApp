@@ -711,6 +711,20 @@ function initAndRenderOnboardingCategories() {
         });
         state.accounts.savingsBudgetPlan = seededPlan;
         if (typeof syncSavingsBudgetPlanItemAmount === 'function') syncSavingsBudgetPlanItemAmount();
+        if (!state.accounts.payablesBuckets || typeof state.accounts.payablesBuckets !== 'object' || !Object.keys(state.accounts.payablesBuckets).length) {
+            state.accounts.payablesBuckets = { Main: 0 };
+            state.accounts.payablesDefaultBucket = 'Main';
+        }
+        if (!state.accounts.payablesBudgetPlan || typeof state.accounts.payablesBudgetPlan !== 'object') {
+            state.accounts.payablesBudgetPlan = {};
+        }
+        var seededPayablesPlan = {};
+        Object.keys(state.accounts.payablesBuckets || {}).forEach(function (bucketName) {
+            seededPayablesPlan[bucketName] = 0;
+        });
+        state.accounts.payablesBudgetPlan = seededPayablesPlan;
+        if (!Array.isArray(state.accounts.payablesBucketOrder)) state.accounts.payablesBucketOrder = Object.keys(state.accounts.payablesBuckets || {});
+        if (typeof syncPayablesBudgetPlanItemAmount === 'function') syncPayablesBudgetPlanItemAmount();
     }
     var obInc = document.getElementById('onboarding-income');
     if (obInc && obInc.value.trim() !== '' && typeof state !== 'undefined') {
@@ -863,10 +877,24 @@ function seedBalancesFromOnboardingPlan() {
         state.accounts.payablesBuckets = {};
     }
     if (!state.accounts.payablesDefaultBucket) state.accounts.payablesDefaultBucket = 'Main';
-    Object.keys(state.accounts.payablesBuckets).forEach(function (key) {
-        state.accounts.payablesBuckets[key] = 0;
-    });
-    state.accounts.payablesBuckets[state.accounts.payablesDefaultBucket] = plannedPayables;
+    if (typeof ensurePayablesBudgetConfig === 'function') ensurePayablesBudgetConfig();
+    var payablesPlan = state.accounts.payablesBudgetPlan || {};
+    var payablesPlanKeys = Object.keys(payablesPlan);
+    if (payablesPlanKeys.length) {
+        var nextPayables = {};
+        payablesPlanKeys.forEach(function (key) {
+            nextPayables[key] = Math.max(0, Number(payablesPlan[key]) || 0);
+        });
+        if (nextPayables[state.accounts.payablesDefaultBucket] === undefined) {
+            nextPayables[state.accounts.payablesDefaultBucket] = 0;
+        }
+        state.accounts.payablesBuckets = nextPayables;
+    } else {
+        Object.keys(state.accounts.payablesBuckets).forEach(function (key) {
+            state.accounts.payablesBuckets[key] = 0;
+        });
+        state.accounts.payablesBuckets[state.accounts.payablesDefaultBucket] = plannedPayables;
+    }
 
     if (!state.accounts.transportationBuckets || typeof state.accounts.transportationBuckets !== 'object') {
         state.accounts.transportationBuckets = {};

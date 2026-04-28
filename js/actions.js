@@ -193,6 +193,7 @@ function ensureAccountsState() {
     if (!state.accounts.payablesDefaultBucket) {
         state.accounts.payablesDefaultBucket = 'Main';
     }
+    if (typeof ensurePayablesBudgetConfig === 'function') ensurePayablesBudgetConfig();
     if (!state.accounts.transportationBuckets) {
         const seed = state.accounts.buckets['Transportation'] ?? 0;
         state.accounts.transportationBuckets = { Main: seed };
@@ -515,6 +516,15 @@ function applyTransaction(tx) {
                     ensureGeneralSavingsBudgetConfig();
                     state.accounts.savingsBudgetPlan['General Savings'] = newVal;
                     syncSavingsBudgetPlanItemAmount();
+                }
+                if (item.label === 'Payables') {
+                    if (typeof ensurePayablesBudgetConfig === 'function') ensurePayablesBudgetConfig();
+                    var payablesDefault = state.accounts.payablesDefaultBucket || 'Main';
+                    if (state.accounts.payablesBudgetPlan[payablesDefault] === undefined) {
+                        state.accounts.payablesBudgetPlan[payablesDefault] = 0;
+                    }
+                    state.accounts.payablesBudgetPlan[payablesDefault] = newVal;
+                    if (typeof syncPayablesBudgetPlanItemAmount === 'function') syncPayablesBudgetPlanItemAmount();
                 }
                 break;
             }
@@ -3266,6 +3276,14 @@ function fastUpdateItemAmount(sid, idx, val) {
             var labelS = document.getElementById('savings-slider-label-' + sid + '-' + idx);
             if (labelS) labelS.textContent = formatMoney(num) + ' ' + getCurrencyLabel();
         }
+    } else if(item.label === 'Payables') {
+        if (typeof ensurePayablesBudgetConfig === 'function') ensurePayablesBudgetConfig();
+        var defaultPayablesBucket = state.accounts.payablesDefaultBucket || 'Main';
+        if (state.accounts.payablesBudgetPlan && state.accounts.payablesBudgetPlan[defaultPayablesBucket] === undefined) {
+            state.accounts.payablesBudgetPlan[defaultPayablesBucket] = 0;
+        }
+        if (state.accounts.payablesBudgetPlan) state.accounts.payablesBudgetPlan[defaultPayablesBucket] = num;
+        if (typeof syncPayablesBudgetPlanItemAmount === 'function') syncPayablesBudgetPlanItemAmount();
     } else if(item.label === 'Transportation') {
         const slider = document.getElementById('car-fund-slider-' + sid + '-' + idx);
         if(slider) {
@@ -3290,6 +3308,7 @@ function fastUpdateItemAmount(sid, idx, val) {
                 if (i && (i.label === 'Daily Food' || i.label === 'Food Base') && state.settings && state.settings.showFoodPlan === false) return s;
                 if (i && i.label === 'Daily Food' && typeof getFoodPlanBudgetAmount === 'function') return s + rm3(getFoodPlanBudgetAmount());
                 if (i && i.label === 'Savings' && typeof getCanonicalSavingsBudgetPlanTotal === 'function') return s + rm3(getCanonicalSavingsBudgetPlanTotal());
+                if (i && i.label === 'Payables' && typeof getCanonicalPayablesBudgetPlanTotal === 'function') return s + rm3(getCanonicalPayablesBudgetPlanTotal());
                 return s + rm3(i.amount || 0);
             }, 0);
         }, 0);
@@ -3446,6 +3465,94 @@ function budgetPlanSavingsBucketSliderInput(bucketKey, bucketIdx, sliderEl) {
 }
 window.budgetPlanSavingsBucketSliderInput = budgetPlanSavingsBucketSliderInput;
 
+function budgetPlanPayablesBucketInput(bucketKey, bucketIdx, el) {
+    if (typeof beginBudgetPlanEditing === 'function') beginBudgetPlanEditing();
+    if (!el) return;
+    var raw = String(el.value ?? '');
+    if (typeof clampMoneyInputString === 'function') {
+        var c = clampMoneyInputString(raw);
+        if (c !== raw) {
+            el.value = c;
+            raw = c;
+        }
+    }
+    if (!isProbablyPartialNumber(raw)) return;
+    if (raw.trim() === '' || raw === '-' || raw === '.' || raw === '-.') {
+        budgetPlanPayablesBucketSyncLabel(bucketIdx, 0);
+        return;
+    }
+    var num = typeof parseMoney === 'function' ? parseMoney(raw) : Math.round((parseFloat(raw) || 0) * 100) / 100;
+    if (Number.isNaN(num) || num < 0) num = 0;
+    var slider = document.getElementById('payables-bucket-slider-' + bucketIdx);
+    if (slider) slider.value = String(Math.round(num / 50) * 50);
+    budgetPlanPayablesBucketSyncLabel(bucketIdx, num);
+}
+window.budgetPlanPayablesBucketInput = budgetPlanPayablesBucketInput;
+
+function budgetPlanPayablesBucketCommit(bucketKey, bucketIdx, el) {
+    if (!el) return;
+    var raw = String(el.value ?? '').trim();
+    var num = 0;
+    if (raw === '' || raw === '-' || raw === '.' || raw === '-.') {
+        num = 0;
+    } else {
+        num = typeof parseMoney === 'function' ? parseMoney(raw) : Math.round((parseFloat(raw) || 0) * 100) / 100;
+        if (Number.isNaN(num)) num = 0;
+    }
+    num = Math.max(0, num);
+    el.value = typeof formatMoneyPlain === 'function' ? formatMoneyPlain(num) : String(num);
+    syncPayablesBucketBudgetAmount(bucketKey, num);
+    var slider = document.getElementById('payables-bucket-slider-' + bucketIdx);
+    if (slider) slider.value = String(Math.round(num / 50) * 50);
+    budgetPlanPayablesBucketSyncLabel(bucketIdx, num);
+    if (typeof scheduleBudgetPlanAllocatedRefresh === 'function') scheduleBudgetPlanAllocatedRefresh();
+}
+window.budgetPlanPayablesBucketCommit = budgetPlanPayablesBucketCommit;
+
+function budgetPlanPayablesBucketKeydown(e, bucketKey, bucketIdx, el) {
+    if (!e) return;
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) return;
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        try { el && el.blur && el.blur(); } catch (err) {}
+    }
+}
+window.budgetPlanPayablesBucketKeydown = budgetPlanPayablesBucketKeydown;
+
+function budgetPlanPayablesBucketSyncLabel(bucketIdx, rawValue) {
+    var num = Number(rawValue);
+    if (Number.isNaN(num) || num < 0) num = 0;
+    var label = document.getElementById('payables-bucket-slider-label-' + bucketIdx);
+    if (label) label.textContent = formatMoney(num) + ' ' + getCurrencyLabel();
+}
+window.budgetPlanPayablesBucketSyncLabel = budgetPlanPayablesBucketSyncLabel;
+
+function refreshPayablesPlanTotalsUI() {
+    var rm = typeof roundMoney === 'function' ? roundMoney : function (x) { return Math.round(Number(x) * 100) / 100; };
+    var total = (typeof getCanonicalPayablesBudgetPlanTotal === 'function')
+        ? getCanonicalPayablesBudgetPlanTotal()
+        : 0;
+    total = rm(total);
+    var nodes = document.querySelectorAll('.budget-payables-total');
+    if (!nodes || !nodes.length) return;
+    for (var i = 0; i < nodes.length; i++) {
+        nodes[i].textContent = formatMoney(total) + ' ' + getCurrencyLabel();
+    }
+}
+window.refreshPayablesPlanTotalsUI = refreshPayablesPlanTotalsUI;
+
+function budgetPlanPayablesBucketSliderInput(bucketKey, bucketIdx, sliderEl) {
+    if (typeof beginBudgetPlanEditing === 'function') beginBudgetPlanEditing();
+    if (!sliderEl) return;
+    var num = typeof parseMoney === 'function' ? parseMoney(sliderEl.value) : Math.round((parseFloat(sliderEl.value) || 0) * 100) / 100;
+    if (Number.isNaN(num) || num < 0) num = 0;
+    syncPayablesBucketBudgetAmount(bucketKey, num, { save: false });
+    var input = document.getElementById('payables-bucket-input-' + bucketIdx);
+    if (input && document.activeElement !== input) input.value = typeof formatMoneyPlain === 'function' ? formatMoneyPlain(num) : String(num);
+    budgetPlanPayablesBucketSyncLabel(bucketIdx, num);
+}
+window.budgetPlanPayablesBucketSliderInput = budgetPlanPayablesBucketSliderInput;
+
 function syncFoodBaseAmount(sid, idx, val) {
     const num = typeof parseMoney === 'function' ? parseMoney(val) : Math.round((parseFloat(val) || 0) * 100) / 100;
     const slider = document.getElementById('food-daily-slider-' + sid + '-' + idx);
@@ -3552,6 +3659,14 @@ function getAllocatableItems() {
                 });
                 return;
             }
+            if (item.label === 'Payables') {
+                if (typeof ensurePayablesBudgetConfig === 'function') ensurePayablesBudgetConfig();
+                Object.keys(state.accounts.payablesBudgetPlan || {}).forEach(function (bucketName) {
+                    var amount = Number(state.accounts.payablesBudgetPlan[bucketName]) || 0;
+                    if (amount > 0) items.push({ label: 'Payables', amount: amount, payablesBucket: bucketName });
+                });
+                return;
+            }
             if (item.amount > 0) {
                 items.push({ label: item.label, amount: item.amount });
             }
@@ -3648,11 +3763,16 @@ function applyPaycheckDistribute() {
 
     var allocatableItems = getAllocatableItems();
     var savingsPlanByBucket = {};
+    var payablesPlanByBucket = {};
     var mustHavePlanByLabel = {};
     allocatableItems.forEach(function (item) {
         if (!item) return;
         if (item.label === 'Savings' && item.savingsBucket) {
             savingsPlanByBucket[item.savingsBucket] = Number(item.amount) || 0;
+            return;
+        }
+        if (item.label === 'Payables' && item.payablesBucket) {
+            payablesPlanByBucket[item.payablesBucket] = Number(item.amount) || 0;
             return;
         }
         mustHavePlanByLabel[item.label] = Number(item.amount) || 0;
@@ -3662,7 +3782,7 @@ function applyPaycheckDistribute() {
     var coreLabels = {};
     var sysSavingsSec = state.categories.find(function (s) { return s && s.id === 'sys_savings'; });
     (sysSavingsSec && sysSavingsSec.items ? sysSavingsSec.items : []).forEach(function (item) {
-        if (!item || !item.label || item.label === 'Savings') return;
+        if (!item || !item.label || item.label === 'Savings' || item.label === 'Payables') return;
         coreLabels[item.label] = true;
     });
     (coreSec && coreSec.items ? coreSec.items : []).forEach(function (item) {
@@ -3714,6 +3834,11 @@ function applyPaycheckDistribute() {
             totalRequested += deficit;
             return;
         }
+        if (entry.type === 'payablesBucket') {
+            var payablesPlanned = Number(payablesPlanByBucket[entry.bucketName]) || 0;
+            totalRequested += Math.max(0, payablesPlanned);
+            return;
+        }
         if (entry.type === 'mustHave') {
             if (!coreLabels[entry.itemLabel]) return;
             totalRequested += getDeficitForLabel(entry.itemLabel, mustHavePlanByLabel[entry.itemLabel]);
@@ -3761,6 +3886,19 @@ function applyPaycheckDistribute() {
                 distributedTotal += bucketTake;
                 remainingAvailable -= bucketTake;
                 allocationsThisPaycheck.push({ label: 'Savings: ' + entry.bucketName, amount: bucketTake });
+            }
+            return;
+        }
+        if (entry.type === 'payablesBucket') {
+            var payablesBucketPlanned = Number(payablesPlanByBucket[entry.bucketName]) || 0;
+            var payablesBucketTake = Math.min(Math.max(0, payablesBucketPlanned), remainingAvailable);
+            if (payablesBucketTake > 0) {
+                adjustPayablesBucket(entry.bucketName, payablesBucketTake);
+                applyTransaction({ type: 'adjust_surplus', delta: -payablesBucketTake });
+                logHistory('Payables: ' + entry.bucketName, payablesBucketTake, 'Distribute');
+                distributedTotal += payablesBucketTake;
+                remainingAvailable -= payablesBucketTake;
+                allocationsThisPaycheck.push({ label: 'Payables: ' + entry.bucketName, amount: payablesBucketTake });
             }
             return;
         }
@@ -3816,6 +3954,10 @@ function applyPaycheckDistribute() {
             var bn = label.slice('Savings: '.length);
             return Number(savingsPlanByBucket[bn]) || 0;
         }
+        if (label.indexOf('Payables: ') === 0) {
+            var pb = label.slice('Payables: '.length);
+            return Number(payablesPlanByBucket[pb]) || 0;
+        }
         if (label === 'Daily Food') {
             var finfo = typeof getFoodRemainderInfo === 'function' ? getFoodRemainderInfo() : null;
             return finfo && typeof finfo.theoreticalRemainder === 'number' ? finfo.theoreticalRemainder : 0;
@@ -3842,6 +3984,15 @@ function applyPaycheckDistribute() {
             });
             return Math.max(0, plannedSav - add);
         }
+        if (label.indexOf('Payables: ') === 0) {
+            var pb = label.slice('Payables: '.length);
+            var plannedPay = Number(payablesPlanByBucket[pb]) || 0;
+            var addPay = 0;
+            allocationsThisPaycheck.forEach(function (a) {
+                if (a.label === 'Payables: ' + pb) addPay += a.amount;
+            });
+            return Math.max(0, plannedPay - addPay);
+        }
         var pl = getDisplayPlannedForLine(label);
         return getDeficitForLabel(label, pl);
     }
@@ -3854,6 +4005,14 @@ function applyPaycheckDistribute() {
             var labS = 'Savings: ' + entry.bucketName;
             var remS = getRemainingAfterForLine(labS);
             if (remS > epsilon) leftRows.push({ label: labS, remaining: remS, planned: plannedB });
+            return;
+        }
+        if (entry.type === 'payablesBucket') {
+            var plannedP = Number(payablesPlanByBucket[entry.bucketName]) || 0;
+            if (plannedP <= epsilon) return;
+            var labP = 'Payables: ' + entry.bucketName;
+            var remP = getRemainingAfterForLine(labP);
+            if (remP > epsilon) leftRows.push({ label: labP, remaining: remP, planned: plannedP });
             return;
         }
         if (entry.type === 'mustHave') {
@@ -4145,6 +4304,9 @@ function getUniversalBucketEndpoints(contextName) {
     var keys = Object.keys(store || {});
     if (contextName === 'savings' && typeof getCanonicalSavingsBucketOrder === 'function') {
         keys = getCanonicalSavingsBucketOrder().filter(function (key) { return store[key] !== undefined; });
+    }
+    if (contextName === 'payables' && typeof getCanonicalPayablesBucketOrder === 'function') {
+        keys = getCanonicalPayablesBucketOrder().filter(function (key) { return store[key] !== undefined; });
     }
     return keys.filter(function (key) {
         return key && !isDeletedBucketEndpoint(contextName, key);
@@ -4911,6 +5073,58 @@ function syncSavingsBucketBudgetAmount(bucketKey, rawValue, opts) {
 }
 window.syncSavingsBucketBudgetAmount = syncSavingsBucketBudgetAmount;
 
+function syncPayablesBudgetPlanItemAmount() {
+    var sec = state.categories.find(function (s) { return s && s.id === 'sys_savings'; });
+    if (!sec) return;
+    var item = (sec.items || []).find(function (i) { return i && i.label === 'Payables'; });
+    if (!item) return;
+    var rm = typeof roundMoney === 'function' ? roundMoney : function (x) { return Math.round(Number(x) * 100) / 100; };
+    var total = (typeof getCanonicalPayablesBudgetPlanTotal === 'function')
+        ? getCanonicalPayablesBudgetPlanTotal()
+        : 0;
+    item.amount = rm(total);
+    if (typeof refreshPayablesPlanTotalsUI === 'function') refreshPayablesPlanTotalsUI();
+}
+window.syncPayablesBudgetPlanItemAmount = syncPayablesBudgetPlanItemAmount;
+
+function syncPayablesBucketBudgetAmount(bucketKey, rawValue, opts) {
+    opts = opts || {};
+    if (typeof ensurePayablesBudgetConfig === 'function') ensurePayablesBudgetConfig();
+    if (!bucketKey || !state.accounts || !state.accounts.payablesBuckets || state.accounts.payablesBuckets[bucketKey] === undefined) return;
+    var amount = typeof roundMoney === 'function' ? roundMoney(rawValue) : Number(rawValue);
+    if (Number.isNaN(amount) || amount < 0) amount = 0;
+    state.accounts.payablesBudgetPlan[bucketKey] = amount;
+    syncPayablesBudgetPlanItemAmount();
+    if (opts.save !== false) saveState();
+    if (typeof scheduleBudgetPlanAllocatedRefresh === 'function') scheduleBudgetPlanAllocatedRefresh();
+    if (typeof updateAllocatedTotalUI === 'function') {
+        var rm2 = typeof roundMoney === 'function' ? roundMoney : function (v) { return Math.round(Number(v) * 100) / 100; };
+        var total = rm2(typeof state.monthlyIncome === 'number' ? state.monthlyIncome : 0);
+        var allocated = 0;
+        (state.categories || []).forEach(function (sec) {
+            (sec.items || []).forEach(function (item) {
+                if (!item) return;
+                if ((state.settings && state.settings.showFoodPlan === false) && item.label === 'Daily Food') return;
+                if (item.label === 'Daily Food' && typeof getFoodPlanBudgetAmount === 'function') {
+                    allocated += rm2(getFoodPlanBudgetAmount());
+                    return;
+                }
+                if (item.label === 'Savings' && typeof getCanonicalSavingsBudgetPlanTotal === 'function') {
+                    allocated += rm2(getCanonicalSavingsBudgetPlanTotal());
+                    return;
+                }
+                if (item.label === 'Payables' && typeof getCanonicalPayablesBudgetPlanTotal === 'function') {
+                    allocated += rm2(getCanonicalPayablesBudgetPlanTotal());
+                    return;
+                }
+                allocated += typeof item.amount === 'number' ? rm2(item.amount) : 0;
+            });
+        });
+        updateAllocatedTotalUI({ total: total, allocated: rm2(allocated), prefix: 'onboarding-cat' });
+    }
+}
+window.syncPayablesBucketBudgetAmount = syncPayablesBucketBudgetAmount;
+
 function createSavingsBucketFromBudgetPlan() {
     var input = document.getElementById('budget-plan-savings-bucket-name');
     if (!input) return;
@@ -4923,6 +5137,19 @@ function createSavingsBucketFromBudgetPlan() {
     if (typeof renderStrategy === 'function') renderStrategy();
 }
 window.createSavingsBucketFromBudgetPlan = createSavingsBucketFromBudgetPlan;
+
+function createPayablesBucketFromBudgetPlan() {
+    var input = document.getElementById('budget-plan-payables-bucket-name');
+    if (!input) return;
+    var value = String(input.value || '').trim();
+    if (!value) return;
+    var legacyInput = document.getElementById('payables-bucket-name');
+    if (legacyInput) legacyInput.value = value;
+    createPayablesBucket();
+    input.value = '';
+    if (typeof renderStrategy === 'function') renderStrategy();
+}
+window.createPayablesBucketFromBudgetPlan = createPayablesBucketFromBudgetPlan;
 
 // Transportation Buckets (same interface as Savings / Payables)
 var TRANSPORTATION_EXTRA = '__extra__';
@@ -5309,7 +5536,15 @@ function doPayablesSendToWeekly(fromBucketKey, amount) {
 
 function renderPayablesBuckets() {
     ensureAccountsState();
-    var entries = Object.entries(state.accounts.payablesBuckets || {});
+    if (typeof ensurePayablesBudgetConfig === 'function') ensurePayablesBudgetConfig();
+    var orderedKeys = (typeof getCanonicalPayablesBucketOrder === 'function')
+        ? getCanonicalPayablesBucketOrder()
+        : Object.keys(state.accounts.payablesBuckets || {});
+    var entries = orderedKeys.map(function (key) {
+        return [key, state.accounts.payablesBuckets[key]];
+    }).filter(function (entry) {
+        return entry[0] && state.accounts.payablesBuckets[entry[0]] !== undefined;
+    });
     // Hard filter: never show buckets the user has explicitly deleted, even if some stale source
     // (cloud, backup, old tab) tried to re-insert them.
     if (Array.isArray(state._deletedPayablesBuckets) && state._deletedPayablesBuckets.length) {
@@ -5470,11 +5705,17 @@ function createPayablesBucket() {
     pushToUndo();
     if (typeof unmarkPayablesBucketDeleted === 'function') unmarkPayablesBucketDeleted(name);
     state.accounts.payablesBuckets[name] = 0;
+    if (!state.accounts.payablesBudgetPlan || typeof state.accounts.payablesBudgetPlan !== 'object') state.accounts.payablesBudgetPlan = {};
+    state.accounts.payablesBudgetPlan[name] = 0;
+    if (!Array.isArray(state.accounts.payablesBucketOrder)) state.accounts.payablesBucketOrder = Object.keys(state.accounts.payablesBuckets);
+    if (state.accounts.payablesBucketOrder.indexOf(name) === -1) state.accounts.payablesBucketOrder.push(name);
+    if (typeof normalizePaycheckPriorityOrder === 'function') normalizePaycheckPriorityOrder();
     syncPayablesTotal();
     input.value = '';
     saveState();
     renderPayablesBuckets();
     updateGlobalUI();
+    if (typeof renderStrategy === 'function') renderStrategy();
 }
 
 function updatePayablesDefaultBucket(value) {
@@ -5497,14 +5738,25 @@ function renamePayablesBucket(oldName, newNameFromInline) {
     if (typeof unmarkPayablesBucketDeleted === 'function') unmarkPayablesBucketDeleted(newName);
     state.accounts.payablesBuckets[newName] = state.accounts.payablesBuckets[oldName] || 0;
     delete state.accounts.payablesBuckets[oldName];
+    if (!state.accounts.payablesBudgetPlan || typeof state.accounts.payablesBudgetPlan !== 'object') state.accounts.payablesBudgetPlan = {};
+    state.accounts.payablesBudgetPlan[newName] = Number(state.accounts.payablesBudgetPlan[oldName]) || 0;
+    delete state.accounts.payablesBudgetPlan[oldName];
+    if (Array.isArray(state.accounts.payablesBucketOrder)) {
+        state.accounts.payablesBucketOrder = state.accounts.payablesBucketOrder.map(function (key) {
+            return key === oldName ? newName : key;
+        });
+    }
     if (state.accounts.payablesDefaultBucket === oldName) {
         state.accounts.payablesDefaultBucket = newName;
     }
     moveBucketHistoryKey('payables', oldName, newName);
+    if (typeof normalizePaycheckPriorityOrder === 'function') normalizePaycheckPriorityOrder();
     syncPayablesTotal();
+    if (typeof syncPayablesBudgetPlanItemAmount === 'function') syncPayablesBudgetPlanItemAmount();
     saveState();
     renderPayablesBuckets();
     updateGlobalUI();
+    if (typeof renderStrategy === 'function') renderStrategy();
 }
 
 function deletePayablesBucket(name) {
@@ -5519,14 +5771,21 @@ function deletePayablesBucket(name) {
         pushToUndo();
         if (typeof markPayablesBucketDeleted === 'function') markPayablesBucketDeleted(name);
         delete state.accounts.payablesBuckets[name];
-        if (state.accounts.payablesDefaultBucket === name) {
-            state.accounts.payablesDefaultBucket = Object.keys(state.accounts.payablesBuckets)[0];
+        if (state.accounts.payablesBudgetPlan) delete state.accounts.payablesBudgetPlan[name];
+        if (Array.isArray(state.accounts.payablesBucketOrder)) {
+            state.accounts.payablesBucketOrder = state.accounts.payablesBucketOrder.filter(function (key) { return key !== name; });
         }
+        if (state.accounts.payablesDefaultBucket === name) {
+            state.accounts.payablesDefaultBucket = (typeof getCanonicalPayablesBucketOrder === 'function' ? getCanonicalPayablesBucketOrder() : Object.keys(state.accounts.payablesBuckets))[0];
+        }
+        if (typeof normalizePaycheckPriorityOrder === 'function') normalizePaycheckPriorityOrder();
         syncPayablesTotal();
+        if (typeof syncPayablesBudgetPlanItemAmount === 'function') syncPayablesBudgetPlanItemAmount();
         applyTransaction({ type: 'adjust_surplus', delta: amount });
         saveState();
         renderPayablesBuckets();
         updateGlobalUI();
+        if (typeof renderStrategy === 'function') renderStrategy();
     }, null, { confirmLabel: 'Delete' });
 }
 
@@ -5601,6 +5860,9 @@ function rebuildTotals() {
                     if (state.accounts.payablesBuckets.Main === undefined) {
                         state.accounts.payablesBuckets.Main = item.amount;
                     }
+                    if (typeof ensurePayablesBudgetConfig === 'function') ensurePayablesBudgetConfig();
+                    if (state.accounts.payablesBudgetPlan.Main === undefined) state.accounts.payablesBudgetPlan.Main = item.amount;
+                    if (typeof syncPayablesBudgetPlanItemAmount === 'function') syncPayablesBudgetPlanItemAmount();
                     syncPayablesTotal();
                 } else if (item.label === 'Transportation') {
                     if (state.accounts.transportationBuckets.Main === undefined) {
