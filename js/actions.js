@@ -1386,26 +1386,21 @@ function openTool(label, displayTitle, autoTransfer = false, prefillAmount, sid,
         }
     }
     var isMiniContext = isMiniBudgetToolContext();
-    var isUnifiedTransferContext = isToolUniversalTransferContext();
+    var isUniversalTransferContext = isToolUniversalTransferContext();
     if (deductBtn) deductBtn.classList.toggle('hidden', isMiniContext);
     if (addBtn) addBtn.classList.toggle('hidden', isMiniContext);
-    if (receiveBtn) receiveBtn.classList.toggle('hidden', !isUnifiedTransferContext);
-    if (transferBtn) transferBtn.textContent = isUnifiedTransferContext ? 'Send to' : 'Transfer';
-    if (isMiniContext) {
-        setToolUniversalTransferMode();
+    if (receiveBtn) receiveBtn.classList.toggle('hidden', !isUniversalTransferContext);
+    if (transferBtn) transferBtn.textContent = isUniversalTransferContext ? 'Send to' : 'Transfer';
+
+    if (autoTransfer && isToolUniversalTransferContext()) {
+        openUniversalTransferFromTool();
+        return;
     }
 
     toggleModal('input-tool', true);
     renderCategoryHistory();
 
-    // Auto Open Transfer Mode if requested
-    if(autoTransfer) {
-        if (isToolUniversalTransferContext()) {
-            setToolUniversalTransferMode();
-        } else {
-            toggleTransferMode();
-        }
-    }
+    if(autoTransfer) toggleTransferMode();
 }
 function closeTool() { toggleModal('input-tool', false); }
 
@@ -1423,6 +1418,10 @@ function isMiniBudgetToolContext() {
 
 function getActiveToolTransferEndpoint() {
     if (activeCat === 'Surplus') return { type: 'extra' };
+    if (activeCat === 'Weekly Allowance') {
+        ensureWeeklyState();
+        return { type: 'weekly_week', week: state.accounts.weekly.week || 1, asWeeklyAllowance: true };
+    }
     if (isMiniBudgetToolContext()) return { type: 'mini_item', label: activeCat };
     return null;
 }
@@ -1436,11 +1435,7 @@ function toggleTransferMode() {
     const trf = document.getElementById('tool-transfer-interface');
     const list = document.getElementById('transfer-target-list');
     if (isToolUniversalTransferContext()) {
-        if (!trf || trf.classList.contains('hidden')) {
-            setToolUniversalTransferMode();
-        } else {
-            executeToolUniversalTransferSelection('send');
-        }
+        openUniversalTransferFromTool();
         return;
     }
 
@@ -1452,6 +1447,15 @@ function toggleTransferMode() {
         std.classList.remove('hidden');
         trf.classList.add('hidden');
     }
+}
+
+function openUniversalTransferFromTool(mode) {
+    var endpoint = getActiveToolTransferEndpoint();
+    if (!endpoint) return;
+    var amountEl = document.getElementById('tool-value');
+    var prefill = amountEl && amountEl.value ? amountEl.value : '';
+    closeTool();
+    openUniversalTransferModal(endpoint, prefill, mode);
 }
 
 function getMiniBudgetTransferElements() {
@@ -1696,11 +1700,11 @@ function executeAction(type) {
             return;
         }
         if (type === 'transfer') {
-            executeMiniBudgetTransferSelection('send');
+            openUniversalTransferFromTool('send');
             return;
         }
         if (type === 'receive') {
-            executeMiniBudgetTransferSelection('receive');
+            openUniversalTransferFromTool('receive');
             return;
         }
         if (!val || val <= 0) return;
@@ -1710,7 +1714,7 @@ function executeAction(type) {
         }
     }
     if (isToolUniversalTransferContext() && type === 'receive') {
-        executeToolUniversalTransferSelection('receive');
+        openUniversalTransferFromTool('receive');
         return;
     }
     if(val) {
@@ -3982,7 +3986,7 @@ function normalizeUniversalEndpoint(endpoint) {
     if (!endpoint) return null;
     if (endpoint.type === 'item') return { type: 'mini_item', label: endpoint.label };
     if (endpoint.type === 'extra') return { type: 'extra' };
-    if (endpoint.type === 'weekly_week') return { type: 'weekly_week', week: Number(endpoint.week) || 1 };
+    if (endpoint.type === 'weekly_week') return { type: 'weekly_week', week: Number(endpoint.week) || 1, asWeeklyAllowance: !!endpoint.asWeeklyAllowance };
     if (endpoint.type === 'bucket') {
         return {
             type: 'bucket',
@@ -4012,6 +4016,22 @@ function getUniversalEndpointLabel(endpoint) {
     if (endpoint.type === 'mini_item') return endpoint.label;
     if (endpoint.type === 'bucket') return getBucketContextLabel(endpoint.contextName) + ': ' + endpoint.bucketKey;
     return endpoint.label || 'Unknown';
+}
+
+function getUniversalEndpointModalTitle(endpoint) {
+    endpoint = normalizeUniversalEndpoint(endpoint);
+    if (!endpoint) return 'Transfer';
+    if (endpoint.type === 'bucket') return getBucketContextLabel(endpoint.contextName);
+    if (endpoint.type === 'weekly_week' && endpoint.asWeeklyAllowance) return 'Weekly Allowance';
+    return getUniversalEndpointLabel(endpoint);
+}
+
+function getUniversalEndpointModalName(endpoint) {
+    endpoint = normalizeUniversalEndpoint(endpoint);
+    if (!endpoint) return 'Transfer';
+    if (endpoint.type === 'bucket') return endpoint.bucketKey;
+    if (endpoint.type === 'weekly_week' && endpoint.asWeeklyAllowance) return 'Current Week';
+    return getUniversalEndpointLabel(endpoint);
 }
 
 function getUniversalEndpointHistoryKey(endpoint) {
@@ -4387,6 +4407,17 @@ function getBucketTransferModalElements() {
     };
 }
 
+function getCurrentBucketTransferEndpoint() {
+    var ui = getBucketTransferModalElements();
+    var modal = ui.modal;
+    if (!modal) return null;
+    if (modal._transferEndpoint) return normalizeUniversalEndpoint(modal._transferEndpoint);
+    var contextName = modal.getAttribute('data-context');
+    var bucketKey = modal.getAttribute('data-bucket-key');
+    if (contextName && bucketKey) return { type: 'bucket', contextName: contextName, bucketKey: bucketKey };
+    return null;
+}
+
 function syncBucketTransferPickerState() {
     var ui = getBucketTransferModalElements();
     if (!ui.modal || !ui.pickerToggle || !ui.pickerBody) return;
@@ -4396,13 +4427,19 @@ function syncBucketTransferPickerState() {
 }
 
 function getBucketTransferGroupData(contextName, bucketKey) {
-    return buildUniversalTransferGroups({ type: 'bucket', contextName: contextName, bucketKey: bucketKey });
+    var endpoint = typeof contextName === 'object'
+        ? contextName
+        : { type: 'bucket', contextName: contextName, bucketKey: bucketKey };
+    return buildUniversalTransferGroups(endpoint);
 }
 
 function renderBucketTransferHistory(contextName, bucketKey) {
     var ui = getBucketTransferModalElements();
     if (!ui.history) return;
-    var historyKey = getBucketHistoryKey(contextName, bucketKey);
+    var endpoint = typeof contextName === 'object'
+        ? contextName
+        : { type: 'bucket', contextName: contextName, bucketKey: bucketKey };
+    var historyKey = getUniversalEndpointHistoryKey(endpoint);
     var data = (state.histories && state.histories[historyKey]) ? state.histories[historyKey] : [];
     if (!data.length) {
         ui.history.innerHTML = '<div class="text-center text-slate-300 text-[10px] py-2">No History</div>';
@@ -4421,7 +4458,10 @@ function renderBucketTransferHistory(contextName, bucketKey) {
 function renderBucketTransferGroups(contextName, bucketKey, mode) {
     var ui = getBucketTransferModalElements();
     if (!ui.targets || !ui.empty || !ui.modal) return;
-    var groups = getBucketTransferGroupData(contextName, bucketKey);
+    var endpoint = typeof contextName === 'object'
+        ? contextName
+        : { type: 'bucket', contextName: contextName, bucketKey: bucketKey };
+    var groups = getBucketTransferGroupData(endpoint);
     ui.modal._bucketTransferGroups = groups;
     if (!ui.modal._bucketTransferExpanded) ui.modal._bucketTransferExpanded = {};
     if (!groups.length) {
@@ -4457,19 +4497,20 @@ function renderBucketTransferModal() {
     var ui = getBucketTransferModalElements();
     var modal = ui.modal;
     if (!modal) return;
-    var contextName = modal.getAttribute('data-context');
-    var bucketKey = modal.getAttribute('data-bucket-key');
-    if (!contextName || !bucketKey) return;
-    var amount = getBucketAmountByContext(contextName, bucketKey);
-    if (ui.title) ui.title.textContent = getBucketContextLabel(contextName);
-    if (ui.name) ui.name.textContent = bucketKey;
+    var endpoint = getCurrentBucketTransferEndpoint();
+    if (!endpoint) return;
+    var amount = getUniversalEndpointBalance(endpoint);
+    if (ui.title) ui.title.textContent = getUniversalEndpointModalTitle(endpoint);
+    if (ui.name) ui.name.textContent = getUniversalEndpointModalName(endpoint);
     if (ui.balance) ui.balance.textContent = formatMoney(amount);
     if (ui.currency) ui.currency.textContent = getCurrencyLabel();
-    if (ui.pickerTitle) ui.pickerTitle.textContent = 'Choose a source';
-    if (ui.pickerHint) ui.pickerHint.textContent = 'Choose a source item once, then use Send to or Receive from.';
-    renderBucketTransferGroups(contextName, bucketKey);
+    if (ui.pickerTitle) ui.pickerTitle.textContent = 'Choose an item';
+    if (ui.pickerHint) ui.pickerHint.textContent = 'Pick a bucket or category, then use Send to or Receive from.';
+    var deleteBtn = document.getElementById('bucket-transfer-delete-btn');
+    if (deleteBtn) deleteBtn.classList.toggle('hidden', endpoint.type !== 'bucket');
+    renderBucketTransferGroups(endpoint);
     syncBucketTransferPickerState();
-    renderBucketTransferHistory(contextName, bucketKey);
+    renderBucketTransferHistory(endpoint);
 }
 
 function setBucketTransferMode(mode) {
@@ -4505,22 +4546,30 @@ function executeBucketTransferSelection(mode) {
         if (typeof showAppAlert === 'function') showAppAlert('Choose a source item first, then use Send to or Receive from.');
         return;
     }
-    var contextName = ui.modal.getAttribute('data-context');
-    var bucketKey = ui.modal.getAttribute('data-bucket-key');
+    var endpoint = getCurrentBucketTransferEndpoint();
+    if (!endpoint) return;
     var rawAmount = getBucketTransferAmountInputValue();
     var amount = parseFloat(rawAmount);
     if (!amount || amount <= 0) {
         if (typeof showAppAlert === 'function') showAppAlert('Enter an amount before moving funds.');
         return;
     }
-    if (!runBucketTransferSelection(contextName, bucketKey, mode === 'receive' ? 'receive' : 'send', option, amount)) return;
+    if (!runBucketTransferSelection(endpoint, null, mode === 'receive' ? 'receive' : 'send', option, amount)) return;
     if (ui.amount) ui.amount.value = '';
-    refreshBucketContextUI(contextName);
+    saveState();
+    if (typeof refreshUI === 'function') refreshUI();
+    else {
+        if (endpoint.type === 'bucket') renderBucketsForContext(endpoint.contextName);
+        if (typeof updateGlobalUI === 'function') updateGlobalUI();
+        if (typeof renderStrategy === 'function') renderStrategy();
+    }
     renderBucketTransferModal();
 }
 
 function runBucketTransferSelection(contextName, bucketKey, mode, option, amount) {
-    var current = { type: 'bucket', contextName: contextName, bucketKey: bucketKey };
+    var current = typeof contextName === 'object'
+        ? contextName
+        : { type: 'bucket', contextName: contextName, bucketKey: bucketKey };
     return executeUniversalTransfer(
         mode === 'receive' ? option : current,
         mode === 'receive' ? current : option,
@@ -5152,12 +5201,21 @@ function closePayablesBuckets() {
 }
 window.closePayablesBuckets = closePayablesBuckets;
 
-function openBucketTransferModal(context, bucketKey, prefillAmount) {
+function openUniversalTransferModal(endpoint, prefillAmount, mode) {
     ensureAccountsState();
     var ui = getBucketTransferModalElements();
     if (!ui.modal) return;
-    ui.modal.setAttribute('data-context', context);
-    ui.modal.setAttribute('data-bucket-key', bucketKey);
+    endpoint = normalizeUniversalEndpoint(endpoint);
+    if (!endpoint) return;
+    ui.modal._transferEndpoint = endpoint;
+    if (endpoint.type === 'bucket') {
+        ui.modal.setAttribute('data-context', endpoint.contextName);
+        ui.modal.setAttribute('data-bucket-key', endpoint.bucketKey);
+    } else {
+        ui.modal.removeAttribute('data-context');
+        ui.modal.removeAttribute('data-bucket-key');
+    }
+    ui.modal.setAttribute('data-mode', mode === 'receive' ? 'receive' : 'send');
     ui.modal.setAttribute('data-picker-collapsed', 'true');
     ui.modal.removeAttribute('data-selected-ref');
     ui.modal._bucketTransferExpanded = {};
@@ -5194,9 +5252,16 @@ function openBucketTransferModal(context, bucketKey, prefillAmount) {
     toggleModal('bucket-transfer-modal', true);
     renderBucketTransferModal();
 }
+window.openUniversalTransferModal = openUniversalTransferModal;
+
+function openBucketTransferModal(context, bucketKey, prefillAmount) {
+    openUniversalTransferModal({ type: 'bucket', contextName: context, bucketKey: bucketKey }, prefillAmount);
+}
 window.openBucketTransferModal = openBucketTransferModal;
 
 function closeBucketTransferModal() {
+    var ui = getBucketTransferModalElements();
+    if (ui.modal) ui.modal._transferEndpoint = null;
     toggleModal('bucket-transfer-modal', false);
 }
 window.closeBucketTransferModal = closeBucketTransferModal;
@@ -5204,8 +5269,10 @@ window.closeBucketTransferModal = closeBucketTransferModal;
 function deleteBucketFromTransferModal() {
     var modal = document.getElementById('bucket-transfer-modal');
     if (!modal) return;
-    var ctx = modal.getAttribute('data-context');
-    var key = modal.getAttribute('data-bucket-key');
+    var endpoint = getCurrentBucketTransferEndpoint();
+    if (!endpoint || endpoint.type !== 'bucket') return;
+    var ctx = endpoint.contextName;
+    var key = endpoint.bucketKey;
     if (!key) return;
     closeBucketTransferModal();
     if (ctx === 'savings') deleteSavingsBucket(key);

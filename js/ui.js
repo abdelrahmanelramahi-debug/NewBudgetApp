@@ -1324,8 +1324,11 @@ function renderLedger() {
                 ? `<button type="button" onclick="event.stopPropagation(); unlockSplitGoalEarly('${safeLabel}')" class="ledger-unlock-sphere flex-shrink-0" title="Unlock early" aria-label="Unlock early"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 7.5-2"></path><path d="M15 5l2.5-2.5"></path></svg></button>`
                 : '';
 
+            const amountMain = item.amortData && goalTotal > 0
+                ? `<p class="ledger-bar-amort-progress text-base sm:text-lg font-black text-slate-800 leading-tight">${formatMoney(bal)} / ${formatMoney(goalTotal)}</p>`
+                : `<p class="text-base sm:text-lg font-black text-slate-800 leading-tight">${formatMoney(bal)}</p>`;
             const amountSub = item.amortData && goalTotal > 0
-                ? `<p class="text-[9px] font-bold text-slate-500">${formatMoney(bal)} / ${formatMoney(goalTotal)}</p>`
+                ? ''
                 : `<p class="text-[9px] font-bold text-slate-400 uppercase hidden sm:block">${getCurrencyLabel()} left</p>`;
 
             barsHtml += `
@@ -1337,7 +1340,7 @@ function renderLedger() {
                         </div>
                     </div>
                     <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 text-right">
-                        <p class="text-base sm:text-lg font-black text-slate-800 leading-tight">${formatMoney(bal)}</p>
+                        ${amountMain}
                         ${amountSub}
                     </div>
                     <div class="ledger-bar-actions flex items-center gap-1.5 flex-shrink-0" onclick="event.stopPropagation()">

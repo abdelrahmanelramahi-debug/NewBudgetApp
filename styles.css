@@ -2755,6 +2755,11 @@ body.theme-dark .food-overflow-row-complete .food-overflow-label {
 .ledger-bar-fill {
     background: linear-gradient(90deg, #94a3b8 0%, #64748b 100%);
 }
+.ledger-bar-amort-progress {
+    min-width: 7.25rem;
+    text-align: right;
+    white-space: nowrap;
+}
 .ledger-bar:hover .ledger-bar-fill {
     background: linear-gradient(90deg, #64748b 0%, #475569 100%);
 }
