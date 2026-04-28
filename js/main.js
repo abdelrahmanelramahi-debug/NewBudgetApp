@@ -184,67 +184,69 @@ window.onload = function() {
     normalizeMoneyPrecision();
     applySettings();
     wireStaticClickActions();
-    // Decide onboarding: use device-local flag so we don't skip onboarding when state was restored from elsewhere
-    var hasSavedState = !!localStorage.getItem(STORAGE_KEYS.STATE);
-    var onboardingDoneFlag = localStorage.getItem(STORAGE_KEYS.ONBOARDING_DONE);
     var forceOnboarding = typeof window.location !== 'undefined' && window.location.search.indexOf('onboarding=1') !== -1;
 
-    if (!hasSavedState) state.onboardingComplete = false;
-    if (forceOnboarding) {
-        state.onboardingComplete = false;
-        try { localStorage.removeItem(STORAGE_KEYS.ONBOARDING_DONE); } catch (e) {}
-    }
-    // Existing users: they have state with onboardingComplete true but no flag yet; set flag once so we don't show onboarding
-    if (hasSavedState && state.onboardingComplete && onboardingDoneFlag === null) {
-        try { localStorage.setItem(STORAGE_KEYS.ONBOARDING_DONE, '1'); onboardingDoneFlag = '1'; } catch (e) {}
-    }
-    var shouldShowOnboarding = !onboardingDoneFlag || !state.onboardingComplete || forceOnboarding;
-    if (shouldShowOnboarding) {
-        if (typeof showOnboarding === 'function') {
-            showOnboarding(runAppInit);
-        }
-        return;
-    }
+    function prepareAppStateBeforeRender() {
+        ensureSystemSavings();
+        ensureCoreItems();
 
-    ensureSystemSavings();
-    ensureCoreItems();
-
-    // Check for un-migrated savings or zero-balance legacy defaults
-    const sys = state.categories.find(s=>s.id==='sys_savings');
-    if(sys) {
-        const item = sys.items.find(i=>i.label==='Savings');
-        // Force update if it's auto-calculated OR if it is sitting at the old default of 0
-        if(item && (item.isAutoCalculated || item.amount === 0)) {
-            item.isAutoCalculated = false;
-            item.amount = 1000;
-            // Also update the running balance if it's 0 or undefined
-            if(state.accounts?.buckets?.['Savings'] === undefined || state.accounts.buckets['Savings'] === 0) {
-                state.accounts.buckets['Savings'] = 1000;
+        // Check for un-migrated savings or zero-balance legacy defaults
+        const sys = state.categories.find(s=>s.id==='sys_savings');
+        if(sys) {
+            const item = sys.items.find(i=>i.label==='Savings');
+            // Force update if it's auto-calculated OR if it is sitting at the old default of 0
+            if(item && (item.isAutoCalculated || item.amount === 0)) {
+                item.isAutoCalculated = false;
+                item.amount = 1000;
+                // Also update the running balance if it's 0 or undefined
+                if(state.accounts?.buckets?.['Savings'] === undefined || state.accounts.buckets['Savings'] === 0) {
+                    state.accounts.buckets['Savings'] = 1000;
+                }
+            }
+            const payables = sys.items.find(i=>i.label==='Payables');
+            if(!payables) {
+                sys.items.push({ label: 'Payables', amount: 0, isAutoCalculated: false });
+            }
+            if(state.accounts?.buckets?.['Payables'] === undefined) {
+                state.accounts.buckets['Payables'] = 0;
             }
         }
-        const payables = sys.items.find(i=>i.label==='Payables');
-        if(!payables) {
-            sys.items.push({ label: 'Payables', amount: 0, isAutoCalculated: false });
-        }
-        if(state.accounts?.buckets?.['Payables'] === undefined) {
-            state.accounts.buckets['Payables'] = 0;
+
+        // Ensure Weekly logic exists
+        ensureWeeklyState();
+
+        const hasBalances = Object.keys(state.balances || {}).length > 0;
+        const hasBuckets = Object.values(state.accounts?.buckets || {}).some(v => v !== 0);
+        const hasCategories = state.categories && state.categories.length > 0;
+        if ((state.schemaVersion || 1) < 2 &&
+            state.accounts.surplus === 0 &&
+            (hasBalances || hasBuckets || hasCategories) &&
+            typeof recalculateSurplusFromReality === 'function') {
+            recalculateSurplusFromReality();
+        } else if (state.accounts.surplus === 0 && !hasBalances && !hasBuckets) {
+            state.accounts.surplus = state.monthlyIncome;
+            initSurplusFromOpening();
         }
     }
 
-    // Ensure Weekly logic exists
-    ensureWeeklyState();
+    function shouldShowOnboardingAfterAuth() {
+        // Decide onboarding after auth/cloud load, so returning signed-in users do not briefly see setup.
+        var hasSavedState = !!localStorage.getItem(STORAGE_KEYS.STATE);
+        var onboardingDoneFlag = localStorage.getItem(STORAGE_KEYS.ONBOARDING_DONE);
 
-    const hasBalances = Object.keys(state.balances || {}).length > 0;
-    const hasBuckets = Object.values(state.accounts?.buckets || {}).some(v => v !== 0);
-    const hasCategories = state.categories && state.categories.length > 0;
-    if ((state.schemaVersion || 1) < 2 &&
-        state.accounts.surplus === 0 &&
-        (hasBalances || hasBuckets || hasCategories) &&
-        typeof recalculateSurplusFromReality === 'function') {
-        recalculateSurplusFromReality();
-    } else if (state.accounts.surplus === 0 && !hasBalances && !hasBuckets) {
-        state.accounts.surplus = state.monthlyIncome;
-        initSurplusFromOpening();
+        if (forceOnboarding) {
+            state.onboardingComplete = false;
+            try { localStorage.removeItem(STORAGE_KEYS.ONBOARDING_DONE); } catch (e) {}
+            return true;
+        }
+        if (!hasSavedState && !window.currentUser) state.onboardingComplete = false;
+        if (state.onboardingComplete) {
+            if (onboardingDoneFlag === null) {
+                try { localStorage.setItem(STORAGE_KEYS.ONBOARDING_DONE, '1'); } catch (e2) {}
+            }
+            return false;
+        }
+        return !onboardingDoneFlag || !state.onboardingComplete;
     }
 
     function renderInitialShell() {
@@ -385,6 +387,11 @@ window.onload = function() {
     }
 
     function runAppInit() {
+        prepareAppStateBeforeRender();
+        var ob = byId('onboarding');
+        var app = byId('app-shell');
+        if (ob) ob.classList.add('hidden');
+        if (app) app.classList.remove('hidden');
         if (typeof initHistoryRouting === 'function') initHistoryRouting();
         var page = (typeof getPageFromHash === 'function') ? getPageFromHash() : 'ledger';
         if (page !== 'ledger' && typeof switchPage === 'function') switchPage(page, { skipHistory: true });
@@ -402,15 +409,25 @@ window.onload = function() {
         wireIdleRefreshAndBackup();
     }
 
-    // Onboarding complete: ensure app is visible
     var ob = byId('onboarding');
     var app = byId('app-shell');
     if (ob) ob.classList.add('hidden');
-    if (app) app.classList.remove('hidden');
+    if (app) app.classList.add('hidden');
+    function decideOnboardingAndStart() {
+        if (shouldShowOnboardingAfterAuth()) {
+            if (typeof showOnboarding === 'function') {
+                showOnboarding(runAppInit);
+            } else {
+                runAppInit();
+            }
+            return;
+        }
+        runAppInit();
+    }
     // Defer first paint until auth (and cloud load if logged in) so we don't flash stale surplus (e.g. -1175) from localStorage
     if (typeof whenAuthReady === 'function') {
-        whenAuthReady(runAppInit);
+        whenAuthReady(decideOnboardingAndStart);
     } else {
-        runAppInit();
+        decideOnboardingAndStart();
     }
 };

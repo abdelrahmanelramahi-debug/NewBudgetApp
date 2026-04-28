@@ -470,7 +470,6 @@ function updateBudgetPlanAllocated() {
     if (state.categories && state.categories.length) {
         state.categories.forEach(function (sec) {
             sec.items.forEach(function (item) {
-                if (item.label === 'Payables') return;
                 if ((state.settings && state.settings.showFoodPlan === false) && item.label === 'Daily Food') return;
                 if (item.label === 'Daily Food' && typeof getFoodPlanBudgetAmount === 'function') {
                     allocated += rm(getFoodPlanBudgetAmount());
@@ -596,6 +595,8 @@ function renderStrategy(opts) {
 
     let systemHtml = '';
     let savingsCardHtml = '';
+    let mustHavesHtml = '';
+    let reoccurringHtml = '';
     let customHtml = '';
 
     var sysSavingsSec = state.categories.find(function (s) { return s && s.id === 'sys_savings'; }) || null;
@@ -603,6 +604,14 @@ function renderStrategy(opts) {
     if (sysSavingsSec && Array.isArray(sysSavingsSec.items)) {
         var savingsIdxInSys = sysSavingsSec.items.findIndex(function (i) { return i && i.label === 'Savings'; });
         if (savingsIdxInSys >= 0) savingsItemInSys = sysSavingsSec.items[savingsIdxInSys];
+    }
+    var coreEssentialsSec = state.categories.find(function (s) { return s && s.id === 'core_essentials'; }) || null;
+    var transportationInCore = null;
+    if (coreEssentialsSec && Array.isArray(coreEssentialsSec.items)) {
+        var transportationIdxInCore = coreEssentialsSec.items.findIndex(function (i) { return i && i.label === 'Transportation'; });
+        if (transportationIdxInCore >= 0) {
+            transportationInCore = { sec: coreEssentialsSec, idx: transportationIdxInCore, item: coreEssentialsSec.items[transportationIdxInCore] };
+        }
     }
 
     function buildSavingsPlanCardHtml() {
@@ -665,30 +674,29 @@ function renderStrategy(opts) {
         });
         rowsHtml += `</div>`;
 
-        return `
-            <div class="premium-card p-6 mb-6 bg-indigo-50/50 border-indigo-100">
-                <div class="flex justify-between items-center mb-4 pb-4 border-b border-slate-100">
-                    <div class="flex flex-col gap-0.5">
-                        <div class="flex items-center gap-2">
-                            <span class="text-[11px] font-black text-slate-800 uppercase tracking-widest">Savings</span>
-                        </div>
-                        <span class="text-[10px] font-bold text-slate-500">${formatMoney(savingsPlannedTotal)} ${getCurrencyLabel()} allocated</span>
-                    </div>
-                    ${forOnboarding ? '' : '<span class="text-[9px] font-bold text-slate-300 bg-slate-50 px-2 py-1 rounded-lg">LOCKED</span>'}
-                </div>
-                <div class="space-y-1">${rowsHtml}</div>
-            </div>
-        `;
+        return rowsHtml;
+    }
+
+    if (savingsItemInSys) {
+        savingsCardHtml = buildSavingsPlanCardHtml();
     }
 
     state.categories.forEach((sec, secIdx) => {
-        if (sec && sec.id === 'sys_savings') return;
-        const budgetPlanItems = sec.items.filter(i => i.label !== 'Payables');
+        const budgetPlanItems = (sec.items || []).filter(function (i) {
+            if (!i) return false;
+            if (sec && sec.id === 'sys_savings') return i.label !== 'Savings';
+            if (sec && sec.id === 'core_essentials') return i.label !== 'Transportation';
+            return true;
+        });
         const plannedTotalForRow = (item) => {
             if (item && item.label === 'Savings' && typeof getCanonicalSavingsBudgetPlanTotal === 'function') return Number(getCanonicalSavingsBudgetPlanTotal()) || 0;
             return typeof item.amount === 'number' ? item.amount : 0;
         };
-        const secTotalBase = budgetPlanItems.reduce((a, b) => a + plannedTotalForRow(b), 0);
+        let secTotalBase = budgetPlanItems.reduce((a, b) => a + plannedTotalForRow(b), 0);
+        if (sec && sec.id === 'sys_savings') {
+            secTotalBase += typeof getCanonicalSavingsBudgetPlanTotal === 'function' ? Number(getCanonicalSavingsBudgetPlanTotal()) || 0 : 0;
+            if (transportationInCore) secTotalBase += plannedTotalForRow(transportationInCore.item);
+        }
         const secTotal = secTotalBase;
         const perc = state.monthlyIncome > 0 ? Math.round((secTotal/state.monthlyIncome)*100) : 0;
 
@@ -715,9 +723,16 @@ function renderStrategy(opts) {
         let rowsHtml = '';
 
         sec.items.forEach((item, idx) => {
-            if (item.label === 'Payables') return;
+            if (sec.id === 'sys_savings' && item.label === 'Savings') {
+                rowsHtml += savingsCardHtml || '';
+                return;
+            }
+            if (sec.id === 'core_essentials' && item.label === 'Transportation') return;
             rowsHtml += buildBudgetPlanRowHtml(sec.id, idx, item, { hideFoodWhenOff: true });
         });
+        if (sec.id === 'sys_savings' && transportationInCore) {
+            rowsHtml += buildBudgetPlanRowHtml(transportationInCore.sec.id, transportationInCore.idx, transportationInCore.item, { hideFoodWhenOff: true });
+        }
 
         function buildBudgetPlanRowHtml(sid, idx, item, optsRow) {
             optsRow = optsRow || {};
@@ -726,7 +741,7 @@ function renderStrategy(opts) {
             const isFoodBase = itemLabel === 'Daily Food';
             const isFoodPlanOff = isFoodBase && state.settings && state.settings.showFoodPlan === false;
             const isSavings = itemLabel === 'Savings';
-            const isDragAllowed = (!item.isCore) && !isSavings;
+            const isDragAllowed = (!sec.isSystem) && (!item.isCore) && !isSavings;
 
             // SMART BADGES FOR CORE ITEMS
             if (itemLabel === 'Daily Food') {
@@ -748,7 +763,7 @@ function renderStrategy(opts) {
                 : `onfocus="pushToUndo(); handleBudgetPlanFieldFocus(this)" oninput="budgetPlanAmountInput('${sid}', ${idx}, this)" onblur="budgetPlanAmountCommit('${sid}', ${idx}, this); handleBudgetPlanFieldBlur()" onkeydown="budgetPlanAmountKeydown(event, '${sid}', ${idx}, this)"`;
 
             // Core "Must Have" lines are locked: no edit/delete controls (amounts use sliders/inputs only)
-            const actions = item.isCore
+            const actions = item.isCore || sec.isSystem
                 ? ''
                 : `
                 ${getMiniBudgetScheduleSetupButtonHtml(sid, idx, item)}
@@ -894,9 +909,12 @@ function renderStrategy(opts) {
             `;
         }
 
-        var displayLabel = (sec && sec.id === 'core_essentials') ? 'Must Haves' : sec.label;
+        var displayLabel = sec && sec.id === 'sys_savings'
+            ? 'Must Haves'
+            : ((sec && sec.id === 'core_essentials') ? 'Reoccurring Expenses' : sec.label);
         var onboardingCardId = '';
-        if (forOnboarding && sec.isSystem) onboardingCardId = ' id="onboarding-must-haves-card"';
+        if (forOnboarding && sec && sec.id === 'sys_savings') onboardingCardId = ' id="onboarding-must-haves-card"';
+        else if (forOnboarding && sec && sec.id === 'core_essentials') onboardingCardId = ' id="onboarding-reoccurring-card"';
         else if (forOnboarding && !sec.isSystem && !customHtml) onboardingCardId = ' id="onboarding-mini-budgets-card"';
 
         const cardHtml = `
@@ -919,13 +937,12 @@ function renderStrategy(opts) {
             </div>
         `;
 
-        if(sec.isSystem) systemHtml += cardHtml;
+        if(sec && sec.id === 'sys_savings') mustHavesHtml += cardHtml;
+        else if(sec && sec.id === 'core_essentials') reoccurringHtml += cardHtml;
+        else if(sec.isSystem) systemHtml += cardHtml;
         else customHtml += cardHtml;
     });
-    if (savingsItemInSys) {
-        savingsCardHtml = buildSavingsPlanCardHtml();
-    }
-
+    systemHtml = mustHavesHtml + reoccurringHtml + systemHtml;
     var toolBarHtml = forOnboarding
         ? `<div class="flex gap-2 mb-4"><button onclick="openAddCategoryTool()" class="flex-1 py-3 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest">Add Category</button></div>`
         : `<div class="flex gap-2 mb-4">
@@ -934,25 +951,32 @@ function renderStrategy(opts) {
         </div>`;
 
     var miniBudgetsHeading = (!forOnboarding && customHtml)
-        ? `<div class="flex items-center justify-between px-1 mb-3">
-                <span class="text-[12px] font-black text-slate-900 uppercase tracking-[0.2em]">Mini-Budgets</span>
+        ? `<div class="budget-plan-mini-divider mini-budget-divider-band flex items-center justify-between mb-3">
+                <div class="mini-budget-divider-title flex items-center gap-2">
+                    <span class="mini-budget-divider-kicker" aria-hidden="true"></span>
+                    <span class="text-[12px] font-black text-slate-900 uppercase tracking-[0.2em]">Mini-Budgets</span>
+                </div>
            </div>`
         : '';
 
     var fundingPriorityHtml = (!forOnboarding) ? renderFundingPriorityCard() : '';
     if (forOnboarding) {
-        var savingsBlock = savingsCardHtml
-            ? `<div id="onboarding-savings-block" class="space-y-2 mb-4">
-                    <div id="onboarding-savings-section">${savingsCardHtml}</div>
-               </div>`
-            : '';
-        var mustHavesBlock = systemHtml
+        var mustHavesBlock = mustHavesHtml
             ? `<div id="onboarding-must-haves-block" class="space-y-2 mb-4">
                     <div id="onboarding-must-haves-heading" class="px-1">
                         <p class="text-[12px] font-black text-slate-900 uppercase tracking-[0.2em]">Must Haves</p>
-                        <p class="text-[10px] font-semibold text-slate-500 mt-1">Cover these essentials first each month.</p>
+                        <p class="text-[10px] font-semibold text-slate-500 mt-1">Plan Savings, Transportation, and Payables together.</p>
                     </div>
-                    <div id="onboarding-must-haves-section">${systemHtml}</div>
+                    <div id="onboarding-must-haves-section">${mustHavesHtml}</div>
+               </div>`
+            : '';
+        var reoccurringBlock = reoccurringHtml
+            ? `<div id="onboarding-reoccurring-block" class="space-y-2 mb-4">
+                    <div id="onboarding-reoccurring-heading" class="px-1">
+                        <p class="text-[12px] font-black text-slate-900 uppercase tracking-[0.2em]">Reoccurring Expenses</p>
+                        <p class="text-[10px] font-semibold text-slate-500 mt-1">Keep Weekly Allowance and Daily Food on rhythm.</p>
+                    </div>
+                    <div id="onboarding-reoccurring-section">${reoccurringHtml}</div>
                </div>`
             : '';
         var miniBudgetsBlock = customHtml
@@ -964,10 +988,10 @@ function renderStrategy(opts) {
                     <div id="onboarding-mini-budgets-section">${customHtml}</div>
                </div>`
             : '';
-        container.innerHTML = savingsBlock + mustHavesBlock + miniBudgetsBlock + toolBarHtml;
+        container.innerHTML = mustHavesBlock + reoccurringBlock + miniBudgetsBlock + toolBarHtml;
     } else {
         // Toolbar belongs to Mini-Budgets; Funding Priority is a separate section below it.
-        container.innerHTML = savingsCardHtml + systemHtml + miniBudgetsHeading + customHtml + toolBarHtml + fundingPriorityHtml;
+        container.innerHTML = systemHtml + miniBudgetsHeading + customHtml + toolBarHtml + fundingPriorityHtml;
     }
 
     if(!systemHtml && !customHtml) {
@@ -1178,10 +1202,11 @@ function renderLedger() {
 
     // Category view options (above creatable categories, below Savings / Transportation / Payables)
     var optionsBarHtml = `
-        <div id="ledger-options-bar" class="flex items-center justify-between gap-2 py-2 px-1 mb-2 sm:gap-3 sm:py-3">
-            <div class="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+        <div id="ledger-options-bar" class="mini-budget-divider-band flex items-center justify-between gap-2 mb-3 sm:gap-3">
+            <div class="mini-budget-divider-title flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                <span class="mini-budget-divider-kicker" aria-hidden="true"></span>
                 <span class="text-[11px] font-black text-slate-900 uppercase tracking-[0.12em] sm:text-[12px] sm:tracking-[0.2em] whitespace-nowrap">Mini-Budgets</span>
-                <button type="button" onclick="openAddItemTool(null, { showCategoryPicker: true })" class="bg-slate-900 text-white w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg text-base sm:text-lg leading-none pb-0.5 hover:bg-slate-700" title="Add item">+</button>
+                <button type="button" onclick="openAddItemTool(null, { showCategoryPicker: true })" class="mini-budget-add-btn bg-slate-900 text-white w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg text-base sm:text-lg leading-none pb-0.5 hover:bg-slate-700" title="Add item">+</button>
             </div>
             <div class="ledger-options-controls flex items-center justify-end gap-2 sm:gap-3 flex-nowrap min-w-0">
                 <label class="ledger-hide-empty-control flex items-center gap-1 sm:gap-2 cursor-pointer whitespace-nowrap flex-shrink-0">
@@ -1258,7 +1283,8 @@ function renderLedger() {
             const safeLabelText = escapeHtml(item.label);
             const paymentStatus = typeof getExpectedPaymentStatus === 'function' ? getExpectedPaymentStatus(item.expectedPaymentDay) : null;
             const paymentBadgeHtml = getMiniBudgetPaymentBadgeHtml(item);
-            const splitLocked = !!(item.amortData && goalTotal > 0 && bal < goalTotal - 0.005);
+            const splitUnlockedEarly = !!(item.amortData && item.amortData.unlockedEarly);
+            const splitLocked = !!(item.amortData && goalTotal > 0 && bal < goalTotal - 0.005 && !splitUnlockedEarly);
             const splitBadge = item.amortData
                 ? (splitLocked
                     ? '<span class="ml-1 text-[8px] font-black uppercase text-amber-800 bg-amber-100 px-1 py-0.5 rounded">Locked</span>'
@@ -1266,12 +1292,21 @@ function renderLedger() {
                 : '';
 
             let actionBtn = '';
-            if (sec.isSingleAction && bal !== 0 && !splitLocked) {
-                actionBtn = `<button type="button" onclick="event.stopPropagation(); completeTask('${safeLabel}')" class="ledger-bar-complete flex-shrink-0 w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center text-sm font-bold hover:bg-emerald-600 transition shadow-sm" title="Mark used">✓</button>`;
+            if (sec.isSingleAction && bal !== 0 && !splitLocked && !splitUnlockedEarly) {
+                actionBtn = `<button type="button" onclick="event.stopPropagation(); completeTask('${safeLabel}')" class="ledger-bar-complete flex-shrink-0 w-8 h-8 rounded-full bg-emerald-500 text-white flex items-center justify-center text-sm font-bold hover:bg-emerald-600 transition shadow-sm" title="Mark used">&#10003;</button>`;
+            } else if (sec.isSingleAction && bal !== 0 && splitUnlockedEarly) {
+                actionBtn = `
+                    <div class="ledger-split-action-sphere flex-shrink-0" title="Use or re-lock">
+                        <button type="button" onclick="event.stopPropagation(); completeTask('${safeLabel}')" class="ledger-split-action-btn ledger-split-action-check" title="Mark used" aria-label="Mark used">&#10003;</button>
+                        <button type="button" onclick="event.stopPropagation(); relockSplitGoalEarly('${safeLabel}')" class="ledger-split-action-btn ledger-split-action-lock" title="Re-lock" aria-label="Re-lock">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 8 0v3"></path></svg>
+                        </button>
+                    </div>
+                `;
             }
 
             const unlockBtn = splitLocked && bal > 0
-                ? `<button type="button" onclick="event.stopPropagation(); releaseSplitGoalFunds('${safeLabel}')" class="flex-shrink-0 px-2 py-1 rounded-lg bg-amber-100 text-amber-900 text-[9px] font-black uppercase tracking-wide hover:bg-amber-200" title="Move balance to Extra">Unlock early</button>`
+                ? `<button type="button" onclick="event.stopPropagation(); unlockSplitGoalEarly('${safeLabel}')" class="ledger-unlock-sphere flex-shrink-0" title="Unlock early" aria-label="Unlock early"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2"></rect><path d="M8 10V7a4 4 0 0 1 7.5-2"></path><path d="M15 5l2.5-2.5"></path></svg></button>`
                 : '';
 
             const amountSub = item.amortData && goalTotal > 0

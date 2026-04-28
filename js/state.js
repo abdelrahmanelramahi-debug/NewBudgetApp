@@ -258,6 +258,24 @@ function buildPaycheckPriorityCatalog() {
         });
     });
 
+    var sysSavings = (state.categories || []).find(function (s) { return s && s.id === 'sys_savings'; });
+    var sysItems = (sysSavings && Array.isArray(sysSavings.items)) ? sysSavings.items : [];
+    sysItems.forEach(function (item) {
+        if (!item || !item.label || item.label === 'Savings') return;
+        var itemLabel = item.label;
+        var entryId = 'mustHave:' + itemLabel;
+        if (seen[entryId]) return;
+        seen[entryId] = true;
+        catalog.push({
+            id: entryId,
+            type: 'mustHave',
+            label: itemLabel,
+            title: itemLabel,
+            groupLabel: 'Must Haves',
+            itemLabel: itemLabel
+        });
+    });
+
     var core = (state.categories || []).find(function (s) { return s && s.id === 'core_essentials'; });
     var coreItems = (core && Array.isArray(core.items)) ? core.items : [];
     coreItems.forEach(function (item) {
@@ -272,7 +290,7 @@ function buildPaycheckPriorityCatalog() {
             type: 'mustHave',
             label: itemLabel,
             title: itemLabel,
-            groupLabel: 'Must Have',
+            groupLabel: itemLabel === 'Transportation' ? 'Must Haves' : 'Reoccurring Expenses',
             itemLabel: itemLabel
         });
     });

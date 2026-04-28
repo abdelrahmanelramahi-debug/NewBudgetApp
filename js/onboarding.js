@@ -21,17 +21,17 @@ var ONBOARDING_BUDGET_TIPS_MUST_HAVES = [
         cardPlacement: 'below'
     },
     {
-        title: 'Savings',
-        body: 'Give Savings its share before moving on to the rest of your plan.',
-        target: '#onboarding-savings-block',
+        title: 'Must Haves',
+        body: 'Plan Savings, Transportation, and Payables before moving on to flexible spending.',
+        target: '#onboarding-must-haves-block',
         scrollBlock: 'center',
         cardPlacement: 'above',
         cardGapPx: 8
     },
     {
-        title: 'Must Haves',
-        body: 'Fund Weekly Allowance, Daily Food, and Transportation first so your essential spending is covered.',
-        target: '#onboarding-must-haves-block',
+        title: 'Reoccurring Expenses',
+        body: 'Keep Weekly Allowance and Daily Food funded on their regular rhythm.',
+        target: '#onboarding-reoccurring-block',
         scrollBlock: 'center',
         cardPlacement: 'above',
         cardGapPx: 8
@@ -734,7 +734,7 @@ function updateOnboardingSummary() {
     var cat = 'Custom';
     if (typeof state !== 'undefined' && state.categories && state.categories.length) {
         var customCount = state.categories.filter(function (s) { return !s.isSystem; }).length;
-        cat = customCount ? customCount + ' categories' : 'Must Haves only';
+        cat = customCount ? customCount + ' categories' : 'Default groups only';
     }
     var sumCur = document.getElementById('onboarding-summary-currency');
     var sumInc = document.getElementById('onboarding-summary-income');

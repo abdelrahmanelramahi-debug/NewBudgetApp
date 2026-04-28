@@ -282,10 +282,16 @@ function getItemByLabel(label) {
 function isSplitGoalLocked(label) {
     var found = getItemByLabel(label);
     if (!found || !found.item.amortData) return false;
+    if (found.item.amortData.unlockedEarly) return false;
     var goal = Number(found.item.amortData.total);
     if (!goal || goal <= 0) return false;
     var bal = getItemBalance(label, 0);
     return bal < goal - 0.005;
+}
+
+function isSplitGoalUnlockedEarly(label) {
+    var found = getItemByLabel(label);
+    return !!(found && found.item && found.item.amortData && found.item.amortData.unlockedEarly);
 }
 
 function adjustItemBalance(label, delta) {
@@ -449,15 +455,17 @@ function applyTransaction(tx) {
             }
             break;
         }
-        case 'release_split_goal': {
-            const take = Math.min(Number(tx.amount) || 0, getItemBalance(tx.label, 0));
-            if (take <= 0) break;
-            const cur = getItemBalance(tx.label, 0);
-            setItemBalance(tx.label, cur - take);
-            state.accounts.surplus += take;
-            var rel = getItemByLabel(tx.label);
-            if (rel && rel.item && rel.item.amortData && getItemBalance(tx.label, 0) <= 0.005) {
-                delete rel.item.amortData;
+        case 'unlock_split_goal': {
+            var unlockFound = getItemByLabel(tx.label);
+            if (unlockFound && unlockFound.item && unlockFound.item.amortData) {
+                unlockFound.item.amortData.unlockedEarly = true;
+            }
+            break;
+        }
+        case 'relock_split_goal': {
+            var relockFound = getItemByLabel(tx.label);
+            if (relockFound && relockFound.item && relockFound.item.amortData) {
+                delete relockFound.item.amortData.unlockedEarly;
             }
             break;
         }
@@ -1267,8 +1275,8 @@ function clearMiniBudgetPaymentDay() {
     closeMiniBudgetPaymentDayModal();
 }
 
-/** Move funds from a locked split-goal line to Extra (surplus). Full release clears amortData when balance hits zero. */
-function releaseSplitGoalFunds(label) {
+/** Unlock a split-goal line for normal use without moving its money to Extra. */
+function unlockSplitGoalEarly(label) {
     if (!ensureEditControlBeforeMutation()) return;
     if (!isSplitGoalLocked(label)) {
         if (typeof showAppAlert === 'function') showAppAlert('Unlock early applies to active split goals that are still below target.');
@@ -1276,12 +1284,31 @@ function releaseSplitGoalFunds(label) {
     }
     var bal = getItemBalance(label, 0);
     if (bal <= 0) return;
+    var msg = 'Unlock "' + label + '" early?\n\nThis keeps ' + formatMoney(bal) + ' ' + getCurrencyLabel() + ' inside the item. It will not move any money to Extra. After unlocking, you can either mark it used with the green check or re-lock it.';
+    var doUnlock = function () {
+        pushToUndo();
+        applyTransaction({ type: 'unlock_split_goal', label: label });
+        if (typeof logHistory === 'function') logHistory(label, 0, 'Unlocked early');
+        commitFullRefresh();
+    };
+    if (typeof showAppConfirm === 'function') {
+        showAppConfirm(msg, doUnlock, null, { title: 'Unlock early?', confirmLabel: 'Unlock' });
+    } else if (window.confirm(msg)) {
+        doUnlock();
+    }
+}
+
+function relockSplitGoalEarly(label) {
+    if (!ensureEditControlBeforeMutation()) return;
+    if (!isSplitGoalUnlockedEarly(label)) return;
     pushToUndo();
-    applyTransaction({ type: 'release_split_goal', label: label, amount: bal });
-    if (typeof logHistory === 'function') logHistory(label, -bal, 'Unlock early');
+    applyTransaction({ type: 'relock_split_goal', label: label });
+    if (typeof logHistory === 'function') logHistory(label, 0, 'Re-locked');
     commitFullRefresh();
 }
-window.releaseSplitGoalFunds = releaseSplitGoalFunds;
+window.unlockSplitGoalEarly = unlockSplitGoalEarly;
+window.relockSplitGoalEarly = relockSplitGoalEarly;
+window.isSplitGoalUnlockedEarly = isSplitGoalUnlockedEarly;
 window.updateAddItemCalc = updateAddItemCalc;
 window.openAddItemTool = openAddItemTool;
 window.openMiniBudgetPaymentDayModal = openMiniBudgetPaymentDayModal;
@@ -2486,7 +2513,7 @@ function creditToBufferSource(sourceId, amount) {
     if (sourceId && sourceId !== 'surplus' && sourceId !== 'savings' && sourceId !== 'weekly') {
         if (typeof isSplitGoalLocked === 'function' && isSplitGoalLocked(sourceId)) {
             if (typeof showAppAlert === 'function') {
-                showAppAlert('This line is a locked split goal. Use Unlock early on the ledger to move funds to Extra.');
+                showAppAlert('This line is a locked split goal. Use Unlock early on the ledger first.');
             }
             return false;
         }
@@ -2510,7 +2537,7 @@ function deductFromBufferSource(sourceId, amount) {
     if (sourceId && sourceId !== 'surplus' && sourceId !== 'savings' && sourceId !== 'weekly') {
         if (typeof isSplitGoalLocked === 'function' && isSplitGoalLocked(sourceId)) {
             if (typeof showAppAlert === 'function') {
-                showAppAlert('This line is a locked split goal. Use Unlock early on the ledger to move funds to Extra.');
+                showAppAlert('This line is a locked split goal. Use Unlock early on the ledger first.');
             }
             return false;
         }
@@ -3742,6 +3769,11 @@ function applyPaycheckDistribute() {
 
     var coreSec = state.categories.find(function (s) { return s && s.id === 'core_essentials'; });
     var coreLabels = {};
+    var sysSavingsSec = state.categories.find(function (s) { return s && s.id === 'sys_savings'; });
+    (sysSavingsSec && sysSavingsSec.items ? sysSavingsSec.items : []).forEach(function (item) {
+        if (!item || !item.label || item.label === 'Savings') return;
+        coreLabels[item.label] = true;
+    });
     (coreSec && coreSec.items ? coreSec.items : []).forEach(function (item) {
         if (!item || !item.label) return;
         var normalizedLabel = item.label === 'Food Base' ? 'Daily Food' : item.label;
