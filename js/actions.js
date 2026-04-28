@@ -575,6 +575,7 @@ function applyTransaction(tx) {
             }
             state.food.daysUsed = (state.food.consumedDays || []).length;
             state.food.history.unshift({type:'spend', amt: fundedSpend});
+            if (typeof reduceDailyFoodLedgerBalance === 'function') reduceDailyFoodLedgerBalance(fundedSpend);
             if (typeof setFoodFundedForDay === 'function') setFoodFundedForDay(spentDay, 0);
             if (typeof countRedistributedOverflowKeys === 'function' && countRedistributedOverflowKeys() > 0) {
                 _recomputeOverflowRedistributionSplit();
@@ -1827,6 +1828,14 @@ function completeTask(label) {
 }
 
 // Food
+function reduceDailyFoodLedgerBalance(amount) {
+    var spend = Math.max(0, Number(amount) || 0);
+    if (spend <= 0) return;
+    if (!state.balances || typeof state.balances !== 'object') state.balances = {};
+    var current = Number(state.balances['Daily Food']) || 0;
+    state.balances['Daily Food'] = Math.max(0, current - spend);
+}
+
 function spendFoodDay() {
     if (state.food.daysUsed < state.food.daysTotal) {
         if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
@@ -1885,6 +1894,7 @@ function setFoodDayFromCalendar(cycleDay, action) {
             return;
         }
         state.food.consumedDays = list.concat([day]).sort(function(a, b) { return a - b; });
+        if (typeof reduceDailyFoodLedgerBalance === 'function') reduceDailyFoodLedgerBalance(funded);
         if (typeof setFoodFundedForDay === 'function') setFoodFundedForDay(day, 0);
         if (typeof countRedistributedOverflowKeys === 'function' && countRedistributedOverflowKeys() > 0) {
             _recomputeOverflowRedistributionSplit();
