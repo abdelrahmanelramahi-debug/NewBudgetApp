@@ -3400,7 +3400,12 @@ function fastUpdateItemAmount(sid, idx, val) {
         var rm3 = typeof roundMoney === 'function' ? roundMoney : function (v) { return Math.round(Number(v) * 100) / 100; };
         var total = rm3(state.monthlyIncome || 0);
         var allocated = state.categories.reduce(function (sum, sec) {
-            return sum + (sec.items || []).reduce(function (s, i) { return s + rm3(i.amount || 0); }, 0);
+            return sum + (sec.items || []).reduce(function (s, i) {
+                if (i && (i.label === 'Daily Food' || i.label === 'Food Base') && state.settings && state.settings.showFoodPlan === false) return s;
+                if (i && i.label === 'Daily Food' && typeof getFoodPlanBudgetAmount === 'function') return s + rm3(getFoodPlanBudgetAmount());
+                if (i && i.label === 'Savings' && typeof getCanonicalSavingsBudgetPlanTotal === 'function') return s + rm3(getCanonicalSavingsBudgetPlanTotal());
+                return s + rm3(i.amount || 0);
+            }, 0);
         }, 0);
         updateAllocatedTotalUI({ total: total, allocated: rm3(allocated), prefix: 'onboarding-cat' });
     }

@@ -689,6 +689,8 @@ function renderStrategy(opts) {
             return true;
         });
         const plannedTotalForRow = (item) => {
+            if (item && (item.label === 'Daily Food' || item.label === 'Food Base') && state.settings && state.settings.showFoodPlan === false) return 0;
+            if (item && (item.label === 'Daily Food' || item.label === 'Food Base') && typeof getFoodPlanBudgetAmount === 'function') return Number(getFoodPlanBudgetAmount()) || 0;
             if (item && item.label === 'Savings' && typeof getCanonicalSavingsBudgetPlanTotal === 'function') return Number(getCanonicalSavingsBudgetPlanTotal()) || 0;
             return typeof item.amount === 'number' ? item.amount : 0;
         };
@@ -1002,7 +1004,12 @@ function renderStrategy(opts) {
         var rm = typeof roundMoney === 'function' ? roundMoney : function (v) { return Math.round(Number(v) * 100) / 100; };
         var total = rm(state.monthlyIncome || 0);
         var allocated = state.categories.reduce(function (sum, sec) {
-            return sum + (sec.items || []).reduce(function (s, i) { return s + rm(i.amount || 0); }, 0);
+            return sum + (sec.items || []).reduce(function (s, i) {
+                if (i && (i.label === 'Daily Food' || i.label === 'Food Base') && state.settings && state.settings.showFoodPlan === false) return s;
+                if (i && i.label === 'Daily Food' && typeof getFoodPlanBudgetAmount === 'function') return s + rm(getFoodPlanBudgetAmount());
+                if (i && i.label === 'Savings' && typeof getCanonicalSavingsBudgetPlanTotal === 'function') return s + rm(getCanonicalSavingsBudgetPlanTotal());
+                return s + rm(i.amount || 0);
+            }, 0);
         }, 0);
         updateAllocatedTotalUI({ total: total, allocated: rm(allocated), prefix: 'onboarding-cat' });
     } else {
@@ -1022,7 +1029,9 @@ function toggleBudgetFoodPlan(el, sid, idx) {
     beginBudgetPlanEditing();
     state.settings.showFoodPlan = enabled;
     if (typeof saveState === 'function') saveState();
+    if (typeof normalizePaycheckPriorityOrder === 'function') normalizePaycheckPriorityOrder();
     if (typeof renderLedger === 'function') renderLedger();
+    if (typeof renderStrategy === 'function') renderStrategy({ force: true });
     scheduleBudgetPlanAllocatedRefresh();
     endBudgetPlanEditing();
 }
@@ -1115,6 +1124,12 @@ function renderLedger() {
 
     const majorHtml = `
         <div class="major-funds mb-3 sm:mb-4">
+            <div class="must-haves-home-header">
+                <div class="must-haves-home-header-main">
+                    <span class="must-haves-home-kicker" aria-hidden="true"></span>
+                    <span class="must-haves-home-title">Must Haves</span>
+                </div>
+            </div>
             <!-- Mobile: compact bars (<640px); see .major-funds-mobile-only in styles.css -->
             <div class="space-y-1.5 major-funds-mobile-only">
                 <div class="major-fund-bar flex items-center justify-between gap-2 py-2.5 px-3 rounded-xl bg-indigo-600 text-white border border-indigo-500">
