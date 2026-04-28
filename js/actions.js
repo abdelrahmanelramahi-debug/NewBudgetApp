@@ -1386,12 +1386,13 @@ function openTool(label, displayTitle, autoTransfer = false, prefillAmount, sid,
         }
     }
     var isMiniContext = isMiniBudgetToolContext();
+    var isUnifiedTransferContext = isToolUniversalTransferContext();
     if (deductBtn) deductBtn.classList.toggle('hidden', isMiniContext);
     if (addBtn) addBtn.classList.toggle('hidden', isMiniContext);
-    if (receiveBtn) receiveBtn.classList.toggle('hidden', !isMiniContext);
-    if (transferBtn) transferBtn.textContent = isMiniContext ? 'Send to' : 'Transfer';
+    if (receiveBtn) receiveBtn.classList.toggle('hidden', !isUnifiedTransferContext);
+    if (transferBtn) transferBtn.textContent = isUnifiedTransferContext ? 'Send to' : 'Transfer';
     if (isMiniContext) {
-        setMiniBudgetTransferMode();
+        setToolUniversalTransferMode();
     }
 
     toggleModal('input-tool', true);
@@ -1399,8 +1400,8 @@ function openTool(label, displayTitle, autoTransfer = false, prefillAmount, sid,
 
     // Auto Open Transfer Mode if requested
     if(autoTransfer) {
-        if (isMiniContext) {
-            setMiniBudgetTransferMode();
+        if (isToolUniversalTransferContext()) {
+            setToolUniversalTransferMode();
         } else {
             toggleTransferMode();
         }
@@ -1420,12 +1421,26 @@ function isMiniBudgetToolContext() {
     return true;
 }
 
+function getActiveToolTransferEndpoint() {
+    if (activeCat === 'Surplus') return { type: 'extra' };
+    if (isMiniBudgetToolContext()) return { type: 'mini_item', label: activeCat };
+    return null;
+}
+
+function isToolUniversalTransferContext() {
+    return !!getActiveToolTransferEndpoint();
+}
+
 function toggleTransferMode() {
     const std = document.getElementById('tool-actions-standard');
     const trf = document.getElementById('tool-transfer-interface');
     const list = document.getElementById('transfer-target-list');
-    if (isMiniBudgetToolContext()) {
-        setMiniBudgetTransferMode();
+    if (isToolUniversalTransferContext()) {
+        if (!trf || trf.classList.contains('hidden')) {
+            setToolUniversalTransferMode();
+        } else {
+            executeToolUniversalTransferSelection('send');
+        }
         return;
     }
 
@@ -1460,82 +1475,7 @@ function syncMiniBudgetTransferPickerState() {
 }
 
 function getMiniBudgetTransferGroups() {
-    var groups = [];
-    var sec = (state.categories || []).find(function (entry) { return entry && entry.id === currentToolItemContext.sid; });
-    if (!sec || !Array.isArray(sec.items)) return groups;
-    var currentLabel = activeCat;
-    var siblingOptions = sec.items.filter(function (item) {
-        if (!item || !item.label || item.label === currentLabel) return false;
-        if (item.isCore) return false;
-        return true;
-    }).map(function (item) {
-        return {
-            type: 'item',
-            label: item.label,
-            amount: getItemBalance(item.label, item.amount || 0)
-        };
-    });
-    if (siblingOptions.length) {
-        groups.push({
-            id: 'siblings',
-            title: 'This Category',
-            subtitle: siblingOptions.length + ' sibling item' + (siblingOptions.length === 1 ? '' : 's'),
-            options: siblingOptions
-        });
-    }
-
-    var extraAmount = Number((state.accounts && state.accounts.surplus) || 0);
-    groups.push({
-        id: 'extra',
-        title: 'Extra',
-        subtitle: extraAmount > 0.001 ? formatMoney(extraAmount) + ' available' : 'Move money into Extra',
-        options: [{ type: 'extra', label: 'Extra', amount: extraAmount }]
-    });
-
-    var weeklyOptions = [];
-    for (var week = 1; week <= WEEKLY_MAX_WEEKS; week++) {
-        var weekAmount = getWeeklyBalance(week);
-        weeklyOptions.push({
-            type: 'weekly_week',
-            week: week,
-            label: 'Week ' + week,
-            amount: weekAmount
-        });
-    }
-    if (weeklyOptions.length) {
-        groups.push({
-            id: 'weekly',
-            title: 'Weekly Allowance',
-            subtitle: 'Pick a week',
-            options: weeklyOptions
-        });
-    }
-
-    (state.categories || []).forEach(function (category) {
-        if (!category || !Array.isArray(category.items)) return;
-        if (category.id === sec.id) return;
-        if (String(category.id || '').indexOf('sys_') === 0) return;
-        var options = category.items.filter(function (item) {
-            if (!item || !item.label || item.isCore) return false;
-            if (item.label === 'Savings' || item.label === 'Transportation' || item.label === 'Payables' || item.label === 'Daily Food' || item.label === getWeeklyLabel()) return false;
-            return true;
-        }).map(function (item) {
-            return {
-                type: 'item',
-                label: item.label,
-                amount: getItemBalance(item.label, item.amount || 0)
-            };
-        });
-        if (!options.length) return;
-        groups.push({
-            id: 'category-' + category.id,
-            title: category.label || 'Category',
-            subtitle: options.length + ' item' + (options.length === 1 ? '' : 's'),
-            options: options
-        });
-    });
-
-    return groups;
+    return buildUniversalTransferGroups(getActiveToolTransferEndpoint(), { currentSid: currentToolItemContext && currentToolItemContext.sid });
 }
 
 function renderMiniBudgetTransferGroups(mode) {
@@ -1584,92 +1524,24 @@ function getMiniBudgetTransferOptionFromRef(ref) {
 }
 
 function runMiniBudgetTransferSelection(mode, option, amount) {
-    if (!option) return false;
-    if (mode === 'send' && typeof isSplitGoalLocked === 'function' && isSplitGoalLocked(activeCat)) {
-        if (typeof showAppAlert === 'function') showAppAlert('This line is a locked split goal. Reach the target, or use Unlock early on the ledger.');
-        return false;
-    }
-    var currentAmount = getItemBalance(activeCat, 0);
-    var take = 0;
-    if (mode === 'send') {
-        if (currentAmount <= 0.001) {
-            if (typeof showAppAlert === 'function') showAppAlert('This item is already at 0.00.');
-            return false;
-        }
-        take = Math.min(amount, currentAmount);
-        pushToUndo();
-        if (option.type === 'extra') {
-            applyTransaction({ type: 'transfer', from: activeCat, to: 'Surplus', amount: take });
-            logHistory(activeCat, -take, 'Send to Extra');
-            logHistory('Surplus', take, 'Receive from ' + activeCat);
-            return true;
-        }
-        if (option.type === 'weekly_week') {
-            applyTransaction({ type: 'transfer', from: activeCat, to: 'weekly_week_' + option.week, amount: take });
-            logHistory(activeCat, -take, 'Send to Week ' + option.week);
-            logHistory(getWeeklyLabel(), take, 'Receive from ' + activeCat);
-            return true;
-        }
-        applyTransaction({ type: 'transfer', from: activeCat, to: option.label, amount: take });
-        logHistory(activeCat, -take, 'Send to ' + option.label);
-        logHistory(option.label, take, 'Receive from ' + activeCat);
-        return true;
-    }
-
-    if (option.type === 'extra') {
-        var extraAmount = Number((state.accounts && state.accounts.surplus) || 0);
-        if (extraAmount <= 0.001) {
-            if (typeof showAppAlert === 'function') showAppAlert('Extra has no funds available right now.');
-            return false;
-        }
-        take = Math.min(amount, extraAmount);
-        pushToUndo();
-        applyTransaction({ type: 'transfer', from: 'Surplus', to: activeCat, amount: take });
-        logHistory('Surplus', -take, 'Send to ' + activeCat);
-        logHistory(activeCat, take, 'Receive from Extra');
-        return true;
-    }
-    if (option.type === 'weekly_week') {
-        var weekAvailable = getWeeklyBalance(option.week);
-        if (weekAvailable <= 0.001) {
-            if (typeof showAppAlert === 'function') showAppAlert('That week has no available balance right now.');
-            return false;
-        }
-        take = Math.min(amount, weekAvailable);
-        pushToUndo();
-        setWeeklyBalance(option.week, weekAvailable - take);
-        adjustItemBalance(getWeeklyLabel(), -take);
-        adjustItemBalance(activeCat, take);
-        logHistory(getWeeklyLabel(), -take, 'Send to ' + activeCat);
-        logHistory(activeCat, take, 'Receive from Week ' + option.week);
-        return true;
-    }
-    if (typeof isSplitGoalLocked === 'function' && isSplitGoalLocked(option.label)) {
-        if (typeof showAppAlert === 'function') showAppAlert('This source line is a locked split goal. Use Unlock early on the ledger first.');
-        return false;
-    }
-    var itemAvailable = getItemBalance(option.label, 0);
-    if (itemAvailable <= 0.001) {
-        if (typeof showAppAlert === 'function') showAppAlert('There is nothing available in that item right now.');
-        return false;
-    }
-    take = Math.min(amount, itemAvailable);
-    pushToUndo();
-    applyTransaction({ type: 'transfer', from: option.label, to: activeCat, amount: take });
-    logHistory(option.label, -take, 'Send to ' + activeCat);
-    logHistory(activeCat, take, 'Receive from ' + option.label);
-    return true;
+    var current = getActiveToolTransferEndpoint();
+    if (!current || !option) return false;
+    return executeUniversalTransfer(
+        mode === 'receive' ? option : current,
+        mode === 'receive' ? current : option,
+        amount
+    );
 }
 
 function getMiniBudgetSelectedTransferOption() {
-    if (!isMiniBudgetToolContext()) return null;
+    if (!isToolUniversalTransferContext()) return null;
     var ui = getMiniBudgetTransferElements();
     if (!ui.panel) return null;
     return getMiniBudgetTransferOptionFromRef(ui.panel.getAttribute('data-selected-ref'));
 }
 
 function executeMiniBudgetTransferSelection(mode) {
-    if (!isMiniBudgetToolContext()) return;
+    if (!isToolUniversalTransferContext()) return;
     var option = getMiniBudgetSelectedTransferOption();
     if (!option) {
         if (typeof showAppAlert === 'function') showAppAlert('Choose a source item first, then use Send to or Receive from.');
@@ -1687,10 +1559,16 @@ function executeMiniBudgetTransferSelection(mode) {
     closeTool();
 }
 
-function setMiniBudgetTransferMode() {
-    if (!isMiniBudgetToolContext()) return;
+function executeToolUniversalTransferSelection(mode) {
+    executeMiniBudgetTransferSelection(mode);
+}
+
+function setToolUniversalTransferMode() {
+    if (!isToolUniversalTransferContext()) return;
     var ui = getMiniBudgetTransferElements();
     if (!ui.panel || !ui.title || !ui.hint) return;
+    var std = document.getElementById('tool-actions-standard');
+    if (std) std.classList.remove('hidden');
     ui.panel.classList.remove('hidden');
     ui.panel.setAttribute('data-picker-collapsed', 'true');
     ui.title.textContent = 'Choose a source';
@@ -1830,6 +1708,10 @@ function executeAction(type) {
             burnActiveMiniBudgetItem(val);
             return;
         }
+    }
+    if (isToolUniversalTransferContext() && type === 'receive') {
+        executeToolUniversalTransferSelection('receive');
+        return;
     }
     if(val) {
         if (activeCat === 'Surplus') {
@@ -4096,6 +3978,229 @@ var SAVINGS_EXTRA = '__extra__';
 var SAVINGS_WEEKLY = '__weekly__';
 function getWeeklyLabel() { return ITEM_LABELS.WEEKLY_MISC; }
 
+function normalizeUniversalEndpoint(endpoint) {
+    if (!endpoint) return null;
+    if (endpoint.type === 'item') return { type: 'mini_item', label: endpoint.label };
+    if (endpoint.type === 'extra') return { type: 'extra' };
+    if (endpoint.type === 'weekly_week') return { type: 'weekly_week', week: Number(endpoint.week) || 1 };
+    if (endpoint.type === 'bucket') {
+        return {
+            type: 'bucket',
+            contextName: endpoint.contextName || endpoint.context || null,
+            bucketKey: endpoint.bucketKey || endpoint.key || null
+        };
+    }
+    if (endpoint.type === 'mini_item') return { type: 'mini_item', label: endpoint.label };
+    return endpoint;
+}
+
+function getUniversalEndpointKey(endpoint) {
+    endpoint = normalizeUniversalEndpoint(endpoint);
+    if (!endpoint) return '';
+    if (endpoint.type === 'extra') return 'extra';
+    if (endpoint.type === 'weekly_week') return 'weekly_week:' + endpoint.week;
+    if (endpoint.type === 'mini_item') return 'mini_item:' + endpoint.label;
+    if (endpoint.type === 'bucket') return 'bucket:' + endpoint.contextName + ':' + endpoint.bucketKey;
+    return endpoint.type || '';
+}
+
+function getUniversalEndpointLabel(endpoint) {
+    endpoint = normalizeUniversalEndpoint(endpoint);
+    if (!endpoint) return 'Unknown';
+    if (endpoint.type === 'extra') return 'Extra';
+    if (endpoint.type === 'weekly_week') return 'Week ' + endpoint.week;
+    if (endpoint.type === 'mini_item') return endpoint.label;
+    if (endpoint.type === 'bucket') return getBucketContextLabel(endpoint.contextName) + ': ' + endpoint.bucketKey;
+    return endpoint.label || 'Unknown';
+}
+
+function getUniversalEndpointHistoryKey(endpoint) {
+    endpoint = normalizeUniversalEndpoint(endpoint);
+    if (!endpoint) return '';
+    if (endpoint.type === 'extra') return 'Surplus';
+    if (endpoint.type === 'weekly_week') return getWeeklyLabel();
+    if (endpoint.type === 'mini_item') return endpoint.label;
+    if (endpoint.type === 'bucket') return getBucketHistoryKey(endpoint.contextName, endpoint.bucketKey);
+    return endpoint.label || '';
+}
+
+function getUniversalEndpointBalance(endpoint) {
+    endpoint = normalizeUniversalEndpoint(endpoint);
+    if (!endpoint) return 0;
+    ensureAccountsState();
+    if (endpoint.type === 'extra') return Number((state.accounts && state.accounts.surplus) || 0);
+    if (endpoint.type === 'weekly_week') return getWeeklyBalance(endpoint.week);
+    if (endpoint.type === 'mini_item') return getItemBalance(endpoint.label, 0);
+    if (endpoint.type === 'bucket') return getBucketAmountByContext(endpoint.contextName, endpoint.bucketKey);
+    return 0;
+}
+
+function adjustUniversalEndpointBalance(endpoint, delta) {
+    endpoint = normalizeUniversalEndpoint(endpoint);
+    if (!endpoint || !delta) return;
+    if (endpoint.type === 'extra') {
+        applyTransaction({ type: 'adjust_surplus', delta: delta });
+        return;
+    }
+    if (endpoint.type === 'weekly_week') {
+        setWeeklyBalance(endpoint.week, getWeeklyBalance(endpoint.week) + delta);
+        adjustItemBalance(getWeeklyLabel(), delta);
+        return;
+    }
+    if (endpoint.type === 'mini_item') {
+        adjustItemBalance(endpoint.label, delta);
+        return;
+    }
+    if (endpoint.type === 'bucket') {
+        adjustBucketValue(getBucketContext(endpoint.contextName), endpoint.bucketKey, delta);
+    }
+}
+
+function isUniversalEndpointLocked(endpoint) {
+    endpoint = normalizeUniversalEndpoint(endpoint);
+    return !!(endpoint && endpoint.type === 'mini_item' && typeof isSplitGoalLocked === 'function' && isSplitGoalLocked(endpoint.label));
+}
+
+function logUniversalEndpointMove(endpoint, amount, action, otherEndpoint) {
+    endpoint = normalizeUniversalEndpoint(endpoint);
+    otherEndpoint = normalizeUniversalEndpoint(otherEndpoint);
+    if (!endpoint) return;
+    var otherLabel = getUniversalEndpointLabel(otherEndpoint);
+    if (endpoint.type === 'bucket') {
+        logBucketHistory(endpoint.contextName, endpoint.bucketKey, amount, action, otherLabel);
+        return;
+    }
+    logHistory(getUniversalEndpointHistoryKey(endpoint), amount, action + ' ' + otherLabel);
+}
+
+function executeUniversalTransfer(sourceEndpoint, targetEndpoint, amount) {
+    sourceEndpoint = normalizeUniversalEndpoint(sourceEndpoint);
+    targetEndpoint = normalizeUniversalEndpoint(targetEndpoint);
+    if (!sourceEndpoint || !targetEndpoint) return false;
+    if (getUniversalEndpointKey(sourceEndpoint) === getUniversalEndpointKey(targetEndpoint)) return false;
+    var val = parseFloat(amount);
+    if (!val || val <= 0) return false;
+    if (!ensureEditControlBeforeMutation()) return false;
+    ensureAccountsState();
+
+    if (isUniversalEndpointLocked(sourceEndpoint)) {
+        if (typeof showAppAlert === 'function') showAppAlert('This source line is a locked split goal. Use Unlock early on the ledger first.');
+        return false;
+    }
+
+    var available = getUniversalEndpointBalance(sourceEndpoint);
+    if (available <= 0.001) {
+        if (typeof showAppAlert === 'function') showAppAlert('There is nothing available in that source right now.');
+        return false;
+    }
+    var take = Math.min(val, available);
+    pushToUndo();
+    adjustUniversalEndpointBalance(sourceEndpoint, -take);
+    adjustUniversalEndpointBalance(targetEndpoint, take);
+    logUniversalEndpointMove(sourceEndpoint, -take, 'Send to', targetEndpoint);
+    logUniversalEndpointMove(targetEndpoint, take, 'Receive from', sourceEndpoint);
+    return true;
+}
+
+function makeUniversalOption(endpoint) {
+    endpoint = normalizeUniversalEndpoint(endpoint);
+    return Object.assign({}, endpoint, {
+        label: getUniversalEndpointLabel(endpoint),
+        amount: getUniversalEndpointBalance(endpoint)
+    });
+}
+
+function isDeletedBucketEndpoint(contextName, bucketKey) {
+    var deletedKey = contextName === 'savings'
+        ? '_deletedSavingsBuckets'
+        : contextName === 'transportation'
+            ? '_deletedTransportationBuckets'
+            : '_deletedPayablesBuckets';
+    return Array.isArray(state[deletedKey]) && state[deletedKey].indexOf(bucketKey) !== -1;
+}
+
+function getUniversalBucketEndpoints(contextName) {
+    var ctx = getBucketContext(contextName);
+    var store = getBucketStore(ctx);
+    var keys = Object.keys(store || {});
+    if (contextName === 'savings' && typeof getCanonicalSavingsBucketOrder === 'function') {
+        keys = getCanonicalSavingsBucketOrder().filter(function (key) { return store[key] !== undefined; });
+    }
+    return keys.filter(function (key) {
+        return key && !isDeletedBucketEndpoint(contextName, key);
+    }).map(function (key) {
+        return { type: 'bucket', contextName: contextName, bucketKey: key };
+    });
+}
+
+function getUniversalMiniItemEndpoints() {
+    var endpoints = [];
+    var majorLabels = typeof MAJOR_FUND_LABELS !== 'undefined'
+        ? MAJOR_FUND_LABELS
+        : ['Weekly Allowance', 'Daily Food', 'Savings', 'Transportation', 'Payables'];
+    (state.categories || []).forEach(function (sec) {
+        if (!sec || !Array.isArray(sec.items)) return;
+        if (String(sec.id || '').indexOf('sys_') === 0) return;
+        sec.items.forEach(function (item) {
+            if (!item || !item.label || item.isCore) return;
+            if (majorLabels.indexOf(item.label) !== -1) return;
+            endpoints.push({ type: 'mini_item', label: item.label, sid: sec.id, sectionLabel: sec.label || 'Mini-Budget' });
+        });
+    });
+    return endpoints;
+}
+
+function buildUniversalTransferGroups(currentEndpoint, opts) {
+    opts = opts || {};
+    ensureAccountsState();
+    currentEndpoint = normalizeUniversalEndpoint(currentEndpoint);
+    var currentKey = getUniversalEndpointKey(currentEndpoint);
+    var groups = [];
+    var pushGroup = function (id, title, subtitle, endpoints) {
+        var options = (endpoints || []).filter(function (endpoint) {
+            return getUniversalEndpointKey(endpoint) !== currentKey;
+        }).map(makeUniversalOption);
+        if (!options.length) return;
+        groups.push({ id: id, title: title, subtitle: subtitle || (options.length + ' option' + (options.length === 1 ? '' : 's')), options: options });
+    };
+
+    if (currentEndpoint && currentEndpoint.type === 'bucket') {
+        pushGroup(
+            'same-store',
+            getBucketContextLabel(currentEndpoint.contextName) + ' Buckets',
+            null,
+            getUniversalBucketEndpoints(currentEndpoint.contextName)
+        );
+    }
+
+    pushGroup('extra', 'Extra', Number((state.accounts && state.accounts.surplus) || 0) > 0.001 ? formatMoney(state.accounts.surplus) + ' available' : 'Move money into Extra', [{ type: 'extra' }]);
+
+    var weeklyEndpoints = [];
+    for (var week = 1; week <= WEEKLY_MAX_WEEKS; week++) weeklyEndpoints.push({ type: 'weekly_week', week: week });
+    pushGroup('weekly', 'Weekly Allowance', 'Pick a week', weeklyEndpoints);
+
+    ['savings', 'transportation', 'payables'].forEach(function (contextName) {
+        if (currentEndpoint && currentEndpoint.type === 'bucket' && currentEndpoint.contextName === contextName) return;
+        pushGroup(contextName + '-buckets', getBucketContextLabel(contextName) + ' Buckets', null, getUniversalBucketEndpoints(contextName));
+    });
+
+    var miniBySection = {};
+    getUniversalMiniItemEndpoints().forEach(function (endpoint) {
+        if (!miniBySection[endpoint.sid]) miniBySection[endpoint.sid] = { label: endpoint.sectionLabel, endpoints: [] };
+        miniBySection[endpoint.sid].endpoints.push(endpoint);
+    });
+    Object.keys(miniBySection).sort(function (a, b) {
+        if (a === opts.currentSid) return -1;
+        if (b === opts.currentSid) return 1;
+        return 0;
+    }).forEach(function (sid) {
+        var group = miniBySection[sid];
+        pushGroup('category-' + sid, sid === opts.currentSid ? 'This Category' : group.label, null, group.endpoints);
+    });
+
+    return groups;
+}
+
 function getBucketContext(contextName) {
     if (contextName === 'savings') {
         return {
@@ -4291,82 +4396,7 @@ function syncBucketTransferPickerState() {
 }
 
 function getBucketTransferGroupData(contextName, bucketKey) {
-    ensureAccountsState();
-    var groups = [];
-    var store = getBucketStore(getBucketContext(contextName));
-    var sameStoreLabel = getBucketContextLabel(contextName) + ' Buckets';
-    var otherBuckets = Object.keys(store).filter(function (key) { return key !== bucketKey; }).map(function (key) {
-        return {
-            type: 'bucket',
-            key: key,
-            label: key,
-            amount: Number(store[key]) || 0
-        };
-    });
-    if (otherBuckets.length) {
-        groups.push({
-            id: 'same-store',
-            title: sameStoreLabel,
-            subtitle: otherBuckets.length + ' option' + (otherBuckets.length === 1 ? '' : 's'),
-            options: otherBuckets
-        });
-    }
-
-    var extraAmount = Number((state.accounts && state.accounts.surplus) || 0);
-    groups.push({
-        id: 'extra',
-        title: 'Extra',
-        subtitle: extraAmount > 0.001 ? formatMoney(extraAmount) + ' available' : 'Move money into Extra',
-        options: [{
-            type: 'extra',
-            label: 'Extra',
-            amount: extraAmount
-        }]
-    });
-
-    var weeklyOptions = [];
-    for (var week = 1; week <= WEEKLY_MAX_WEEKS; week++) {
-        var weeklyBal = getWeeklyBalance(week);
-        weeklyOptions.push({
-            type: 'weekly_week',
-            week: week,
-            label: 'Week ' + week,
-            amount: weeklyBal
-        });
-    }
-    if (weeklyOptions.length) {
-        groups.push({
-            id: 'weekly',
-            title: 'Weekly Allowance',
-            subtitle: 'Pick a week',
-            options: weeklyOptions
-        });
-    }
-
-    (state.categories || []).forEach(function (sec) {
-        if (!sec || !Array.isArray(sec.items)) return;
-        if (String(sec.id || '').indexOf('sys_') === 0) return;
-        var options = sec.items.filter(function (item) {
-            if (!item || !item.label) return false;
-            if (item.label === 'Savings' || item.label === 'Transportation' || item.label === 'Payables' || item.label === 'Daily Food' || item.label === getWeeklyLabel()) return false;
-            return true;
-        }).map(function (item) {
-            return {
-                type: 'item',
-                label: item.label,
-                amount: getItemBalance(item.label, item.amount || 0)
-            };
-        });
-        if (!options.length) return;
-        groups.push({
-            id: 'category-' + sec.id,
-            title: sec.label || 'Mini-Budget',
-            subtitle: options.length + ' item' + (options.length === 1 ? '' : 's'),
-            options: options
-        });
-    });
-
-    return groups;
+    return buildUniversalTransferGroups({ type: 'bucket', contextName: contextName, bucketKey: bucketKey });
 }
 
 function renderBucketTransferHistory(contextName, bucketKey) {
@@ -4490,114 +4520,12 @@ function executeBucketTransferSelection(mode) {
 }
 
 function runBucketTransferSelection(contextName, bucketKey, mode, option, amount) {
-    var ctx = getBucketContext(contextName);
-    var store = getBucketStore(ctx);
-    var currentAmount = Number(store[bucketKey]) || 0;
-    var take = 0;
-    var sourceTitle = getBucketHistoryKey(contextName, bucketKey);
-    var targetTitle = option.type === 'item'
-        ? option.label
-        : option.type === 'weekly_week'
-            ? ('Weekly Allowance - Week ' + option.week)
-            : option.type === 'extra'
-                ? 'Extra'
-                : getBucketHistoryKey(contextName, option.key);
-
-    if (mode === 'send') {
-        if (currentAmount <= 0.001) {
-            if (typeof showAppAlert === 'function') showAppAlert('This bucket is already at 0.00.');
-            return false;
-        }
-        take = Math.min(amount, currentAmount);
-        pushToUndo();
-        if (option.type === 'bucket') {
-            store[bucketKey] = currentAmount - take;
-            store[option.key] = (Number(store[option.key]) || 0) + take;
-            ctx.syncTotal();
-            logBucketHistory(contextName, bucketKey, -take, 'Send to', option.key);
-            logBucketHistory(contextName, option.key, take, 'Receive from', bucketKey);
-            return true;
-        }
-        if (option.type === 'extra') {
-            adjustBucketValue(ctx, bucketKey, -take);
-            applyTransaction({ type: 'adjust_surplus', delta: take });
-            logBucketHistory(contextName, bucketKey, -take, 'Send to', 'Extra');
-            return true;
-        }
-        if (option.type === 'weekly_week') {
-            adjustBucketValue(ctx, bucketKey, -take);
-            setWeeklyBalance(option.week, getWeeklyBalance(option.week) + take);
-            adjustItemBalance(getWeeklyLabel(), take);
-            logBucketHistory(contextName, bucketKey, -take, 'Send to', 'Week ' + option.week);
-            logHistory(getWeeklyLabel(), take, 'Trf from ' + sourceTitle);
-            return true;
-        }
-        adjustBucketValue(ctx, bucketKey, -take);
-        adjustItemBalance(option.label, take);
-        logBucketHistory(contextName, bucketKey, -take, 'Send to', option.label);
-        logHistory(option.label, take, 'Trf from ' + sourceTitle);
-        return true;
-    }
-
-    if (option.type === 'bucket') {
-        var sourceBucketAmount = Number(store[option.key]) || 0;
-        if (sourceBucketAmount <= 0.001) {
-            if (typeof showAppAlert === 'function') showAppAlert('There is nothing available in that bucket right now.');
-            return false;
-        }
-        take = Math.min(amount, sourceBucketAmount);
-        pushToUndo();
-        store[option.key] = sourceBucketAmount - take;
-        store[bucketKey] = currentAmount + take;
-        ctx.syncTotal();
-        logBucketHistory(contextName, option.key, -take, 'Send to', bucketKey);
-        logBucketHistory(contextName, bucketKey, take, 'Receive from', option.key);
-        return true;
-    }
-    if (option.type === 'extra') {
-        var surplus = Number((state.accounts && state.accounts.surplus) || 0);
-        if (surplus <= 0.001) {
-            if (typeof showAppAlert === 'function') showAppAlert('Extra has no funds available right now.');
-            return false;
-        }
-        take = Math.min(amount, surplus);
-        pushToUndo();
-        adjustBucketValue(ctx, bucketKey, take);
-        applyTransaction({ type: 'adjust_surplus', delta: -take });
-        logBucketHistory(contextName, bucketKey, take, 'Receive from', 'Extra');
-        return true;
-    }
-    if (option.type === 'weekly_week') {
-        var weekAvailable = getWeeklyBalance(option.week);
-        if (weekAvailable <= 0.001) {
-            if (typeof showAppAlert === 'function') showAppAlert('That week has no available balance right now.');
-            return false;
-        }
-        take = Math.min(amount, weekAvailable);
-        pushToUndo();
-        setWeeklyBalance(option.week, weekAvailable - take);
-        adjustItemBalance(getWeeklyLabel(), -take);
-        adjustBucketValue(ctx, bucketKey, take);
-        logHistory(getWeeklyLabel(), -take, 'Trf to ' + sourceTitle);
-        logBucketHistory(contextName, bucketKey, take, 'Receive from', 'Week ' + option.week);
-        return true;
-    }
-    if (typeof isSplitGoalLocked === 'function' && isSplitGoalLocked(option.label)) {
-        if (typeof showAppAlert === 'function') showAppAlert('This line is a locked split goal. Use Unlock early on the ledger first.');
-        return false;
-    }
-    var itemAvailable = getItemBalance(option.label, 0);
-    if (itemAvailable <= 0.001) {
-        if (typeof showAppAlert === 'function') showAppAlert('There is nothing available in that item right now.');
-        return false;
-    }
-    take = Math.min(amount, itemAvailable);
-    pushToUndo();
-    adjustItemBalance(option.label, -take);
-    adjustBucketValue(ctx, bucketKey, take);
-    logHistory(option.label, -take, 'Trf to ' + sourceTitle);
-    logBucketHistory(contextName, bucketKey, take, 'Receive from', option.label);
-    return true;
+    var current = { type: 'bucket', contextName: contextName, bucketKey: bucketKey };
+    return executeUniversalTransfer(
+        mode === 'receive' ? option : current,
+        mode === 'receive' ? current : option,
+        amount
+    );
 }
 
 function openSavingsBuckets() {
