@@ -263,6 +263,7 @@ function buildPaycheckPriorityCatalog() {
     coreItems.forEach(function (item) {
         if (!item || !item.label || item.label === 'Savings') return;
         var itemLabel = item.label === 'Food Base' ? 'Daily Food' : item.label;
+        if (itemLabel === 'Daily Food' && state.settings && state.settings.showFoodPlan === false) return;
         var entryId = 'mustHave:' + itemLabel;
         if (seen[entryId]) return;
         seen[entryId] = true;

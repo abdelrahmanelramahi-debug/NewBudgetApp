@@ -3623,6 +3623,9 @@ function getAllocatableItems() {
     const items = [];
     state.categories.forEach(sec => {
         sec.items.forEach(item => {
+            if ((item.label === 'Daily Food' || item.label === 'Food Base') && state.settings && state.settings.showFoodPlan === false) {
+                return;
+            }
             if (item.label === 'Savings') {
                 ensureGeneralSavingsBudgetConfig();
                 Object.keys(state.accounts.savingsBudgetPlan || {}).forEach(function (bucketName) {
@@ -3742,6 +3745,7 @@ function applyPaycheckDistribute() {
     (coreSec && coreSec.items ? coreSec.items : []).forEach(function (item) {
         if (!item || !item.label) return;
         var normalizedLabel = item.label === 'Food Base' ? 'Daily Food' : item.label;
+        if (normalizedLabel === 'Daily Food' && state.settings && state.settings.showFoodPlan === false) return;
         if (normalizedLabel === 'Savings') return;
         coreLabels[normalizedLabel] = true;
     });
