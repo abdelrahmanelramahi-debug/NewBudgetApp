@@ -141,20 +141,13 @@ function recalculateSurplusFromReality() {
     state.accounts.surplus = reality - allocated;
 }
 
-/** Daily Food header “X / day”: fixed plan rate (budget ÷ 28) so marking days consumed does not change it.
- *  Exception: pay-cycle overflow “Redistribute” (gap between 28 core days and next pay) freezes
- *  state.food.redistributedPerSlot until undo or cycle reset. */
+/** Daily Food header “X / day”: fixed plan rate (budget / 28) so marking days consumed does not change it. */
 function getDailyFoodEffectiveDisplayRate() {
     if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
     var bal = getItemBalance('Daily Food', 0);
     if (bal <= 0.001) return 0;
     var core = typeof computeFoodPlanCore === 'function' ? computeFoodPlanCore() : null;
     var planRate = core && typeof core.dailyRate === 'number' && core.dailyRate > 0 ? core.dailyRate : 0;
-    var R = typeof countRedistributedOverflowKeys === 'function' ? countRedistributedOverflowKeys() : 0;
-    if (R > 0) {
-        var slot = state.food && typeof state.food.redistributedPerSlot === 'number' && !Number.isNaN(state.food.redistributedPerSlot) ? state.food.redistributedPerSlot : 0;
-        if (slot > 0.001) return slot;
-    }
     return planRate;
 }
 if (typeof window !== 'undefined') window.getDailyFoodEffectiveDisplayRate = getDailyFoodEffectiveDisplayRate;

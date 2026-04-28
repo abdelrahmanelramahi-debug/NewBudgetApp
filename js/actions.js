@@ -577,9 +577,6 @@ function applyTransaction(tx) {
             state.food.history.unshift({type:'spend', amt: fundedSpend});
             if (typeof reduceDailyFoodLedgerBalance === 'function') reduceDailyFoodLedgerBalance(fundedSpend);
             if (typeof setFoodFundedForDay === 'function') setFoodFundedForDay(spentDay, 0);
-            if (typeof countRedistributedOverflowKeys === 'function' && countRedistributedOverflowKeys() > 0) {
-                _recomputeOverflowRedistributionSplit();
-            }
             if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
             break;
         case 'food_lock':
@@ -1896,9 +1893,6 @@ function setFoodDayFromCalendar(cycleDay, action) {
         state.food.consumedDays = list.concat([day]).sort(function(a, b) { return a - b; });
         if (typeof reduceDailyFoodLedgerBalance === 'function') reduceDailyFoodLedgerBalance(funded);
         if (typeof setFoodFundedForDay === 'function') setFoodFundedForDay(day, 0);
-        if (typeof countRedistributedOverflowKeys === 'function' && countRedistributedOverflowKeys() > 0) {
-            _recomputeOverflowRedistributionSplit();
-        }
     }
     state.food.daysUsed = state.food.consumedDays.length;
     if (typeof ensureFoodFundingState === 'function') ensureFoodFundingState();
