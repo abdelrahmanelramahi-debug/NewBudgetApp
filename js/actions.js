@@ -3729,11 +3729,28 @@ function allocateFromSurplusToTarget(targetLabel, amount) {
     return val;
 }
 
-function applyPaycheckDistribute() {
+function applyPaycheckDistribute(confirmed) {
     const raw = document.getElementById('paycheck-amount').value;
     const val = parseFloat(raw);
     if (raw === '' || isNaN(val) || val <= 0) {
         if (typeof showAppAlert === 'function') showAppAlert('Enter a positive amount for your paycheck.');
+        return;
+    }
+
+    if (confirmed !== true) {
+        var confirmMessage =
+            'Distribute ' + formatMoney(val) + ' ' + getCurrencyLabel() + ' now?\n\n' +
+            'This will add the paycheck to Extra, then automatically send funds into your planned budgets using the current priority order. Any amount above the plan will stay in Extra.';
+        if (typeof showAppConfirm === 'function') {
+            showAppConfirm(confirmMessage, function () {
+                applyPaycheckDistribute(true);
+            }, null, {
+                title: 'Confirm paycheck distribution',
+                confirmLabel: 'Distribute'
+            });
+        } else if (window.confirm(confirmMessage)) {
+            applyPaycheckDistribute(true);
+        }
         return;
     }
 

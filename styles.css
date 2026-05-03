@@ -1551,6 +1551,26 @@ body.theme-dark .bucket-dropdown button:hover {
     position: relative;
     z-index: 1;
 }
+body:not(.theme-dark):not(.theme-sepia) .major-funds .major-fund-wide-card {
+    color: #0f172a;
+}
+body:not(.theme-dark):not(.theme-sepia) .major-funds .major-fund-wide-card-label {
+    color: #0f172a !important;
+}
+body:not(.theme-dark):not(.theme-sepia) .major-funds .major-fund-wide-card-amount {
+    color: #0f172a !important;
+}
+body:not(.theme-dark):not(.theme-sepia) .major-funds .major-fund-wide-card-amount-currency {
+    color: #334155 !important;
+}
+body:not(.theme-dark):not(.theme-sepia) .major-funds .major-fund-wide-card-action {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    color: #0f172a !important;
+}
+body:not(.theme-dark):not(.theme-sepia) .major-funds .major-fund-wide-card-action:hover {
+    background-color: #f8fafc;
+}
 @media (min-width: 1024px) {
     .major-fund-wide-card {
         flex-direction: column;
@@ -2081,6 +2101,37 @@ body.theme-dark .desktop-nav-item:hover {
     border: 1px solid #e2e8f0;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     transition: box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.weekly-hero {
+    background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%) !important;
+    border-color: #4f46e5;
+    color: #ffffff;
+}
+.weekly-hero .text-indigo-200,
+.weekly-hero [class*="text-indigo-200"] {
+    color: #e0e7ff !important;
+}
+.weekly-hero .text-indigo-300,
+.weekly-hero [class*="text-indigo-300"] {
+    color: #c7d2fe !important;
+}
+.weekly-hero .weekly-inline-controls {
+    background: rgba(49, 46, 129, 0.42);
+    border-color: rgba(199, 210, 254, 0.34);
+}
+.weekly-hero .weekly-inline-controls input::placeholder {
+    color: rgba(224, 231, 255, 0.78);
+}
+.weekly-hero #weekly-inline-note {
+    color: #ffffff;
+}
+.weekly-hero #weekly-spend-btn {
+    color: #312e81;
+}
+.weekly-hero #weekly-transfer-btn {
+    background-color: #6366f1;
+    color: #ffffff;
 }
 
 button:focus-visible,
