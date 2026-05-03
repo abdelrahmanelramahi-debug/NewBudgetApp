@@ -1701,35 +1701,42 @@ body.theme-dark .food-calendar-buffer {
 }
 body.theme-dark .food-buffer-row .w-12 { color: #34d399; }
 
-/* Transportation card in dark mode: match Savings (same dark box, indigo-tinted title/amount, white button with dark text) */
+/* Desktop major-fund cards in dark mode: keep every card legible on the dark surface. */
+body.theme-dark .major-funds .major-fund-wide-card,
 body.theme-dark .major-funds .premium-card.bg-slate-800 {
     background-color: #020617;
     border-color: #111827;
     color: #f1f5f9;
 }
-body.theme-dark .major-funds .premium-card.bg-slate-800 .text-slate-400 {
-    color: #c7d2fe;
+body.theme-dark .major-funds .major-fund-wide-card-label {
+    color: #cbd5e1 !important;
 }
+body.theme-dark .major-funds .major-fund-wide-card-amount {
+    color: #f8fafc !important;
+}
+body.theme-dark .major-funds .major-fund-wide-card-amount-currency {
+    color: #cbd5e1 !important;
+}
+body.theme-dark .major-funds .major-fund-wide-card.bg-indigo-600 .major-fund-wide-card-label,
+body.theme-dark .major-funds .major-fund-wide-card.bg-indigo-600 .major-fund-wide-card-amount-currency,
+body.theme-dark .major-funds .premium-card.bg-slate-800 .text-slate-400,
 body.theme-dark .major-funds .premium-card.bg-slate-800 .text-slate-500 {
     color: #a5b4fc;
 }
-body.theme-dark .major-funds .premium-card.bg-slate-800 .major-fund-amount {
-    color: #f1f5f9;
+body.theme-dark .major-funds .major-fund-wide-card.bg-amber-500 .major-fund-wide-card-label,
+body.theme-dark .major-funds .major-fund-wide-card.bg-amber-500 .major-fund-wide-card-amount-currency {
+    color: #fcd34d !important;
 }
-body.theme-dark .major-funds .premium-card.bg-slate-800 .major-fund-amount .text-slate-500 {
-    color: #a5b4fc;
-}
+body.theme-dark .major-funds .major-fund-wide-card-action,
 body.theme-dark .major-funds .premium-card.bg-slate-800 button,
 body.theme-dark .major-funds .premium-card.bg-slate-800 button.text-slate-800 {
     background-color: #fff;
     color: #0f172a !important;
     border-color: transparent;
 }
+body.theme-dark .major-funds .major-fund-wide-card-action:hover,
 body.theme-dark .major-funds .premium-card.bg-slate-800 button:hover {
     background-color: #e2e8f0;
-}
-body.theme-dark .major-funds .premium-card.bg-slate-800 svg {
-    color: #c7d2fe;
 }
 
 /* Mobile major-fund bars: match desktop in dark mode (all three = same dark box as .premium-card) */
@@ -1806,6 +1813,47 @@ body.theme-dark .major-funds .premium-card .major-fund-amount .text-xs {
 body.theme-dark .major-funds .premium-card button,
 body.theme-dark .major-funds .space-y-1.5 > .major-fund-bar button {
     color: #0f172a !important;
+}
+body.theme-dark #ledger-categories .ledger-bar.opacity-70 {
+    opacity: 1;
+}
+body.theme-dark #ledger-categories .ledger-bar {
+    background-color: #111827;
+    border-color: #273449;
+}
+body.theme-dark #ledger-categories .ledger-bar:hover {
+    border-color: #475569;
+    background-color: #162033;
+}
+body.theme-dark #ledger-categories .ledger-bar span.text-slate-500,
+body.theme-dark #ledger-categories .ledger-bar .text-slate-400 {
+    color: #cbd5e1 !important;
+}
+body.theme-dark #ledger-categories .ledger-bar p.text-slate-800,
+body.theme-dark #ledger-categories .ledger-bar-amort-progress {
+    color: #f8fafc !important;
+}
+body.theme-dark #ledger-categories .ledger-bar .bg-slate-100 {
+    background-color: #334155;
+}
+body.theme-dark #ledger-categories .ledger-bar-fill {
+    background-color: #818cf8;
+}
+body.theme-dark #ledger-categories .ledger-bar-amount {
+    background-color: #020617;
+    border-color: #334155;
+    color: #f8fafc;
+}
+body.theme-dark #ledger-categories .ledger-bar-actions .bg-slate-50\/80 {
+    background-color: #1e293b;
+    border-color: #334155;
+}
+body.theme-dark #ledger-categories .ledger-bar-actions button {
+    color: #e2e8f0 !important;
+    border-color: #334155;
+}
+body.theme-dark #ledger-categories .ledger-bar-actions button:hover {
+    background-color: #334155;
 }
 
 /* Food cycle day numbers: dark text on light boxes in dark mode */
