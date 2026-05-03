@@ -540,6 +540,12 @@ body.theme-dark .desktop-sidebar .desktop-nav-item span,
 body.theme-dark .desktop-sidebar .desktop-nav-item svg {
     color: inherit;
 }
+body.theme-dark .desktop-sidebar #desktop-bug-report {
+    color: #e5e7eb;
+}
+body.theme-dark .desktop-sidebar #desktop-bug-report > span:last-child {
+    color: #e5e7eb;
+}
 body.theme-dark .desktop-sidebar .desktop-nav-item:hover {
     background: #1f2937;
 }
@@ -554,6 +560,13 @@ body.theme-dark .desktop-sidebar .desktop-nav-item .inline-flex {
     background-color: #f9fafb;
 }
 body.theme-dark .desktop-sidebar .desktop-nav-item .inline-flex svg {
+    color: #020617;
+}
+body.theme-dark .desktop-sidebar #desktop-bug-report .inline-flex {
+    background-color: #f9fafb;
+    color: #020617;
+}
+body.theme-dark .desktop-sidebar #desktop-bug-report .inline-flex svg {
     color: #020617;
 }
 body.theme-dark .desktop-sidebar .mt-auto .inline-flex {
@@ -634,6 +647,12 @@ body.theme-dark #side-menu .side-menu-panel .text-slate-700,
 body.theme-dark #side-menu .side-menu-panel .text-slate-600 {
     color: #e5e7eb;
 }
+body.theme-dark #side-menu #mobile-bug-report {
+    color: #e5e7eb;
+}
+body.theme-dark #side-menu #mobile-bug-report > span:last-child {
+    color: #e5e7eb;
+}
 body.theme-dark #side-menu .side-menu-panel .text-slate-400,
 body.theme-dark #side-menu .side-menu-panel .text-slate-500 {
     color: #94a3b8;
@@ -651,6 +670,13 @@ body.theme-dark #side-menu .side-menu-nav-btn.tab-active .inline-flex {
 }
 body.theme-dark #side-menu .side-menu-nav-btn.tab-active .inline-flex svg {
     color: #3730a3;
+}
+body.theme-dark #side-menu #mobile-bug-report .inline-flex {
+    background-color: #f9fafb;
+    color: #020617;
+}
+body.theme-dark #side-menu #mobile-bug-report .inline-flex svg {
+    color: #020617;
 }
 body.theme-dark #side-menu .side-menu-panel .relative span {
     color: #94a3b8;
