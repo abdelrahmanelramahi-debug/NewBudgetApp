@@ -866,12 +866,21 @@ body.theme-sepia .weekly-hero {
 body.theme-sepia .weekly-hero h2,
 body.theme-sepia .weekly-hero h3,
 body.theme-sepia .weekly-hero .text-indigo-200,
-body.theme-sepia .weekly-hero .text-indigo-300 {
+body.theme-sepia .weekly-hero .text-indigo-300,
+body.theme-sepia .weekly-hero [class*="text-indigo-200"],
+body.theme-sepia .weekly-hero [class*="text-indigo-300"] {
     color: #1f2933 !important;
+}
+body.theme-sepia .weekly-hero #weekly-mini-totals,
+body.theme-sepia .weekly-hero #weekly-allowance-explanation {
+    color: #4b3b33 !important;
 }
 body.theme-sepia .weekly-hero .weekly-inline-controls {
     background: rgba(31, 41, 51, 0.05);
     border-color: rgba(31, 41, 51, 0.12);
+}
+body.theme-sepia .weekly-hero .weekly-inline-controls input {
+    color: #1f2933;
 }
 body.theme-sepia .weekly-hero .weekly-inline-controls input::placeholder {
     color: rgba(55, 65, 81, 0.6);
