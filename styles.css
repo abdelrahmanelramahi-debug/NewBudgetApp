@@ -304,48 +304,52 @@ body.theme-dark .ledger-hide-empty-indicator {
 @media (max-width: 640px) {
     #ledger-options-bar {
         display: grid;
-        grid-template-columns: auto minmax(0, 1fr);
-        row-gap: 0.45rem;
-        column-gap: 0.55rem;
-        padding: 0.42rem 0.55rem;
+        grid-template-columns: auto minmax(5.5rem, 1fr) auto auto auto;
+        align-items: center;
+        column-gap: 0.42rem;
+        padding: 0.42rem 0.5rem;
         border-left-width: 4px;
     }
     #ledger-options-bar .mini-budget-divider-title {
-        width: auto;
-        flex: 0 0 auto;
-        gap: 0.36rem;
-        justify-content: flex-start;
+        display: contents;
     }
     #ledger-options-bar .mini-budget-divider-kicker {
+        grid-column: 1;
+        grid-row: 1;
         width: 0.42rem;
         height: 0.42rem;
         box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.11);
     }
     #ledger-options-bar .mini-budget-add-btn {
-        width: 1.65rem;
-        height: 1.65rem;
+        grid-column: 5;
+        grid-row: 1;
+        width: 1.7rem;
+        height: 1.7rem;
         border-radius: 0.55rem;
-        font-size: 0.95rem;
-        padding-bottom: 0.1rem;
+        font-size: 0.98rem;
+        padding-bottom: 0.12rem;
     }
     #ledger-options-bar .mini-budget-divider-title > span:last-of-type {
-        font-size: 0.58rem;
+        grid-column: 2;
+        grid-row: 1;
+        min-width: 0;
+        font-size: 0.6rem;
         letter-spacing: 0.1em;
+        text-align: center;
     }
     .ledger-options-controls {
-        width: auto;
-        flex: 1 1 auto;
-        justify-content: flex-end;
-        gap: 0.35rem;
+        display: contents;
     }
     .ledger-hide-empty-control {
-        gap: 0.26rem;
-        padding: 0.12rem 0.34rem;
+        grid-column: 3;
+        grid-row: 1;
+        gap: 0.24rem;
+        padding: 0.1rem 0.32rem;
     }
     .ledger-hide-empty-control span:last-child,
     .ledger-sort-control > span {
         font-size: 0.48rem;
-        letter-spacing: 0.09em;
+        letter-spacing: 0.08em;
     }
     .ledger-hide-empty-indicator {
         width: 11px;
@@ -359,7 +363,9 @@ body.theme-dark .ledger-hide-empty-indicator {
         height: 7px;
     }
     .ledger-sort-control {
-        gap: 0.24rem;
+        grid-column: 4;
+        grid-row: 1;
+        gap: 0.22rem;
         padding-left: 0;
     }
     #ledger-sort {
@@ -372,17 +378,25 @@ body.theme-dark .ledger-hide-empty-indicator {
 }
 @media (max-width: 430px) {
     #ledger-options-bar {
-        grid-template-columns: 1fr;
+        grid-template-columns: auto minmax(4rem, 1fr) auto auto auto;
+        column-gap: 0.28rem;
+        padding-inline: 0.42rem;
     }
-    #ledger-options-bar .mini-budget-divider-title,
-    #ledger-options-bar .ledger-options-controls {
-        width: 100%;
+    #ledger-options-bar .mini-budget-divider-title > span:last-of-type {
+        font-size: 0.52rem;
+        letter-spacing: 0.07em;
     }
-    #ledger-options-bar .mini-budget-divider-title {
-        justify-content: space-between;
+    .ledger-hide-empty-control {
+        padding-inline: 0.24rem;
     }
-    #ledger-options-bar .ledger-options-controls {
-        justify-content: space-between;
+    .ledger-hide-empty-control span:last-child,
+    .ledger-sort-control > span {
+        font-size: 0.43rem;
+        letter-spacing: 0.06em;
+    }
+    #ledger-sort {
+        min-width: 4.5rem;
+        padding-inline: 0.28rem;
     }
 }
 /* Ledger categories (groceries, misc, etc.): light text in dark mode */
@@ -3026,6 +3040,44 @@ body.theme-dark .food-overflow-row-complete .food-overflow-label {
     border-color: #fda4af;
     background: linear-gradient(135deg, rgba(255, 241, 242, 0.92), rgba(255, 255, 255, 0.98));
     box-shadow: 0 14px 28px -22px rgba(225, 29, 72, 0.65);
+}
+/* Tighten controls on mobile when the lock/unlock sphere is present */
+@media (max-width: 639px) {
+    .ledger-bar.has-lock-btn {
+        gap: 0.35rem;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+    .ledger-bar.has-lock-btn .ledger-bar-amort-progress {
+        min-width: 5rem;
+        font-size: 0.775rem;
+    }
+    .ledger-bar.has-lock-btn .ledger-bar-actions {
+        gap: 0.2rem;
+    }
+    .ledger-bar.has-lock-btn .ledger-bar-amount {
+        width: 2.25rem;
+        padding-left: 0.2rem;
+        padding-right: 0.2rem;
+        font-size: 0.65rem;
+    }
+    .ledger-bar.has-lock-btn .ledger-bar-actions > div > button {
+        width: 1.25rem;
+        font-size: 0.65rem;
+    }
+    .ledger-bar.has-lock-btn .ledger-bar-more-btn {
+        width: 1.625rem;
+        height: 1.625rem;
+        font-size: 0.7rem;
+    }
+    .ledger-bar.has-lock-btn .ledger-unlock-sphere {
+        width: 26px;
+        height: 26px;
+    }
+    .ledger-bar.has-lock-btn .ledger-unlock-sphere svg {
+        width: 11px;
+        height: 11px;
+    }
 }
 .budget-row-due-today {
     background: linear-gradient(135deg, rgba(255, 241, 242, 0.78), rgba(255, 255, 255, 0.94));

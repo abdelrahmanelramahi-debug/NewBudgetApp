@@ -1411,7 +1411,7 @@ function renderLedger() {
                 : `<p class="text-[9px] font-bold text-slate-400 uppercase hidden sm:block">${getCurrencyLabel()} left</p>`;
 
             barsHtml += `
-                <div class="ledger-bar flex items-center gap-2 sm:gap-3 w-full py-2.5 px-3 sm:px-4 rounded-xl border border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm transition-all group ${bal === 0 ? 'opacity-70' : ''} ${paymentStatus && paymentStatus.isDueToday ? 'ledger-bar-due-today' : ''}">
+                <div class="ledger-bar flex items-center gap-2 sm:gap-3 w-full py-2.5 px-3 sm:px-4 rounded-xl border border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm transition-all group ${bal === 0 ? 'opacity-70' : ''} ${paymentStatus && paymentStatus.isDueToday ? 'ledger-bar-due-today' : ''} ${splitLocked ? 'has-lock-btn' : ''}">
                     <div class="flex-1 min-w-0 flex flex-col gap-0.5">
                         <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 truncate" title="${safeLabelAttr}">${safeLabelText}${splitBadge} ${paymentBadgeHtml}</span>
                         <div class="h-1.5 w-full max-w-[100px] rounded-full bg-slate-100 overflow-hidden">
@@ -1428,7 +1428,7 @@ function renderLedger() {
                             <button type="button" onclick="var b=this.closest('.ledger-bar'); var v=b.querySelector('.ledger-bar-amount').value; applyItemAdjustment('${safeLabel}', v, 'add'); b.querySelector('.ledger-bar-amount').value='';" class="w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none">+</button>
                             <button type="button" onclick="var b=this.closest('.ledger-bar'); var v=b.querySelector('.ledger-bar-amount').value; applyItemAdjustment('${safeLabel}', v, 'deduct'); b.querySelector('.ledger-bar-amount').value='';" class="w-7 h-6 flex items-center justify-center text-slate-600 text-sm font-medium hover:bg-slate-200/80 transition leading-none border-t border-slate-200">−</button>
                         </div>
-                        <button type="button" onclick="var b=this.closest('.ledger-bar'); var v=b&&b.querySelector('.ledger-bar-amount')?b.querySelector('.ledger-bar-amount').value:''; openTool('${safeLabel}', undefined, false, v, '${sec.id}', ${sec.items.indexOf(item)});" class="h-8 w-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-sm font-bold transition" title="Transfer">⋯</button>
+                        <button type="button" onclick="var b=this.closest('.ledger-bar'); var v=b&&b.querySelector('.ledger-bar-amount')?b.querySelector('.ledger-bar-amount').value:''; openTool('${safeLabel}', undefined, false, v, '${sec.id}', ${sec.items.indexOf(item)});" class="ledger-bar-more-btn h-8 w-8 rounded-lg bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center text-sm font-bold transition" title="Transfer">⋯</button>
                         ${unlockBtn}
                         ${actionBtn}
                     </div>
@@ -2766,15 +2766,28 @@ function updateMajorFundTotalsUI() {
     });
 }
 
+function formatHistoryDate(ts) {
+    if (!ts) return '';
+    try {
+        var d = new Date(ts);
+        return d.getDate() + ' ' + MONTH_NAMES[d.getMonth()];
+    } catch(e) { return ''; }
+}
+
 function renderCategoryHistory() {
     // FIX: Use global 'activeCat'
     const data = state.histories[activeCat] || [];
     document.getElementById('category-history-log').innerHTML = data.map(i => {
         const noteHtml = (i.note && i.note.trim()) ? '<div class="text-slate-500 text-[9px] mt-0.5 truncate" title="' + escapeAttr(i.note) + '">' + escapeHtml(i.note) + '</div>' : '';
+        const dateStr = i.ts ? formatHistoryDate(i.ts) : '';
+        const dateHtml = dateStr ? `<span class="text-slate-300 text-[9px]">${dateStr}</span>` : '';
         return `
         <div class="py-2 border-b border-slate-50 last:border-0 text-[10px]">
-            <div class="flex justify-between items-center">
-                <span class="font-bold text-slate-400 uppercase">${i.res}</span>
+            <div class="flex justify-between items-start">
+                <div class="flex flex-col gap-0.5">
+                    <span class="font-bold text-slate-400 uppercase">${i.res}</span>
+                    ${dateHtml}
+                </div>
                 <span class="${i.amt < 0 ? 'text-red-500' : 'text-emerald-500'} font-black">${formatMoney(i.amt)}</span>
             </div>
             ${noteHtml}
