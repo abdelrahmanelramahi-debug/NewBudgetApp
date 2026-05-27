@@ -727,6 +727,25 @@ function handlePriorityDragEnd(e) {
     if (e && e.target && e.target.style) e.target.style.opacity = '';
 }
 
+function handlePriorityMove(priorityId, direction) {
+    ensureAccountsState();
+    var order = Array.isArray(state.accounts.paycheckPriorityOrder) ? state.accounts.paycheckPriorityOrder.slice() : [];
+    if (!order.length) {
+        if (typeof normalizePaycheckPriorityOrder === 'function') normalizePaycheckPriorityOrder();
+        order = Array.isArray(state.accounts.paycheckPriorityOrder) ? state.accounts.paycheckPriorityOrder.slice() : [];
+    }
+    var idx = order.indexOf(priorityId);
+    if (idx === -1) return;
+    var newIdx = idx + direction;
+    if (newIdx < 0 || newIdx >= order.length) return;
+    pushToUndo();
+    var moved = order.splice(idx, 1)[0];
+    order.splice(newIdx, 0, moved);
+    state.accounts.paycheckPriorityOrder = order;
+    commitUI('strategy');
+}
+window.handlePriorityMove = handlePriorityMove;
+
 function handlePriorityDrop(e, targetPriorityId) {
     e.preventDefault();
     if (dragType !== 'priority' || !dragSrc || !dragSrc.priorityId || !targetPriorityId || dragSrc.priorityId === targetPriorityId) {

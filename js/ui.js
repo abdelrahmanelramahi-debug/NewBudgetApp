@@ -83,16 +83,18 @@ if (typeof window !== 'undefined') window.handleBudgetPlanFieldBlur = handleBudg
 // --- In-app Alert / Confirm (replaces browser alert/confirm) ---
 var _appAlertConfirmCallback = null;
 var _appAlertCancelCallback = null;
+var _appAlertHideTimer = null;
 
 function _showAppAlertModal(show) {
     var el = getEl('app-alert-modal');
     if (!el) return;
     if (show) {
+        if (_appAlertHideTimer) { clearTimeout(_appAlertHideTimer); _appAlertHideTimer = null; }
         el.classList.remove('hidden');
         setTimeout(function () { el.classList.add('modal-open'); }, 10);
     } else {
         el.classList.remove('modal-open');
-        setTimeout(function () { el.classList.add('hidden'); }, 300);
+        _appAlertHideTimer = setTimeout(function () { el.classList.add('hidden'); _appAlertHideTimer = null; }, 300);
     }
 }
 
@@ -520,23 +522,25 @@ window.closeSideMenu = closeSideMenu;
 function renderFundingPriorityCard() {
     if (typeof getPaycheckPriorityEntries !== 'function') return '';
     var entries = getPaycheckPriorityEntries();
-    var rows = entries.map(function (entry) {
+    var rows = entries.map(function (entry, idx) {
         var safeId = String(entry.id || '').replace(/"/g, '&quot;');
-        return `
-            <div class="funding-priority-row flex justify-between items-center py-2 px-3 border-b border-slate-100 last:border-0"
-                 draggable="true"
-                 data-priority-id="${safeId}"
-                 ondragstart="handlePriorityDragStart(event, '${String(entry.id || '').replace(/\\/g, '\\\\').replace(/'/g, '\\\'')}')"
-                 ondragend="handlePriorityDragEnd(event)"
-                 ondragover="handleDragOver(event)"
-                 ondrop="handlePriorityDrop(event, '${String(entry.id || '').replace(/\\/g, '\\\\').replace(/'/g, '\\\'')}')">
-                <div class="flex items-center gap-2 min-w-0">
-                    <span class="text-slate-300 cursor-move text-xs">☰</span>
-                    <span class="text-[11px] font-bold text-slate-700 truncate">${escapeHtml(entry.title || entry.label || '')}</span>
-                </div>
-                <span class="text-[9px] font-black uppercase tracking-widest text-indigo-500 bg-indigo-50 px-2 py-1 rounded-lg">${escapeHtml(entry.groupLabel || 'Priority')}</span>
-            </div>
-        `;
+        var safeIdJs = String(entry.id || '').replace(/\\/g, '\\\\').replace(/'/g, '\\\'');
+        var upBtn = idx > 0
+            ? '<button onclick="handlePriorityMove(\'' + safeIdJs + '\',-1)" class="flex items-center justify-center w-7 h-7 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 active:bg-indigo-100 rounded transition-colors touch-manipulation" title="Move up" aria-label="Move up">&#9650;</button>'
+            : '<span class="w-7 h-7 block"></span>';
+        var downBtn = idx < entries.length - 1
+            ? '<button onclick="handlePriorityMove(\'' + safeIdJs + '\',1)" class="flex items-center justify-center w-7 h-7 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 active:bg-indigo-100 rounded transition-colors touch-manipulation" title="Move down" aria-label="Move down">&#9660;</button>'
+            : '<span class="w-7 h-7 block"></span>';
+        return '<div class="funding-priority-row flex justify-between items-center py-2 px-3 border-b border-slate-100 last:border-0" data-priority-id="' + safeId + '">' +
+            '<div class="flex items-center gap-2 min-w-0">' +
+                '<span class="text-slate-400 font-bold text-xs shrink-0 tabular-nums w-5 text-right">' + (idx + 1) + '.</span>' +
+                '<span class="text-[11px] font-bold text-slate-700 truncate">' + escapeHtml(entry.title || entry.label || '') + '</span>' +
+            '</div>' +
+            '<div class="flex items-center gap-2 shrink-0">' +
+                '<span class="text-[9px] font-black uppercase tracking-widest text-indigo-500 bg-indigo-50 px-2 py-1 rounded-lg">' + escapeHtml(entry.groupLabel || 'Priority') + '</span>' +
+                '<div class="flex flex-col gap-0">' + upBtn + downBtn + '</div>' +
+            '</div>' +
+        '</div>';
     }).join('');
 
     var empty = '<div class="text-[10px] text-slate-400 py-3 px-3">No priority targets yet. Add savings buckets, must-haves, or mini-budgets.</div>';
@@ -548,7 +552,6 @@ function renderFundingPriorityCard() {
                         <h2 id="funding-priority-heading" class="funding-priority-title text-xl sm:text-2xl font-black uppercase tracking-[0.14em] text-slate-900 leading-tight">Paycheck Distribution Priority</h2>
                         <p class="text-[11px] font-semibold text-slate-500 mt-2 uppercase tracking-wider">Paycheck funds flow top-to-bottom — order matters.</p>
                     </div>
-                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest shrink-0">Drag to reorder</span>
                 </header>
                 <div class="funding-priority-list rounded-xl border border-slate-100 bg-white overflow-hidden">
                     ${rows || empty}
