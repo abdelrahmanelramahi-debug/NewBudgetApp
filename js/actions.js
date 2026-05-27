@@ -3889,7 +3889,15 @@ function applyPaycheckDistribute(confirmed) {
             if (!sec || !Array.isArray(sec.items)) return;
             sec.items.forEach(function (item) {
                 if (!item || item.label === 'Payables' || item.label === 'Savings') return;
-                totalRequested += getDeficitForLabel(item.label, item.amount);
+                if (item.amortData && Number(item.amortData.total) > 0) {
+                    // Amortized: deficit toward full total, capped at this cycle's monthly portion
+                    totalRequested += Math.min(
+                        Number(item.amount) || 0,
+                        getDeficitForLabel(item.label, item.amortData.total)
+                    );
+                } else {
+                    totalRequested += getDeficitForLabel(item.label, item.amount);
+                }
             });
         }
     });
@@ -3959,7 +3967,16 @@ function applyPaycheckDistribute(confirmed) {
             if (!sec || !Array.isArray(sec.items)) return;
             sec.items.forEach(function (item) {
                 if (!item || remainingAvailable <= 0 || item.label === 'Payables' || item.label === 'Savings') return;
-                var itemDeficit = getDeficitForLabel(item.label, item.amount);
+                var itemDeficit;
+                if (item.amortData && Number(item.amortData.total) > 0) {
+                    // Amortized: deficit toward full total, capped at this cycle's monthly portion
+                    itemDeficit = Math.min(
+                        Number(item.amount) || 0,
+                        getDeficitForLabel(item.label, item.amortData.total)
+                    );
+                } else {
+                    itemDeficit = getDeficitForLabel(item.label, item.amount);
+                }
                 var itemTake = Math.min(itemDeficit, remainingAvailable);
                 if (itemTake <= 0) return;
                 allocateFromSurplusToTarget(item.label, itemTake);
